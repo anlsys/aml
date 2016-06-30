@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libaml
+Description: Argonne's Memory Library
+Version: 0.0.1
+Libs: -L${libdir}
+Cflags: -I${includedir}
