@@ -10,6 +10,8 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include "allocator.h"
+
 const char *tmpfs = "/tmp";
 #define min(a,b) ((a) < (b)? (a) : (b))
 
@@ -51,6 +53,13 @@ int aml_node_init(struct aml_node *node, struct bitmask *mask, size_t maxsize)
 	for(pos = 0; pos < maxsize; pos += count)
 		if((count = write(fd, zero, min(maxsize - pos, 4096))) <= 0)
 			break;
+
+	/* init internal allocator */
+	void *m = mmap(NULL, maxsize, PROT_READ|PROT_WRITE, MAP_PRIVATE,
+		       fd, 0);
+	assert(m != MAP_FAILED);
+	aml_allocator_init(m, maxsize);
+	munmap(m, maxsize);
 
 	/* restore the original mempolicy */
 	assert(!set_mempolicy(mode, oldmask, NUMA_NUM_NODES));
