@@ -20,20 +20,25 @@ struct aml_alloc {
 };
 
 struct aml_node {
-	char *path;
-	int fd;
-	size_t maxsize;
+	struct bitmask *mask;
+	int numaid;
 };
 
 int aml_init(int *argc, char **argv[]);
 int aml_finalize(void);
 
-int aml_node_init(struct aml_node *, struct bitmask *, size_t);
+int aml_node_init(struct aml_node *, unsigned int);
 int aml_node_destroy(struct aml_node *);
 
 int aml_malloc(struct aml_alloc *, size_t, size_t, struct aml_node *);
 int aml_free(struct aml_alloc *);
 
-int aml_pull_sync(struct aml_alloc *, unsigned long, struct aml_node *);
-int aml_push_sync(struct aml_alloc *, unsigned long, struct aml_node *);
+inline size_t aml_block_size(struct aml_alloc *a) {
+	return a->blocksize;
+}
+
+int aml_block_address(struct aml_alloc *, size_t, void **);
+
+int aml_block_move(struct aml_alloc *, size_t, struct aml_node *);
+int aml_block_copy(struct aml_alloc *, size_t, struct aml_alloc *, size_t);
 #endif
