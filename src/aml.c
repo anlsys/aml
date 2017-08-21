@@ -14,7 +14,7 @@
 #define PAGE_SIZE 4096
 #endif
 
-#ifndef MAX_NUMNODES 64
+#ifndef MAX_NUMNODES
 #define MAX_NUMNODES 64
 #endif
 
