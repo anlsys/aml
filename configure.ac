@@ -40,6 +40,9 @@ AM_CONDITIONAL([TEST_VALGRIND],[test "x$valgrind" = xtrue])
 AC_CHECK_HEADERS(numa.h)
 AC_CHECK_LIB(numa, move_pages)
 
+# memkind
+AC_CHECK_LIB(memkind, memkind_malloc)
+
 AC_CONFIG_HEADERS([src/config.h])
 
 AC_CONFIG_FILES([Makefile

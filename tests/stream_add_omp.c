@@ -25,13 +25,15 @@ int main(int argc, char *argv[])
 	/* we want to back our array on the slow node and use the fast node as
 	 * a faster buffer.
 	 */
-	struct aml_node slow, fast;
-	struct bitmask *mask = numa_parse_nodestring_all("0");
-	assert(!aml_node_init(&slow, mask, MEMSIZE*3));
-	assert(!aml_node_init(&fast, mask, MEMSIZE*3));
+	struct aml_area slow, fast;
+	int type = AML_AREA_TYPE_REGULAR;
+	assert(!aml_area_from_nodestring(&slow, type, "0"));
+	assert(!aml_area_from_nodestring(&fast, type, "0"));
 
-	/* we are only dealing with one contiguous array */
-	struct aml_alloc a,b,c;
+	struct aml_dma dma;
+	assert(!aml_dma_init(&dma, 0));
+
+	void *a, *b, *c;
 
 	/* describe the allocation */
 	size_t chunk_msz, esz;
@@ -43,14 +45,15 @@ int main(int argc, char *argv[])
 		chunk_msz = MEMSIZE/(numthreads*CHUNKING);
 		esz = chunk_msz/sizeof(unsigned long);
 	}
-	assert(!aml_malloc(&a, MEMSIZE, chunk_msz, &slow));
-	assert(!aml_malloc(&b, MEMSIZE, chunk_msz, &slow));
-	assert(!aml_malloc(&c, MEMSIZE, chunk_msz, &slow));
+	a = aml_area_malloc(&slow, MEMSIZE);
+	b = aml_area_malloc(&slow, MEMSIZE);
+	c = aml_area_malloc(&slow, MEMSIZE);
+	assert(a != NULL && b != NULL && c != NULL);
 
 	/* create virtually accessible address range, backed by slow memory */
-	unsigned long *wa = (unsigned long*)a.start;
-	unsigned long *wb = (unsigned long*)b.start;
-	unsigned long *wc = (unsigned long*)c.start;
+	unsigned long *wa = (unsigned long*)a;
+	unsigned long *wb = (unsigned long*)b;
+	unsigned long *wc = (unsigned long*)c;
 	unsigned long esize = MEMSIZE/sizeof(unsigned long);
 	for(unsigned long i = 0; i < esize; i++) {
 		wa[i] = i;
@@ -64,19 +67,19 @@ int main(int argc, char *argv[])
 	{
 		for(unsigned long i = 0; i < numthreads*CHUNKING; i++) {
 			#pragma omp task depend(inout: wa[i*esz:esz])
-			assert(!aml_pull_sync(&a, i, &fast));
+			assert(!aml_dma_move(&dma, &fast, &slow, &wa[i*esz], esz));
 			#pragma omp task depend(inout: wb[i*esz:esz])
-			assert(!aml_pull_sync(&b, i, &fast));
+			assert(!aml_dma_move(&dma, &fast, &slow, &wb[i*esz], esz));
 			#pragma omp task depend(inout: wc[i*esz:esz])
-			assert(!aml_pull_sync(&c, i, &fast));
+			assert(!aml_dma_move(&dma, &fast, &slow, &wc[i*esz], esz));
 			#pragma omp task depend(in: wa[i*esz:esz], wb[i*esz:esz]) depend(out: wc[i*esz:esz])
 			kernel(&wa[i*esz], &wb[i*esz], &wc[i*esz], esz);
 			#pragma omp task depend(inout: wa[i*esz:esz])
-			assert(!aml_push_sync(&a, i, &slow));
+			assert(!aml_dma_move(&dma, &slow, &fast, &wa[i*esz], esz));
 			#pragma omp task depend(inout: wb[i*esz:esz])
-			assert(!aml_push_sync(&b, i, &slow));
+			assert(!aml_dma_move(&dma, &slow, &fast, &wb[i*esz], esz));
 			#pragma omp task depend(inout: wc[i*esz:esz])
-			assert(!aml_push_sync(&c, i, &slow));
+			assert(!aml_dma_move(&dma, &slow, &fast, &wc[i*esz], esz));
 		}
 	}
 
@@ -85,11 +88,12 @@ int main(int argc, char *argv[])
 		assert(wc[i] == esize);
 	}
 
-	aml_free(&a);
-	aml_free(&b);
-	aml_free(&c);
-	aml_node_destroy(&slow);
-	aml_node_destroy(&fast);
+	aml_area_free(&slow, a);
+	aml_area_free(&slow, b);
+	aml_area_free(&slow, c);
+	aml_area_destroy(&slow);
+	aml_area_destroy(&fast);
+	aml_dma_destroy(&dma);
 	aml_finalize();
 	return 0;
 }

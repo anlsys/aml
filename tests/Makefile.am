@@ -10,7 +10,7 @@ TESTS_ENVIRONMENT= @LIBTOOL@ --mode=execute @VALGRIND@ --tool=memcheck -q --leak
 endif
 
 # all check programs
-TST_PROGS = stream_add_pth
+TST_PROGS = stream_add_pth stream_add_omp stream_vanilla
 
 check_PROGRAMS = $(TST_PROGS)
 TESTS = $(TST_PROGS)

@@ -10,7 +10,8 @@
 #define MEMSIZE (1UL<<20)
 #define CHUNKING 4
 
-struct aml_node slow, fast;
+struct aml_area slow, fast;
+struct aml_dma dma;
 
 int kernel(unsigned long *a, unsigned long *b, unsigned long *c, size_t n)
 {
@@ -22,23 +23,23 @@ int kernel(unsigned long *a, unsigned long *b, unsigned long *c, size_t n)
 }
 
 struct cinfo {
-	struct aml_alloc *tab;
+	unsigned long *tab;
 	pthread_t tid;
-	unsigned long chunk;
+	size_t size;
 };
 
 void *th_copy(void *arg)
 {
 	struct cinfo *ci = arg;
-	aml_block_move(ci->tab, ci->chunk, &fast);
+	aml_dma_move(&dma, &fast, &slow, ci->tab, ci->size*sizeof(unsigned long));
 	return arg;
 }
 
 struct winfo {
-	struct aml_alloc *a, *b, *c;
+	unsigned long *a, *b, *c;
 	pthread_t *ca, *cb;
 	pthread_t tid;
-	unsigned long chunk;
+	size_t size;
 };
 
 void *th_work(void *arg)
@@ -47,16 +48,7 @@ void *th_work(void *arg)
 	pthread_join(*(wi->ca), NULL);
 	pthread_join(*(wi->cb), NULL);
 
-	void *aa,*bb,*cc;
-	size_t esize = aml_block_size(wi->c)/sizeof(unsigned long);
-	
-	aml_block_address(wi->a, wi->chunk, &aa);
-	aml_block_address(wi->b, wi->chunk, &bb);
-	aml_block_address(wi->c, wi->chunk, &cc);
-	printf("%p[%lu]:%p\n",wi->a->start, wi->chunk, aa);
-	printf("%p[%lu]:%p\n",wi->b->start, wi->chunk, bb);
-	printf("%p[%lu]:%p\n",wi->c->start, wi->chunk, cc);
-	kernel(aa, bb, cc, esize);
+	kernel(wi->a, wi->b, wi->c, wi->size);
 	return arg;
 }
 int main(int argc, char *argv[])
@@ -67,11 +59,13 @@ int main(int argc, char *argv[])
 	/* we want to back our array on the slow node and use the fast node as
 	 * a faster buffer.
 	 */
-	assert(!aml_node_init(&slow, 0));
-	assert(!aml_node_init(&fast, 0));
+	assert(!aml_area_from_nodestring(&slow, AML_AREA_TYPE_REGULAR, "0"));
+	assert(!aml_area_from_nodestring(&fast, AML_AREA_TYPE_REGULAR, "0"));
+	struct aml_dma dma;
+	assert(!aml_dma_init(&dma, 0));
 
-	struct aml_alloc a,b,c;
-	
+	void *a, *b, *c;
+
 	/* describe the allocation */
 	size_t chunk_msz, esz;
 	int numthreads, copythreads;
@@ -85,15 +79,15 @@ int main(int argc, char *argv[])
 		chunk_msz = MEMSIZE/(numthreads*CHUNKING);
 		esz = chunk_msz/sizeof(unsigned long);
 	}
-	printf("th: %lu, mem: %zi, chunk: %zi\n",numthreads,MEMSIZE,chunk_msz);
-	assert(!aml_malloc(&a, MEMSIZE, chunk_msz, &slow));
-	assert(!aml_malloc(&b, MEMSIZE, chunk_msz, &slow));
-	assert(!aml_malloc(&c, MEMSIZE, chunk_msz, &fast));
+	a = aml_area_malloc(&slow, MEMSIZE);
+	b = aml_area_malloc(&slow, MEMSIZE);
+	c = aml_area_malloc(&fast, MEMSIZE);
+	assert(a != NULL && b != NULL && c != NULL);
 
 	/* create virtually accessible address range, backed by slow memory */
-	unsigned long *wa = (unsigned long*)a.start;
-	unsigned long *wb = (unsigned long*)b.start;
-	unsigned long *wc = (unsigned long*)c.start;
+	unsigned long *wa = (unsigned long*)a;
+	unsigned long *wb = (unsigned long*)b;
+	unsigned long *wc = (unsigned long*)c;
 	unsigned long esize = MEMSIZE/sizeof(unsigned long);
 	for(unsigned long i = 0; i < esize; i++) {
 		wa[i] = i;
@@ -107,16 +101,16 @@ int main(int argc, char *argv[])
 	struct winfo *wis = calloc(numthreads, sizeof(struct winfo));
 	for(unsigned long i = 0; i < CHUNKING; i++) {
 		for(unsigned long j = 0; j < numthreads; j++) {
-			cas[j].tab = &a;
-			cas[j].chunk = i*CHUNKING + j;
-			cbs[j].tab = &b;
-			cbs[j].chunk = i*CHUNKING + j;
-			wis[j].a = &a;
-			wis[j].b = &b;
-			wis[j].c = &c;
+			cas[j].tab = &wa[i*CHUNKING +j];
+			cas[j].size = esize;
+			cbs[j].tab = &wb[i*CHUNKING +j];
+			cbs[j].size = esize;
+			wis[j].a = &wa[i*CHUNKING +j];
+			wis[j].b = &wb[i*CHUNKING +j];
+			wis[j].c = &wc[i*CHUNKING +j];
 			wis[j].ca = &cas[j].tid;
 			wis[j].cb = &cbs[j].tid;
-			wis[j].chunk = i*CHUNKING + j;
+			wis[j].size = esize;
 			pthread_create(&cas[j].tid, NULL, &th_copy, (void*)&cas[j]);
 			pthread_create(&cbs[j].tid, NULL, &th_copy, (void*)&cbs[j]);
 			pthread_create(&wis[j].tid, NULL, &th_work, (void*)&wis[j]);
@@ -134,11 +128,12 @@ int main(int argc, char *argv[])
 		assert(wc[i] == esize);
 	}
 
-	aml_free(&a);
-	aml_free(&b);
-	aml_free(&c);
-	aml_node_destroy(&slow);
-	aml_node_destroy(&fast);
+	aml_area_free(&slow, a);
+	aml_area_free(&slow, b);
+	aml_area_free(&fast, c);
+	aml_area_destroy(&slow);
+	aml_area_destroy(&fast);
+	aml_dma_destroy(&dma);
 	aml_finalize();
 	return 0;
 }
