@@ -59,8 +59,8 @@ int main(int argc, char *argv[])
 	/* we want to back our array on the slow node and use the fast node as
 	 * a faster buffer.
 	 */
-	assert(!aml_area_from_nodestring(&slow, AML_AREA_TYPE_REGULAR, "0"));
-	assert(!aml_area_from_nodestring(&fast, AML_AREA_TYPE_REGULAR, "0"));
+	assert(!aml_area_from_nodestring(&slow, AML_AREA_TYPE_REGULAR, "all"));
+	assert(!aml_area_from_nodestring(&fast, AML_AREA_TYPE_REGULAR, "all"));
 	struct aml_dma dma;
 	assert(!aml_dma_init(&dma, 0));
 

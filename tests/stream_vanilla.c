@@ -381,6 +381,11 @@ main(int argc, char *argv[])
     checkSTREAMresults();
     printf(HLINE);
 
+    aml_area_free(&area, a);
+    aml_area_free(&area, b);
+    aml_area_free(&area, c);
+    aml_area_destroy(&area);
+    aml_finalize();
     return 0;
 }
 

@@ -27,8 +27,8 @@ int main(int argc, char *argv[])
 	 */
 	struct aml_area slow, fast;
 	int type = AML_AREA_TYPE_REGULAR;
-	assert(!aml_area_from_nodestring(&slow, type, "0"));
-	assert(!aml_area_from_nodestring(&fast, type, "0"));
+	assert(!aml_area_from_nodestring(&slow, type, "all"));
+	assert(!aml_area_from_nodestring(&fast, type, "all"));
 
 	struct aml_dma dma;
 	assert(!aml_dma_init(&dma, 0));
