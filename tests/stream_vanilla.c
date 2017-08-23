@@ -203,7 +203,7 @@ extern void tuned_STREAM_Triad(STREAM_TYPE scalar);
 extern int omp_get_num_threads();
 #endif
 int
-main()
+main(int argc, char *argv[])
     {
     int			quantum, checktick();
     int			BytesPerWord;
@@ -262,8 +262,6 @@ main()
 #endif
 
     /* aml specific code */
-    int argc = 1;
-    char *argv[] = {"stream"};
     aml_init(&argc, &argv);
     struct aml_area area;
     aml_area_init(&area, AML_AREA_TYPE_REGULAR);
