@@ -1,97 +1,129 @@
 #include <aml.h>
 #include <assert.h>
-
-memkind_t *type2kind[AML_AREA_TYPE_MAX] = {
-	&MEMKIND_HBW_ALL,
-	&MEMKIND_REGULAR,
-};
+#include <sys/mman.h>
 
 /*******************************************************************************
- * memkind additional functions:
- * memkind is missing some features, that we add by re-implementing some of the
- * needed hooks.
+ * Regular Area
+ * Handle memory allocation to DDR types of memory, no bindings whatsoever.
  ******************************************************************************/
 
-int aml_memkind_areanodemask(struct memkind *kind, unsigned long *nodemask,
-			     unsigned long maxnode)
+int aml_area_regular_init(struct aml_area *area)
 {
-	/* transform back kind into an area */
-	struct aml_area *area = (struct aml_area*)kind;
-	struct bitmask ret = {maxnode, nodemask};
-	copy_bitmask_to_bitmask(area->nodemask, &ret);
+	assert(area != NULL);
+	struct aml_arena *myarena = malloc(sizeof(struct aml_arena *));
+	assert(myarena != NULL);
+	area->extra = myarena;
+	return aml_arena_init(myarena, &aml_arena_jemalloc, area);
+}
+
+int aml_area_regular_destroy(struct aml_area *area)
+{
+	assert(area != NULL);
+	assert(area->extra != NULL);
+	return aml_arena_destroy(area->extra);
+}
+
+struct aml_arena * aml_area_regular_get_arena(struct aml_area *area)
+{
+	return area->extra;
+}
+
+void *aml_area_regular_mmap(struct aml_area *area, void *ptr, size_t sz)
+{
+	return mmap(ptr, sz, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS,
+		    -1, 0);
+}
+
+int aml_area_regular_mbind(struct aml_area *area, void *ptr, size_t sz)
+{
 	return 0;
 }
 
+int aml_area_regular_available(struct aml_area *area)
+{
+	return 1;
+}
 
 /*******************************************************************************
- * area implementation
- * At this point, use memkind internally to implement our stuff
+ * Area Templates
+ * Area templates for typical types of areas.
  ******************************************************************************/
 
-int aml_area_init(struct aml_area *area, unsigned int type)
-{
-	assert(type < AML_AREA_TYPE_MAX);
-	area->kind = *type2kind[type];
-	area->nodemask = numa_allocate_nodemask();
-	copy_bitmask_to_bitmask(area->nodemask,numa_all_nodes_ptr);
-	return 0;
-}
+struct aml_area aml_area_hbm;
+struct aml_area aml_area_regular = { aml_area_regular_init,
+				     aml_area_regular_destroy,
+				     aml_area_regular_get_arena,
+				     aml_area_regular_mmap,
+				     aml_area_regular_mbind,
+				     aml_area_regular_available,
+				     NULL};
 
-int aml_area_from_nodestring(struct aml_area *area, unsigned int type,
-			     const char *nodes)
-{
-	aml_area_init(area, type);
-	area->nodemask = numa_parse_nodestring(nodes);
-	return 0;
-}
+/*******************************************************************************
+ * Area Generic functions
+ * Most of the stuff is dispatched to an arena, retrieved by type-specific
+ * functions.
+ ******************************************************************************/
 
-int aml_area_from_nodemask(struct aml_area *area, unsigned int type,
-			   struct bitmask *nodes)
+int aml_area_init(struct aml_area *area, struct aml_area *template)
 {
-	aml_area_init(area, type);
-	copy_bitmask_to_bitmask(area->nodemask, nodes);
-	return 0;
+	assert(area != NULL);
+	assert(template != NULL);
+	/* copy template ops to area, then initialize it. */
+	memcpy(area, template, sizeof(*area));
+	return template->init(area);
 }
 
 int aml_area_destroy(struct aml_area *area)
 {
-	numa_bitmask_free(area->nodemask);
-	return 0;
+	assert(area != NULL);
+	return area->destroy(area);
 }
 
 void *aml_area_malloc(struct aml_area *area, size_t size)
 {
-	return memkind_malloc(area->kind, size);
+	assert(area != NULL);
+	struct aml_arena *arena = area->get_arena(area);
+	assert(arena != NULL);
+	return arena->malloc(arena, size);
 }
 
 void aml_area_free(struct aml_area *area, void *ptr)
 {
-	memkind_free(area->kind, ptr);
+	assert(area != NULL);
+	struct aml_arena *arena = area->get_arena(area);
+	assert(arena != NULL);
+	arena->free(arena, ptr);
 }
 
 void *aml_area_calloc(struct aml_area *area, size_t num, size_t size)
 {
-	return memkind_calloc(area->kind, num, size);
+	assert(area != NULL);
+	struct aml_arena *arena = area->get_arena(area);
+	assert(arena != NULL);
+	return arena->calloc(arena, num, size);
 }
 
 void *aml_area_realloc(struct aml_area *area, void *ptr, size_t size)
 {
-	return memkind_realloc(area->kind, ptr, size);
+	assert(area != NULL);
+	struct aml_arena *arena = area->get_arena(area);
+	assert(arena != NULL);
+	return arena->realloc(arena, ptr, size);
 }
 
 void *aml_area_acquire(struct aml_area *area, size_t size)
 {
-	/* as far as we know memkind doesn't zero new areas
-	 * TODO: find a way to assert it
-	 */
-	return aml_area_malloc(area,size);
+	assert(area != NULL);
+	struct aml_arena *arena = area->get_arena(area);
+	assert(arena != NULL);
+	return arena->acquire(arena,size);
 }
 
 void aml_area_release(struct aml_area *area, void *ptr)
 {
-	/* As far as we know memkind doesn't decommit new areas
-	 * TODO: find a way to assert it
-	 */
-	aml_area_free(area, ptr);
+	assert(area != NULL);
+	struct aml_arena *arena = area->get_arena(area);
+	assert(arena != NULL);
+	arena->release(arena, ptr);
 }
 

@@ -6,24 +6,59 @@
 #include <stdlib.h>
 
 /*******************************************************************************
+ * Forward Declarations:
+ ******************************************************************************/
+
+struct aml_arena;
+struct aml_area;
+struct aml_dma;
+
+/*******************************************************************************
+ * Arenas:
+ * interface between areas (user-facing low-level mapping) and actual memory
+ * allocators (i.e. managers of buckets and so on).
+ ******************************************************************************/
+
+struct aml_arena {
+	unsigned int uid;
+	int (*init)(struct aml_arena *, struct aml_area*);
+	int (*destroy)(struct aml_arena *);
+	void *(*malloc)(struct aml_arena *, size_t);
+	void (*free)(struct aml_arena *, void *);
+	void *(*calloc)(struct aml_arena *, size_t, size_t);
+	void *(*realloc)(struct aml_arena *, void *, size_t);
+	void *(*acquire)(struct aml_arena *, size_t);
+	void (*release)(struct aml_arena *, void *);
+	void *extra;
+};
+
+/* jemalloc arena template */
+extern struct aml_arena aml_arena_jemalloc;
+
+int aml_arena_init(struct aml_arena *, struct aml_arena *, struct aml_area *);
+int aml_arena_destroy(struct aml_arena *);
+
+/*******************************************************************************
  * Areas:
  * embeds information about a byte-addressable physical memory location and well
  * as binding policies over it.
  ******************************************************************************/
 
-/* WARNING: kind must be the first argument for this library to work */
 struct aml_area {
-	memkind_t kind;
-	struct bitmask *nodemask;
+	int (*init)(struct aml_area *);
+	int (*destroy)(struct aml_area *);
+	struct aml_arena* (*get_arena)(struct aml_area *);
+	void * (*mmap)(struct aml_area *, void *, size_t);
+	int (*mbind)(struct aml_area *, void *, size_t);
+	int (*available)(struct aml_area *);
+	void *extra;
 };
 
-#define AML_AREA_TYPE_HBM 0
-#define AML_AREA_TYPE_REGULAR 1
-#define AML_AREA_TYPE_MAX 2
+/* templates for typical area types */
+extern struct aml_area aml_area_hbm;
+extern struct aml_area aml_area_regular;
 
-int aml_area_init(struct aml_area *, unsigned int type);
-int aml_area_from_nodestring(struct aml_area *, unsigned int, const char *);
-int aml_area_from_nodemask(struct aml_area *, unsigned int, struct bitmask *);
+int aml_area_init(struct aml_area *, struct aml_area *);
 int aml_area_destroy(struct aml_area *);
 
 /*******************************************************************************

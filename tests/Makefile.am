@@ -9,8 +9,13 @@ if TEST_VALGRIND
 TESTS_ENVIRONMENT= @LIBTOOL@ --mode=execute @VALGRIND@ --tool=memcheck -q --leak-check=full
 endif
 
-# all check programs
-TST_PROGS = stream_add_pth stream_add_omp stream_vanilla
+# unit tests
+UNIT_TESTS = arena area
 
+# fonctional tests
+FUNC_TESTS = stream_add_pth stream_add_omp stream_vanilla
+
+# all tests
+TST_PROGS = $(UNIT_TESTS)
 check_PROGRAMS = $(TST_PROGS)
 TESTS = $(TST_PROGS)
