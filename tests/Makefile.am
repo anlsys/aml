@@ -9,8 +9,19 @@ if TEST_VALGRIND
 TESTS_ENVIRONMENT= @LIBTOOL@ --mode=execute @VALGRIND@ --tool=memcheck -q --leak-check=full
 endif
 
+ARENA_JEMALLOC_TESTS = arena_jemalloc
+
+AREA_LINUX_TESTS = linux_mbind \
+		   linux_mmap \
+		   linux_manager \
+		   area_linux
+
+AREA_POSIX_TESTS = area_posix
+
 # unit tests
-UNIT_TESTS = arena area
+UNIT_TESTS = $(ARENA_JEMALLOC_TESTS) \
+	     $(AREA_LINUX_TESTS) \
+	     $(AREA_POSIX_TESTS)
 
 # fonctional tests
 FUNC_TESTS = stream_add_pth stream_add_omp stream_vanilla

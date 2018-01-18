@@ -16,6 +16,7 @@
 
 # automake
 Makefile.in
+Makefile
 
 # autoconf
 /autom4te.cache
@@ -40,6 +41,7 @@ stamp-h1
 # autotest
 tests/*.trs
 tests/*.log
+*.test.*
 
 # libtool
 /libtool
