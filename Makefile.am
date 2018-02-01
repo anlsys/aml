@@ -8,5 +8,9 @@ pkgconfig_DATA = aml.pc
 check-recursive:
 	$(MAKE) -C tests check
 
+install-recursive:
+	$(MAKE) -C jemalloc install_lib
+	$(MAKE) -C src install
+	$(MAKE) install-am
 
 EXTRA_DIST = autogen.sh aml.pc README.markdown
