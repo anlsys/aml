@@ -41,7 +41,9 @@ AC_CHECK_HEADERS(numa.h)
 AC_CHECK_LIB(numa, move_pages)
 
 # internal jemalloc
-ac_configure_args="$ac_configure_args '--with-jemalloc-prefix=jemk_'"
+ac_configure_args="$ac_configure_args \
+			'--with-jemalloc-prefix=jemk_' \
+			'--with-install-suffix=-aml'"
 AC_CONFIG_SUBDIRS([jemalloc])
 
 AC_CONFIG_HEADERS([src/config.h])

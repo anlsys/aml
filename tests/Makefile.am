@@ -2,7 +2,7 @@ AM_COLOR_TESTS = yes
 
 # add OpenMP to flags for test programs
 AM_CFLAGS = -fopenmp -I$(top_srcdir)/src
-AM_LDFLAGS = -fopenmp ../src/libaml.la
+AM_LDFLAGS = -fopenmp ../src/libaml.la ../jemalloc/lib/libjemalloc-aml.so
 
 # valgrind support
 if TEST_VALGRIND
