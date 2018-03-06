@@ -1,8 +1,6 @@
 #include <assert.h>
 #include <aml.h>
 #include <jemalloc/jemalloc-aml.h>
-#include <pthread.h>
-#include <stdio.h>
 #include <sys/mman.h>
 
 /*******************************************************************************

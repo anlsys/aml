@@ -21,7 +21,7 @@ AC_PROG_CC
 AC_PROG_CC_STDC
 AC_PROG_CPP
 AC_TYPE_SIZE_T
-
+AC_TYPE_INTPTR_T
 
 # support for testing with valgrind
 AC_ARG_ENABLE(valgrind,

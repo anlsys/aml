@@ -10,10 +10,19 @@ AREA_LINUX_CSOURCES = area_linux.c \
 
 AREA_POSIX_CSOURCES = area_posix.c
 
+TILING_CSOURCES = tiling.c tiling_1d.c
+
+BINDING_CSOURCES = binding.c \
+		   binding_single.c \
+		   binding_interleave.c
+
 LIBCSOURCES = aml.c area.c arena.c \
 	      $(ARENA_JEMALLOC_CSOURCES) \
 	      $(AREA_LINUX_CSOURCES) \
-	      $(AREA_POSIX_CSOURCES)
+	      $(AREA_POSIX_CSOURCES) \
+	      $(TILING_CSOURCES) \
+	      $(BINDING_CSOURCES)
+
 LIBHSOURCES = aml.h
 
 libaml_la_SOURCES = $(LIBCSOURCES) $(LIBHSOURCES)

@@ -1,9 +1,22 @@
 #ifndef AML_H
 #define AML_H 1
 
-#include <numa.h>
+#include <inttypes.h>
 #include <memkind.h>
+#include <numa.h>
+#include <numaif.h>
+#include <pthread.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <sys/mman.h>
+#include <unistd.h>
+
+#ifndef PAGE_SIZE
+#define PAGE_SIZE 4096
+#endif
+
 
 /*******************************************************************************
  * Forward Declarations:
@@ -121,6 +134,13 @@ int aml_area_linux_manager_single_destroy(struct aml_area_linux_manager_data *);
 #define AML_NODEMASK_BYTES (AML_MAX_NUMA_NODES/8)
 #define AML_NODEMASK_SZ (AML_NODEMASK_BYTES/sizeof(unsigned long))
 
+#define AML_NODEMASK_NBITS (8*sizeof(unsigned long))
+#define AML_NODEMASK_ELT(i) ((i) / AML_NODEMASK_NBITS)
+#define AML_NODEMASK_BITMASK(i) ((unsigned long)1 << ((i) % AML_NODEMASK_NBITS))
+#define AML_NODEMASK_ISSET(mask, i) \
+	((mask[AML_NODEMASK_ELT(i)] & AML_NODEMASK_BITMASK(i)) != 0)
+
+
 struct aml_area_linux_mbind_data {
 	unsigned long nodemask[AML_NODEMASK_SZ];
 	int policy;
@@ -223,6 +243,189 @@ int aml_dma_copy(struct aml_dma *, void *, const void *, size_t);
 int aml_dma_move(struct aml_dma *, struct aml_area *, struct aml_area *,
 		 void *, size_t);
 
+
+/*******************************************************************************
+ * Tiling:
+ * Representation of a data structure organization in memory.
+ ******************************************************************************/
+
+/* opaque handle to all tilings */
+struct aml_tiling_data;
+struct aml_tiling_iterator_data;
+
+/*forward declarations */
+struct aml_tiling_iterator_ops;
+struct aml_tiling_iterator;
+
+
+struct aml_tiling_ops {
+	int (*create_iterator)(struct aml_tiling_data *,
+			       struct aml_tiling_iterator **, int);
+	int (*init_iterator)(struct aml_tiling_data *,
+			     struct aml_tiling_iterator *, int);
+	int (*destroy_iterator)(struct aml_tiling_data *,
+				struct aml_tiling_iterator *);
+	size_t (*tilesize)(struct aml_tiling_data *, va_list);
+	void* (*tilestart)(struct aml_tiling_data *, void *, va_list);
+};
+
+struct aml_tiling {
+	struct aml_tiling_ops *ops;
+	struct aml_tiling_data *data;
+};
+
+size_t aml_tiling_tilesize(struct aml_tiling *, ...);
+size_t aml_tiling_vtilesize(struct aml_tiling *, va_list);
+void* aml_tiling_tilestart(struct aml_tiling *, void *, ...);
+void* aml_tiling_vtilestart(struct aml_tiling *, void *, va_list);
+
+
+int aml_tiling_create_iterator(struct aml_tiling *,
+			       struct aml_tiling_iterator **, int);
+int aml_tiling_init_iterator(struct aml_tiling *,
+			     struct aml_tiling_iterator *, int);
+int aml_tiling_destroy_iterator(struct aml_tiling *,
+				struct aml_tiling_iterator *);
+
+struct aml_tiling_iterator_ops {
+	int (*reset)(struct aml_tiling_iterator_data *);
+	int (*next)(struct aml_tiling_iterator_data *);
+	int (*end)(struct aml_tiling_iterator_data *);
+	int (*get)(struct aml_tiling_iterator_data *, va_list);
+};
+
+struct aml_tiling_iterator {
+	struct aml_tiling_iterator_ops *ops;
+	struct aml_tiling_iterator_data *data;
+};
+
+int aml_tiling_iterator_reset(struct aml_tiling_iterator *);
+int aml_tiling_iterator_next(struct aml_tiling_iterator *);
+int aml_tiling_iterator_end(struct aml_tiling_iterator *);
+int aml_tiling_iterator_get(struct aml_tiling_iterator *, ...);
+
+#define AML_TILING_TYPE_1D 0
+
+int aml_tiling_create(struct aml_tiling **, int type, ...);
+int aml_tiling_init(struct aml_tiling *, int type, ...);
+int aml_tiling_vinit(struct aml_tiling *, int type, va_list);
+int aml_tiling_destroy(struct aml_tiling *, int type);
+
+/*******************************************************************************
+ * Tiling 1D:
+ ******************************************************************************/
+
+extern struct aml_tiling_ops aml_tiling_1d_ops;
+extern struct aml_tiling_iterator_ops aml_tiling_iterator_1d_ops;
+
+struct aml_tiling_1d_data {
+	size_t blocksize;
+	size_t totalsize;
+};
+
+struct aml_tiling_iterator_1d_data {
+	size_t i;
+	struct aml_tiling_1d_data *tiling;
+};
+
+#define AML_TILING_1D_DECL(name) \
+	struct aml_tiling_1d_data __ ##name## _inner_data; \
+	struct aml_tiling name = { \
+		&aml_tiling_1d_ops, \
+		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
+	};
+
+#define AML_TILING_ITERATOR_1D_DECL(name) \
+	struct aml_tiling_iterator_1d_data __ ##name## _inner_data; \
+	struct aml_tiling_iterator name = { \
+		&aml_tiling_iterator_1d_ops, \
+		(struct aml_tiling_iterator_data *)&__ ## name ## _inner_data, \
+	};
+
+#define AML_TILING_1D_ALLOCSIZE (sizeof(struct aml_tiling_1d_data) + \
+				 sizeof(struct aml_tiling))
+
+#define AML_TILING_ITERATOR_1D_ALLOCSIZE \
+	(sizeof(struct aml_tiling_iterator_1d_data) + \
+	 sizeof(struct aml_tiling_iterator))
+
+/*******************************************************************************
+ * Binding:
+ * Representation of page bindings in an area
+ ******************************************************************************/
+
+/* opaque handle to all bindings */
+struct aml_binding_data;
+
+struct aml_binding_ops {
+	int (*nbpages)(struct aml_binding_data *, struct aml_tiling *,
+		       void *, va_list);
+	int (*pages)(struct aml_binding_data *, void **, struct aml_tiling *,
+		     void *, va_list);
+	int (*nodes)(struct aml_binding_data *, int *, struct aml_tiling *,
+		     void *, va_list);
+};
+
+struct aml_binding {
+	struct aml_binding_ops *ops;
+	struct aml_binding_data *data;
+};
+
+int aml_binding_nbpages(struct aml_binding *, struct aml_tiling *, void*, ...);
+int aml_binding_pages(struct aml_binding *, void **, struct aml_tiling *, void*, ...);
+int aml_binding_nodes(struct aml_binding *, int *, struct aml_tiling *, void *, ...);
+
+#define AML_BINDING_TYPE_SINGLE 0
+#define AML_BINDING_TYPE_INTERLEAVE 1
+
+int aml_binding_create(struct aml_binding **, int type, ...);
+int aml_binding_init(struct aml_binding *, int type, ...);
+int aml_binding_vinit(struct aml_binding *, int type, va_list);
+int aml_binding_destroy(struct aml_binding *, int type);
+
+/*******************************************************************************
+ * Single Binding:
+ * All pages on the same node
+ ******************************************************************************/
+
+extern struct aml_binding_ops aml_binding_single_ops;
+
+struct aml_binding_single_data {
+	int node;
+};
+
+#define AML_BINDING_SINGLE_DECL(name) \
+	struct aml_binding_single_data __ ##name## _inner_data; \
+	struct aml_binding name = { \
+		&aml_binding_single_ops, \
+		(struct aml_binding_data *)&__ ## name ## _inner_data, \
+	};
+
+#define AML_BINDING_SINGLE_ALLOCSIZE (sizeof(struct aml_binding_single_data) + \
+				      sizeof(struct aml_binding))
+
+/*******************************************************************************
+ * Interleave Binding:
+ * each page, of each tile, interleaved across nodes.
+ ******************************************************************************/
+
+extern struct aml_binding_ops aml_binding_interleave_ops;
+
+struct aml_binding_interleave_data {
+	int nodes[AML_MAX_NUMA_NODES];
+	int count;
+};
+
+#define AML_BINDING_INTERLEAVE_DECL(name) \
+	struct aml_binding_interleave_data __ ##name## _inner_data; \
+	struct aml_binding name = { \
+		&aml_binding_interleave_ops, \
+		(struct aml_binding_data *)&__ ## name ## _inner_data, \
+	};
+
+#define AML_BINDING_INTERLEAVE_ALLOCSIZE \
+	(sizeof(struct aml_binding_interleave_data) + \
+	 sizeof(struct aml_binding))
 
 /*******************************************************************************
  * General functions:

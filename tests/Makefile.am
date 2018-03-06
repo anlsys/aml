@@ -18,8 +18,14 @@ AREA_LINUX_TESTS = linux_mbind \
 
 AREA_POSIX_TESTS = area_posix
 
+TILING_TESTS = tiling
+
+BINDING_TESTS = binding
+
 # unit tests
 UNIT_TESTS = $(ARENA_JEMALLOC_TESTS) \
+	     $(TILING_TESTS) \
+	     $(BINDING_TESTS) \
 	     $(AREA_LINUX_TESTS) \
 	     $(AREA_POSIX_TESTS)
 
