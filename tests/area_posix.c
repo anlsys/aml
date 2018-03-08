@@ -3,8 +3,7 @@
 
 int main(int argc, char *argv[])
 {
-	struct aml_area area;
-	struct aml_area_posix_data data;
+	AML_AREA_POSIX_DECL(area);
 	void *ptr;
 	unsigned long *a, *b, *c;
 	unsigned long i;
@@ -13,9 +12,7 @@ int main(int argc, char *argv[])
 	aml_init(&argc, &argv);
 
 	/* initialize the area itself */
-	aml_area_posix_init(&data);
-	area.ops = &aml_area_posix_ops;
-	area.data = (struct aml_area_data*)&data;
+	aml_area_posix_init(&area);
 
 	/* try to allocate something */
 	ptr = aml_area_malloc(&area, sizeof(unsigned long) * 10);
@@ -54,7 +51,7 @@ int main(int argc, char *argv[])
 	assert(ptr != NULL);
 	ptr = aml_area_realloc(&area, ptr, 0);
 
-	aml_area_posix_destroy(&data);
+	aml_area_posix_destroy(&area);
 	aml_finalize();
 	return 0;
 }

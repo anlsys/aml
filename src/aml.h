@@ -119,8 +119,20 @@ extern struct aml_area_ops aml_area_posix_ops;
 struct aml_area_posix_data {
 };
 
-int aml_area_posix_init(struct aml_area_posix_data *);
-int aml_area_posix_destroy(struct aml_area_posix_data *);
+#define AML_AREA_POSIX_DECL(name) \
+	struct aml_area_posix_data __ ##name## _inner_data; \
+	struct aml_area name = { \
+		&aml_area_posix_ops, \
+		(struct aml_area_data *)&__ ## name ## _inner_data, \
+	};
+
+#define AML_AREA_POSIX_ALLOCSIZE \
+	(sizeof(struct aml_area_posix_data) + \
+	 sizeof(struct aml_area))
+
+int aml_area_posix_create(struct aml_area **);
+int aml_area_posix_init(struct aml_area *);
+int aml_area_posix_destroy(struct aml_area *);
 
 /*******************************************************************************
  * Linux Area:

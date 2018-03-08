@@ -4,9 +4,7 @@
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 
 /* posix area used as a backend */
-struct aml_area area;
-struct aml_area_posix_data posix_data;
-
+AML_AREA_POSIX_DECL(area);
 
 void doit(struct aml_arena *arena)
 {
@@ -52,9 +50,7 @@ int main(int argc, char *argv[])
 	aml_init(&argc, &argv);
 
 	/* area init */
-	aml_area_posix_init(&posix_data);
-	area.ops = &aml_area_posix_ops;
-	area.data = (struct aml_area_data *)&posix_data;
+	aml_area_posix_init(&area);
 
 	/* build up the data variants */
 	assert(!aml_arena_jemalloc_create(&arenas[0],
@@ -77,5 +73,6 @@ int main(int argc, char *argv[])
 		assert(!aml_arena_jemalloc_destroy(arenas[i]));
 		free(arenas[i]);
 	}
+	aml_area_posix_destroy(&area);
 	return 0;
 }

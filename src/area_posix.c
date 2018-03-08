@@ -80,13 +80,37 @@ struct aml_area_ops aml_area_posix_ops = {
  * Initialization/Destroy function:
  ******************************************************************************/
 
-int aml_area_posix_init(struct aml_area_posix_data *data)
+int aml_area_posix_create(struct aml_area **a)
+{
+	struct aml_area *ret = NULL;
+	intptr_t baseptr, dataptr;
+
+	/* alloc */
+	baseptr = (intptr_t) calloc(1, AML_AREA_POSIX_ALLOCSIZE);
+	dataptr = baseptr + sizeof(struct aml_area);
+
+	ret = (struct aml_area *)baseptr;
+	ret->data = (struct aml_area_data *)dataptr;
+
+	aml_area_posix_vinit(ret);
+
+	*a = ret;
+	return 0;
+}
+
+int aml_area_posix_vinit(struct aml_area *data)
 {
 	assert(data != NULL);
 	return 0;
 }
 
-int aml_area_posix_destroy(struct aml_area_posix_data *data)
+int aml_area_posix_init(struct aml_area *data)
+{
+	assert(data != NULL);
+	return 0;
+}
+
+int aml_area_posix_destroy(struct aml_area *data)
 {
 	assert(data != NULL);
 	return 0;

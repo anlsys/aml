@@ -24,9 +24,8 @@ void doit(struct aml_area_linux_manager_data *data,
 
 int main(int argc, char *argv[])
 {
-	struct aml_area area;
-	struct aml_area_posix_data area_data;
 	AML_ARENA_JEMALLOC_DECL(arena);
+	AML_AREA_POSIX_DECL(area);
 	struct aml_area_linux_manager_data config[1];
 
 	aml_init(&argc, &argv);
@@ -34,9 +33,7 @@ int main(int argc, char *argv[])
 	/* init all the necessary objects:
 	 * we use a posix area to provide mmap, and jemalloc arena as the
 	 * managed arena.*/
-	aml_area_posix_init(&area_data);
-	area.ops = &aml_area_posix_ops;
-	area.data = (struct aml_area_data *)&area_data;
+	aml_area_posix_init(&area);
 	assert(!aml_arena_jemalloc_init(&arena, AML_ARENA_JEMALLOC_TYPE_REGULAR));
 	assert(!aml_arena_register(&arena, &area));
 
@@ -48,7 +45,7 @@ int main(int argc, char *argv[])
 	aml_area_linux_manager_single_destroy(&config[0]);
 	assert(!aml_arena_deregister(&arena));
 	aml_arena_jemalloc_destroy(&arena);
-	aml_area_posix_init(&area_data);
+	aml_area_posix_destroy(&area);
 	aml_finalize();
 	return 0;
 }
