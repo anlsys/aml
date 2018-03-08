@@ -117,14 +117,91 @@ struct aml_area_ops aml_area_linux_ops = {
  * Collections of init/destroy functions for popular types of linux-based areas
  ******************************************************************************/
 
-int aml_area_linux_init(struct aml_area_linux *area)
+int aml_area_linux_create(struct aml_area **a, int manager_type,
+			  int mbind_type, int mmap_type, ...)
 {
-	assert(area != NULL);
+	va_list ap;
+	struct aml_area *ret = NULL;
+	intptr_t baseptr, dataptr;
+	va_start(ap, mmap_type);
+
+	/* alloc */
+	baseptr = (intptr_t) calloc(1, AML_AREA_LINUX_ALLOCSIZE);
+	dataptr = baseptr + sizeof(struct aml_area);
+
+	ret = (struct aml_area *)baseptr;
+	ret->data = (struct aml_area_data *)dataptr;
+
+	aml_area_linux_vinit(ret, manager_type, mbind_type, mmap_type, ap);
+
+	va_end(ap);
+	*a = ret;
+	return 0;
+
+}
+
+int aml_area_linux_vinit(struct aml_area *a, int manager_type,
+			 int mbind_type, int mmap_type, va_list ap)
+{
+	a->ops = &aml_area_linux_ops;
+	struct aml_area_linux *area = (struct aml_area_linux *)a->data;
+
+	/* manager init */
+	assert(manager_type == AML_AREA_LINUX_MANAGER_TYPE_SINGLE);
+	struct aml_arena *arena = va_arg(ap, struct aml_arena *);
+	aml_area_linux_manager_single_init(&area->data.manager, arena);
+	area->ops.manager = aml_area_linux_manager_single_ops;
+
+	/* mbind init */
+	int policy = va_arg(ap, int);
+	unsigned long *nodemask = va_arg(ap, unsigned long *);
+	aml_area_linux_mbind_init(&area->data.mbind, policy, nodemask);
+	if(mbind_type == AML_AREA_LINUX_MBIND_TYPE_REGULAR)
+		area->ops.mbind = aml_area_linux_mbind_regular_ops;
+	else if(mbind_type == AML_AREA_LINUX_MBIND_TYPE_MEMPOLICY)
+		area->ops.mbind = aml_area_linux_mbind_mempolicy_ops;
+
+	/* mmap init */
+	area->ops.mmap = aml_area_linux_mmap_generic_ops;
+	if(mmap_type == AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS)
+		aml_area_linux_mmap_anonymous_init(&area->data.mmap);
+	else if(mmap_type == AML_AREA_LINUX_MMAP_TYPE_FD)
+	{
+		int fd = va_arg(ap, int);
+		size_t max = va_arg(ap, size_t);
+		aml_area_linux_mmap_fd_init(&area->data.mmap, fd, max);
+	}
+	else if(mmap_type == AML_AREA_LINUX_MMAP_TYPE_TMPFILE)
+	{
+		char *template = va_arg(ap, char*);
+		size_t max = va_arg(ap, size_t);
+		aml_area_linux_mmap_tmpfile_init(&area->data.mmap, template,
+						 max);
+	}
+	aml_arena_register(arena, a);
 	return 0;
 }
 
-int aml_area_linux_destroy(struct aml_area_linux *area)
+int aml_area_linux_init(struct aml_area *a, int manager_type,
+			int mbind_type, int mmap_type, ...)
 {
-	assert(area != NULL);
+	int err;
+	va_list ap;
+	va_start(ap, mmap_type);
+	err = aml_area_linux_vinit(a, manager_type, mbind_type, mmap_type, ap);
+	va_end(ap);
+	return err;
+
+}
+
+int aml_area_linux_destroy(struct aml_area *a)
+{
+	struct aml_area_linux *area = (struct aml_area_linux *)a->data;
+	struct aml_arena *arena = area->data.manager.pool;
+	aml_arena_deregister(arena);
+	aml_area_linux_mmap_anonymous_destroy(&area->data.mmap);
+	aml_area_linux_mbind_destroy(&area->data.mbind);
+	aml_area_linux_manager_single_destroy(&area->data.manager);
+	aml_arena_jemalloc_destroy(arena);
 	return 0;
 }

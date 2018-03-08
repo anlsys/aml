@@ -231,8 +231,30 @@ struct aml_area_linux {
 	struct aml_area_linux_ops ops;
 };
 
-int aml_area_linux_init(struct aml_area_linux *);
-int aml_area_linux_destroy(struct aml_area_linux *);
+#define AML_AREA_LINUX_DECL(name) \
+	struct aml_area_linux __ ##name## _inner_data; \
+	struct aml_area name = { \
+		&aml_area_linux_ops, \
+		(struct aml_area_data *)&__ ## name ## _inner_data, \
+	};
+
+#define AML_AREA_LINUX_ALLOCSIZE \
+	(sizeof(struct aml_area_linux) + \
+	 sizeof(struct aml_area))
+
+#define AML_AREA_LINUX_MANAGER_TYPE_SINGLE 0
+
+#define AML_AREA_LINUX_MBIND_TYPE_REGULAR 0
+#define AML_AREA_LINUX_MBIND_TYPE_MEMPOLICY 1
+
+#define AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS 0
+#define AML_AREA_LINUX_MMAP_TYPE_FD 1
+#define AML_AREA_LINUX_MMAP_TYPE_TMPFILE 2
+
+int aml_area_linux_create(struct aml_area **, int, int, int, ...);
+int aml_area_linux_init(struct aml_area *, int, int, int, ...);
+int aml_area_linux_vinit(struct aml_area *, int, int, int, va_list);
+int aml_area_linux_destroy(struct aml_area *);
 
 /*******************************************************************************
  * Generic Area API:

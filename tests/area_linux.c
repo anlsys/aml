@@ -50,46 +50,29 @@ void doit(struct aml_area *area)
 
 int main(int argc, char *argv[])
 {
-	struct aml_area area;
 	AML_ARENA_JEMALLOC_DECL(arena);
-	struct aml_area_linux area_data;
+	AML_AREA_LINUX_DECL(area);
 	unsigned long nodemask[AML_NODEMASK_SZ];
 	struct bitmask *allowed;
 
 	/* library initialization */
 	aml_init(&argc, &argv);
 
-	/* initialize the area itself */
-	assert(!aml_area_linux_init(&area_data));
-	area.ops = &aml_area_linux_ops;
-	area.data = (struct aml_area_data*)&area_data;
-
-	/* ops init */
-	area_data.ops.manager = aml_area_linux_manager_single_ops;
-	area_data.ops.mbind = aml_area_linux_mbind_regular_ops;
-	area_data.ops.mmap = aml_area_linux_mmap_generic_ops;
-
-	/* init all the inner objects:
-	 * WARNING: there an order to this madness. */
-	assert(!aml_arena_jemalloc_init(&arena, AML_ARENA_JEMALLOC_TYPE_REGULAR));
-	assert(!aml_area_linux_manager_single_init(&area_data.data.manager,
-						   &arena));
+	/* init arguments */
 	allowed = numa_get_mems_allowed();
 	memcpy(nodemask, allowed->maskp, AML_NODEMASK_BYTES);
-	assert(!aml_area_linux_mbind_init(&area_data.data.mbind, MPOL_BIND,
-					  nodemask));
-	assert(!aml_area_linux_mmap_anonymous_init(&area_data.data.mmap));
-	assert(!aml_arena_register(&arena, &area));
+	assert(!aml_arena_jemalloc_init(&arena, AML_ARENA_JEMALLOC_TYPE_REGULAR));
+
+	assert(!aml_area_linux_init(&area,
+				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
+				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
+				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
+				    &arena, MPOL_BIND, nodemask));
 
 	doit(&area);
 
 	/* same here, order matters. */
-	assert(!aml_arena_deregister(&arena));
-	assert(!aml_area_linux_mmap_anonymous_destroy(&area_data.data.mmap));
-	assert(!aml_area_linux_mbind_destroy(&area_data.data.mbind));
-	assert(!aml_area_linux_manager_single_destroy(&area_data.data.manager));
-	assert(!aml_arena_jemalloc_destroy(&arena));
-	assert(!aml_area_linux_destroy(&area_data));
+	assert(!aml_area_linux_destroy(&area));
 
 	aml_finalize();
 	return 0;
