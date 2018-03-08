@@ -7,17 +7,17 @@
  * functions.
  ******************************************************************************/
 
-int aml_arena_create(struct aml_arena *arena, struct aml_area *area)
+int aml_arena_register(struct aml_arena *arena, struct aml_area *area)
 {
 	assert(arena != NULL);
 	assert(area != NULL);
-	return arena->ops->create(arena->data, area);
+	return arena->ops->register_arena(arena->data, area);
 }
 
-int aml_arena_purge(struct aml_arena *arena)
+int aml_arena_deregister(struct aml_arena *arena)
 {
 	assert(arena != NULL);
-	return arena->ops->purge(arena->data);
+	return arena->ops->deregister_arena(arena->data);
 }
 
 void *aml_arena_mallocx(struct aml_arena *arena, size_t size, int flags)

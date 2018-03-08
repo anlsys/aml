@@ -185,7 +185,8 @@ int aml_arena_jemalloc_flags(int flags)
 }
 
 /* TODO: make the function idempotent */
-int aml_arena_jemalloc_create(struct aml_arena_data *a, struct aml_area *area)
+int aml_arena_jemalloc_register_arena(struct aml_arena_data *a,
+				      struct aml_area *area)
 {
 	int err;
 	unsigned int newidx;
@@ -217,7 +218,7 @@ exit:
 }
 
 /* TODO: make the function idempotent */
-int aml_arena_jemalloc_purge(struct aml_arena_data *a)
+int aml_arena_jemalloc_deregister_arena(struct aml_arena_data *a)
 {
 	struct aml_arena_jemalloc_data *arena =
 		(struct aml_arena_jemalloc_data*) a;
@@ -260,8 +261,8 @@ void aml_arena_jemalloc_dallocx(struct aml_arena_data *a, void *ptr,
 }
 
 struct aml_arena_ops aml_arena_jemalloc_ops = {
-	aml_arena_jemalloc_create,
-	aml_arena_jemalloc_purge,
+	aml_arena_jemalloc_register_arena,
+	aml_arena_jemalloc_deregister_arena,
 	aml_arena_jemalloc_mallocx,
 	aml_arena_jemalloc_dallocx,
 	aml_arena_jemalloc_reallocx,

@@ -36,8 +36,8 @@ struct aml_area;
 struct aml_arena_data;
 
 struct aml_arena_ops {
-	int (*create)(struct aml_arena_data *, struct aml_area *);
-	int (*purge)(struct aml_arena_data *);
+	int (*register_arena)(struct aml_arena_data *, struct aml_area *);
+	int (*deregister_arena)(struct aml_arena_data *);
 	void *(*mallocx)(struct aml_arena_data *, size_t, int);
 	void (*dallocx)(struct aml_arena_data *, void *, int);
 	void *(*reallocx)(struct aml_arena_data *, void *, size_t, int);
@@ -48,8 +48,8 @@ struct aml_arena {
 	struct aml_arena_data *data;
 };
 
-int aml_arena_create(struct aml_arena *, struct aml_area *);
-int aml_arena_purge(struct aml_arena *);
+int aml_arena_register(struct aml_arena *, struct aml_area *);
+int aml_arena_deregister(struct aml_arena *);
 void *aml_arena_mallocx(struct aml_arena *, size_t, int);
 void aml_arena_dallocx(struct aml_arena *, void *, int);
 void *aml_arena_reallocx(struct aml_arena *, void *, size_t, int);
@@ -63,6 +63,17 @@ struct aml_arena_jemalloc_data {
 	unsigned int uid;
 	int flags;
 };
+
+#define AML_ARENA_JEMALLOC_DECL(name) \
+	struct aml_arena_jemalloc_data __ ##name## _inner_data; \
+	struct aml_arena name = { \
+		&aml_arena_jemalloc_ops, \
+		(struct aml_arena_data *)&__ ## name ## _inner_data, \
+	};
+
+#define AML_ARENA_JEMALLOC_ALLOCSIZE \
+	(sizeof(struct aml_arena_jemalloc_data) + \
+	 sizeof(struct aml_arena))
 
 int aml_arena_jemalloc_regular_init(struct aml_arena_jemalloc_data *);
 int aml_arena_jemalloc_regular_destroy(struct aml_arena_jemalloc_data *);

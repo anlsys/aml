@@ -15,7 +15,7 @@ void doit(struct aml_arena *arena)
 	unsigned long *a;
 
 	/* create the arena */
-	err = aml_arena_create(arena, &area);
+	err = aml_arena_register(arena, &area);
 	assert(err == 0);
 
 	/* try to allocate something */
@@ -41,7 +41,7 @@ void doit(struct aml_arena *arena)
 	assert(ptr != NULL);
 	ptr = aml_arena_reallocx(arena, ptr, 0, 0);
 
-	err = aml_arena_purge(arena);
+	err = aml_arena_deregister(arena);
 	assert(err == 0);
 }
 

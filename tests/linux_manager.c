@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 	area.ops = &aml_area_posix_ops;
 	area.data = (struct aml_area_data *)&area_data;
 	assert(!aml_arena_jemalloc_regular_init(&arena_data));
-	assert(!aml_arena_create(&arena, &area));
+	assert(!aml_arena_register(&arena, &area));
 
 	aml_area_linux_manager_single_init(&config[0], &arena);
 
@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 		doit(&config[i], &aml_area_linux_manager_single_ops);
 
 	aml_area_linux_manager_single_destroy(&config[0]);
-	assert(!aml_arena_purge(&arena));
+	assert(!aml_arena_deregister(&arena));
 	aml_arena_jemalloc_regular_destroy(&arena_data);
 	aml_area_posix_init(&area_data);
 	aml_finalize();

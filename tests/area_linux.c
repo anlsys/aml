@@ -81,12 +81,12 @@ int main(int argc, char *argv[])
 	assert(!aml_area_linux_mbind_init(&area_data.data.mbind, MPOL_BIND,
 					  nodemask));
 	assert(!aml_area_linux_mmap_anonymous_init(&area_data.data.mmap));
-	assert(!aml_arena_create(&arena, &area));
+	assert(!aml_arena_register(&arena, &area));
 
 	doit(&area);
 
 	/* same here, order matters. */
-	assert(!aml_arena_purge(&arena));
+	assert(!aml_arena_deregister(&arena));
 	assert(!aml_area_linux_mmap_anonymous_destroy(&area_data.data.mmap));
 	assert(!aml_area_linux_mbind_destroy(&area_data.data.mbind));
 	assert(!aml_area_linux_manager_single_destroy(&area_data.data.manager));
