@@ -75,13 +75,15 @@ struct aml_arena_jemalloc_data {
 	(sizeof(struct aml_arena_jemalloc_data) + \
 	 sizeof(struct aml_arena))
 
-int aml_arena_jemalloc_regular_init(struct aml_arena_jemalloc_data *);
-int aml_arena_jemalloc_regular_destroy(struct aml_arena_jemalloc_data *);
-int aml_arena_jemalloc_aligned_init(struct aml_arena_jemalloc_data *, size_t);
-int aml_arena_jemalloc_align_destroy(struct aml_arena_jemalloc_data *);
-int aml_arena_jemalloc_generic_init(struct aml_arena_jemalloc_data *,
-				    struct aml_arena_jemalloc_data *);
-int aml_arena_jemalloc_generic_destroy(struct aml_arena_jemalloc_data *);
+
+#define AML_ARENA_JEMALLOC_TYPE_REGULAR 0
+#define AML_ARENA_JEMALLOC_TYPE_ALIGNED 1
+#define AML_ARENA_JEMALLOC_TYPE_GENERIC 2
+
+int aml_arena_jemalloc_create(struct aml_arena **, int type, ...);
+int aml_arena_jemalloc_init(struct aml_arena *, int type, ...);
+int aml_arena_jemalloc_vinit(struct aml_arena *, int type, va_list);
+int aml_arena_jemalloc_destroy(struct aml_arena *);
 
 /*******************************************************************************
  * Areas:

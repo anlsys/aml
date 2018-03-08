@@ -51,9 +51,7 @@ void doit(struct aml_area *area)
 int main(int argc, char *argv[])
 {
 	struct aml_area area;
-	struct aml_arena_jemalloc_data arena_data;
-	struct aml_arena arena = {&aml_arena_jemalloc_ops,
-		(struct aml_arena_data *)&arena_data};
+	AML_ARENA_JEMALLOC_DECL(arena);
 	struct aml_area_linux area_data;
 	unsigned long nodemask[AML_NODEMASK_SZ];
 	struct bitmask *allowed;
@@ -73,7 +71,7 @@ int main(int argc, char *argv[])
 
 	/* init all the inner objects:
 	 * WARNING: there an order to this madness. */
-	assert(!aml_arena_jemalloc_regular_init(&arena_data));
+	assert(!aml_arena_jemalloc_init(&arena, AML_ARENA_JEMALLOC_TYPE_REGULAR));
 	assert(!aml_area_linux_manager_single_init(&area_data.data.manager,
 						   &arena));
 	allowed = numa_get_mems_allowed();
@@ -90,7 +88,7 @@ int main(int argc, char *argv[])
 	assert(!aml_area_linux_mmap_anonymous_destroy(&area_data.data.mmap));
 	assert(!aml_area_linux_mbind_destroy(&area_data.data.mbind));
 	assert(!aml_area_linux_manager_single_destroy(&area_data.data.manager));
-	assert(!aml_arena_jemalloc_regular_destroy(&arena_data));
+	assert(!aml_arena_jemalloc_destroy(&arena));
 	assert(!aml_area_linux_destroy(&area_data));
 
 	aml_finalize();

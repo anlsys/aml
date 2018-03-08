@@ -47,13 +47,7 @@ void doit(struct aml_arena *arena)
 
 int main(int argc, char *argv[])
 {
-	struct aml_arena_jemalloc_data data[4];
-	struct aml_arena arenas[] = {
-		{&aml_arena_jemalloc_ops, (struct aml_arena_data *)&data[0]},
-		{&aml_arena_jemalloc_ops, (struct aml_arena_data *)&data[1]},
-		{&aml_arena_jemalloc_ops, (struct aml_arena_data *)&data[2]},
-		{&aml_arena_jemalloc_ops, (struct aml_arena_data *)&data[3]},
-	};
+	struct aml_arena *arenas[4];
 	/* library init */
 	aml_init(&argc, &argv);
 
@@ -63,18 +57,25 @@ int main(int argc, char *argv[])
 	area.data = (struct aml_area_data *)&posix_data;
 
 	/* build up the data variants */
-	assert(!aml_arena_jemalloc_regular_init(&data[0]));
-	assert(!aml_arena_jemalloc_aligned_init(&data[1], 42));
-	assert(!aml_arena_jemalloc_generic_init(&data[2], &data[0]));
+	assert(!aml_arena_jemalloc_create(&arenas[0],
+					  AML_ARENA_JEMALLOC_TYPE_REGULAR));
+	assert(!aml_arena_jemalloc_create(&arenas[1],
+					  AML_ARENA_JEMALLOC_TYPE_ALIGNED,
+					  (size_t)42));
+	assert(!aml_arena_jemalloc_create(&arenas[2],
+					  AML_ARENA_JEMALLOC_TYPE_GENERIC,
+					  arenas[0]->data));
 	/* alignment bigger than PAGE_SIZE */
-	assert(!aml_arena_jemalloc_aligned_init(&data[3], 4100));
+	assert(!aml_arena_jemalloc_create(&arenas[3],
+					  AML_ARENA_JEMALLOC_TYPE_ALIGNED, 4100));
 
 	for(int i = 0; i < ARRAY_SIZE(arenas); i++)
-		doit(&arenas[i]);
+		doit(arenas[i]);
 
-	assert(!aml_arena_jemalloc_regular_destroy(&data[0]));
-	assert(!aml_arena_jemalloc_align_destroy(&data[1]));
-	assert(!aml_arena_jemalloc_generic_destroy(&data[2]));
-	assert(!aml_arena_jemalloc_align_destroy(&data[3]));
+	for(int i = 0; i < ARRAY_SIZE(arenas); i++)
+	{
+		assert(!aml_arena_jemalloc_destroy(arenas[i]));
+		free(arenas[i]);
+	}
 	return 0;
 }

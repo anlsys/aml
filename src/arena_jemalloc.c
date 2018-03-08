@@ -273,44 +273,63 @@ struct aml_arena_ops aml_arena_jemalloc_ops = {
  * To create the data template for arenas.
  ******************************************************************************/
 
-int aml_arena_jemalloc_regular_init(struct aml_arena_jemalloc_data *data)
+/* allocate and init the binding according to type */
+int aml_arena_jemalloc_create(struct aml_arena **a, int type, ...)
 {
-	assert(data != NULL);
-	data->flags = 0;
+	va_list ap;
+	struct aml_arena *ret = NULL;
+	intptr_t baseptr, dataptr;
+	va_start(ap, type);
+		
+	/* alloc */
+	baseptr = (intptr_t) calloc(1, AML_ARENA_JEMALLOC_ALLOCSIZE);
+	dataptr = baseptr + sizeof(struct aml_arena);
+
+	ret = (struct aml_arena *)baseptr;
+	ret->data = (struct aml_arena_data *)dataptr;
+	
+	aml_arena_jemalloc_vinit(ret, type, ap);
+
+	va_end(ap);
+	*a = ret;
 	return 0;
 }
 
-int aml_arena_jemalloc_regular_destroy(struct aml_arena_jemalloc_data *data)
+int aml_arena_jemalloc_vinit(struct aml_arena *a, int type, va_list ap)
 {
-	assert(data != NULL);
+	a->ops = &aml_arena_jemalloc_ops;
+	struct aml_arena_jemalloc_data *data =
+		(struct aml_arena_jemalloc_data *)a->data;
+	if(type == AML_ARENA_JEMALLOC_TYPE_REGULAR)
+	{
+		data->flags = 0;
+	}
+	else if(type == AML_ARENA_JEMALLOC_TYPE_ALIGNED)
+	{
+		size_t align = va_arg(ap, size_t);
+		data->flags = MALLOCX_ALIGN(align);
+	}
+	else if(type == AML_ARENA_JEMALLOC_TYPE_GENERIC)
+	{
+		struct aml_arena_data *arg = va_arg(ap, struct aml_arena_data*);
+		struct aml_arena_jemalloc_data *template =
+			(struct aml_arena_jemalloc_data *)arg;
+		data->flags = template->flags;
+	}
 	return 0;
 }
 
-int aml_arena_jemalloc_aligned_init(struct aml_arena_jemalloc_data *data,
-				    size_t align)
+int aml_arena_jemalloc_init(struct aml_arena *a, int type, ...)
 {
-	assert(data != NULL);
-	data->flags = MALLOCX_ALIGN(align);
-	return 0;
+	int err;
+	va_list ap;
+	va_start(ap, type);
+	err = aml_arena_jemalloc_vinit(a, type, ap);
+	va_end(ap);
+	return err;
 }
 
-int aml_arena_jemalloc_align_destroy(struct aml_arena_jemalloc_data *data)
+int aml_arena_jemalloc_destroy(struct aml_arena *a)
 {
-	assert(data != NULL);
-	return 0;
-}
-
-int aml_arena_jemalloc_generic_init(struct aml_arena_jemalloc_data *data,
-				    struct aml_arena_jemalloc_data *template)
-{
-	assert(data != NULL);
-	assert(template != NULL);
-	data->flags = template->flags;
-	return 0;
-}
-
-int aml_arena_jemalloc_generic_destroy(struct aml_arena_jemalloc_data *data)
-{
-	assert(data != NULL);
 	return 0;
 }
