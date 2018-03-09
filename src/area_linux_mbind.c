@@ -8,6 +8,29 @@
  * Only handles the actual mbind/mempolicy calls
  ******************************************************************************/
 
+/* common to both methods */
+int aml_area_linux_mbind_generic_binding(struct aml_area_linux_mbind_data *data,
+					 struct aml_binding *b)
+{
+	assert(data != NULL);
+	/* not exactly proper, we should inspect the nodemask to find the real
+	 * binding policy.
+	 */
+	if(data->policy == MPOL_BIND)
+	{
+		for(int i = 0; i < AML_MAX_NUMA_NODES; i++)
+			if(AML_NODEMASK_ISSET(data->nodemask, i))
+				return aml_binding_init(b, AML_BINDING_TYPE_SINGLE,i);
+	}
+	else if(data->policy == MPOL_INTERLEAVE)
+	{
+		return aml_binding_init(b, AML_BINDING_TYPE_INTERLEAVE,
+					data->nodemask);
+	}
+	return 0;
+}
+
+
 int aml_area_linux_mbind_regular_pre_bind(struct aml_area_linux_mbind_data *data)
 {
 	assert(data != NULL);
@@ -24,6 +47,7 @@ int aml_area_linux_mbind_regular_post_bind(struct aml_area_linux_mbind_data *dat
 struct aml_area_linux_mbind_ops aml_area_linux_mbind_regular_ops = {
 	aml_area_linux_mbind_regular_pre_bind,
 	aml_area_linux_mbind_regular_post_bind,
+	aml_area_linux_mbind_generic_binding,
 };
 
 int aml_area_linux_mbind_setdata(struct aml_area_linux_mbind_data *data,
@@ -69,6 +93,7 @@ int aml_area_linux_mbind_mempolicy_post_bind(struct aml_area_linux_mbind_data *d
 struct aml_area_linux_mbind_ops aml_area_linux_mbind_mempolicy_ops = {
 	aml_area_linux_mbind_mempolicy_pre_bind,
 	aml_area_linux_mbind_mempolicy_post_bind,
+	aml_area_linux_mbind_generic_binding,
 };
 
 int aml_area_linux_mbind_init(struct aml_area_linux_mbind_data *data,
