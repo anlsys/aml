@@ -10,7 +10,7 @@
 
 /* common to both methods */
 int aml_area_linux_mbind_generic_binding(struct aml_area_linux_mbind_data *data,
-					 struct aml_binding *b)
+					 struct aml_binding **b)
 {
 	assert(data != NULL);
 	/* not exactly proper, we should inspect the nodemask to find the real
@@ -20,12 +20,12 @@ int aml_area_linux_mbind_generic_binding(struct aml_area_linux_mbind_data *data,
 	{
 		for(int i = 0; i < AML_MAX_NUMA_NODES; i++)
 			if(AML_NODEMASK_ISSET(data->nodemask, i))
-				return aml_binding_init(b, AML_BINDING_TYPE_SINGLE,i);
+				return aml_binding_create(b, AML_BINDING_TYPE_SINGLE,i);
 	}
 	else if(data->policy == MPOL_INTERLEAVE)
 	{
-		return aml_binding_init(b, AML_BINDING_TYPE_INTERLEAVE,
-					data->nodemask);
+		return aml_binding_create(b, AML_BINDING_TYPE_INTERLEAVE,
+					  data->nodemask);
 	}
 	return 0;
 }

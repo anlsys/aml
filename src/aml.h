@@ -104,7 +104,7 @@ struct aml_area_ops {
 	void (*release)(struct aml_area_data *, void *);
 	void *(*mmap)(struct aml_area_data *, void *ptr, size_t);
 	int (*available)(struct aml_area_data *);
-	int (*binding)(struct aml_area_data *, struct aml_binding *);
+	int (*binding)(struct aml_area_data *, struct aml_binding **);
 };
 
 struct aml_area {
@@ -182,7 +182,7 @@ struct aml_area_linux_mbind_ops {
 int aml_area_linux_mbind_setdata(struct aml_area_linux_mbind_data *, int,
 				 unsigned long *);
 int aml_area_linux_mbind_generic_binding(struct aml_area_linux_mbind_data *,
-					 struct aml_binding *);
+					 struct aml_binding **);
 int aml_area_linux_mbind_regular_pre_bind(struct aml_area_linux_mbind_data *);
 int aml_area_linux_mbind_regular_post_bind(struct aml_area_linux_mbind_data *,
 					   void *, size_t);
@@ -275,7 +275,7 @@ void *aml_area_acquire(struct aml_area *, size_t);
 void aml_area_release(struct aml_area *, void *);
 void *aml_area_mmap(struct aml_area *, void *, size_t);
 int aml_area_available(struct aml_area *);
-int aml_area_binding(struct aml_area *, struct aml_binding *);
+int aml_area_binding(struct aml_area *, struct aml_binding **);
 
 /*******************************************************************************
  * DMA Engines:

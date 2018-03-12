@@ -26,11 +26,11 @@ int aml_area_posix_available(struct aml_area_data *data)
 /* same thing here, it makes no sense to ask for this area to provide its
  * binding scheme, as no-one should migrate to this area.
  */
-int aml_area_posix_binding(struct aml_area_data *data, struct aml_binding *b)
+int aml_area_posix_binding(struct aml_area_data *data, struct aml_binding **b)
 {
 	assert(data != NULL);
 	/* numa node 0 should always be available */
-	return aml_binding_init(b, AML_BINDING_TYPE_SINGLE, 0);
+	return aml_binding_create(b, AML_BINDING_TYPE_SINGLE, 0);
 }
 
 /*******************************************************************************

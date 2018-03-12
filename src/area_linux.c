@@ -28,7 +28,7 @@ int aml_area_linux_available(struct aml_area_data *a)
 	return 1;
 }
 
-int aml_area_linux_binding(struct aml_area_data *a, struct aml_binding *b)
+int aml_area_linux_binding(struct aml_area_data *a, struct aml_binding **b)
 {
 	assert(a != NULL);
 	struct aml_area_linux *area = (struct aml_area_linux *)a;

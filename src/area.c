@@ -55,7 +55,7 @@ int aml_area_available(struct aml_area *area)
 	return area->ops->available(area->data);
 }
 
-int aml_area_binding(struct aml_area *area, struct aml_binding *binding)
+int aml_area_binding(struct aml_area *area, struct aml_binding **binding)
 {
 	assert(area != NULL);
 	return area->ops->binding(area->data, binding);
