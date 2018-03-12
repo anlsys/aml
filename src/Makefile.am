@@ -16,12 +16,16 @@ BINDING_CSOURCES = binding.c \
 		   binding_single.c \
 		   binding_interleave.c
 
+DMA_CSOURCES = dma.c \
+	       dma_linux_seq.c
+
 LIBCSOURCES = aml.c area.c arena.c \
 	      $(ARENA_JEMALLOC_CSOURCES) \
 	      $(AREA_LINUX_CSOURCES) \
 	      $(AREA_POSIX_CSOURCES) \
 	      $(TILING_CSOURCES) \
-	      $(BINDING_CSOURCES)
+	      $(BINDING_CSOURCES) \
+	      $(DMA_CSOURCES)
 
 LIBHSOURCES = aml.h
 

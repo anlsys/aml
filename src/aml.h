@@ -285,26 +285,6 @@ int aml_area_available(struct aml_area *);
 int aml_area_binding(struct aml_area *, struct aml_binding **);
 
 /*******************************************************************************
- * DMA Engines:
- * Low-level, direct movement of memory.
- * We haven't decided in our design how we want to deal with memcpy/move_pages
- * differences yet.
- ******************************************************************************/
-
-struct aml_dma {
-	int (*copy)(struct aml_dma *, void *, const void *, size_t);
-	int (*move)(struct aml_dma *, struct aml_area *, struct aml_area *,
-		    void *, size_t);
-};
-
-int aml_dma_init(struct aml_dma *, unsigned int);
-int aml_dma_destroy(struct aml_dma *);
-int aml_dma_copy(struct aml_dma *, void *, const void *, size_t);
-int aml_dma_move(struct aml_dma *, struct aml_area *, struct aml_area *,
-		 void *, size_t);
-
-
-/*******************************************************************************
  * Tiling:
  * Representation of a data structure organization in memory.
  ******************************************************************************/
@@ -484,6 +464,99 @@ struct aml_binding_interleave_data {
 #define AML_BINDING_INTERLEAVE_ALLOCSIZE \
 	(sizeof(struct aml_binding_interleave_data) + \
 	 sizeof(struct aml_binding))
+
+/*******************************************************************************
+ * DMA:
+ * Management of low-level movement of memory.
+ ******************************************************************************/
+
+#define AML_DMA_REQUEST_TYPE_INVALID -1
+#define AML_DMA_REQUEST_TYPE_COPY 0
+#define AML_DMA_REQUEST_TYPE_MOVE 1
+
+struct aml_dma_request_data;
+struct aml_dma_data;
+
+struct aml_dma_request_ops {
+	int (*copy)(struct aml_dma_data *, struct aml_dma_request_data *);
+	int (*move)(struct aml_dma_data *, struct aml_dma_request_data *);
+};
+
+struct aml_dma_request {
+	struct aml_dma_request_ops *ops;
+	struct aml_dma_request_data *data;
+};
+
+
+struct aml_dma_ops {
+	int (*create_request)(struct aml_dma_data *,
+			      struct aml_dma_request *, int, va_list);
+	int (*destroy_request)(struct aml_dma_data *, struct aml_dma_request *);
+	int (*wait_request)(struct aml_dma_data *, struct aml_dma_request *);
+};
+
+struct aml_dma {
+	struct aml_dma_ops *ops;
+	struct aml_dma_data *data;
+};
+
+int aml_dma_copy(struct aml_dma *, ...);
+int aml_dma_async_copy(struct aml_dma *, struct aml_dma_request *, ...);
+int aml_dma_move(struct aml_dma *, ...);
+int aml_dma_async_move(struct aml_dma *, struct aml_dma_request *, ...);
+int aml_dma_wait(struct aml_dma *, struct aml_dma_request *);
+int aml_dma_cancel(struct aml_dma *, struct aml_dma_request *);
+
+/*******************************************************************************
+ * Linux Sequential DMA API:
+ * DMA logic implemented based on general linux API, with the caller thread
+ * used as the only execution thread.
+ ******************************************************************************/
+
+struct aml_dma_request_linux_seq_data {
+	int type;
+	void *dest;
+	void *src;
+	size_t size;
+	int count;
+	void **pages;
+	int *nodes;
+};
+
+extern struct aml_dma_ops aml_dma_linux_seq_ops;
+
+struct aml_dma_linux_seq_data {
+	size_t size;
+	struct aml_dma_request_linux_seq_data *requests;
+};
+
+struct aml_dma_linux_seq_ops {
+	int (*add_request)(struct aml_dma_linux_seq_data *,
+			   struct aml_dma_request_linux_seq_data **);
+	int (*remove_request)(struct aml_dma_linux_seq_data *,
+			      struct aml_dma_request_linux_seq_data **);
+};
+
+struct aml_dma_linux_seq {
+	struct aml_dma_linux_seq_ops ops;
+	struct aml_dma_linux_seq_data data;
+};
+
+#define AML_DMA_LINUX_SEQ_DECL(name) \
+	struct aml_dma_linux_seq __ ##name## _inner_data; \
+	struct aml_dma name = { \
+		&aml_dma_linux_seq_ops, \
+		(struct aml_dma_data *)&__ ## name ## _inner_data, \
+	};
+
+#define AML_DMA_LINUX_SEQ_ALLOCSIZE \
+	(sizeof(struct aml_dma_linux_seq) + \
+	 sizeof(struct aml_dma))
+
+int aml_dma_linux_seq_create(struct aml_dma **, ...);
+int aml_dma_linux_seq_init(struct aml_dma *, ...);
+int aml_dma_linux_seq_vinit(struct aml_dma *, va_list);
+int aml_dma_linux_seq_destroy(struct aml_dma *);
 
 /*******************************************************************************
  * General functions:

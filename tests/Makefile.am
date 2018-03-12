@@ -22,12 +22,15 @@ TILING_TESTS = tiling
 
 BINDING_TESTS = binding
 
+DMA_LINUX_TESTS = dma_linux_seq
+
 # unit tests
 UNIT_TESTS = $(ARENA_JEMALLOC_TESTS) \
 	     $(TILING_TESTS) \
 	     $(BINDING_TESTS) \
 	     $(AREA_LINUX_TESTS) \
-	     $(AREA_POSIX_TESTS)
+	     $(AREA_POSIX_TESTS) \
+	     $(DMA_LINUX_TESTS)
 
 # fonctional tests
 FUNC_TESTS = stream_add_pth stream_add_omp stream_vanilla

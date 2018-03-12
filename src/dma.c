@@ -2,27 +2,79 @@
 #include <assert.h>
 
 /*******************************************************************************
- * DMA implementation
- * At this point, implement the single threaded synchronous stuff
+ * Generic DMA API:
+ * Most of the stuff is dispatched to a different layer, using type-specific
+ * functions.
+ *
+ * Note that the API is slightly different than the functions bellow, as we
+ * abstract the request creation after this layer.
  ******************************************************************************/
 
-int aml_dma_init(struct aml_dma *dma, unsigned int type)
+int aml_dma_copy(struct aml_dma *dma, ...)
 {
-	return 0;
+	assert(dma != NULL);
+	va_list ap;
+	int ret;
+	struct aml_dma_request req;
+	va_start(ap, dma);
+	ret = dma->ops->create_request(dma->data, &req,
+				       AML_DMA_REQUEST_TYPE_COPY, ap);
+	va_end(ap);
+	ret = dma->ops->wait_request(dma->data, &req);
+	return ret;
 }
 
-int aml_dma_destroy(struct aml_dma *dma)
+int aml_dma_async_copy(struct aml_dma *dma, struct aml_dma_request *req, ...)
 {
-	return 0;
+	assert(dma != NULL);
+	assert(req != NULL);
+	va_list ap;
+	int ret;
+	va_start(ap, req);
+	ret = dma->ops->create_request(dma->data, req,
+				       AML_DMA_REQUEST_TYPE_COPY, ap);
+	va_end(ap);
+	return ret;
 }
 
-int aml_dma_copy(struct aml_dma *dma, void *dest, const void *src, size_t size)
+int aml_dma_move(struct aml_dma *dma, ...)
 {
-	return 0;
+	assert(dma != NULL);
+	struct aml_dma_request req;
+	va_list ap;
+	int ret;
+	va_start(ap, dma);
+	ret = dma->ops->create_request(dma->data, &req,
+				       AML_DMA_REQUEST_TYPE_MOVE, ap);
+	va_end(ap);
+	ret = dma->ops->wait_request(dma->data, &req);
+	return ret;
 }
 
-int aml_dma_move(struct aml_dma *dma, struct aml_area *dest,
-		 struct aml_area *src, void *ptr, size_t size)
+
+int aml_dma_async_move(struct aml_dma *dma, struct aml_dma_request *req, ...)
 {
-	return 0;
+	assert(dma != NULL);
+	assert(req != NULL);
+	va_list ap;
+	int ret;
+	va_start(ap, req);
+	ret = dma->ops->create_request(dma->data, req,
+				       AML_DMA_REQUEST_TYPE_MOVE, ap);
+	va_end(ap);
+	return ret;
+}
+
+int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request *req)
+{
+	assert(dma != NULL);
+	assert(req != NULL);
+	return dma->ops->destroy_request(dma->data, req);
+}
+
+int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request *req)
+{
+	assert(dma != NULL);
+	assert(req != NULL);
+	return dma->ops->wait_request(dma->data, req);
 }
