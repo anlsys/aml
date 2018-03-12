@@ -133,6 +133,7 @@ struct aml_area_posix_data {
 	 sizeof(struct aml_area))
 
 int aml_area_posix_create(struct aml_area **);
+int aml_area_posix_vinit(struct aml_area *);
 int aml_area_posix_init(struct aml_area *);
 int aml_area_posix_destroy(struct aml_area *);
 
@@ -166,6 +167,12 @@ int aml_area_linux_manager_single_destroy(struct aml_area_linux_manager_data *);
 #define AML_NODEMASK_BITMASK(i) ((unsigned long)1 << ((i) % AML_NODEMASK_NBITS))
 #define AML_NODEMASK_ISSET(mask, i) \
 	((mask[AML_NODEMASK_ELT(i)] & AML_NODEMASK_BITMASK(i)) != 0)
+#define AML_NODEMASK_SET(mask, i) (mask[AML_NODEMASK_ELT(i)] |= AML_NODEMASK_BITMASK(i))
+#define AML_NODEMASK_ZERO(mask) \
+	do {								\
+		for(unsigned int __i = 0; __i < AML_NODEMASK_SZ; __i++)	\
+			mask[__i] = 0;					\
+	} while(0)
 
 
 struct aml_area_linux_mbind_data {
