@@ -4,38 +4,16 @@
 /*******************************************************************************
  * Tiling functions
  ******************************************************************************/
-size_t aml_tiling_vtilesize(struct aml_tiling *t, va_list args)
+size_t aml_tiling_tilesize(struct aml_tiling *t, int tileid)
 {
 	assert(t != NULL);
-	return t->ops->tilesize(t->data, args);
+	return t->ops->tilesize(t->data, tileid);
 }
 
-size_t aml_tiling_tilesize(struct aml_tiling *t, ...)
+void* aml_tiling_tilestart(struct aml_tiling *t, void *ptr, int tileid)
 {
 	assert(t != NULL);
-	va_list ap;
-	size_t ret;
-	va_start(ap, t);
-	ret = aml_tiling_vtilesize(t, ap);
-	va_end(ap);
-	return ret;
-}
-
-void* aml_tiling_vtilestart(struct aml_tiling *t, void *ptr, va_list args)
-{
-	assert(t != NULL);
-	return t->ops->tilestart(t->data, ptr, args);
-}
-
-void* aml_tiling_tilestart(struct aml_tiling *t, void *ptr, ...)
-{
-	assert(t != NULL);
-	va_list ap;
-	void* ret;
-	va_start(ap, ptr);
-	ret = aml_tiling_vtilestart(t, ptr, ap);
-	va_end(ap);
-	return ret;
+	return t->ops->tilestart(t->data, ptr, tileid);
 }
 
 /*******************************************************************************

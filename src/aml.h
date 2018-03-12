@@ -325,8 +325,8 @@ struct aml_tiling_ops {
 			     struct aml_tiling_iterator *, int);
 	int (*destroy_iterator)(struct aml_tiling_data *,
 				struct aml_tiling_iterator *);
-	size_t (*tilesize)(struct aml_tiling_data *, va_list);
-	void* (*tilestart)(struct aml_tiling_data *, void *, va_list);
+	size_t (*tilesize)(struct aml_tiling_data *, int);
+	void* (*tilestart)(struct aml_tiling_data *, void *, int);
 };
 
 struct aml_tiling {
@@ -334,10 +334,8 @@ struct aml_tiling {
 	struct aml_tiling_data *data;
 };
 
-size_t aml_tiling_tilesize(struct aml_tiling *, ...);
-size_t aml_tiling_vtilesize(struct aml_tiling *, va_list);
-void* aml_tiling_tilestart(struct aml_tiling *, void *, ...);
-void* aml_tiling_vtilestart(struct aml_tiling *, void *, va_list);
+size_t aml_tiling_tilesize(struct aml_tiling *, int);
+void* aml_tiling_tilestart(struct aml_tiling *, void *, int);
 
 
 int aml_tiling_create_iterator(struct aml_tiling *,
@@ -419,11 +417,11 @@ struct aml_binding_data;
 
 struct aml_binding_ops {
 	int (*nbpages)(struct aml_binding_data *, struct aml_tiling *,
-		       void *, va_list);
+		       void *, int);
 	int (*pages)(struct aml_binding_data *, void **, struct aml_tiling *,
-		     void *, va_list);
+		     void *, int);
 	int (*nodes)(struct aml_binding_data *, int *, struct aml_tiling *,
-		     void *, va_list);
+		     void *, int);
 };
 
 struct aml_binding {
@@ -431,9 +429,9 @@ struct aml_binding {
 	struct aml_binding_data *data;
 };
 
-int aml_binding_nbpages(struct aml_binding *, struct aml_tiling *, void*, ...);
-int aml_binding_pages(struct aml_binding *, void **, struct aml_tiling *, void*, ...);
-int aml_binding_nodes(struct aml_binding *, int *, struct aml_tiling *, void *, ...);
+int aml_binding_nbpages(struct aml_binding *, struct aml_tiling *, void*, int);
+int aml_binding_pages(struct aml_binding *, void **, struct aml_tiling *, void*, int);
+int aml_binding_nodes(struct aml_binding *, int *, struct aml_tiling *, void *, int);
 
 #define AML_BINDING_TYPE_SINGLE 0
 #define AML_BINDING_TYPE_INTERLEAVE 1

@@ -49,20 +49,19 @@ struct aml_tiling_iterator_ops aml_tiling_iterator_1d_ops = {
  * 1D ops
  ******************************************************************************/
 
-size_t aml_tiling_1d_tilesize(struct aml_tiling_data *t, va_list args)
+size_t aml_tiling_1d_tilesize(struct aml_tiling_data *t, int tileid)
 {
 	struct aml_tiling_1d_data *data =
 		(struct aml_tiling_1d_data *)t;
 	return data->blocksize;
 }
 
-void* aml_tiling_1d_tilestart(struct aml_tiling_data *t, void *ptr, va_list args)
+void* aml_tiling_1d_tilestart(struct aml_tiling_data *t, void *ptr, int tileid)
 {
 	struct aml_tiling_1d_data *data =
 		(struct aml_tiling_1d_data *)t;
 	intptr_t p = (intptr_t)ptr;
-	unsigned long x = va_arg(args, unsigned long);
-	return (void *)(p + x*data->blocksize);
+	return (void *)(p + tileid*data->blocksize);
 }
 
 int aml_tiling_1d_init_iterator(struct aml_tiling_data *t,

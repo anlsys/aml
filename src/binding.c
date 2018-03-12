@@ -8,44 +8,29 @@
  ******************************************************************************/
 
 int aml_binding_nbpages(struct aml_binding *binding,
-			struct aml_tiling *tiling, void *ptr, ...)
+			struct aml_tiling *tiling, void *ptr, int tileid)
 {
 	assert(binding != NULL);
 	assert(tiling != NULL);
-	va_list ap;
-	int ret;
-	va_start(ap, ptr);
-	ret = binding->ops->nbpages(binding->data, tiling, ptr, ap);
-	va_end(ap);
-	return ret;
+	return binding->ops->nbpages(binding->data, tiling, ptr, tileid);
 }
 
-int aml_binding_pages(struct aml_binding *binding,
-		      void **pages, struct aml_tiling *tiling, void *ptr, ...)
+int aml_binding_pages(struct aml_binding *binding, void **pages,
+		      struct aml_tiling *tiling, void *ptr, int tileid)
 {
 	assert(binding != NULL);
 	assert(pages != NULL);
 	assert(tiling != NULL);
-	va_list ap;
-	int ret;
-	va_start(ap, ptr);
-	ret = binding->ops->pages(binding->data, pages, tiling, ptr, ap);
-	va_end(ap);
-	return ret;
+	return binding->ops->pages(binding->data, pages, tiling, ptr, tileid);
 }
 
-int aml_binding_nodes(struct aml_binding *binding,
-		      int *nodes, struct aml_tiling *tiling, void *ptr, ...)
+int aml_binding_nodes(struct aml_binding *binding, int *nodes,
+		      struct aml_tiling *tiling, void *ptr, int tileid)
 {
 	assert(binding != NULL);
 	assert(nodes != NULL);
 	assert(tiling != NULL);
-	va_list ap;
-	int ret;
-	va_start(ap, ptr);
-	ret = binding->ops->nodes(binding->data, nodes, tiling, ptr, ap);
-	va_end(ap);
-	return ret;
+	return binding->ops->nodes(binding->data, nodes, tiling, ptr, tileid);
 }
 
 /*******************************************************************************
