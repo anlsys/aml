@@ -1,15 +1,36 @@
-Argonne's Memory Library
-========================
+AML: Building Blocks for Memory Management
+=========================================
 
-This is a prototype library to manage the hierarchical memory present in recent
-and future HPC systems, including NVM and stacked memory.
+AML is a library to manage byte-addressable memory devices. The library
+is designed as a collection of building blocks, so that users can create custom
+memory management policies for allocation and placement of data across devices.
 
-This library defines "memory nodes" as hardware locations where data can
-reside. Not all of those memory nodes can provide virtual memory access to the
-data they contain, and as such, allocations are identified only by a UID.
-Memory nodes are defined by a public data structure that also contains
-information on the granularity of data accesses to a node.
+This library is still in the prototyping phase. APIs might break often.
 
-The library then provides functions to "pull" data into a virtual memory
-location. That memory location should be seen as temporary: the user should ask
-the library to "push" out the data afterwards.
+# General Architecture
+
+The architecture of the library relies on two principles: type-specific
+initialization functions, and generic interfaces to each building block.
+
+The type-specific initialization functions include:
+  - `_DECL` macros to declare a typed building block on the stack.
+  - `_create_` functions to allocate a building block and return its pointer.
+  - `_init_` functions to initialize stack-allocated building blocks.
+
+Generic interfaces all take a pointer to a building block.
+
+# Low-Level Building Blocks
+
+Low-level building blocks provide the basic mechanisms required to implement
+any high-level memory management policy. This include:
+  - *arenas:* allocation policies inside a memory region
+  - *areas:* actual memory reservation on devices
+  - *bindings:* mapping pages/tiles of memory unto multiple devices
+  - *tilings:* chunking data
+
+# High-Level Building Blocks
+
+High-level building blocks use the low-level ones to provide fancier memory
+management facilities, including:
+  - *dmas:* moving data across areas
+  - *scratchpads:* using an area as an explicitly managed cache of another one
