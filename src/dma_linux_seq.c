@@ -16,27 +16,76 @@
  * Requests:
  ******************************************************************************/
 
-int aml_dma_request_linux_seq_copy(struct aml_dma_data *dma,
-				   struct aml_dma_request_data *req)
+int aml_dma_request_linux_seq_copy_init(struct aml_dma_request_linux_seq *req,
+					const struct aml_tiling *dt,
+					void *dptr, int dtid,
+					const struct aml_tiling *st,
+					const void *sptr, int stid)
 {
-	assert(dma != NULL);
 	assert(req != NULL);
-	struct aml_dma_request_linux_seq_data *data =
-		(struct aml_dma_request_linux_seq_data*)req;
-	memcpy(data->dest, data->src, data->size);
+
+	req->type = AML_DMA_REQUEST_TYPE_MOVE;
+	/* figure out pointers */
+	req->dest = aml_tiling_tilestart(dt, dptr, dtid);
+	req->src = aml_tiling_tilestart(st, sptr, stid);
+	req->size = aml_tiling_tilesize(st, stid);
+	/* TODO: assert size match */
 	return 0;
 }
 
-int aml_dma_request_linux_seq_move(struct aml_dma_data *dma,
-				   struct aml_dma_request_data *req)
+int aml_dma_request_linux_seq_copy_destroy(struct aml_dma_request_linux_seq *r)
+{
+	assert(r != NULL);
+	return 0;
+}
+
+int aml_dma_request_linux_seq_move_init(struct aml_dma_request_linux_seq *req,
+					struct aml_area *darea,
+					const struct aml_tiling *tiling,
+					void *startptr, int tileid)
+{
+	assert(req != NULL);
+	struct aml_binding *binding;
+
+	req->type = AML_DMA_REQUEST_TYPE_MOVE;
+	aml_area_binding(darea, &binding);
+	req->count = aml_binding_nbpages(binding, tiling, startptr, tileid);
+	req->pages = calloc(req->count, sizeof(void *));
+	req->nodes = calloc(req->count, sizeof(int));
+	aml_binding_pages(binding, req->pages, tiling, startptr, tileid);
+	aml_binding_nodes(binding, req->nodes, tiling, startptr, tileid);
+	free(binding);
+	return 0;
+}
+
+int aml_dma_request_linux_seq_move_destroy(struct aml_dma_request_linux_seq *req)
+{
+	assert(req != NULL);
+	free(req->pages);
+	free(req->nodes);
+	return 0;
+}
+
+/*******************************************************************************
+ * Internal functions
+ ******************************************************************************/
+int aml_dma_linux_seq_do_copy(struct aml_dma_linux_seq_data *dma,
+			      struct aml_dma_request_linux_seq *req)
 {
 	assert(dma != NULL);
 	assert(req != NULL);
-	struct aml_dma_request_linux_seq_data *data =
-		(struct aml_dma_request_linux_seq_data *)req;
-	int status[data->count];
+	memcpy(req->dest, req->src, req->size);
+	return 0;
+}
+
+int aml_dma_linux_seq_do_move(struct aml_dma_linux_seq_data *dma,
+			      struct aml_dma_request_linux_seq *req)
+{
+	assert(dma != NULL);
+	assert(req != NULL);
+	int status[req->count];
 	int err;
-	err = move_pages(0, data->count, data->pages, data->nodes, status,
+	err = move_pages(0, req->count, req->pages, req->nodes, status,
 			 MPOL_MF_MOVE);
 	if(err)
 	{
@@ -46,72 +95,9 @@ int aml_dma_request_linux_seq_move(struct aml_dma_data *dma,
 	return 0;
 }
 
-struct aml_dma_request_ops aml_dma_request_linux_seq_ops = {
-	aml_dma_request_linux_seq_copy,
-	aml_dma_request_linux_seq_move,
-};
-
-int aml_dma_request_linux_seq_copy_init(struct aml_dma_request *r,
-					const struct aml_tiling *dt,
-					void *dptr, int dtid,
-					const struct aml_tiling *st,
-					const void *sptr, int stid)
-{
-	assert(r != NULL);
-	struct aml_dma_request_linux_seq_data *data =
-		(struct aml_dma_request_linux_seq_data *)r->data;
-
-	data->type = AML_DMA_REQUEST_TYPE_MOVE;
-	/* figure out pointers */
-	data->dest = aml_tiling_tilestart(dt, dptr, dtid);
-	data->src = aml_tiling_tilestart(st, sptr, stid);
-	data->size = aml_tiling_tilesize(st, stid);
-	/* TODO: assert size match */
-	return 0;
-}
-
-int aml_dma_request_linux_seq_copy_destroy(struct aml_dma_request *r)
-{
-	assert(r != NULL);
-	return 0;
-}
-
-int aml_dma_request_linux_seq_move_init(struct aml_dma_request *r,
-					struct aml_area *darea,
-					const struct aml_tiling *tiling,
-					void *startptr, int tileid)
-{
-	assert(r != NULL);
-	struct aml_binding *binding;
-	struct aml_dma_request_linux_seq_data *data =
-		(struct aml_dma_request_linux_seq_data *)r->data;
-
-	data->type = AML_DMA_REQUEST_TYPE_MOVE;
-	aml_area_binding(darea, &binding);
-	data->count = aml_binding_nbpages(binding, tiling, startptr, tileid);
-	data->pages = calloc(data->count, sizeof(void *));
-	data->nodes = calloc(data->count, sizeof(int));
-	aml_binding_pages(binding, data->pages, tiling, startptr, tileid);
-	aml_binding_nodes(binding, data->nodes, tiling, startptr, tileid);
-	free(binding);
-	return 0;
-}
-
-int aml_dma_request_linux_seq_move_destroy(struct aml_dma_request *r)
-{
-	struct aml_dma_request_linux_seq_data *data =
-		(struct aml_dma_request_linux_seq_data *)r->data;
-	free(data->pages);
-	free(data->nodes);
-	return 0;
-}
-
-/*******************************************************************************
- * Internal functions
- ******************************************************************************/
 
 int aml_dma_linux_seq_add_request(struct aml_dma_linux_seq_data *data,
-				  struct aml_dma_request_linux_seq_data **req)
+				  struct aml_dma_request_linux_seq **req)
 {
 	for(int i = 0; i < data->size; i++)
 	{
@@ -126,7 +112,7 @@ int aml_dma_linux_seq_add_request(struct aml_dma_linux_seq_data *data,
 }
 
 int aml_dma_linux_seq_remove_request(struct aml_dma_linux_seq_data *data,
-				     struct aml_dma_request_linux_seq_data **req)
+				     struct aml_dma_request_linux_seq **req)
 {
 	/* TODO: assert that the pointer is in the right place */
 	(*req)->type = AML_DMA_REQUEST_TYPE_INVALID;
@@ -134,6 +120,8 @@ int aml_dma_linux_seq_remove_request(struct aml_dma_linux_seq_data *data,
 }
 
 struct aml_dma_linux_seq_ops aml_dma_linux_seq_inner_ops = {
+	aml_dma_linux_seq_do_copy,
+	aml_dma_linux_seq_do_move,
 	aml_dma_linux_seq_add_request,
 	aml_dma_linux_seq_remove_request,
 };
@@ -143,7 +131,7 @@ struct aml_dma_linux_seq_ops aml_dma_linux_seq_inner_ops = {
  ******************************************************************************/
 
 int aml_dma_linux_seq_create_request(struct aml_dma_data *d,
-				     struct aml_dma_request *r,
+				     struct aml_dma_request **r,
 				     int type, va_list ap)
 {
 	assert(d != NULL);
@@ -151,14 +139,12 @@ int aml_dma_linux_seq_create_request(struct aml_dma_data *d,
 	struct aml_dma_linux_seq *dma =
 		(struct aml_dma_linux_seq *)d;
 
-	struct aml_dma_request_linux_seq_data *req;
+	struct aml_dma_request_linux_seq *req;
 
 	/* find an available request slot */
 	dma->ops.add_request(&dma->data, &req);
-	r->data = (struct aml_dma_request_data *)req;
 
 	/* init the request */
-	r->ops = &aml_dma_request_linux_seq_ops;
 	if(type == AML_DMA_REQUEST_TYPE_COPY)
 	{
 		struct aml_tiling *dt, *st;
@@ -170,7 +156,7 @@ int aml_dma_linux_seq_create_request(struct aml_dma_data *d,
 		st = va_arg(ap, struct aml_tiling *);
 		sptr = va_arg(ap, void *);
 		stid = va_arg(ap, int);
-		aml_dma_request_linux_seq_copy_init(r, dt, dptr, dtid,
+		aml_dma_request_linux_seq_copy_init(req, dt, dptr, dtid,
 						    st, sptr, stid);
 	}
 	else if(type == AML_DMA_REQUEST_TYPE_MOVE)
@@ -179,8 +165,9 @@ int aml_dma_linux_seq_create_request(struct aml_dma_data *d,
 		struct aml_tiling *st = va_arg(ap, struct aml_tiling *);
 		void *sptr = va_arg(ap, void *);
 		int stid = va_arg(ap, int);
-		aml_dma_request_linux_seq_move_init(r, darea, st, sptr, stid);
+		aml_dma_request_linux_seq_move_init(req, darea, st, sptr, stid);
 	}
+	*r = (struct aml_dma_request *)req;
 	return 0;
 }
 
@@ -192,13 +179,13 @@ int aml_dma_linux_seq_destroy_request(struct aml_dma_data *d,
 	struct aml_dma_linux_seq *dma =
 		(struct aml_dma_linux_seq *)d;
 
-	struct aml_dma_request_linux_seq_data *req =
-		(struct aml_dma_request_linux_seq_data *)r->data;
+	struct aml_dma_request_linux_seq *req =
+		(struct aml_dma_request_linux_seq *)r;
 
 	if(req->type == AML_DMA_REQUEST_TYPE_COPY)
-		aml_dma_request_linux_seq_copy_destroy(r);
+		aml_dma_request_linux_seq_copy_destroy(req);
 	else if(req->type == AML_DMA_REQUEST_TYPE_MOVE)
-		aml_dma_request_linux_seq_move_destroy(r);
+		aml_dma_request_linux_seq_move_destroy(req);
 
 	dma->ops.remove_request(&dma->data, &req);
 	return 0;
@@ -209,14 +196,15 @@ int aml_dma_linux_seq_wait_request(struct aml_dma_data *d,
 {
 	assert(d != NULL);
 	assert(r != NULL);
-	struct aml_dma_request_linux_seq_data *req =
-		(struct aml_dma_request_linux_seq_data *)r->data;
+	struct aml_dma_linux_seq *dma = (struct aml_dma_linux_seq *)d;
+	struct aml_dma_request_linux_seq *req =
+		(struct aml_dma_request_linux_seq *)r;
 
 	/* execute */
 	if(req->type == AML_DMA_REQUEST_TYPE_COPY)
-		r->ops->copy(d, r->data);
+		dma->ops.do_copy(&dma->data, req);
 	else if(req->type == AML_DMA_REQUEST_TYPE_MOVE)
-		r->ops->move(d, r->data);
+		dma->ops.do_move(&dma->data, req);
 
 	/* destroy a completed request */
 	aml_dma_linux_seq_destroy_request(d, r);
@@ -262,7 +250,7 @@ int aml_dma_linux_seq_vinit(struct aml_dma *d, va_list ap)
 	/* allocate request array */
 	dma->data.size = va_arg(ap, size_t);
 	dma->data.requests = calloc(dma->data.size,
-				     sizeof(struct aml_dma_request_linux_seq_data));
+				     sizeof(struct aml_dma_request_linux_seq));
 	for(int i = 0; i < dma->data.size; i++)
 		dma->data.requests[i].type = AML_DMA_REQUEST_TYPE_INVALID;
 	return 0;

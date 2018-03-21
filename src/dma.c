@@ -15,16 +15,16 @@ int aml_dma_copy(struct aml_dma *dma, ...)
 	assert(dma != NULL);
 	va_list ap;
 	int ret;
-	struct aml_dma_request req;
+	struct aml_dma_request *req;
 	va_start(ap, dma);
 	ret = dma->ops->create_request(dma->data, &req,
 				       AML_DMA_REQUEST_TYPE_COPY, ap);
 	va_end(ap);
-	ret = dma->ops->wait_request(dma->data, &req);
+	ret = dma->ops->wait_request(dma->data, req);
 	return ret;
 }
 
-int aml_dma_async_copy(struct aml_dma *dma, struct aml_dma_request *req, ...)
+int aml_dma_async_copy(struct aml_dma *dma, struct aml_dma_request **req, ...)
 {
 	assert(dma != NULL);
 	assert(req != NULL);
@@ -40,19 +40,19 @@ int aml_dma_async_copy(struct aml_dma *dma, struct aml_dma_request *req, ...)
 int aml_dma_move(struct aml_dma *dma, ...)
 {
 	assert(dma != NULL);
-	struct aml_dma_request req;
+	struct aml_dma_request *req;
 	va_list ap;
 	int ret;
 	va_start(ap, dma);
 	ret = dma->ops->create_request(dma->data, &req,
 				       AML_DMA_REQUEST_TYPE_MOVE, ap);
 	va_end(ap);
-	ret = dma->ops->wait_request(dma->data, &req);
+	ret = dma->ops->wait_request(dma->data, req);
 	return ret;
 }
 
 
-int aml_dma_async_move(struct aml_dma *dma, struct aml_dma_request *req, ...)
+int aml_dma_async_move(struct aml_dma *dma, struct aml_dma_request **req, ...)
 {
 	assert(dma != NULL);
 	assert(req != NULL);

@@ -498,23 +498,12 @@ struct aml_binding_interleave_data {
 #define AML_DMA_REQUEST_TYPE_COPY 0
 #define AML_DMA_REQUEST_TYPE_MOVE 1
 
-struct aml_dma_request_data;
+struct aml_dma_request;
 struct aml_dma_data;
-
-struct aml_dma_request_ops {
-	int (*copy)(struct aml_dma_data *dma, struct aml_dma_request_data *req);
-	int (*move)(struct aml_dma_data *dma, struct aml_dma_request_data *req);
-};
-
-struct aml_dma_request {
-	struct aml_dma_request_ops *ops;
-	struct aml_dma_request_data *data;
-};
-
 
 struct aml_dma_ops {
 	int (*create_request)(struct aml_dma_data *dma,
-			      struct aml_dma_request *req, int type,
+			      struct aml_dma_request **req, int type,
 			      va_list args);
 	int (*destroy_request)(struct aml_dma_data *dma,
 			       struct aml_dma_request *req);
@@ -528,9 +517,9 @@ struct aml_dma {
 };
 
 int aml_dma_copy(struct aml_dma *dma, ...);
-int aml_dma_async_copy(struct aml_dma *dma, struct aml_dma_request *req, ...);
+int aml_dma_async_copy(struct aml_dma *dma, struct aml_dma_request **req, ...);
 int aml_dma_move(struct aml_dma *dma, ...);
-int aml_dma_async_move(struct aml_dma *dma, struct aml_dma_request *req, ...);
+int aml_dma_async_move(struct aml_dma *dma, struct aml_dma_request **req, ...);
 int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request *req);
 int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request *req);
 
@@ -540,7 +529,9 @@ int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request *req);
  * used as the only execution thread.
  ******************************************************************************/
 
-struct aml_dma_request_linux_seq_data {
+extern struct aml_dma_ops aml_dma_linux_seq_ops;
+
+struct aml_dma_request_linux_seq {
 	int type;
 	void *dest;
 	void *src;
@@ -550,18 +541,20 @@ struct aml_dma_request_linux_seq_data {
 	int *nodes;
 };
 
-extern struct aml_dma_ops aml_dma_linux_seq_ops;
-
 struct aml_dma_linux_seq_data {
 	size_t size;
-	struct aml_dma_request_linux_seq_data *requests;
+	struct aml_dma_request_linux_seq *requests;
 };
 
 struct aml_dma_linux_seq_ops {
+	int (*do_copy)(struct aml_dma_linux_seq_data *dma,
+		       struct aml_dma_request_linux_seq *req);
+	int (*do_move)(struct aml_dma_linux_seq_data *dma,
+		       struct aml_dma_request_linux_seq *req);
 	int (*add_request)(struct aml_dma_linux_seq_data *dma,
-			   struct aml_dma_request_linux_seq_data **req);
+			   struct aml_dma_request_linux_seq **req);
 	int (*remove_request)(struct aml_dma_linux_seq_data *dma,
-			      struct aml_dma_request_linux_seq_data **req);
+			      struct aml_dma_request_linux_seq **req);
 };
 
 struct aml_dma_linux_seq {
