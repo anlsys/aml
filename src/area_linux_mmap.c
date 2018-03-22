@@ -62,7 +62,7 @@ int aml_area_linux_mmap_tmpfile_init(struct aml_area_linux_mmap_data *data,
 	data->flags = MAP_PRIVATE;
 	data->fildes = mkstemp(template);
 	data->off = 0;
-	ftruncate(data->fildes, max);
+	int n = ftruncate(data->fildes, max);
 	/* TODO: check & return errno */
 	return 0;
 }

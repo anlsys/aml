@@ -6,9 +6,9 @@
  * All pages on the same node
  ******************************************************************************/
 
-int aml_binding_single_getinfo(struct aml_binding_data *data,
+int aml_binding_single_getinfo(const struct aml_binding_data *data,
 			       intptr_t *start, intptr_t *end,
-			       struct aml_tiling *tiling, void *ptr,
+			       const struct aml_tiling *tiling, const void *ptr,
 			       int tileid)
 {
 	assert(data != NULL);
@@ -25,8 +25,8 @@ int aml_binding_single_getinfo(struct aml_binding_data *data,
 }
 
 
-int aml_binding_single_nbpages(struct aml_binding_data *data,
-			       struct aml_tiling *tiling, void *ptr,
+int aml_binding_single_nbpages(const struct aml_binding_data *data,
+			       const struct aml_tiling *tiling, const void *ptr,
 			       int tileid)
 {
 	assert(data != NULL);
@@ -35,8 +35,8 @@ int aml_binding_single_nbpages(struct aml_binding_data *data,
 	return aml_binding_single_getinfo(data, &start, &end, tiling, ptr, tileid);
 }
 
-int aml_binding_single_pages(struct aml_binding_data *data, void **pages,
-			     struct aml_tiling *tiling, void *ptr,
+int aml_binding_single_pages(const struct aml_binding_data *data, void **pages,
+			     const struct aml_tiling *tiling, const void *ptr,
 			     int tileid)
 {
 	assert(data != NULL);
@@ -50,8 +50,8 @@ int aml_binding_single_pages(struct aml_binding_data *data, void **pages,
 	return 0;
 }
 
-int aml_binding_single_nodes(struct aml_binding_data *data, int *nodes,
-			     struct aml_tiling *tiling, void *ptr,
+int aml_binding_single_nodes(const struct aml_binding_data *data, int *nodes,
+			     const struct aml_tiling *tiling, const void *ptr,
 			     int tileid)
 {
 	assert(data != NULL);

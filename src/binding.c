@@ -7,16 +7,16 @@
  * functions.
  ******************************************************************************/
 
-int aml_binding_nbpages(struct aml_binding *binding,
-			struct aml_tiling *tiling, void *ptr, int tileid)
+int aml_binding_nbpages(const struct aml_binding *binding,
+			const struct aml_tiling *tiling, const void *ptr, int tileid)
 {
 	assert(binding != NULL);
 	assert(tiling != NULL);
 	return binding->ops->nbpages(binding->data, tiling, ptr, tileid);
 }
 
-int aml_binding_pages(struct aml_binding *binding, void **pages,
-		      struct aml_tiling *tiling, void *ptr, int tileid)
+int aml_binding_pages(const struct aml_binding *binding, void **pages,
+		      const struct aml_tiling *tiling, const void *ptr, int tileid)
 {
 	assert(binding != NULL);
 	assert(pages != NULL);
@@ -24,8 +24,8 @@ int aml_binding_pages(struct aml_binding *binding, void **pages,
 	return binding->ops->pages(binding->data, pages, tiling, ptr, tileid);
 }
 
-int aml_binding_nodes(struct aml_binding *binding, int *nodes,
-		      struct aml_tiling *tiling, void *ptr, int tileid)
+int aml_binding_nodes(const struct aml_binding *binding, int *nodes,
+		      const struct aml_tiling *tiling, const void *ptr, int tileid)
 {
 	assert(binding != NULL);
 	assert(nodes != NULL);

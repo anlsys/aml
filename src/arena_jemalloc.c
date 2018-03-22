@@ -25,7 +25,7 @@ static struct aml_arena_jemalloc_global_data aml_arena_jemalloc_global = {
 };
 
 static struct aml_area *aml_arena_registry_get(
-				struct aml_arena_jemalloc_global_data *g,
+				const struct aml_arena_jemalloc_global_data *g,
 				unsigned int arenaid)
 {
 	assert(g != NULL);
@@ -234,7 +234,7 @@ int aml_arena_jemalloc_deregister_arena(struct aml_arena_data *a)
 }
 
 void *aml_arena_jemalloc_mallocx(struct aml_arena_data *a, size_t sz,
-			       int extraflags)
+				 int extraflags)
 {
 	struct aml_arena_jemalloc_data *arena =
 		(struct aml_arena_jemalloc_data*) a;

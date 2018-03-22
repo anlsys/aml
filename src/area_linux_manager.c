@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 struct aml_arena * aml_area_linux_manager_single_get_arena(
-				struct aml_area_linux_manager_data *data)
+				const struct aml_area_linux_manager_data *data)
 {
 	return data->pool;
 }

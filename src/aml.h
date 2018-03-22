@@ -105,8 +105,8 @@ struct aml_area_ops {
 	void *(*acquire)(struct aml_area_data *area, size_t size);
 	void (*release)(struct aml_area_data *area, void *ptr);
 	void *(*mmap)(struct aml_area_data *area, void *ptr, size_t size);
-	int (*available)(struct aml_area_data *area);
-	int (*binding)(struct aml_area_data *area,
+	int (*available)(const struct aml_area_data *area);
+	int (*binding)(const struct aml_area_data *area,
 		       struct aml_binding **binding);
 };
 
@@ -152,7 +152,7 @@ struct aml_area_linux_manager_data {
 };
 
 struct aml_area_linux_manager_ops {
-	struct aml_arena *(*get_arena)(struct aml_area_linux_manager_data *data);
+	struct aml_arena *(*get_arena)(const struct aml_area_linux_manager_data *data);
 };
 
 extern struct aml_area_linux_manager_ops aml_area_linux_manager_single_ops;
@@ -187,13 +187,13 @@ struct aml_area_linux_mbind_ops {
 	int (*pre_bind)(struct aml_area_linux_mbind_data *data);
 	int (*post_bind)(struct aml_area_linux_mbind_data *data, void *ptr,
 			 size_t size);
-	int (*binding)(struct aml_area_linux_mbind_data *data,
+	int (*binding)(const struct aml_area_linux_mbind_data *data,
 		       struct aml_binding **binding);
 };
 
 int aml_area_linux_mbind_setdata(struct aml_area_linux_mbind_data *data,
-				 int policy, unsigned long *nodemask);
-int aml_area_linux_mbind_generic_binding(struct aml_area_linux_mbind_data *data,
+				 int policy, const unsigned long *nodemask);
+int aml_area_linux_mbind_generic_binding(const struct aml_area_linux_mbind_data *data,
 					 struct aml_binding **binding);
 int aml_area_linux_mbind_regular_pre_bind(struct aml_area_linux_mbind_data *data);
 int aml_area_linux_mbind_regular_post_bind(struct aml_area_linux_mbind_data *data,
@@ -202,7 +202,7 @@ int aml_area_linux_mbind_mempolicy_pre_bind(struct aml_area_linux_mbind_data *da
 int aml_area_linux_mbind_mempolicy_post_bind(struct aml_area_linux_mbind_data *data,
 					   void *ptr, size_t size);
 int aml_area_linux_mbind_init(struct aml_area_linux_mbind_data *data,
-			      int policy, unsigned long *nodemask);
+			      int policy, const unsigned long *nodemask);
 int aml_area_linux_mbind_destroy(struct aml_area_linux_mbind_data *data);
 
 extern struct aml_area_linux_mbind_ops aml_area_linux_mbind_regular_ops;
@@ -291,8 +291,8 @@ void *aml_area_realloc(struct aml_area *area, void *ptr, size_t size);
 void *aml_area_acquire(struct aml_area *area, size_t size);
 void aml_area_release(struct aml_area *area, void *ptr);
 void *aml_area_mmap(struct aml_area *area, void *ptr, size_t size);
-int aml_area_available(struct aml_area *area);
-int aml_area_binding(struct aml_area *area, struct aml_binding **binding);
+int aml_area_available(const struct aml_area *area);
+int aml_area_binding(const struct aml_area *area, struct aml_binding **binding);
 
 /*******************************************************************************
  * Tiling:
@@ -316,9 +316,9 @@ struct aml_tiling_ops {
 			     struct aml_tiling_iterator *iterator, int flags);
 	int (*destroy_iterator)(struct aml_tiling_data *tiling,
 				struct aml_tiling_iterator *iterator);
-	size_t (*tilesize)(struct aml_tiling_data *tiling, int tileid);
-	void* (*tilestart)(struct aml_tiling_data *tiling, void *ptr,
-			   int tileid);
+	size_t (*tilesize)(const struct aml_tiling_data *tiling, int tileid);
+	void* (*tilestart)(const struct aml_tiling_data *tiling,
+			   const void *ptr, int tileid);
 };
 
 struct aml_tiling {
@@ -326,8 +326,9 @@ struct aml_tiling {
 	struct aml_tiling_data *data;
 };
 
-size_t aml_tiling_tilesize(struct aml_tiling *tiling, int tileid);
-void* aml_tiling_tilestart(struct aml_tiling *tiling, void *ptr, int tileid);
+size_t aml_tiling_tilesize(const struct aml_tiling *tiling, int tileid);
+void* aml_tiling_tilestart(const struct aml_tiling *tiling, const void *ptr,
+			   int tileid);
 
 
 int aml_tiling_create_iterator(struct aml_tiling *tiling,
@@ -341,8 +342,9 @@ int aml_tiling_destroy_iterator(struct aml_tiling *tiling,
 struct aml_tiling_iterator_ops {
 	int (*reset)(struct aml_tiling_iterator_data *iterator);
 	int (*next)(struct aml_tiling_iterator_data *iterator);
-	int (*end)(struct aml_tiling_iterator_data *iterator);
-	int (*get)(struct aml_tiling_iterator_data *iterator, va_list args);
+	int (*end)(const struct aml_tiling_iterator_data *iterator);
+	int (*get)(const struct aml_tiling_iterator_data *iterator,
+		   va_list args);
 };
 
 struct aml_tiling_iterator {
@@ -352,8 +354,8 @@ struct aml_tiling_iterator {
 
 int aml_tiling_iterator_reset(struct aml_tiling_iterator *iterator);
 int aml_tiling_iterator_next(struct aml_tiling_iterator *iterator);
-int aml_tiling_iterator_end(struct aml_tiling_iterator *iterator);
-int aml_tiling_iterator_get(struct aml_tiling_iterator *iterator, ...);
+int aml_tiling_iterator_end(const struct aml_tiling_iterator *iterator);
+int aml_tiling_iterator_get(const struct aml_tiling_iterator *iterator, ...);
 
 #define AML_TILING_TYPE_1D 0
 
@@ -409,12 +411,15 @@ struct aml_tiling_iterator_1d_data {
 struct aml_binding_data;
 
 struct aml_binding_ops {
-	int (*nbpages)(struct aml_binding_data *binding,
-		       struct aml_tiling *tiling, void *ptr, int tileid);
-	int (*pages)(struct aml_binding_data *binding, void **pages,
-		     struct aml_tiling *tiling, void *ptr, int tileid);
-	int (*nodes)(struct aml_binding_data *binding, int *nodes,
-		     struct aml_tiling *tiling, void *ptr, int tileid);
+	int (*nbpages)(const struct aml_binding_data *binding,
+		       const struct aml_tiling *tiling, const void *ptr,
+		       int tileid);
+	int (*pages)(const struct aml_binding_data *binding, void **pages,
+		     const struct aml_tiling *tiling, const void *ptr,
+		     int tileid);
+	int (*nodes)(const struct aml_binding_data *binding, int *nodes,
+		     const struct aml_tiling *tiling, const void *ptr,
+		     int tileid);
 };
 
 struct aml_binding {
@@ -422,12 +427,15 @@ struct aml_binding {
 	struct aml_binding_data *data;
 };
 
-int aml_binding_nbpages(struct aml_binding *binding, struct aml_tiling *tiling,
-			void *ptr, int tileid);
-int aml_binding_pages(struct aml_binding *binding, void **pages,
-		      struct aml_tiling *tiling, void *ptr, int tileid);
-int aml_binding_nodes(struct aml_binding *binding, int *nodes,
-		      struct aml_tiling *tiling, void *ptr, int tileid);
+int aml_binding_nbpages(const struct aml_binding *binding,
+			const struct aml_tiling *tiling,
+			const void *ptr, int tileid);
+int aml_binding_pages(const struct aml_binding *binding, void **pages,
+		      const struct aml_tiling *tiling, const void *ptr,
+		      int tileid);
+int aml_binding_nodes(const struct aml_binding *binding, int *nodes,
+		      const struct aml_tiling *tiling, const void *ptr,
+		      int tileid);
 
 #define AML_BINDING_TYPE_SINGLE 0
 #define AML_BINDING_TYPE_INTERLEAVE 1

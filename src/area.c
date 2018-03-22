@@ -49,13 +49,13 @@ void *aml_area_mmap(struct aml_area *area, void *ptr, size_t size)
 	return area->ops->mmap(area->data, ptr, size);
 }
 
-int aml_area_available(struct aml_area *area)
+int aml_area_available(const struct aml_area *area)
 {
 	assert(area != NULL);
 	return area->ops->available(area->data);
 }
 
-int aml_area_binding(struct aml_area *area, struct aml_binding **binding)
+int aml_area_binding(const struct aml_area *area, struct aml_binding **binding)
 {
 	assert(area != NULL);
 	return area->ops->binding(area->data, binding);

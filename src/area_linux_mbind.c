@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 /* common to both methods */
-int aml_area_linux_mbind_generic_binding(struct aml_area_linux_mbind_data *data,
+int aml_area_linux_mbind_generic_binding(const struct aml_area_linux_mbind_data *data,
 					 struct aml_binding **b)
 {
 	assert(data != NULL);
@@ -51,7 +51,7 @@ struct aml_area_linux_mbind_ops aml_area_linux_mbind_regular_ops = {
 };
 
 int aml_area_linux_mbind_setdata(struct aml_area_linux_mbind_data *data,
-				 int policy, unsigned long *nodemask)
+				 int policy, const unsigned long *nodemask)
 {
 	assert(data != NULL);
 	data->policy = policy;
@@ -97,7 +97,7 @@ struct aml_area_linux_mbind_ops aml_area_linux_mbind_mempolicy_ops = {
 };
 
 int aml_area_linux_mbind_init(struct aml_area_linux_mbind_data *data,
-			      int policy, unsigned long *nodemask)
+			      int policy, const unsigned long *nodemask)
 {
 	assert(data != NULL);
 	aml_area_linux_mbind_setdata(data, policy, nodemask);

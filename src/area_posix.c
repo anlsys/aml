@@ -17,7 +17,7 @@ void *aml_area_posix_mmap(struct aml_area_data *data, void *ptr, size_t sz)
 		    -1, 0);
 }
 
-int aml_area_posix_available(struct aml_area_data *data)
+int aml_area_posix_available(const struct aml_area_data *data)
 {
 	assert(data != NULL);
 	return 1;
@@ -26,7 +26,7 @@ int aml_area_posix_available(struct aml_area_data *data)
 /* same thing here, it makes no sense to ask for this area to provide its
  * binding scheme, as no-one should migrate to this area.
  */
-int aml_area_posix_binding(struct aml_area_data *data, struct aml_binding **b)
+int aml_area_posix_binding(const struct aml_area_data *data, struct aml_binding **b)
 {
 	assert(data != NULL);
 	/* numa node 0 should always be available */

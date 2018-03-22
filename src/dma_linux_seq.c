@@ -52,10 +52,10 @@ struct aml_dma_request_ops aml_dma_request_linux_seq_ops = {
 };
 
 int aml_dma_request_linux_seq_copy_init(struct aml_dma_request *r,
-					struct aml_tiling *dt,
+					const struct aml_tiling *dt,
 					void *dptr, int dtid,
-					struct aml_tiling *st,
-					void *sptr, int stid)
+					const struct aml_tiling *st,
+					const void *sptr, int stid)
 {
 	assert(r != NULL);
 	struct aml_dma_request_linux_seq_data *data =
@@ -78,7 +78,7 @@ int aml_dma_request_linux_seq_copy_destroy(struct aml_dma_request *r)
 
 int aml_dma_request_linux_seq_move_init(struct aml_dma_request *r,
 					struct aml_area *darea,
-					struct aml_tiling *tiling,
+					const struct aml_tiling *tiling,
 					void *startptr, int tileid)
 {
 	assert(r != NULL);

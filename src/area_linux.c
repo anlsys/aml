@@ -23,15 +23,15 @@ void *aml_area_linux_mmap(struct aml_area_data *a, void *ptr, size_t sz)
 	return ret;
 }
 
-int aml_area_linux_available(struct aml_area_data *a)
+int aml_area_linux_available(const struct aml_area_data *a)
 {
 	return 1;
 }
 
-int aml_area_linux_binding(struct aml_area_data *a, struct aml_binding **b)
+int aml_area_linux_binding(const struct aml_area_data *a, struct aml_binding **b)
 {
 	assert(a != NULL);
-	struct aml_area_linux *area = (struct aml_area_linux *)a;
+	const struct aml_area_linux *area = (const struct aml_area_linux *)a;
 	return area->ops.mbind.binding(&area->data.mbind, b);
 }
 

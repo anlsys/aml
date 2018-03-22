@@ -13,10 +13,10 @@ int aml_tiling_iterator_1d_reset(struct aml_tiling_iterator_data *data)
 	return 0;
 }
 
-int aml_tiling_iterator_1d_end(struct aml_tiling_iterator_data *data)
+int aml_tiling_iterator_1d_end(const struct aml_tiling_iterator_data *data)
 {
-	struct aml_tiling_iterator_1d_data *it =
-		(struct aml_tiling_iterator_1d_data *)data;
+	const struct aml_tiling_iterator_1d_data *it =
+		(const struct aml_tiling_iterator_1d_data *)data;
 	return it->i * it->tiling->blocksize >= it->tiling->totalsize;
 }
 
@@ -28,11 +28,11 @@ int aml_tiling_iterator_1d_next(struct aml_tiling_iterator_data *data)
 	return 0;
 }
 
-int aml_tiling_iterator_1d_get(struct aml_tiling_iterator_data *data,
+int aml_tiling_iterator_1d_get(const struct aml_tiling_iterator_data *data,
 			       va_list args)
 {
-	struct aml_tiling_iterator_1d_data *it =
-		(struct aml_tiling_iterator_1d_data *)data;
+	const struct aml_tiling_iterator_1d_data *it =
+		(const struct aml_tiling_iterator_1d_data *)data;
 	unsigned long *x = va_arg(args, unsigned long *);
 	*x = it->i;
 	return 0;
@@ -49,17 +49,17 @@ struct aml_tiling_iterator_ops aml_tiling_iterator_1d_ops = {
  * 1D ops
  ******************************************************************************/
 
-size_t aml_tiling_1d_tilesize(struct aml_tiling_data *t, int tileid)
+size_t aml_tiling_1d_tilesize(const struct aml_tiling_data *t, int tileid)
 {
-	struct aml_tiling_1d_data *data =
-		(struct aml_tiling_1d_data *)t;
+	const struct aml_tiling_1d_data *data =
+		(const struct aml_tiling_1d_data *)t;
 	return data->blocksize;
 }
 
-void* aml_tiling_1d_tilestart(struct aml_tiling_data *t, void *ptr, int tileid)
+void* aml_tiling_1d_tilestart(const struct aml_tiling_data *t, const void *ptr, int tileid)
 {
-	struct aml_tiling_1d_data *data =
-		(struct aml_tiling_1d_data *)t;
+	const struct aml_tiling_1d_data *data =
+		(const struct aml_tiling_1d_data *)t;
 	intptr_t p = (intptr_t)ptr;
 	return (void *)(p + tileid*data->blocksize);
 }
