@@ -17,6 +17,7 @@ BINDING_CSOURCES = binding.c \
 		   binding_interleave.c
 
 DMA_CSOURCES = dma.c \
+	       dma_linux_par.c \
 	       dma_linux_seq.c
 
 LIBCSOURCES = aml.c area.c arena.c \
