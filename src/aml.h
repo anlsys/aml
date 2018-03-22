@@ -36,11 +36,13 @@ struct aml_binding;
 struct aml_arena_data;
 
 struct aml_arena_ops {
-	int (*register_arena)(struct aml_arena_data *, struct aml_area *);
-	int (*deregister_arena)(struct aml_arena_data *);
-	void *(*mallocx)(struct aml_arena_data *, size_t, int);
-	void (*dallocx)(struct aml_arena_data *, void *, int);
-	void *(*reallocx)(struct aml_arena_data *, void *, size_t, int);
+	int (*register_arena)(struct aml_arena_data *arena,
+			      struct aml_area *area);
+	int (*deregister_arena)(struct aml_arena_data *arena);
+	void *(*mallocx)(struct aml_arena_data *arena, size_t size, int flags);
+	void (*dallocx)(struct aml_arena_data *arena, void *ptr, int flags);
+	void *(*reallocx)(struct aml_arena_data *arena, void *ptr, size_t size,
+			  int flags);
 };
 
 struct aml_arena {
@@ -48,11 +50,12 @@ struct aml_arena {
 	struct aml_arena_data *data;
 };
 
-int aml_arena_register(struct aml_arena *, struct aml_area *);
-int aml_arena_deregister(struct aml_arena *);
-void *aml_arena_mallocx(struct aml_arena *, size_t, int);
-void aml_arena_dallocx(struct aml_arena *, void *, int);
-void *aml_arena_reallocx(struct aml_arena *, void *, size_t, int);
+int aml_arena_register(struct aml_arena *arena, struct aml_area *area);
+int aml_arena_deregister(struct aml_arena *arena);
+void *aml_arena_mallocx(struct aml_arena *arena, size_t size, int flags);
+void aml_arena_dallocx(struct aml_arena *arena, void *ptr, int flags);
+void *aml_arena_reallocx(struct aml_arena *arena, void *ptr, size_t size,
+			 int flags);
 
 /*******************************************************************************
  * Jemalloc Arena:
@@ -80,10 +83,10 @@ struct aml_arena_jemalloc_data {
 #define AML_ARENA_JEMALLOC_TYPE_ALIGNED 1
 #define AML_ARENA_JEMALLOC_TYPE_GENERIC 2
 
-int aml_arena_jemalloc_create(struct aml_arena **, int type, ...);
-int aml_arena_jemalloc_init(struct aml_arena *, int type, ...);
-int aml_arena_jemalloc_vinit(struct aml_arena *, int type, va_list);
-int aml_arena_jemalloc_destroy(struct aml_arena *);
+int aml_arena_jemalloc_create(struct aml_arena **arena, int type, ...);
+int aml_arena_jemalloc_init(struct aml_arena *arena, int type, ...);
+int aml_arena_jemalloc_vinit(struct aml_arena *arena, int type, va_list args);
+int aml_arena_jemalloc_destroy(struct aml_arena *arena);
 
 /*******************************************************************************
  * Areas:
@@ -95,15 +98,16 @@ int aml_arena_jemalloc_destroy(struct aml_arena *);
 struct aml_area_data;
 
 struct aml_area_ops {
-	void *(*malloc)(struct aml_area_data *, size_t);
-	void (*free)(struct aml_area_data *, void *);
-	void *(*calloc)(struct aml_area_data *, size_t, size_t);
-	void *(*realloc)(struct aml_area_data *, void *, size_t);
-	void *(*acquire)(struct aml_area_data *, size_t);
-	void (*release)(struct aml_area_data *, void *);
-	void *(*mmap)(struct aml_area_data *, void *ptr, size_t);
-	int (*available)(struct aml_area_data *);
-	int (*binding)(struct aml_area_data *, struct aml_binding **);
+	void *(*malloc)(struct aml_area_data *area, size_t size);
+	void (*free)(struct aml_area_data *area, void *ptr);
+	void *(*calloc)(struct aml_area_data *area, size_t num, size_t size);
+	void *(*realloc)(struct aml_area_data *area, void *ptr, size_t size);
+	void *(*acquire)(struct aml_area_data *area, size_t size);
+	void (*release)(struct aml_area_data *area, void *ptr);
+	void *(*mmap)(struct aml_area_data *area, void *ptr, size_t size);
+	int (*available)(struct aml_area_data *area);
+	int (*binding)(struct aml_area_data *area,
+		       struct aml_binding **binding);
 };
 
 struct aml_area {
@@ -131,10 +135,10 @@ struct aml_area_posix_data {
 	(sizeof(struct aml_area_posix_data) + \
 	 sizeof(struct aml_area))
 
-int aml_area_posix_create(struct aml_area **);
-int aml_area_posix_vinit(struct aml_area *);
-int aml_area_posix_init(struct aml_area *);
-int aml_area_posix_destroy(struct aml_area *);
+int aml_area_posix_create(struct aml_area **area);
+int aml_area_posix_vinit(struct aml_area *area);
+int aml_area_posix_init(struct aml_area *area);
+int aml_area_posix_destroy(struct aml_area *area);
 
 /*******************************************************************************
  * Linux Area:
@@ -153,9 +157,9 @@ struct aml_area_linux_manager_ops {
 
 extern struct aml_area_linux_manager_ops aml_area_linux_manager_single_ops;
 
-int aml_area_linux_manager_single_init(struct aml_area_linux_manager_data *,
-				       struct aml_arena *);
-int aml_area_linux_manager_single_destroy(struct aml_area_linux_manager_data *);
+int aml_area_linux_manager_single_init(struct aml_area_linux_manager_data *data,
+				       struct aml_arena *arena);
+int aml_area_linux_manager_single_destroy(struct aml_area_linux_manager_data *data);
 
 #define AML_MAX_NUMA_NODES 128
 #define AML_NODEMASK_BYTES (AML_MAX_NUMA_NODES/8)
@@ -180,24 +184,26 @@ struct aml_area_linux_mbind_data {
 };
 
 struct aml_area_linux_mbind_ops {
-	int (*pre_bind)(struct aml_area_linux_mbind_data *);
-	int (*post_bind)(struct aml_area_linux_mbind_data *, void *, size_t);
-	int (*binding)(struct aml_area_linux_mbind_data *, struct aml_binding *);
+	int (*pre_bind)(struct aml_area_linux_mbind_data *data);
+	int (*post_bind)(struct aml_area_linux_mbind_data *data, void *ptr,
+			 size_t size);
+	int (*binding)(struct aml_area_linux_mbind_data *data,
+		       struct aml_binding **binding);
 };
 
-int aml_area_linux_mbind_setdata(struct aml_area_linux_mbind_data *, int,
-				 unsigned long *);
-int aml_area_linux_mbind_generic_binding(struct aml_area_linux_mbind_data *,
-					 struct aml_binding **);
-int aml_area_linux_mbind_regular_pre_bind(struct aml_area_linux_mbind_data *);
-int aml_area_linux_mbind_regular_post_bind(struct aml_area_linux_mbind_data *,
-					   void *, size_t);
-int aml_area_linux_mbind_mempolicy_pre_bind(struct aml_area_linux_mbind_data *);
-int aml_area_linux_mbind_mempolicy_post_bind(struct aml_area_linux_mbind_data *,
-					   void *, size_t);
-int aml_area_linux_mbind_init(struct aml_area_linux_mbind_data *, int,
-			      unsigned long *);
-int aml_area_linux_mbind_destroy(struct aml_area_linux_mbind_data *);
+int aml_area_linux_mbind_setdata(struct aml_area_linux_mbind_data *data,
+				 int policy, unsigned long *nodemask);
+int aml_area_linux_mbind_generic_binding(struct aml_area_linux_mbind_data *data,
+					 struct aml_binding **binding);
+int aml_area_linux_mbind_regular_pre_bind(struct aml_area_linux_mbind_data *data);
+int aml_area_linux_mbind_regular_post_bind(struct aml_area_linux_mbind_data *data,
+					   void *ptr, size_t size);
+int aml_area_linux_mbind_mempolicy_pre_bind(struct aml_area_linux_mbind_data *data);
+int aml_area_linux_mbind_mempolicy_post_bind(struct aml_area_linux_mbind_data *data,
+					   void *ptr, size_t size);
+int aml_area_linux_mbind_init(struct aml_area_linux_mbind_data *data,
+			      int policy, unsigned long *nodemask);
+int aml_area_linux_mbind_destroy(struct aml_area_linux_mbind_data *data);
 
 extern struct aml_area_linux_mbind_ops aml_area_linux_mbind_regular_ops;
 extern struct aml_area_linux_mbind_ops aml_area_linux_mbind_mempolicy_ops;
@@ -210,18 +216,20 @@ struct aml_area_linux_mmap_data {
 };
 
 struct aml_area_linux_mmap_ops {
-	void *(*mmap)(struct aml_area_linux_mmap_data *, void *, size_t);
+	void *(*mmap)(struct aml_area_linux_mmap_data *data, void *ptr,
+		      size_t size);
 };
 
-void *aml_area_linux_mmap_generic(struct aml_area_linux_mmap_data *, void *,
-				  size_t);
-int aml_area_linux_mmap_anonymous_init(struct aml_area_linux_mmap_data *);
-int aml_area_linux_mmap_fd_init(struct aml_area_linux_mmap_data *, int, size_t);
-int aml_area_linux_mmap_tmpfile_init(struct aml_area_linux_mmap_data *, char *,
-				     size_t);
-int aml_area_linux_mmap_anonymous_destroy(struct aml_area_linux_mmap_data *);
-int aml_area_linux_mmap_fd_destroy(struct aml_area_linux_mmap_data *);
-int aml_area_linux_mmap_tmpfile_destroy(struct aml_area_linux_mmap_data *);
+void *aml_area_linux_mmap_generic(struct aml_area_linux_mmap_data *data,
+				  void *ptr, size_t size);
+int aml_area_linux_mmap_anonymous_init(struct aml_area_linux_mmap_data *data);
+int aml_area_linux_mmap_fd_init(struct aml_area_linux_mmap_data *data, int fd,
+				size_t max);
+int aml_area_linux_mmap_tmpfile_init(struct aml_area_linux_mmap_data *data,
+				     char *template, size_t max);
+int aml_area_linux_mmap_anonymous_destroy(struct aml_area_linux_mmap_data *data);
+int aml_area_linux_mmap_fd_destroy(struct aml_area_linux_mmap_data *data);
+int aml_area_linux_mmap_tmpfile_destroy(struct aml_area_linux_mmap_data *data);
 
 extern struct aml_area_linux_mmap_ops aml_area_linux_mmap_generic_ops;
 
@@ -262,10 +270,13 @@ struct aml_area_linux {
 #define AML_AREA_LINUX_MMAP_TYPE_FD 1
 #define AML_AREA_LINUX_MMAP_TYPE_TMPFILE 2
 
-int aml_area_linux_create(struct aml_area **, int, int, int, ...);
-int aml_area_linux_init(struct aml_area *, int, int, int, ...);
-int aml_area_linux_vinit(struct aml_area *, int, int, int, va_list);
-int aml_area_linux_destroy(struct aml_area *);
+int aml_area_linux_create(struct aml_area **area, int manager_type,
+			  int mbind_type, int mmap_type, ...);
+int aml_area_linux_init(struct aml_area *area, int manager_type, int mbind_type,
+			int mmap_type, ...);
+int aml_area_linux_vinit(struct aml_area *area, int manager_type,
+			 int mbind_type, int mmap_type, va_list args);
+int aml_area_linux_destroy(struct aml_area *area);
 
 /*******************************************************************************
  * Generic Area API:
@@ -273,15 +284,15 @@ int aml_area_linux_destroy(struct aml_area *);
  * For memory allocation function, follows the POSIX spec.
  ******************************************************************************/
 
-void *aml_area_malloc(struct aml_area *, size_t);
-void aml_area_free(struct aml_area *, void *);
-void *aml_area_calloc(struct aml_area *, size_t, size_t);
-void *aml_area_realloc(struct aml_area *, void *, size_t);
-void *aml_area_acquire(struct aml_area *, size_t);
-void aml_area_release(struct aml_area *, void *);
-void *aml_area_mmap(struct aml_area *, void *, size_t);
-int aml_area_available(struct aml_area *);
-int aml_area_binding(struct aml_area *, struct aml_binding **);
+void *aml_area_malloc(struct aml_area *area, size_t size);
+void aml_area_free(struct aml_area *area, void *ptr);
+void *aml_area_calloc(struct aml_area *area, size_t num, size_t size);
+void *aml_area_realloc(struct aml_area *area, void *ptr, size_t size);
+void *aml_area_acquire(struct aml_area *area, size_t size);
+void aml_area_release(struct aml_area *area, void *ptr);
+void *aml_area_mmap(struct aml_area *area, void *ptr, size_t size);
+int aml_area_available(struct aml_area *area);
+int aml_area_binding(struct aml_area *area, struct aml_binding **binding);
 
 /*******************************************************************************
  * Tiling:
@@ -298,14 +309,16 @@ struct aml_tiling_iterator;
 
 
 struct aml_tiling_ops {
-	int (*create_iterator)(struct aml_tiling_data *,
-			       struct aml_tiling_iterator **, int);
-	int (*init_iterator)(struct aml_tiling_data *,
-			     struct aml_tiling_iterator *, int);
-	int (*destroy_iterator)(struct aml_tiling_data *,
-				struct aml_tiling_iterator *);
-	size_t (*tilesize)(struct aml_tiling_data *, int);
-	void* (*tilestart)(struct aml_tiling_data *, void *, int);
+	int (*create_iterator)(struct aml_tiling_data *tiling,
+			       struct aml_tiling_iterator **iterator,
+			       int flags);
+	int (*init_iterator)(struct aml_tiling_data *tiling,
+			     struct aml_tiling_iterator *iterator, int flags);
+	int (*destroy_iterator)(struct aml_tiling_data *tiling,
+				struct aml_tiling_iterator *iterator);
+	size_t (*tilesize)(struct aml_tiling_data *tiling, int tileid);
+	void* (*tilestart)(struct aml_tiling_data *tiling, void *ptr,
+			   int tileid);
 };
 
 struct aml_tiling {
@@ -313,22 +326,23 @@ struct aml_tiling {
 	struct aml_tiling_data *data;
 };
 
-size_t aml_tiling_tilesize(struct aml_tiling *, int);
-void* aml_tiling_tilestart(struct aml_tiling *, void *, int);
+size_t aml_tiling_tilesize(struct aml_tiling *tiling, int tileid);
+void* aml_tiling_tilestart(struct aml_tiling *tiling, void *ptr, int tileid);
 
 
-int aml_tiling_create_iterator(struct aml_tiling *,
-			       struct aml_tiling_iterator **, int);
-int aml_tiling_init_iterator(struct aml_tiling *,
-			     struct aml_tiling_iterator *, int);
-int aml_tiling_destroy_iterator(struct aml_tiling *,
-				struct aml_tiling_iterator *);
+int aml_tiling_create_iterator(struct aml_tiling *tiling,
+			       struct aml_tiling_iterator **iterator,
+			       int flags);
+int aml_tiling_init_iterator(struct aml_tiling *tiling,
+			     struct aml_tiling_iterator *iterator, int flags);
+int aml_tiling_destroy_iterator(struct aml_tiling *tiling,
+				struct aml_tiling_iterator *iterator);
 
 struct aml_tiling_iterator_ops {
-	int (*reset)(struct aml_tiling_iterator_data *);
-	int (*next)(struct aml_tiling_iterator_data *);
-	int (*end)(struct aml_tiling_iterator_data *);
-	int (*get)(struct aml_tiling_iterator_data *, va_list);
+	int (*reset)(struct aml_tiling_iterator_data *iterator);
+	int (*next)(struct aml_tiling_iterator_data *iterator);
+	int (*end)(struct aml_tiling_iterator_data *iterator);
+	int (*get)(struct aml_tiling_iterator_data *iterator, va_list args);
 };
 
 struct aml_tiling_iterator {
@@ -336,17 +350,17 @@ struct aml_tiling_iterator {
 	struct aml_tiling_iterator_data *data;
 };
 
-int aml_tiling_iterator_reset(struct aml_tiling_iterator *);
-int aml_tiling_iterator_next(struct aml_tiling_iterator *);
-int aml_tiling_iterator_end(struct aml_tiling_iterator *);
-int aml_tiling_iterator_get(struct aml_tiling_iterator *, ...);
+int aml_tiling_iterator_reset(struct aml_tiling_iterator *iterator);
+int aml_tiling_iterator_next(struct aml_tiling_iterator *iterator);
+int aml_tiling_iterator_end(struct aml_tiling_iterator *iterator);
+int aml_tiling_iterator_get(struct aml_tiling_iterator *iterator, ...);
 
 #define AML_TILING_TYPE_1D 0
 
-int aml_tiling_create(struct aml_tiling **, int type, ...);
-int aml_tiling_init(struct aml_tiling *, int type, ...);
-int aml_tiling_vinit(struct aml_tiling *, int type, va_list);
-int aml_tiling_destroy(struct aml_tiling *, int type);
+int aml_tiling_create(struct aml_tiling **tiling, int type, ...);
+int aml_tiling_init(struct aml_tiling *tiling, int type, ...);
+int aml_tiling_vinit(struct aml_tiling *tiling, int type, va_list args);
+int aml_tiling_destroy(struct aml_tiling *tiling, int type);
 
 /*******************************************************************************
  * Tiling 1D:
@@ -395,12 +409,12 @@ struct aml_tiling_iterator_1d_data {
 struct aml_binding_data;
 
 struct aml_binding_ops {
-	int (*nbpages)(struct aml_binding_data *, struct aml_tiling *,
-		       void *, int);
-	int (*pages)(struct aml_binding_data *, void **, struct aml_tiling *,
-		     void *, int);
-	int (*nodes)(struct aml_binding_data *, int *, struct aml_tiling *,
-		     void *, int);
+	int (*nbpages)(struct aml_binding_data *binding,
+		       struct aml_tiling *tiling, void *ptr, int tileid);
+	int (*pages)(struct aml_binding_data *binding, void **pages,
+		     struct aml_tiling *tiling, void *ptr, int tileid);
+	int (*nodes)(struct aml_binding_data *binding, int *nodes,
+		     struct aml_tiling *tiling, void *ptr, int tileid);
 };
 
 struct aml_binding {
@@ -408,17 +422,20 @@ struct aml_binding {
 	struct aml_binding_data *data;
 };
 
-int aml_binding_nbpages(struct aml_binding *, struct aml_tiling *, void*, int);
-int aml_binding_pages(struct aml_binding *, void **, struct aml_tiling *, void*, int);
-int aml_binding_nodes(struct aml_binding *, int *, struct aml_tiling *, void *, int);
+int aml_binding_nbpages(struct aml_binding *binding, struct aml_tiling *tiling,
+			void *ptr, int tileid);
+int aml_binding_pages(struct aml_binding *binding, void **pages,
+		      struct aml_tiling *tiling, void *ptr, int tileid);
+int aml_binding_nodes(struct aml_binding *binding, int *nodes,
+		      struct aml_tiling *tiling, void *ptr, int tileid);
 
 #define AML_BINDING_TYPE_SINGLE 0
 #define AML_BINDING_TYPE_INTERLEAVE 1
 
-int aml_binding_create(struct aml_binding **, int type, ...);
-int aml_binding_init(struct aml_binding *, int type, ...);
-int aml_binding_vinit(struct aml_binding *, int type, va_list);
-int aml_binding_destroy(struct aml_binding *, int type);
+int aml_binding_create(struct aml_binding **binding, int type, ...);
+int aml_binding_init(struct aml_binding *binding, int type, ...);
+int aml_binding_vinit(struct aml_binding *binding, int type, va_list args);
+int aml_binding_destroy(struct aml_binding *binding, int type);
 
 /*******************************************************************************
  * Single Binding:
@@ -477,8 +494,8 @@ struct aml_dma_request_data;
 struct aml_dma_data;
 
 struct aml_dma_request_ops {
-	int (*copy)(struct aml_dma_data *, struct aml_dma_request_data *);
-	int (*move)(struct aml_dma_data *, struct aml_dma_request_data *);
+	int (*copy)(struct aml_dma_data *dma, struct aml_dma_request_data *req);
+	int (*move)(struct aml_dma_data *dma, struct aml_dma_request_data *req);
 };
 
 struct aml_dma_request {
@@ -488,10 +505,13 @@ struct aml_dma_request {
 
 
 struct aml_dma_ops {
-	int (*create_request)(struct aml_dma_data *,
-			      struct aml_dma_request *, int, va_list);
-	int (*destroy_request)(struct aml_dma_data *, struct aml_dma_request *);
-	int (*wait_request)(struct aml_dma_data *, struct aml_dma_request *);
+	int (*create_request)(struct aml_dma_data *dma,
+			      struct aml_dma_request *req, int type,
+			      va_list args);
+	int (*destroy_request)(struct aml_dma_data *dma,
+			       struct aml_dma_request *req);
+	int (*wait_request)(struct aml_dma_data *dma,
+			    struct aml_dma_request *req);
 };
 
 struct aml_dma {
@@ -499,12 +519,12 @@ struct aml_dma {
 	struct aml_dma_data *data;
 };
 
-int aml_dma_copy(struct aml_dma *, ...);
-int aml_dma_async_copy(struct aml_dma *, struct aml_dma_request *, ...);
-int aml_dma_move(struct aml_dma *, ...);
-int aml_dma_async_move(struct aml_dma *, struct aml_dma_request *, ...);
-int aml_dma_wait(struct aml_dma *, struct aml_dma_request *);
-int aml_dma_cancel(struct aml_dma *, struct aml_dma_request *);
+int aml_dma_copy(struct aml_dma *dma, ...);
+int aml_dma_async_copy(struct aml_dma *dma, struct aml_dma_request *req, ...);
+int aml_dma_move(struct aml_dma *dma, ...);
+int aml_dma_async_move(struct aml_dma *dma, struct aml_dma_request *req, ...);
+int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request *req);
+int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request *req);
 
 /*******************************************************************************
  * Linux Sequential DMA API:
@@ -530,10 +550,10 @@ struct aml_dma_linux_seq_data {
 };
 
 struct aml_dma_linux_seq_ops {
-	int (*add_request)(struct aml_dma_linux_seq_data *,
-			   struct aml_dma_request_linux_seq_data **);
-	int (*remove_request)(struct aml_dma_linux_seq_data *,
-			      struct aml_dma_request_linux_seq_data **);
+	int (*add_request)(struct aml_dma_linux_seq_data *dma,
+			   struct aml_dma_request_linux_seq_data **req);
+	int (*remove_request)(struct aml_dma_linux_seq_data *dma,
+			      struct aml_dma_request_linux_seq_data **req);
 };
 
 struct aml_dma_linux_seq {
@@ -552,10 +572,10 @@ struct aml_dma_linux_seq {
 	(sizeof(struct aml_dma_linux_seq) + \
 	 sizeof(struct aml_dma))
 
-int aml_dma_linux_seq_create(struct aml_dma **, ...);
-int aml_dma_linux_seq_init(struct aml_dma *, ...);
-int aml_dma_linux_seq_vinit(struct aml_dma *, va_list);
-int aml_dma_linux_seq_destroy(struct aml_dma *);
+int aml_dma_linux_seq_create(struct aml_dma **dma, ...);
+int aml_dma_linux_seq_init(struct aml_dma *dma, ...);
+int aml_dma_linux_seq_vinit(struct aml_dma *dma, va_list args);
+int aml_dma_linux_seq_destroy(struct aml_dma *dma);
 
 /*******************************************************************************
  * General functions:
