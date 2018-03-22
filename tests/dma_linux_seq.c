@@ -35,14 +35,19 @@ int main(int argc, char *argv[])
 	assert(!aml_dma_linux_seq_init(&dma, maxrequests));
 
 	/* allocate some memory */
-	src = aml_area_malloc(&area, TILESIZE*PAGE_SIZE*NBTILES); 
+	src = aml_area_malloc(&area, TILESIZE*PAGE_SIZE*NBTILES);
 	assert(src != NULL);
-	dst = aml_area_malloc(&area, TILESIZE*PAGE_SIZE*NBTILES); 
+	dst = aml_area_malloc(&area, TILESIZE*PAGE_SIZE*NBTILES);
 	assert(dst != NULL);
+
+	memset(src, 42, TILESIZE*PAGE_SIZE*NBTILES);
+	memset(dst, 24, TILESIZE*PAGE_SIZE*NBTILES);
 
 	/* move some stuff by copy */
 	for(int i = 0; i < NBTILES; i++)
 		aml_dma_copy(&dma, &tiling, dst, i, &tiling, src, i);
+
+	assert(!memcmp(src, dst, TILESIZE*PAGE_SIZE*NBTILES));
 
 	/* now move it by pages */
 	for(int i = 0; i < NBTILES; i++)

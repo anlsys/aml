@@ -24,7 +24,7 @@ int aml_dma_request_linux_seq_copy_init(struct aml_dma_request_linux_seq *req,
 {
 	assert(req != NULL);
 
-	req->type = AML_DMA_REQUEST_TYPE_MOVE;
+	req->type = AML_DMA_REQUEST_TYPE_COPY;
 	/* figure out pointers */
 	req->dest = aml_tiling_tilestart(dt, dptr, dtid);
 	req->src = aml_tiling_tilestart(st, sptr, stid);
