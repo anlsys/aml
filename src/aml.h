@@ -2,7 +2,6 @@
 #define AML_H 1
 
 #include <inttypes.h>
-#include <memkind.h>
 #include <numa.h>
 #include <numaif.h>
 #include <pthread.h>
