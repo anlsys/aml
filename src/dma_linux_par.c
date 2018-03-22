@@ -87,7 +87,18 @@ int aml_dma_linux_par_do_copy(struct aml_dma_linux_par_data *dma,
 {
 	assert(dma != NULL);
 	assert(req != NULL);
-	memcpy(req->dest, req->src, req->size);
+
+	/* chunk memory */
+	size_t nbthreads = dma->nbthreads;
+	size_t chunksize = req->size / nbthreads;
+
+	void *dest = (void*)((intptr_t)req->dest + tid * chunksize);
+	void *src = (void*)((intptr_t)req->src + tid * chunksize);
+
+	if(tid == nbthreads - 1 && req->size > chunksize * nbthreads)
+		chunksize += req->size % nbthreads;
+
+	memcpy(dest, src, chunksize);
 	return 0;
 }
 
@@ -96,10 +107,19 @@ int aml_dma_linux_par_do_move(struct aml_dma_linux_par_data *dma,
 {
 	assert(dma != NULL);
 	assert(req != NULL);
-	int status[req->count];
+
+	size_t nbthreads = dma->nbthreads;
+	size_t chunksize = req->count / nbthreads;
+
+	size_t idx = tid * chunksize;
+
+	if(tid == nbthreads - 1 && req->count > chunksize * nbthreads)
+		chunksize += req->count % nbthreads;
+
+	int status[chunksize];
 	int err;
-	err = move_pages(0, req->count, req->pages, req->nodes, status,
-			 MPOL_MF_MOVE);
+	err = move_pages(0, chunksize, &req->pages[idx], &req->nodes[idx],
+			 status, MPOL_MF_MOVE);
 	if(err)
 	{
 		perror("move_pages:");

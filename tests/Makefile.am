@@ -22,7 +22,8 @@ TILING_TESTS = tiling
 
 BINDING_TESTS = binding
 
-DMA_LINUX_TESTS = dma_linux_seq
+DMA_LINUX_TESTS = dma_linux_seq \
+		  dma_linux_par
 
 # unit tests
 UNIT_TESTS = $(ARENA_JEMALLOC_TESTS) \
