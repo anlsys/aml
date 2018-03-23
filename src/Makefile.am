@@ -20,13 +20,17 @@ DMA_CSOURCES = dma.c \
 	       dma_linux_par.c \
 	       dma_linux_seq.c
 
+SCRATCH_CSOURCES = scratch.c \
+		   scratch_seq.c
+
 LIBCSOURCES = aml.c area.c arena.c \
 	      $(ARENA_JEMALLOC_CSOURCES) \
 	      $(AREA_LINUX_CSOURCES) \
 	      $(AREA_POSIX_CSOURCES) \
 	      $(TILING_CSOURCES) \
 	      $(BINDING_CSOURCES) \
-	      $(DMA_CSOURCES)
+	      $(DMA_CSOURCES) \
+	      $(SCRATCH_CSOURCES)
 
 LIBHSOURCES = aml.h
 

@@ -643,6 +643,100 @@ int aml_dma_linux_par_init(struct aml_dma *, ...);
 int aml_dma_linux_par_vinit(struct aml_dma *, va_list);
 int aml_dma_linux_par_destroy(struct aml_dma *);
 
+/*******************************************************************************
+ * Scratchpad:
+ * Use an area to stage data from an another area in and out.
+ * A dma handles the movement itself.
+ ******************************************************************************/
+
+struct aml_scratch_request;
+struct aml_scratch_data;
+
+#define AML_SCRATCH_REQUEST_TYPE_INVALID -1
+#define AML_SCRATCH_REQUEST_TYPE_PUSH 0
+#define AML_SCRATCH_REQUEST_TYPE_PULL 1
+
+struct aml_scratch_ops {
+	int (*create_request)(struct aml_scratch_data *scratch,
+			      struct aml_scratch_request **req, int type,
+			      va_list args);
+	int (*destroy_request)(struct aml_scratch_data *scratch,
+			       struct aml_scratch_request *req);
+	int (*wait_request)(struct aml_scratch_data *scratch,
+			    struct aml_scratch_request *req);
+};
+
+struct aml_scratch {
+	struct aml_scratch_ops *ops;
+	struct aml_scratch_data *data;
+};
+
+int aml_scratch_pull(struct aml_scratch *scratch, ...);
+int aml_scratch_async_pull(struct aml_scratch *scratch,
+			   struct aml_scratch_request **req, ...);
+int aml_scratch_push(struct aml_scratch *scratch, ...);
+int aml_scratch_async_push(struct aml_scratch *scratch,
+			   struct aml_scratch_request **req, ...);
+int aml_scratch_wait(struct aml_scratch *scratch,
+		     struct aml_scratch_request *req);
+int aml_scratch_cancel(struct aml_scratch *scratch,
+		       struct aml_scratch_request *req);
+
+/*******************************************************************************
+ * Sequential scratchpad API:
+ * Scratchpad uses calling thread to trigger dma movements.
+ ******************************************************************************/
+
+extern struct aml_scratch_ops aml_scratch_seq_ops;
+
+struct aml_scratch_request_seq {
+	int type;
+	struct aml_tiling *stiling;
+	void *srcptr;
+	int srcid;
+	struct aml_tiling *dtiling;
+	void *dstptr;
+	int dstid;
+	struct aml_dma_request *dma_req;
+};
+
+struct aml_scratch_seq_data {
+	struct aml_area *srcarea, *scratcharea;
+	struct aml_tiling *srctiling, *scratchtiling;
+	struct aml_dma *dma;
+	size_t nbrequests;
+	struct aml_scratch_request_seq *requests;
+};
+
+struct aml_scratch_seq_ops {
+	int (*doit)(struct aml_scratch_seq_data *scratch,
+		    struct aml_scratch_request_seq *req);
+	int (*add_request)(struct aml_scratch_seq_data *scratch,
+			   struct aml_scratch_request_seq **req);
+	int (*remove_request)(struct aml_scratch_seq_data *scratch,
+			      struct aml_scratch_request_seq **req);
+};
+
+struct aml_scratch_seq {
+	struct aml_scratch_seq_ops ops;
+	struct aml_scratch_seq_data data;
+};
+
+#define AML_SCRATCH_SEQ_DECL(name) \
+	struct aml_scratch_seq __ ##name## _inner_data; \
+	struct aml_scratch name = { \
+		&aml_scratch_seq_ops, \
+		(struct aml_scratch_data *)&__ ## name ## _inner_data, \
+	};
+
+#define AML_SCRATCH_SEQ_ALLOCSIZE \
+	(sizeof(struct aml_scratch_seq) + \
+	 sizeof(struct aml_scratch))
+
+int aml_scratch_seq_create(struct aml_scratch **scratch, ...);
+int aml_scratch_seq_init(struct aml_scratch *scratch, ...);
+int aml_scratch_seq_vinit(struct aml_scratch *scratch, va_list args);
+int aml_scratch_seq_destroy(struct aml_scratch *scratch);
 
 /*******************************************************************************
  * General functions:

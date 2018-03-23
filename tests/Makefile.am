@@ -25,13 +25,16 @@ BINDING_TESTS = binding
 DMA_LINUX_TESTS = dma_linux_seq \
 		  dma_linux_par
 
+SCRATCH_TESTS = scratch_seq
+
 # unit tests
 UNIT_TESTS = $(ARENA_JEMALLOC_TESTS) \
 	     $(TILING_TESTS) \
 	     $(BINDING_TESTS) \
 	     $(AREA_LINUX_TESTS) \
 	     $(AREA_POSIX_TESTS) \
-	     $(DMA_LINUX_TESTS)
+	     $(DMA_LINUX_TESTS) \
+	     $(SCRATCH_TESTS)
 
 # fonctional tests
 FUNC_TESTS = stream_add_pth stream_add_omp stream_vanilla
