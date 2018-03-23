@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 	assert(tmpfile != -1);
 	/* use ftruncate to make sure we have enough space in the file. */
 	ftruncate(tmpfile, ALLOC_SIZE);
-	aml_area_linux_mmap_fd_init(&config[1], tmpfile, ALLOC_SIZE);
+	aml_area_linux_mmap_fd_init(&config[1], tmpfile, 0);
 
 	aml_area_linux_mmap_tmpfile_init(&config[2], tmpname2, ALLOC_SIZE);
 

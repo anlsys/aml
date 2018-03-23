@@ -224,7 +224,7 @@ void *aml_area_linux_mmap_generic(struct aml_area_linux_mmap_data *data,
 				  void *ptr, size_t size);
 int aml_area_linux_mmap_anonymous_init(struct aml_area_linux_mmap_data *data);
 int aml_area_linux_mmap_fd_init(struct aml_area_linux_mmap_data *data, int fd,
-				size_t max);
+				off_t offset);
 int aml_area_linux_mmap_tmpfile_init(struct aml_area_linux_mmap_data *data,
 				     char *template, size_t max);
 int aml_area_linux_mmap_anonymous_destroy(struct aml_area_linux_mmap_data *data);

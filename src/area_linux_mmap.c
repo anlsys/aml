@@ -36,14 +36,14 @@ int aml_area_linux_mmap_anonymous_destroy(struct aml_area_linux_mmap_data *data)
 }
 
 int aml_area_linux_mmap_fd_init(struct aml_area_linux_mmap_data *data, int fd,
-				size_t max)
+				off_t offset)
 {
 	/* TODO: should we check for the right open flags ? */
 	assert(data != NULL);
 	data->prot = PROT_READ|PROT_WRITE;
 	data->flags = MAP_PRIVATE;
 	data->fildes = fd;
-	data->off = 0;
+	data->off = offset;
 	return 0;
 }
 

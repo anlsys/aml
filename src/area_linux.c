@@ -176,8 +176,8 @@ int aml_area_linux_vinit(struct aml_area *a, int manager_type,
 	else if(mmap_type == AML_AREA_LINUX_MMAP_TYPE_FD)
 	{
 		int fd = va_arg(ap, int);
-		size_t max = va_arg(ap, size_t);
-		aml_area_linux_mmap_fd_init(&area->data.mmap, fd, max);
+		off_t offset = va_arg(ap, off_t);
+		aml_area_linux_mmap_fd_init(&area->data.mmap, fd, offset);
 	}
 	else if(mmap_type == AML_AREA_LINUX_MMAP_TYPE_TMPFILE)
 	{
