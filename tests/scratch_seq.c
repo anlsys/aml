@@ -39,16 +39,13 @@ int main(int argc, char *argv[])
 	/* allocate some memory */
 	src = aml_area_malloc(&area, TILESIZE*PAGE_SIZE*NBTILES);
 	assert(src != NULL);
-	dst = aml_area_malloc(&area, TILESIZE*PAGE_SIZE*NBTILES);
-	assert(dst != NULL);
 
 	memset(src, 42, TILESIZE*PAGE_SIZE*NBTILES);
-	memset(dst, 24, TILESIZE*PAGE_SIZE*NBTILES);
 
 	/* create scratchpad */
-	assert(!aml_scratch_seq_init(&scratch, &area, &tiling, &area, &tiling,
-				     &dma, NBTILES));
-
+	assert(!aml_scratch_seq_init(&scratch, &area, &area, &dma, &tiling,
+				     NBTILES, NBTILES));
+	dst = aml_scratch_baseptr(&scratch);
 	/* move some stuff */
 	for(int i = 0; i < NBTILES; i++)
 	{

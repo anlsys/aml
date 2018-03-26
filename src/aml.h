@@ -664,6 +664,7 @@ struct aml_scratch_ops {
 			       struct aml_scratch_request *req);
 	int (*wait_request)(struct aml_scratch_data *scratch,
 			    struct aml_scratch_request *req);
+	void *(*baseptr)(struct aml_scratch_data *scratch);
 };
 
 struct aml_scratch {
@@ -681,7 +682,7 @@ int aml_scratch_wait(struct aml_scratch *scratch,
 		     struct aml_scratch_request *req);
 int aml_scratch_cancel(struct aml_scratch *scratch,
 		       struct aml_scratch_request *req);
-
+void* aml_scratch_baseptr(struct aml_scratch *scratch);
 /*******************************************************************************
  * Sequential scratchpad API:
  * Scratchpad uses calling thread to trigger dma movements.
@@ -701,11 +702,14 @@ struct aml_scratch_request_seq {
 };
 
 struct aml_scratch_seq_data {
-	struct aml_area *srcarea, *scratcharea;
-	struct aml_tiling *srctiling, *scratchtiling;
+	struct aml_area *src_area, *sch_area;
+	struct aml_tiling *tiling;
 	struct aml_dma *dma;
 	size_t nbrequests;
 	struct aml_scratch_request_seq *requests;
+	size_t sch_nbtiles;
+	void * sch_ptr;
+	int *tilemap;
 };
 
 struct aml_scratch_seq_ops {
@@ -715,6 +719,7 @@ struct aml_scratch_seq_ops {
 			   struct aml_scratch_request_seq **req);
 	int (*remove_request)(struct aml_scratch_seq_data *scratch,
 			      struct aml_scratch_request_seq **req);
+	int (*tilemap_find)(struct aml_scratch_seq_data *scratch, int tid);
 };
 
 struct aml_scratch_seq {
