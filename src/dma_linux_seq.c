@@ -95,35 +95,9 @@ int aml_dma_linux_seq_do_move(struct aml_dma_linux_seq_data *dma,
 	return 0;
 }
 
-
-int aml_dma_linux_seq_add_request(struct aml_dma_linux_seq_data *data,
-				  struct aml_dma_request_linux_seq **req)
-{
-	for(int i = 0; i < data->size; i++)
-	{
-		if(data->requests[i].type == AML_DMA_REQUEST_TYPE_INVALID)
-		{
-			*req = &data->requests[i];
-			return 0;
-		}
-	}
-	/* TODO: slow path, need to resize the array */
-	return 0;
-}
-
-int aml_dma_linux_seq_remove_request(struct aml_dma_linux_seq_data *data,
-				     struct aml_dma_request_linux_seq **req)
-{
-	/* TODO: assert that the pointer is in the right place */
-	(*req)->type = AML_DMA_REQUEST_TYPE_INVALID;
-	return 0;
-}
-
 struct aml_dma_linux_seq_ops aml_dma_linux_seq_inner_ops = {
 	aml_dma_linux_seq_do_copy,
 	aml_dma_linux_seq_do_move,
-	aml_dma_linux_seq_add_request,
-	aml_dma_linux_seq_remove_request,
 };
 
 /*******************************************************************************
@@ -141,9 +115,7 @@ int aml_dma_linux_seq_create_request(struct aml_dma_data *d,
 
 	struct aml_dma_request_linux_seq *req;
 
-	/* find an available request slot */
-	dma->ops.add_request(&dma->data, &req);
-
+	req = aml_vector_add(&dma->data.requests);
 	/* init the request */
 	if(type == AML_DMA_REQUEST_TYPE_COPY)
 	{
@@ -165,7 +137,8 @@ int aml_dma_linux_seq_create_request(struct aml_dma_data *d,
 		struct aml_tiling *st = va_arg(ap, struct aml_tiling *);
 		void *sptr = va_arg(ap, void *);
 		int stid = va_arg(ap, int);
-		aml_dma_request_linux_seq_move_init(req, darea, st, sptr, stid);
+		aml_dma_request_linux_seq_move_init(req, darea, st, sptr,
+						    stid);
 	}
 	*r = (struct aml_dma_request *)req;
 	return 0;
@@ -187,7 +160,8 @@ int aml_dma_linux_seq_destroy_request(struct aml_dma_data *d,
 	else if(req->type == AML_DMA_REQUEST_TYPE_MOVE)
 		aml_dma_request_linux_seq_move_destroy(req);
 
-	dma->ops.remove_request(&dma->data, &req);
+	/* enough to remove from request vector */
+	aml_vector_remove(&dma->data.requests, req);
 	return 0;
 }
 
@@ -247,12 +221,13 @@ int aml_dma_linux_seq_vinit(struct aml_dma *d, va_list ap)
 	struct aml_dma_linux_seq *dma = (struct aml_dma_linux_seq *)d->data;
 
 	dma->ops = aml_dma_linux_seq_inner_ops;
-	/* allocate request array */
-	dma->data.size = va_arg(ap, size_t);
-	dma->data.requests = calloc(dma->data.size,
-				     sizeof(struct aml_dma_request_linux_seq));
-	for(int i = 0; i < dma->data.size; i++)
-		dma->data.requests[i].type = AML_DMA_REQUEST_TYPE_INVALID;
+
+	/* request vector */
+	size_t nbreqs = va_arg(ap, size_t);
+	aml_vector_init(&dma->data.requests, nbreqs,
+			sizeof(struct aml_dma_request_linux_seq),
+			offsetof(struct aml_dma_request_linux_seq, type),
+			AML_DMA_REQUEST_TYPE_INVALID);
 	return 0;
 }
 int aml_dma_linux_seq_init(struct aml_dma *d, ...)
@@ -268,6 +243,6 @@ int aml_dma_linux_seq_init(struct aml_dma *d, ...)
 int aml_dma_linux_seq_destroy(struct aml_dma *d)
 {
 	struct aml_dma_linux_seq *dma = (struct aml_dma_linux_seq *)d->data;
-	free(dma->data.requests);
+	aml_vector_destroy(&dma->data.requests);
 	return 0;
 }

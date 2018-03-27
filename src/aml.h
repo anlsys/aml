@@ -574,8 +574,7 @@ struct aml_dma_request_linux_seq {
 };
 
 struct aml_dma_linux_seq_data {
-	size_t size;
-	struct aml_dma_request_linux_seq *requests;
+	struct aml_vector requests;
 };
 
 struct aml_dma_linux_seq_ops {
@@ -583,10 +582,6 @@ struct aml_dma_linux_seq_ops {
 		       struct aml_dma_request_linux_seq *req);
 	int (*do_move)(struct aml_dma_linux_seq_data *dma,
 		       struct aml_dma_request_linux_seq *req);
-	int (*add_request)(struct aml_dma_linux_seq_data *dma,
-			   struct aml_dma_request_linux_seq **req);
-	int (*remove_request)(struct aml_dma_linux_seq_data *dma,
-			      struct aml_dma_request_linux_seq **req);
 };
 
 struct aml_dma_linux_seq {
@@ -637,9 +632,8 @@ struct aml_dma_request_linux_par {
 };
 
 struct aml_dma_linux_par_data {
-	size_t nbrequests;
 	size_t nbthreads;
-	struct aml_dma_request_linux_par *requests;
+	struct aml_vector requests;
 };
 
 struct aml_dma_linux_par_ops {
@@ -648,10 +642,6 @@ struct aml_dma_linux_par_ops {
 		       struct aml_dma_request_linux_par *, int tid);
 	int (*do_move)(struct aml_dma_linux_par_data *,
 		       struct aml_dma_request_linux_par *, int tid);
-	int (*add_request)(struct aml_dma_linux_par_data *,
-			   struct aml_dma_request_linux_par **);
-	int (*remove_request)(struct aml_dma_linux_par_data *,
-			      struct aml_dma_request_linux_par **);
 };
 
 struct aml_dma_linux_par {

@@ -128,36 +128,10 @@ int aml_dma_linux_par_do_move(struct aml_dma_linux_par_data *dma,
 	return 0;
 }
 
-
-int aml_dma_linux_par_add_request(struct aml_dma_linux_par_data *data,
-				  struct aml_dma_request_linux_par **req)
-{
-	for(int i = 0; i < data->nbrequests; i++)
-	{
-		if(data->requests[i].type == AML_DMA_REQUEST_TYPE_INVALID)
-		{
-			*req = &data->requests[i];
-			return 0;
-		}
-	}
-	/* TODO: slow path, need to resize the array */
-	return 0;
-}
-
-int aml_dma_linux_par_remove_request(struct aml_dma_linux_par_data *data,
-				     struct aml_dma_request_linux_par **req)
-{
-	/* TODO: assert that the pointer is in the right place */
-	(*req)->type = AML_DMA_REQUEST_TYPE_INVALID;
-	return 0;
-}
-
 struct aml_dma_linux_par_ops aml_dma_linux_par_inner_ops = {
 	aml_dma_linux_par_do_thread,
 	aml_dma_linux_par_do_copy,
 	aml_dma_linux_par_do_move,
-	aml_dma_linux_par_add_request,
-	aml_dma_linux_par_remove_request,
 };
 
 /*******************************************************************************
@@ -175,8 +149,7 @@ int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 
 	struct aml_dma_request_linux_par *req;
 
-	/* find an available request slot */
-	dma->ops.add_request(&dma->data, &req);
+	req = aml_vector_add(&dma->data.requests);
 
 	/* init the request */
 	if(type == AML_DMA_REQUEST_TYPE_COPY)
@@ -199,7 +172,8 @@ int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 		struct aml_tiling *st = va_arg(ap, struct aml_tiling *);
 		void *sptr = va_arg(ap, void *);
 		int stid = va_arg(ap, int);
-		aml_dma_request_linux_par_move_init(req, darea, st, sptr, stid);
+		aml_dma_request_linux_par_move_init(req, darea, st, sptr,
+						    stid);
 	}
 
 	for(int i = 0; i < dma->data.nbthreads; i++)
@@ -237,7 +211,7 @@ int aml_dma_linux_par_destroy_request(struct aml_dma_data *d,
 	else if(req->type == AML_DMA_REQUEST_TYPE_MOVE)
 		aml_dma_request_linux_par_move_destroy(req);
 
-	dma->ops.remove_request(&dma->data, &req);
+	aml_vector_remove(&dma->data.requests, req);
 	return 0;
 }
 
@@ -258,7 +232,8 @@ int aml_dma_linux_par_wait_request(struct aml_dma_data *d,
 		aml_dma_request_linux_par_copy_destroy(req);
 	else if(req->type == AML_DMA_REQUEST_TYPE_MOVE)
 		aml_dma_request_linux_par_move_destroy(req);
-	dma->ops.remove_request(&dma->data, &req);
+
+	aml_vector_remove(&dma->data.requests, req);
 	return 0;
 }
 
@@ -299,16 +274,19 @@ int aml_dma_linux_par_vinit(struct aml_dma *d, va_list ap)
 
 	dma->ops = aml_dma_linux_par_inner_ops;
 	/* allocate request array */
-	dma->data.nbrequests = va_arg(ap, size_t);
+	size_t nbreqs = va_arg(ap, size_t);
 	dma->data.nbthreads = va_arg(ap, size_t);
-	dma->data.requests = calloc(dma->data.nbrequests,
-				     sizeof(struct aml_dma_request_linux_par));
-	for(int i = 0; i < dma->data.nbrequests; i++)
+
+	aml_vector_init(&dma->data.requests, nbreqs,
+			sizeof(struct aml_dma_request_linux_par),
+			offsetof(struct aml_dma_request_linux_par, type),
+			AML_DMA_REQUEST_TYPE_INVALID);
+	for(int i = 0; i < nbreqs; i++)
 	{
-		dma->data.requests[i].type = AML_DMA_REQUEST_TYPE_INVALID;
-		dma->data.requests[i].thread_data =
-			calloc(dma->data.nbthreads,
-			       sizeof(struct aml_dma_linux_par_thread_data));
+		struct aml_dma_request_linux_par *req =
+			aml_vector_get(&dma->data.requests, i);
+		req->thread_data = calloc(dma->data.nbthreads,
+					  sizeof(struct aml_dma_linux_par_thread_data));
 	}
 	return 0;
 }
@@ -325,8 +303,12 @@ int aml_dma_linux_par_init(struct aml_dma *d, ...)
 int aml_dma_linux_par_destroy(struct aml_dma *d)
 {
 	struct aml_dma_linux_par *dma = (struct aml_dma_linux_par *)d->data;
-	for(int i = 0; i < dma->data.nbrequests; i++)
-		free(dma->data.requests[i].thread_data);
-	free(dma->data.requests);
+	for(int i = 0; i < aml_vector_size(&dma->data.requests); i++)
+	{
+		struct aml_dma_request_linux_par *req =
+			aml_vector_get(&dma->data.requests, i);
+		free(req->thread_data);
+	}
+	aml_vector_destroy(&dma->data.requests);
 	return 0;
 }
