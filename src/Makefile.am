@@ -23,7 +23,10 @@ DMA_CSOURCES = dma.c \
 SCRATCH_CSOURCES = scratch.c \
 		   scratch_seq.c
 
+UTILS_CSOURCES = vector.c
+
 LIBCSOURCES = aml.c area.c arena.c \
+	      $(UTILS_CSOURCES) \
 	      $(ARENA_JEMALLOC_CSOURCES) \
 	      $(AREA_LINUX_CSOURCES) \
 	      $(AREA_POSIX_CSOURCES) \

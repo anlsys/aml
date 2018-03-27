@@ -9,6 +9,8 @@ if TEST_VALGRIND
 TESTS_ENVIRONMENT= @LIBTOOL@ --mode=execute @VALGRIND@ --tool=memcheck -q --leak-check=full
 endif
 
+UTILS_TESTS = vector
+
 ARENA_JEMALLOC_TESTS = arena_jemalloc
 
 AREA_LINUX_TESTS = linux_mbind \
@@ -29,6 +31,7 @@ SCRATCH_TESTS = scratch_seq
 
 # unit tests
 UNIT_TESTS = $(ARENA_JEMALLOC_TESTS) \
+	     $(UTILS_TESTS) \
 	     $(TILING_TESTS) \
 	     $(BINDING_TESTS) \
 	     $(AREA_LINUX_TESTS) \

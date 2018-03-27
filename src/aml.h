@@ -25,6 +25,38 @@ struct aml_area;
 struct aml_binding;
 
 /*******************************************************************************
+ * Generic vector type:
+ * Vector of nbelems, each of size sz, with a comparison key at offset off
+ ******************************************************************************/
+
+#define AML_VECTOR_ELTKEY_P(v,e) ((int *)(((intptr_t) e) + v->off))
+#define AML_VECTOR_KEY_P(v,i) ((int *)(((intptr_t) v->ptr) + i*v->sz + v->off))
+#define AML_VECTOR_ELT_P(v,i) ((void *)(((intptr_t) v->ptr) + i*v->sz))
+
+struct aml_vector {
+	int na;
+	size_t nbelems;
+	size_t sz;
+	size_t off;
+	void *ptr;
+};
+
+/* not needed, here for consistency */
+#define AML_VECTOR_DECL(name) struct vector ##name;
+#define AML_VECTOR_ALLOCSIZE (sizeof(struct vector))
+
+size_t aml_vector_size(struct aml_vector *vec);
+void *aml_vector_get(struct aml_vector *vec, int idx);
+int aml_vector_find(struct aml_vector *vec, int key);
+int aml_vector_resize(struct aml_vector *vec, size_t newsize);
+void *aml_vector_add(struct aml_vector *vec);
+void aml_vector_remove(struct aml_vector *vec, void *elem);
+
+int aml_vector_init(struct aml_vector *vec, size_t num, size_t size,
+		    size_t key, int na);
+int aml_vector_destroy(struct aml_vector *vec);
+
+/*******************************************************************************
  * Arenas:
  * In-memory allocator implementation. Dispatches actual memory mappings back to
  * areas.
