@@ -727,21 +727,14 @@ struct aml_scratch_seq_data {
 	struct aml_area *src_area, *sch_area;
 	struct aml_tiling *tiling;
 	struct aml_dma *dma;
-	size_t nbrequests;
-	struct aml_scratch_request_seq *requests;
-	size_t sch_nbtiles;
 	void * sch_ptr;
-	int *tilemap;
+	struct aml_vector tilemap;
+	struct aml_vector requests;
 };
 
 struct aml_scratch_seq_ops {
 	int (*doit)(struct aml_scratch_seq_data *scratch,
 		    struct aml_scratch_request_seq *req);
-	int (*add_request)(struct aml_scratch_seq_data *scratch,
-			   struct aml_scratch_request_seq **req);
-	int (*remove_request)(struct aml_scratch_seq_data *scratch,
-			      struct aml_scratch_request_seq **req);
-	int (*tilemap_find)(struct aml_scratch_seq_data *scratch, int tid);
 };
 
 struct aml_scratch_seq {
