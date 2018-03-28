@@ -785,6 +785,7 @@ struct aml_scratch_par_data {
 	void * sch_ptr;
 	struct aml_vector tilemap;
 	struct aml_vector requests;
+	pthread_mutex_t lock;
 };
 
 struct aml_scratch_par_ops {

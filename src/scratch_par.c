@@ -67,6 +67,7 @@ int aml_scratch_par_create_request(struct aml_scratch_data *d,
 
 	struct aml_scratch_request_par *req;
 
+	pthread_mutex_lock(&scratch->data.lock);
 	req = aml_vector_add(&scratch->data.requests);
 	/* init the request */
 	if(type == AML_SCRATCH_REQUEST_TYPE_PUSH)
@@ -120,6 +121,7 @@ int aml_scratch_par_create_request(struct aml_scratch_data *d,
 		aml_scratch_request_par_init(req, type, scratchptr, *scratchid,
 					     srcptr, srcid);
 	}
+	pthread_mutex_unlock(&scratch->data.lock);
 	/* thread creation */
 	req->scratch = scratch;
 	pthread_create(&req->thread, NULL, scratch->ops.do_thread, req);
@@ -145,12 +147,14 @@ int aml_scratch_par_destroy_request(struct aml_scratch_data *d,
 	aml_scratch_request_par_destroy(req);
 
 	/* destroy removes the tile from the scratch */
+	pthread_mutex_lock(&scratch->data.lock);
 	if(req->type == AML_SCRATCH_REQUEST_TYPE_PUSH)
 		tile = aml_vector_get(&scratch->data.tilemap,req->srcid);
 	else if(req->type == AML_SCRATCH_REQUEST_TYPE_PULL)
 		tile = aml_vector_get(&scratch->data.tilemap,req->dstid);
 	aml_vector_remove(&scratch->data.tilemap, tile);
 	aml_vector_remove(&scratch->data.requests, req);
+	pthread_mutex_unlock(&scratch->data.lock);
 	return 0;
 }
 
@@ -169,12 +173,14 @@ int aml_scratch_par_wait_request(struct aml_scratch_data *d,
 
 	/* cleanup a completed request. In case of push, free up the tile */
 	aml_scratch_request_par_destroy(req);
+	pthread_mutex_lock(&scratch->data.lock);
 	if(req->type == AML_SCRATCH_REQUEST_TYPE_PUSH)
 	{
 		tile = aml_vector_get(&scratch->data.tilemap,req->srcid);
 		aml_vector_remove(&scratch->data.tilemap, tile);
 	}
 	aml_vector_remove(&scratch->data.requests, req);
+	pthread_mutex_unlock(&scratch->data.lock);
 	return 0;
 }
 
@@ -241,6 +247,7 @@ int aml_scratch_par_vinit(struct aml_scratch *d, va_list ap)
 	size_t tilesize = aml_tiling_tilesize(scratch->data.tiling, 0);
 	scratch->data.sch_ptr = aml_area_calloc(scratch->data.sch_area,
 						nbtiles, tilesize);
+	pthread_mutex_init(&scratch->data.lock, NULL);
 	return 0;
 }
 int aml_scratch_par_init(struct aml_scratch *d, ...)
@@ -259,5 +266,6 @@ int aml_scratch_par_destroy(struct aml_scratch *d)
 	aml_vector_destroy(&scratch->data.requests);
 	aml_vector_destroy(&scratch->data.tilemap);
 	aml_area_free(scratch->data.sch_area, scratch->data.sch_ptr);
+	pthread_mutex_destroy(&scratch->data.lock);
 	return 0;
 }
