@@ -767,10 +767,8 @@ extern struct aml_scratch_ops aml_scratch_par_ops;
 
 struct aml_scratch_request_par {
 	int type;
-	struct aml_tiling *stiling;
 	void *srcptr;
 	int srcid;
-	struct aml_tiling *dtiling;
 	void *dstptr;
 	int dstid;
 	struct aml_scratch_par *scratch;
