@@ -732,6 +732,7 @@ struct aml_scratch_seq_data {
 	void * sch_ptr;
 	struct aml_vector tilemap;
 	struct aml_vector requests;
+	pthread_mutex_t lock;
 };
 
 struct aml_scratch_seq_ops {
