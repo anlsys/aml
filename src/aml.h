@@ -575,6 +575,7 @@ struct aml_dma_request_linux_seq {
 
 struct aml_dma_linux_seq_data {
 	struct aml_vector requests;
+	pthread_mutex_t lock;
 };
 
 struct aml_dma_linux_seq_ops {

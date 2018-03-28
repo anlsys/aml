@@ -115,7 +115,10 @@ int aml_dma_linux_seq_create_request(struct aml_dma_data *d,
 
 	struct aml_dma_request_linux_seq *req;
 
+	pthread_mutex_lock(&dma->data.lock);
 	req = aml_vector_add(&dma->data.requests);
+	pthread_mutex_unlock(&dma->data.lock);
+
 	/* init the request */
 	if(type == AML_DMA_REQUEST_TYPE_COPY)
 	{
@@ -161,7 +164,9 @@ int aml_dma_linux_seq_destroy_request(struct aml_dma_data *d,
 		aml_dma_request_linux_seq_move_destroy(req);
 
 	/* enough to remove from request vector */
+	pthread_mutex_lock(&dma->data.lock);
 	aml_vector_remove(&dma->data.requests, req);
+	pthread_mutex_unlock(&dma->data.lock);
 	return 0;
 }
 
@@ -228,6 +233,7 @@ int aml_dma_linux_seq_vinit(struct aml_dma *d, va_list ap)
 			sizeof(struct aml_dma_request_linux_seq),
 			offsetof(struct aml_dma_request_linux_seq, type),
 			AML_DMA_REQUEST_TYPE_INVALID);
+	pthread_mutex_init(&dma->data.lock, NULL);
 	return 0;
 }
 int aml_dma_linux_seq_init(struct aml_dma *d, ...)
@@ -244,5 +250,6 @@ int aml_dma_linux_seq_destroy(struct aml_dma *d)
 {
 	struct aml_dma_linux_seq *dma = (struct aml_dma_linux_seq *)d->data;
 	aml_vector_destroy(&dma->data.requests);
+	pthread_mutex_destroy(&dma->data.lock);
 	return 0;
 }
