@@ -149,7 +149,9 @@ int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 
 	struct aml_dma_request_linux_par *req;
 
+	pthread_mutex_lock(&dma->data.lock);
 	req = aml_vector_add(&dma->data.requests);
+	pthread_mutex_unlock(&dma->data.lock);
 
 	/* init the request */
 	if(type == AML_DMA_REQUEST_TYPE_COPY)
@@ -211,7 +213,9 @@ int aml_dma_linux_par_destroy_request(struct aml_dma_data *d,
 	else if(req->type == AML_DMA_REQUEST_TYPE_MOVE)
 		aml_dma_request_linux_par_move_destroy(req);
 
+	pthread_mutex_lock(&dma->data.lock);
 	aml_vector_remove(&dma->data.requests, req);
+	pthread_mutex_unlock(&dma->data.lock);
 	return 0;
 }
 
@@ -233,7 +237,9 @@ int aml_dma_linux_par_wait_request(struct aml_dma_data *d,
 	else if(req->type == AML_DMA_REQUEST_TYPE_MOVE)
 		aml_dma_request_linux_par_move_destroy(req);
 
+	pthread_mutex_lock(&dma->data.lock);
 	aml_vector_remove(&dma->data.requests, req);
+	pthread_mutex_unlock(&dma->data.lock);
 	return 0;
 }
 
@@ -288,6 +294,7 @@ int aml_dma_linux_par_vinit(struct aml_dma *d, va_list ap)
 		req->thread_data = calloc(dma->data.nbthreads,
 					  sizeof(struct aml_dma_linux_par_thread_data));
 	}
+	pthread_mutex_init(&dma->data.lock, NULL);
 	return 0;
 }
 int aml_dma_linux_par_init(struct aml_dma *d, ...)
@@ -310,5 +317,6 @@ int aml_dma_linux_par_destroy(struct aml_dma *d)
 		free(req->thread_data);
 	}
 	aml_vector_destroy(&dma->data.requests);
+	pthread_mutex_destroy(&dma->data.lock);
 	return 0;
 }

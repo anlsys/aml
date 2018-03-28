@@ -635,6 +635,7 @@ struct aml_dma_request_linux_par {
 struct aml_dma_linux_par_data {
 	size_t nbthreads;
 	struct aml_vector requests;
+	pthread_mutex_t lock;
 };
 
 struct aml_dma_linux_par_ops {
