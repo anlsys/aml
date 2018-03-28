@@ -759,6 +759,59 @@ int aml_scratch_seq_vinit(struct aml_scratch *scratch, va_list args);
 int aml_scratch_seq_destroy(struct aml_scratch *scratch);
 
 /*******************************************************************************
+ * Parallel scratchpad API:
+ * Scratchpad creates one thread to trigger synchronous dma movements.
+ ******************************************************************************/
+
+extern struct aml_scratch_ops aml_scratch_par_ops;
+
+struct aml_scratch_request_par {
+	int type;
+	struct aml_tiling *stiling;
+	void *srcptr;
+	int srcid;
+	struct aml_tiling *dtiling;
+	void *dstptr;
+	int dstid;
+	struct aml_scratch_par *scratch;
+	pthread_t thread;
+};
+
+struct aml_scratch_par_data {
+	struct aml_area *src_area, *sch_area;
+	struct aml_tiling *tiling;
+	struct aml_dma *dma;
+	void * sch_ptr;
+	struct aml_vector tilemap;
+	struct aml_vector requests;
+};
+
+struct aml_scratch_par_ops {
+	void *(*do_thread)(void *);
+};
+
+struct aml_scratch_par {
+	struct aml_scratch_par_ops ops;
+	struct aml_scratch_par_data data;
+};
+
+#define AML_SCRATCH_PAR_DECL(name) \
+	struct aml_scratch_par __ ##name## _inner_data; \
+	struct aml_scratch name = { \
+		&aml_scratch_par_ops, \
+		(struct aml_scratch_data *)&__ ## name ## _inner_data, \
+	};
+
+#define AML_SCRATCH_PAR_ALLOCSIZE \
+	(sizeof(struct aml_scratch_par) + \
+	 sizeof(struct aml_scratch))
+
+int aml_scratch_par_create(struct aml_scratch **scratch, ...);
+int aml_scratch_par_init(struct aml_scratch *scratch, ...);
+int aml_scratch_par_vinit(struct aml_scratch *scratch, va_list args);
+int aml_scratch_par_destroy(struct aml_scratch *scratch);
+
+/*******************************************************************************
  * General functions:
  * Initialize internal structures, cleanup everything at the end.
  ******************************************************************************/

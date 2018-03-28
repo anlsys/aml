@@ -21,7 +21,8 @@ DMA_CSOURCES = dma.c \
 	       dma_linux_seq.c
 
 SCRATCH_CSOURCES = scratch.c \
-		   scratch_seq.c
+		   scratch_seq.c \
+		   scratch_par.c
 
 UTILS_CSOURCES = vector.c
 

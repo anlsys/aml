@@ -27,7 +27,8 @@ BINDING_TESTS = binding
 DMA_LINUX_TESTS = dma_linux_seq \
 		  dma_linux_par
 
-SCRATCH_TESTS = scratch_seq
+SCRATCH_TESTS = scratch_seq \
+		scratch_par
 
 # unit tests
 UNIT_TESTS = $(ARENA_JEMALLOC_TESTS) \
