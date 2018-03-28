@@ -15,16 +15,15 @@
  ******************************************************************************/
 
 int aml_scratch_request_seq_init(struct aml_scratch_request_seq *req, int type,
-				 struct aml_tiling *dt, void *dstptr, int dstid,
-				 struct aml_tiling *st, void *srcptr, int srcid)
+				 struct aml_tiling *t, void *dstptr, int dstid,
+				 void *srcptr, int srcid)
 
 {
 	assert(req != NULL);
 	req->type = type;
-	req->stiling = st;
+	req->tiling = t;
 	req->srcptr = srcptr;
 	req->srcid = srcid;
-	req->dtiling = dt;
 	req->dstptr = dstptr;
 	req->dstid = dstid;
 	return 0;
@@ -45,8 +44,8 @@ int aml_scratch_seq_doit(struct aml_scratch_seq_data *scratch,
 	assert(scratch != NULL);
 	assert(req != NULL);
 	return aml_dma_async_copy(scratch->dma, &req->dma_req,
-				  req->dtiling, req->dstptr, req->dstid,
-				  req->stiling, req->srcptr, req->srcid);
+				  req->tiling, req->dstptr, req->dstid,
+				  req->tiling, req->srcptr, req->srcid);
 }
 
 struct aml_scratch_seq_ops aml_scratch_seq_inner_ops = {
@@ -92,7 +91,6 @@ int aml_scratch_seq_create_request(struct aml_scratch_data *d,
 		/* init request */
 		aml_scratch_request_seq_init(req, type, scratch->data.tiling,
 					     srcptr, *srcid,
-					     scratch->data.tiling,
 					     scratchptr, scratchid);
 	}
 	else if(type == AML_SCRATCH_REQUEST_TYPE_PULL)
@@ -125,7 +123,6 @@ int aml_scratch_seq_create_request(struct aml_scratch_data *d,
 		aml_scratch_request_seq_init(req, type,
 					     scratch->data.tiling,
 					     scratchptr, *scratchid,
-					     scratch->data.tiling,
 					     srcptr, srcid);
 	}
 	scratch->ops.doit(&scratch->data, req);

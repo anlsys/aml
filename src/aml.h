@@ -705,19 +705,19 @@ int aml_scratch_wait(struct aml_scratch *scratch,
 int aml_scratch_cancel(struct aml_scratch *scratch,
 		       struct aml_scratch_request *req);
 void* aml_scratch_baseptr(struct aml_scratch *scratch);
+
 /*******************************************************************************
  * Sequential scratchpad API:
- * Scratchpad uses calling thread to trigger dma movements.
+ * Scratchpad uses calling thread to trigger asynchronous dma movements.
  ******************************************************************************/
 
 extern struct aml_scratch_ops aml_scratch_seq_ops;
 
 struct aml_scratch_request_seq {
 	int type;
-	struct aml_tiling *stiling;
+	struct aml_tiling *tiling;
 	void *srcptr;
 	int srcid;
-	struct aml_tiling *dtiling;
 	void *dstptr;
 	int dstid;
 	struct aml_dma_request *dma_req;
