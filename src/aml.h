@@ -1395,6 +1395,7 @@ struct aml_scratch_ops {
 	int (*wait_request)(struct aml_scratch_data *scratch,
 			    struct aml_scratch_request *req);
 	void *(*baseptr)(const struct aml_scratch_data *scratch);
+	int (*release)(struct aml_scratch_data *scratch, int scratchid);
 };
 
 struct aml_scratch {
@@ -1461,6 +1462,7 @@ int aml_scratch_async_push(struct aml_scratch *scratch,
  */
 int aml_scratch_wait(struct aml_scratch *scratch,
 		     struct aml_scratch_request *req);
+
 /*
  * Tears down an asynchronous scratch request before it completes.
  * "scratch": an initialized scratch structure.
@@ -1475,6 +1477,14 @@ int aml_scratch_cancel(struct aml_scratch *scratch,
  * Returns a base pointer to the scratchpad memory buffer.
  */
 void* aml_scratch_baseptr(const struct aml_scratch *scratch);
+
+/*
+ * Release a scratch tile for immediate reuse.
+ * "scratch": an initialized scratchpad structure.
+ * "scratchid": an argument of type int; the scratchpad tile identifier.
+ * Returns 0 if successuf; an error code otherwise.
+ */
+int aml_scratch_release(struct aml_scratch *scratch, int scratchid);
 
 /*******************************************************************************
  * Sequential scratchpad API:

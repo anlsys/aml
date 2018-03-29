@@ -193,11 +193,26 @@ void *aml_scratch_seq_baseptr(const struct aml_scratch_data *d)
 	return scratch->data.sch_ptr;
 }
 
+int aml_scratch_seq_release(struct aml_scratch_data *d, int scratchid)
+{
+	assert(d != NULL);
+	struct aml_scratch_seq *scratch = (struct aml_scratch_seq *)d;
+	int *tile;
+
+	pthread_mutex_lock(&scratch->data.lock);
+	tile = aml_vector_get(&scratch->data.tilemap, scratchid);
+	if(tile != NULL)
+		aml_vector_remove(&scratch->data.tilemap, tile);
+	pthread_mutex_unlock(&scratch->data.lock);
+	return 0;
+}
+
 struct aml_scratch_ops aml_scratch_seq_ops = {
 	aml_scratch_seq_create_request,
 	aml_scratch_seq_destroy_request,
 	aml_scratch_seq_wait_request,
 	aml_scratch_seq_baseptr,
+	aml_scratch_seq_release,
 };
 
 /*******************************************************************************

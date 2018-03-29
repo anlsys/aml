@@ -85,3 +85,9 @@ void *aml_scratch_baseptr(const struct aml_scratch *scratch)
 	assert(scratch != NULL);
 	return scratch->ops->baseptr(scratch->data);
 }
+
+int aml_scratch_release(struct aml_scratch *scratch, int scratchid)
+{
+	assert(scratch != NULL);
+	return scratch->ops->release(scratch->data, scratchid);
+}
