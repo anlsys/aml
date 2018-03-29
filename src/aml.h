@@ -56,7 +56,7 @@ struct aml_vector {
  * "vector": an initialized vector structure.
  * Returns the number of elements in the vector.
  */
-size_t aml_vector_size(struct aml_vector *vector);
+size_t aml_vector_size(const struct aml_vector *vector);
 /*
  * Provides a pointer of element with index "index" within the vector.
  * "vector": an initialized vector structure.
@@ -71,7 +71,7 @@ void *aml_vector_get(struct aml_vector *vector, int index);
  * "key": the key to look for.
  * Returns the index of the found element or "na" if not found.
  */
-int aml_vector_find(struct aml_vector *vector, int key);
+int aml_vector_find(const struct aml_vector *vector, int key);
 /*
  * Resizes the vector.  The keys of the newly allocated elements are set to the
  * "na" value.
@@ -1394,7 +1394,7 @@ struct aml_scratch_ops {
 			       struct aml_scratch_request *req);
 	int (*wait_request)(struct aml_scratch_data *scratch,
 			    struct aml_scratch_request *req);
-	void *(*baseptr)(struct aml_scratch_data *scratch);
+	void *(*baseptr)(const struct aml_scratch_data *scratch);
 };
 
 struct aml_scratch {
@@ -1474,7 +1474,7 @@ int aml_scratch_cancel(struct aml_scratch *scratch,
  * "scratch": an initialized scratch structure.
  * Returns a base pointer to the scratchpad memory buffer.
  */
-void* aml_scratch_baseptr(struct aml_scratch *scratch);
+void* aml_scratch_baseptr(const struct aml_scratch *scratch);
 
 /*******************************************************************************
  * Sequential scratchpad API:
@@ -1662,7 +1662,17 @@ int aml_scratch_par_destroy(struct aml_scratch *scratch);
  * Initialize internal structures, cleanup everything at the end.
  ******************************************************************************/
 
+/*
+ * Initializes the library.
+ * "argc": pointer to the main()'s argc argument; contents can get modified.
+ * "argv": pointer to the main()'s argv argument; contents can get modified.
+ * Returns 0 if successful; an error code otherwise.
+ */
 int aml_init(int *argc, char **argv[]);
+/*
+ * Terminates the library.
+ * Returns 0 if successful; an error code otherwise.
+ */
 int aml_finalize(void);
 
 #endif

@@ -80,7 +80,7 @@ int aml_scratch_wait(struct aml_scratch *scratch, struct aml_scratch_request *re
 	return scratch->ops->wait_request(scratch->data, req);
 }
 
-void *aml_scratch_baseptr(struct aml_scratch *scratch)
+void *aml_scratch_baseptr(const struct aml_scratch *scratch)
 {
 	assert(scratch != NULL);
 	return scratch->ops->baseptr(scratch->data);

@@ -184,10 +184,10 @@ int aml_scratch_par_wait_request(struct aml_scratch_data *d,
 	return 0;
 }
 
-void *aml_scratch_par_baseptr(struct aml_scratch_data *d)
+void *aml_scratch_par_baseptr(const struct aml_scratch_data *d)
 {
 	assert(d != NULL);
-	struct aml_scratch_par *scratch = (struct aml_scratch_par *)d;
+	const struct aml_scratch_par *scratch = (const struct aml_scratch_par *)d;
 	return scratch->data.sch_ptr;
 }
 

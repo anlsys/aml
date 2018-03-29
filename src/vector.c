@@ -28,7 +28,7 @@ int aml_vector_resize(struct aml_vector *vec, size_t newsize)
 	return 0;
 }
 
-size_t aml_vector_size(struct aml_vector *vec)
+size_t aml_vector_size(const struct aml_vector *vec)
 {
 	assert(vec != NULL);
 	return vec->nbelems;
@@ -45,7 +45,7 @@ void *aml_vector_get(struct aml_vector *vec, int id)
 }
 
 /* return index of first element with key */
-int aml_vector_find(struct aml_vector *vec, int key)
+int aml_vector_find(const struct aml_vector *vec, int key)
 {
 	assert(vec != NULL);
 	for(int i = 0; i < vec->nbelems; i++)
