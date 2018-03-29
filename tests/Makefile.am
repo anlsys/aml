@@ -41,9 +41,9 @@ UNIT_TESTS = $(ARENA_JEMALLOC_TESTS) \
 	     $(SCRATCH_TESTS)
 
 # fonctional tests
-FUNC_TESTS = stream_add_pth stream_add_omp stream_vanilla
+FUNC_TESTS = stream_add_pth
 
 # all tests
-TST_PROGS = $(UNIT_TESTS)
+TST_PROGS = $(UNIT_TESTS) $(FUNC_TESTS)
 check_PROGRAMS = $(TST_PROGS)
 TESTS = $(TST_PROGS)
