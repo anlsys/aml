@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 
 	/* create scratchpad */
 	assert(!aml_scratch_par_init(&scratch, &area, &area, &dma, &tiling,
-				     NBTILES, NBTILES));
+				     (size_t)NBTILES, (size_t)NBTILES));
 	dst = aml_scratch_baseptr(&scratch);
 	/* move some stuff */
 	for(int i = 0; i < NBTILES; i++)

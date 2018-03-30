@@ -31,11 +31,12 @@ void do_work(unsigned long tid)
 {
 
 	int offset, i, ai, bi, oldai, oldbi;
-	unsigned long *ap, *bp;
+	unsigned long *ap, *bp, *cp;
 	void *abaseptr, *bbaseptr;
 	offset = tid*CHUNKING;
 	ap = aml_tiling_tilestart(&tiling, a, offset);
 	bp = aml_tiling_tilestart(&tiling, b, offset);
+	cp = aml_tiling_tilestart(&tiling, c, offset);
 	abaseptr = aml_scratch_baseptr(&sa);
 	bbaseptr = aml_scratch_baseptr(&sb);
 	ai = -1; bi = -1;
@@ -44,15 +45,16 @@ void do_work(unsigned long tid)
 		oldai = ai; oldbi = bi;
 		aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, offset+i+1);
 		aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, offset+i+1);
-		kernel(ap, bp, &c[(offset+i)*esz], esz);
+		kernel(ap, bp, cp, esz);
 		aml_scratch_wait(&sa, ar);
 		aml_scratch_wait(&sb, br);
 		ap = aml_tiling_tilestart(&tiling, abaseptr, ai);
 		bp = aml_tiling_tilestart(&tiling, bbaseptr, bi);
+		cp = aml_tiling_tilestart(&tiling, c, offset+i+1);
 		aml_scratch_release(&sa, oldai);
 		aml_scratch_release(&sb, oldbi);
 	}
-	kernel(ap, bp, &c[(offset+i)*esz], esz);
+	kernel(ap, bp, cp, esz);
 }
 
 int main(int argc, char *argv[])
@@ -126,7 +128,7 @@ int main(int argc, char *argv[])
 	aml_dma_linux_seq_destroy(&dma);
 	aml_area_free(&slow, a);
 	aml_area_free(&slow, b);
-	aml_area_free(&slow, c);
+	aml_area_free(&fast, c);
 	aml_area_linux_destroy(&slow);
 	aml_area_linux_destroy(&fast);
 	aml_tiling_destroy(&tiling, AML_TILING_TYPE_1D);

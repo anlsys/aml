@@ -36,12 +36,13 @@ void *th_work(void *arg)
 {
 
 	int offset, i, ai, bi, oldai, oldbi;
-	unsigned long *ap, *bp;
+	unsigned long *ap, *bp, *cp;
 	void *abaseptr, *bbaseptr;
 	struct winfo *wi = arg;
 	offset = wi->tid*CHUNKING;
 	ap = aml_tiling_tilestart(&tiling, a, offset);
 	bp = aml_tiling_tilestart(&tiling, b, offset);
+	cp = aml_tiling_tilestart(&tiling, c, offset);
 	abaseptr = aml_scratch_baseptr(&sa);
 	bbaseptr = aml_scratch_baseptr(&sb);
 	ai = -1; bi = -1;
@@ -50,15 +51,16 @@ void *th_work(void *arg)
 		oldai = ai; oldbi = bi;
 		aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, offset+i+1);
 		aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, offset+i+1);
-		kernel(ap, bp, &c[(offset+i)*esz], esz);
+		kernel(ap, bp, cp, esz);
 		aml_scratch_wait(&sa, ar);
 		aml_scratch_wait(&sb, br);
 		ap = aml_tiling_tilestart(&tiling, abaseptr, ai);
 		bp = aml_tiling_tilestart(&tiling, bbaseptr, bi);
+		cp = aml_tiling_tilestart(&tiling, c, offset+i+1);
 		aml_scratch_release(&sa, oldai);
 		aml_scratch_release(&sb, oldbi);
 	}
-	kernel(ap, bp, &c[(offset+i)*esz], esz);
+	kernel(ap, bp, cp, esz);
 
 	return arg;
 }
@@ -98,11 +100,11 @@ int main(int argc, char *argv[])
 				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
 				    &arena, MPOL_BIND, nodemask));
-	assert(!aml_dma_linux_seq_init(&dma, numthreads*2));
+	assert(!aml_dma_linux_seq_init(&dma, (size_t)numthreads*4));
 	assert(!aml_scratch_par_init(&sa, &fast, &slow, &dma, &tiling,
-				     2*numthreads, numthreads));
+				     (size_t)2*numthreads, (size_t)numthreads));
 	assert(!aml_scratch_par_init(&sb, &fast, &slow, &dma, &tiling,
-				     2*numthreads, numthreads));
+				     (size_t)2*numthreads, (size_t)numthreads));
 
 	/* allocation */
 	a = aml_area_malloc(&slow, MEMSIZE);

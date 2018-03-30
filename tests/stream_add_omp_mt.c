@@ -64,9 +64,9 @@ int main(int argc, char *argv[])
 				    &arena, MPOL_BIND, nodemask));
 	assert(!aml_dma_linux_par_init(&dma, numthreads*2, numthreads));
 	assert(!aml_scratch_seq_init(&sa, &fast, &slow, &dma, &tiling,
-				     2*numthreads, 1));
+				     (size_t)2*numthreads, (size_t)1));
 	assert(!aml_scratch_seq_init(&sb, &fast, &slow, &dma, &tiling,
-				     2*numthreads, 1));
+				     (size_t)2*numthreads, (size_t)1));
 
 	/* allocation */
 	a = aml_area_malloc(&slow, MEMSIZE);
