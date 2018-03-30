@@ -151,7 +151,6 @@ int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 
 	pthread_mutex_lock(&dma->data.lock);
 	req = aml_vector_add(&dma->data.requests);
-	pthread_mutex_unlock(&dma->data.lock);
 
 	/* init the request */
 	if(type == AML_DMA_REQUEST_TYPE_COPY)
@@ -177,6 +176,7 @@ int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 		aml_dma_request_linux_par_move_init(req, darea, st, sptr,
 						    stid);
 	}
+	pthread_mutex_unlock(&dma->data.lock);
 
 	for(int i = 0; i < dma->data.nbthreads; i++)
 	{
