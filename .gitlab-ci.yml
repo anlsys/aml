@@ -1,0 +1,16 @@
+stages:
+  - build
+
+make:generic:
+  stage: build
+  script:
+    - ./autogen.sh
+    - mkdir build
+    - ./configure --prefix=`pwd`/build
+    - make
+    - make install
+    - make check
+  artifacts:
+    when: on_failure
+    paths:
+      - tests/*.log
