@@ -14,3 +14,6 @@ make:generic:
     when: on_failure
     paths:
       - tests/*.log
+  except:
+    - /^wip.*/
+    - /^WIP.*/
