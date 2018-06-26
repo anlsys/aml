@@ -10,6 +10,18 @@ size_t aml_tiling_tilesize(const struct aml_tiling *t, int tileid)
 	return t->ops->tilesize(t->data, tileid);
 }
 
+size_t aml_tiling_rowsize(const struct aml_tiling *t, int tileid)
+{
+	assert(t != NULL);
+	return t->ops->rowsize(t->data, tileid);
+}
+
+size_t aml_tiling_colsize(const struct aml_tiling *t, int tileid)
+{
+	assert(t != NULL);
+	return t->ops->colsize(t->data, tileid);
+}
+
 void* aml_tiling_tilestart(const struct aml_tiling *t, const void *ptr, int tileid)
 {
 	assert(t != NULL);
@@ -83,9 +95,14 @@ int aml_tiling_destroy_iterator(struct aml_tiling *t,
  ******************************************************************************/
 
 /* allocate and init the tiling according to type */
+//In the future, a n-dimensional arrya could be created with an arguments of:
+//type: n # of dimensions
+//va_list: size of each dimension followed by total size
+//The return is now changed to ensure that a tile size is not larger than the given total size 
 int aml_tiling_create(struct aml_tiling **t, int type, ...)
 {
 	va_list ap;
+	int err;
 	va_start(ap, type);
 	struct aml_tiling *ret = NULL;
 	intptr_t baseptr, dataptr;
@@ -98,12 +115,25 @@ int aml_tiling_create(struct aml_tiling **t, int type, ...)
 		ret = (struct aml_tiling *)baseptr;
 		ret->data = (struct aml_tiling_data *)dataptr;
 	
-		aml_tiling_vinit(ret, type, ap);
+		err = aml_tiling_vinit(ret, type, ap);
 	}
+	else if(type == AML_TILING_TYPE_2D)
+	{
+		/* alloc, only difference is using AML_TILING_2D_ALLOCSIZE instead fo 1D */
+		baseptr = (intptr_t) calloc(1, AML_TILING_2D_ALLOCSIZE);
+		dataptr = baseptr + sizeof(struct aml_tiling); 
+
+		ret = (struct aml_tiling *)baseptr;
+		ret->data = (struct aml_tiling_data *)dataptr;
+	
+		err = aml_tiling_vinit(ret, type, ap);
+	}
+
 	va_end(ap);
 	*t = ret;
-	return 0;
+	return err;
 }
+
 
 int aml_tiling_vinit(struct aml_tiling *t, int type, va_list ap)
 {
@@ -115,7 +145,22 @@ int aml_tiling_vinit(struct aml_tiling *t, int type, va_list ap)
 		data->blocksize = va_arg(ap, size_t);
 		data->totalsize = va_arg(ap, size_t);
 	}
-	return 0;
+
+	//This is equivalent to the 1D except the arguments will be the dimensions for the tile.
+	//An optimization that could be made is having the exact same declaration of 1D
+	//The caveat is that the block size must be a perfect square. For now, we will allow non-square blocks
+	else if(type == AML_TILING_TYPE_2D)
+	{
+		t->ops = &aml_tiling_2d_ops;
+		struct aml_tiling_2d_data *data = 
+			(struct aml_tiling_2d_data *)t->data;
+		data->rowsize = va_arg(ap, size_t);
+		data->colsize = va_arg(ap, size_t);
+		data->blocksize = data->rowsize * data->colsize;
+		data->totalsize = va_arg(ap, size_t);
+		
+	}
+	return data->blocksize > data->totalsize;
 }
 
 int aml_tiling_init(struct aml_tiling *t, int type, ...)
