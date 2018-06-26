@@ -10,8 +10,10 @@ AREA_LINUX_CSOURCES = area_linux.c \
 
 AREA_POSIX_CSOURCES = area_posix.c
 
-TILING_CSOURCES = tiling.c tiling_1d.c
-
+TILING_CSOURCES = tiling.c \ 
+				  tiling_1d.c \
+				  tiling_2d.c
+				  
 BINDING_CSOURCES = binding.c \
 		   binding_single.c \
 		   binding_interleave.c
