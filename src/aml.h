@@ -763,6 +763,8 @@ struct aml_tiling_ops {
 	int (*destroy_iterator)(struct aml_tiling_data *tiling,
 				struct aml_tiling_iterator *iterator);
 	size_t (*tilesize)(const struct aml_tiling_data *tiling, int tileid);
+	size_t (*rowsize)(const struct aml_tiling_data *tiling, int tileid);
+	size_t (*colsize)(const struct aml_tiling_data *tiling, int tileid);
 	void* (*tilestart)(const struct aml_tiling_data *tiling,
 			   const void *ptr, int tileid);
 };

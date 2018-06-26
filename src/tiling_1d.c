@@ -61,7 +61,7 @@ size_t aml_tiling_1d_tilesize(const struct aml_tiling_data *t, int tileid)
 //See aml_tiling_1d_colsize to understand.
 size_t aml_tiling_1d_rowsize(const struct aml_tiling_data *t, int tileid)
 {
-	cconst struct aml_tiling_1d_data *data =
+	const struct aml_tiling_1d_data *data =
 		(const struct aml_tiling_1d_data *)t;
 	return data->blocksize;
 }

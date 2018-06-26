@@ -137,6 +137,7 @@ int aml_tiling_create(struct aml_tiling **t, int type, ...)
 
 int aml_tiling_vinit(struct aml_tiling *t, int type, va_list ap)
 {
+	int err;
 	if(type == AML_TILING_TYPE_1D)
 	{
 		t->ops = &aml_tiling_1d_ops;
@@ -144,6 +145,7 @@ int aml_tiling_vinit(struct aml_tiling *t, int type, va_list ap)
 			(struct aml_tiling_1d_data *)t->data;
 		data->blocksize = va_arg(ap, size_t);
 		data->totalsize = va_arg(ap, size_t);
+		err = data->blocksize > data->totalsize;
 	}
 
 	//This is equivalent to the 1D except the arguments will be the dimensions for the tile.
@@ -158,9 +160,9 @@ int aml_tiling_vinit(struct aml_tiling *t, int type, va_list ap)
 		data->colsize = va_arg(ap, size_t);
 		data->blocksize = data->rowsize * data->colsize;
 		data->totalsize = va_arg(ap, size_t);
-		
+		err = data->blocksize > data->totalsize;
 	}
-	return data->blocksize > data->totalsize;
+	return err;
 }
 
 int aml_tiling_init(struct aml_tiling *t, int type, ...)
