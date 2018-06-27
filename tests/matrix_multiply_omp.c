@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 #define ITER 10
-#define MEMSIZE 2048//67108864//1024 entries by 1024 entries * sizeof(unsigned long)
+#define MEMSIZE 131072//67108864//1024 entries by 1024 entries * sizeof(unsigned long)
 
 size_t numthreads;
 //size of 2D Tiles in A matrix
@@ -55,7 +55,7 @@ void do_work(unsigned long tid)
 	//The code then waits to begin the next given chunk (wait on &sa)
 	//Resets the tile start positions to get next row of C and A and getting first column of B again.
 	//Run one time more to do last rows
-	for(i = 0; i < CHUNKING; i++) {
+	for(i = 0; i < CHUNKING-1; i++) {
 		struct aml_scratch_request *ar, *br;
 		oldai = ai; 
 		aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, offset+i+1);
@@ -78,6 +78,9 @@ void do_work(unsigned long tid)
 		aml_scratch_release(&sa, oldai);
 	}
 	//Third argument may be wrong
+	for (j = 0; j < esz; j++){
+		kernel(ap, bp, cp + j, esz);	
+	}
 	//kernel(ap, bp, cp + CHUNKING - 1, esz);
 
 
@@ -95,7 +98,7 @@ int main(int argc, char *argv[])
 	aml_init(&argc, &argv);
 	assert(argc == 1);
 
-	omp_set_num_threads(8);
+	omp_set_num_threads(64);
 	/* use openmp env to figure out how many threads we want
 	 * (we actually use 3x as much)
 	 */
@@ -108,7 +111,7 @@ int main(int argc, char *argv[])
 		tilesz = (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)) * sizeof(unsigned long);
 		esz = tilesz/sizeof(unsigned long);
 	}
-
+	//printf("Sizeof unsigned long: %lu", sizeof(unsigned long));
 	printf("The number of threads: %d\nThe chunking is: %lu\nThe tilesz is: %lu\nThat means there are %lu elements per tile\n", numthreads, CHUNKING, tilesz, esz);
 
 	/* initialize all the supporting struct */
@@ -141,9 +144,10 @@ int main(int argc, char *argv[])
 	assert(a != NULL && b != NULL && c != NULL);
 
 	unsigned long esize = MEMSIZE/sizeof(unsigned long);
+	unsigned long numRows = (unsigned long)sqrt(esize);
 	for(unsigned long i = 0; i < esize; i++) {
-		a[i] = 1;
-		b[i] = 1;
+		a[i] = 1;//i % numRows;
+		b[i] = 1;//numRows - (i % numRows);
 		c[i] = 0;
 	}
 
