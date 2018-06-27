@@ -27,7 +27,7 @@ int kernel(unsigned long *a, unsigned long *b, unsigned long *c, size_t n)
 	size_t i;
 	printf("%p = %p + %p [%zi]\n",c,a,b,n);
 	for(i = 0; i < n; i++)
-		c[i] = a[i] + b[i];
+		c[0] += a[i] * b[i];
 	return 0;
 }
 
@@ -35,31 +35,48 @@ int kernel(unsigned long *a, unsigned long *b, unsigned long *c, size_t n)
 void do_work(unsigned long tid)
 {
 
-	// int offset, i, ai, bi, oldai, oldbi;
-	// unsigned long *ap, *bp, *cp;
-	// void *abaseptr, *bbaseptr;
-	// offset = tid*CHUNKING;
-	// ap = aml_tiling_tilestart(&tiling, a, offset);
-	// bp = aml_tiling_tilestart(&tiling, b, offset);
-	// cp = aml_tiling_tilestart(&tiling, c, offset);
-	// abaseptr = aml_scratch_baseptr(&sa);
-	// bbaseptr = aml_scratch_baseptr(&sb);
-	// ai = -1; bi = -1;
-	// for(i = 0; i < CHUNKING-1; i++) {
-	// 	struct aml_scratch_request *ar, *br;
-	// 	oldai = ai; oldbi = bi;
-	// 	aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, offset+i+1);
-	// 	aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, offset+i+1);
-	// 	kernel(ap, bp, cp, esz);
-	// 	aml_scratch_wait(&sa, ar);
-	// 	aml_scratch_wait(&sb, br);
-	// 	ap = aml_tiling_tilestart(&tiling, abaseptr, ai);
-	// 	bp = aml_tiling_tilestart(&tiling, bbaseptr, bi);
-	// 	cp = aml_tiling_tilestart(&tiling, c, offset+i+1);
-	// 	aml_scratch_release(&sa, oldai);
-	// 	aml_scratch_release(&sb, oldbi);
-	// }
-	// kernel(ap, bp, cp, esz);
+	int offset, i, j, ai, bi, oldai, oldbi;
+	unsigned long *ap, *bp, *cp;
+	void *abaseptr, *bbaseptr;
+	offset = tid*CHUNKING;
+	ap = aml_tiling_tilestart(&tiling, a, offset);
+	bp = aml_tiling_tilestart(&tiling, b, 0);
+	cp = aml_tiling_tilestart(&tiling, c, offset);
+	abaseptr = aml_scratch_baseptr(&sa);
+	bbaseptr = aml_scratch_baseptr(&sb);
+	ai = -1; bi = -1;
+
+	//This double for loop will have each thread iterate for different rows of C for CHUNKING number of rows.
+	//It starts by async pulling the next row in a while we work on the current row of A.
+	//Then it begins an inner loop of pulling the next row of Transposed B while working on current row of B
+	//Then it jumps into the kernel and dot products A row and B row and accumulates the result in the respective C location.
+	//Then it returns and loops until an entire row for C is done.
+	//End inner loop
+	//The code then waits to begin the next given chunk (wait on &sa)
+	//Resets the tile start positions to get next row of C and A and getting first column of B again.
+	//Run one time more to do last rows
+	for(i = 0; i < CHUNKING-1; i++) {
+		struct aml_scratch_request *ar, *br;
+		oldai = ai; 
+		aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, offset+i+1);
+		for (j = 0; i < esz; ++i)
+		{
+			oldbi = bi;
+			aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, offset+i+1);
+			//This will have cp be a pointer to the exact spot in memory that the row by column multiplication will happen.
+			kernel(ap, bp, cp + j, esz);
+			aml_scratch_wait(&sb, br);
+			bp = aml_tiling_tilestart(&tiling, bbaseptr, 0);
+			aml_scratch_release(&sb, oldbi);
+		}
+		aml_scratch_wait(&sa, ar);
+		ap = aml_tiling_tilestart(&tiling, abaseptr, ai);
+		cp = aml_tiling_tilestart(&tiling, c, offset+i+1);
+		aml_scratch_release(&sa, oldai);
+		
+	}
+	//Third argument may be wrong
+	kernel(ap, bp, cp + esz - 1 , esz);
 
 
 }
@@ -90,7 +107,7 @@ int main(int argc, char *argv[])
 
 	/* initialize all the supporting struct */
 	assert(!aml_binding_init(&binding, AML_BINDING_TYPE_SINGLE, 0));
-	assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_1D, tilesz, MEMSIZE));
+	assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_2D, tilesz, 1, MEMSIZE));
 	AML_NODEMASK_ZERO(nodemask);
 	AML_NODEMASK_SET(nodemask, 0);
 	assert(!aml_arena_jemalloc_init(&arena, AML_ARENA_JEMALLOC_TYPE_REGULAR));
@@ -132,7 +149,7 @@ int main(int argc, char *argv[])
 
 	/* validate */
 	for(unsigned long i = 0; i < esize; i++) {
-		assert(c[i] == esize);
+		assert(c[i] == c[0]);
 	}
 
 	aml_scratch_par_destroy(&sa);
