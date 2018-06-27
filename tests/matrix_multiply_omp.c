@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 #define ITER 10
-#define MEMSIZE 67108864//1024 entries by 1024 entries * sizeof(unsigned long)
+#define MEMSIZE 2048//67108864//1024 entries by 1024 entries * sizeof(unsigned long)
 
 size_t numthreads;
 //size of 2D Tiles in A matrix
@@ -25,7 +25,7 @@ AML_SCRATCH_PAR_DECL(sb);
 int kernel(unsigned long *a, unsigned long *b, unsigned long *c, size_t n)
 {
 	size_t i;
-	printf("%p = %p + %p [%zi]\n",c,a,b,n);
+	//printf("%p = %p + %p [%zi]\n",c,a,b,n);
 	for(i = 0; i < n; i++)
 		c[0] += a[i] * b[i];
 	return 0;
@@ -55,15 +55,18 @@ void do_work(unsigned long tid)
 	//The code then waits to begin the next given chunk (wait on &sa)
 	//Resets the tile start positions to get next row of C and A and getting first column of B again.
 	//Run one time more to do last rows
-	for(i = 0; i < CHUNKING-1; i++) {
+	for(i = 0; i < CHUNKING; i++) {
 		struct aml_scratch_request *ar, *br;
 		oldai = ai; 
 		aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, offset+i+1);
-		for (j = 0; i < esz; ++i)
+		for (j = 0; j < esz; j++)
 		{
 			oldbi = bi;
 			aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, offset+i+1);
 			//This will have cp be a pointer to the exact spot in memory that the row by column multiplication will happen.
+			if(tid == 0){
+				//printf("Pointer is %p", cp + j);
+			}
 			kernel(ap, bp, cp + j, esz);
 			aml_scratch_wait(&sb, br);
 			bp = aml_tiling_tilestart(&tiling, bbaseptr, 0);
@@ -73,10 +76,9 @@ void do_work(unsigned long tid)
 		ap = aml_tiling_tilestart(&tiling, abaseptr, ai);
 		cp = aml_tiling_tilestart(&tiling, c, offset+i+1);
 		aml_scratch_release(&sa, oldai);
-		
 	}
 	//Third argument may be wrong
-	kernel(ap, bp, cp + esz - 1 , esz);
+	//kernel(ap, bp, cp + CHUNKING - 1, esz);
 
 
 }
@@ -93,17 +95,21 @@ int main(int argc, char *argv[])
 	aml_init(&argc, &argv);
 	assert(argc == 1);
 
+	omp_set_num_threads(8);
 	/* use openmp env to figure out how many threads we want
 	 * (we actually use 3x as much)
 	 */
+	
 	#pragma omp parallel
 	{
 		numthreads = omp_get_num_threads();
 		//CHUNKING = Total number of columns that will be handled by each thread
-		CHUNKING = (sqrt(MEMSIZE) / sizeof(unsigned long)) / numthreads;
-		tilesz = sqrt(MEMSIZE);
+		CHUNKING = ((unsigned long)sqrt(MEMSIZE/sizeof(unsigned long))) / numthreads;
+		tilesz = (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)) * sizeof(unsigned long);
 		esz = tilesz/sizeof(unsigned long);
 	}
+
+	printf("The number of threads: %d\nThe chunking is: %lu\nThe tilesz is: %lu\nThat means there are %lu elements per tile\n", numthreads, CHUNKING, tilesz, esz);
 
 	/* initialize all the supporting struct */
 	assert(!aml_binding_init(&binding, AML_BINDING_TYPE_SINGLE, 0));
@@ -148,9 +154,17 @@ int main(int argc, char *argv[])
 	}
 
 	/* validate */
+	printf("esize = %lu\n", esize);
+	int newLines = 0;
 	for(unsigned long i = 0; i < esize; i++) {
-		assert(c[i] == c[0]);
+		printf("%lu ", c[i]);
+		newLines++;
+		if(newLines == (unsigned long)sqrt(esize)){
+			printf("\n");
+			newLines = 0;
+		}
 	}
+	printf("\n");
 
 	aml_scratch_par_destroy(&sa);
 	aml_scratch_par_destroy(&sb);
