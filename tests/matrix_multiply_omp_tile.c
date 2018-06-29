@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 #define ITER 10
-#define MEMSIZE 128//67108864//1024 entries by 1024 entries * sizeof(unsigned long)
+#define MEMSIZE 32768//2048//128//67108864//1024 entries by 1024 entries * sizeof(unsigned long)
 #define L2_CACHE_SIZE 1048576 //1MB
 #define HBM_SIZE 17179869184 //16 GB
 
@@ -39,12 +39,12 @@ int kernel(unsigned long *a, unsigned long *b, unsigned long *c, size_t n, unsig
 	{
 		for(j = 0; j < rowSizeOfTile; j++)
 		{	if(tid == 0){
-				printf("c[%d] += a[%d](%lu) * b[%d](%lu)\t", i*rowSizeOfTile + colNum, (unsigned long)(j + i*rowSizeOfTile), a[(unsigned long)(j + i*rowSizeOfTile)], j, b[j]);
+				//printf("c[%d] += a[%d](%lu) * b[%d](%lu)\t", i*rowSizeOfTile + colNum, (unsigned long)(j + i*rowSizeOfTile), a[(unsigned long)(j + i*rowSizeOfTile)], j, b[j]);
 			}
 		c[(unsigned long)(i*rowSizeOfTile + colNum)] += a[(unsigned long)(j + i*rowSizeOfTile)] * b[j];
 		}
 		if(tid == 0){
-			printf("\n");
+			//printf("\n");
 		}
 	}
 	return 0;
@@ -81,14 +81,14 @@ void do_work(unsigned long tid)
 	if(tid == 0)printf("The number of rows is: %lu\nThe row size of a tile is %lu\n", numRows, rowSizeOfTile);
 	//Iterate through all C tiles
 	for(i = 0; i < CHUNKING; i++) {
-		if(tid == 0) printf("Beginning C tile %d of %lu\n", i+1, CHUNKING);
+		if(tid == 7) printf("\n\nBeginning C tile %d of %lu\n", i+1, CHUNKING);
 		struct aml_scratch_request *ar, *br;
 		unsigned long rowOffsetTile = i / rowSizeInTiles;
 		
 		//This is equal to number of columns.
-		for (j = 0; j < numRows/rowSizeOfTile; j++)
+		for (j = 0; j < rowSizeOfTile; j++)
 		{	
-			if(tid == 0)printf("Beginning B column %d of %lu\n", j+1, numRows);
+			if(tid == 7)printf("Beginning B column %d of %lu\n", i*rowSizeOfTile + j+1, numRows);
 			oldbi = bi;
 			bi = !bi;
 			aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, j+i*rowSizeOfTile);
@@ -96,12 +96,12 @@ void do_work(unsigned long tid)
 			//This will iterate through the tiles in A that contribute to the respective C tile
 			for(k = 0; k < rowSizeInTiles; k++)
 			{
-				if(tid == 0)printf("Beginning A tile %d of %lu\n", k+1, rowSizeInTiles);
+				if(tid == 7)printf("Beginning A tile %d of %lu\n", k+1, rowSizeInTiles);
 				oldai = ai;
 				aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, offset+k+1 + rowOffsetTile*rowSizeInTiles);
 				kernel(ap, &bp[k*rowSizeOfTile], cp, esz, (unsigned long)j, tid);
-				if(tid == 0)printf("\n");
-				fflush(stdout);
+				//if(tid == 0)printf("\n");
+				//fflush(stdout);
 				aml_scratch_wait(&sa, ar);
 				ap = aml_tiling_tilestart(&tiling, abaseptr, ai);
 				aml_scratch_release(&sa, oldai);
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 	aml_init(&argc, &argv);
 	assert(argc == 1);
 
-	omp_set_num_threads(4);
+	omp_set_num_threads(8);
 	/* use openmp env to figure out how many threads we want
 	 * (we actually use 3x as much)
 	 */
