@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 #define ITER 10
-#define MEMSIZE 2048//67108864//1024 entries by 1024 entries * sizeof(unsigned long)
+#define MEMSIZE 128//67108864//1024 entries by 1024 entries * sizeof(unsigned long)
 #define L2_CACHE_SIZE 1048576 //1MB
 #define HBM_SIZE 17179869184 //16 GB
 
@@ -19,8 +19,9 @@ size_t tilesz, esz;
 size_t numTiles;
 unsigned long CHUNKING;
 unsigned long *a, *b, *c;
-unsigned long esize, numRows;
+unsigned long esize, numRows, rowLengthInBytes;
 unsigned long rowSizeOfTile, rowSizeInTiles;
+unsigned long myId;
 AML_TILING_2D_DECL(tiling);
 AML_TILING_1D_DECL(tilingB);
 AML_AREA_LINUX_DECL(slow);
@@ -30,15 +31,20 @@ AML_SCRATCH_PAR_DECL(sb);
 
 
 
-int kernel(unsigned long *a, unsigned long *b, unsigned long *c, size_t n)
+int kernel(unsigned long *a, unsigned long *b, unsigned long *c, size_t n, unsigned long colNum, unsigned long tid)
 {
 	size_t i, j;
 	
 	for(i = 0; i < rowSizeOfTile; i++)
 	{
 		for(j = 0; j < rowSizeOfTile; j++)
-		{
-			c[i*rowSizeOfTile] += a[j + i*rowSizeOfTile] * b[j];
+		{	if(tid == 0){
+				printf("c[%d] += a[%d](%lu) * b[%d](%lu)\t", i*rowSizeOfTile + colNum, (unsigned long)(j + i*rowSizeOfTile), a[(unsigned long)(j + i*rowSizeOfTile)], j, b[j]);
+			}
+		c[(unsigned long)(i*rowSizeOfTile + colNum)] += a[(unsigned long)(j + i*rowSizeOfTile)] * b[j];
+		}
+		if(tid == 0){
+			printf("\n");
 		}
 	}
 	return 0;
@@ -47,6 +53,7 @@ int kernel(unsigned long *a, unsigned long *b, unsigned long *c, size_t n)
 
 void do_work(unsigned long tid)
 {
+	myId = tid;
 	int offset, i, j, k, ai, bi, oldai, oldbi;
 	unsigned long *ap, *bp, *cp;
 	void *abaseptr, *bbaseptr;
@@ -71,60 +78,48 @@ void do_work(unsigned long tid)
 	
 	rowSizeOfTile = aml_tiling_rowsize(&tiling, 0) / sizeof(unsigned long); 
 	rowSizeInTiles = numRows / rowSizeOfTile;
-	printf("The number of rows is: %lu\n", numRows);
+	if(tid == 0)printf("The number of rows is: %lu\nThe row size of a tile is %lu\n", numRows, rowSizeOfTile);
 	//Iterate through all C tiles
 	for(i = 0; i < CHUNKING; i++) {
+		if(tid == 0) printf("Beginning C tile %d of %lu\n", i+1, CHUNKING);
 		struct aml_scratch_request *ar, *br;
-		//printf("Declared scratch requests\n");
 		unsigned long rowOffsetTile = i / rowSizeInTiles;
 		
 		//This is equal to number of columns.
-		for (j = 0; j < numRows; j++)
-		{
+		for (j = 0; j < numRows/rowSizeOfTile; j++)
+		{	
+			if(tid == 0)printf("Beginning B column %d of %lu\n", j+1, numRows);
 			oldbi = bi;
-			if(j == esz - 1){
-				aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, 0);
-			}
-			else{
-				printf("Attempting async pull for b: %lu\n", tid);
-				aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, j+1);
-				printf("Sucessfully requested async pull for b: %lu\n", tid);
-			}
+			bi = !bi;
+			aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, j+i*rowSizeOfTile);
+				
 			//This will iterate through the tiles in A that contribute to the respective C tile
 			for(k = 0; k < rowSizeInTiles; k++)
 			{
+				if(tid == 0)printf("Beginning A tile %d of %lu\n", k+1, rowSizeInTiles);
 				oldai = ai;
-				if(k != rowSizeInTiles - 1){
-					printf("Attempting async pull on a: %d, %lu\n", k, tid);
-					aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, offset+k+1 + rowOffsetTile*rowSizeInTiles);
-					printf("Sucessfully requested async pull on a: %lu\n", tid);
-				}
-				kernel(ap, bp + k*rowSizeOfTile, cp + k, esz);
-				if(k != rowSizeInTiles - 1){
-					printf("Waiting for async pull for a to finish: %lu\n", tid);
-					aml_scratch_wait(&sa, ar);
-					printf("Completed async pull for a: %lu\n", tid);
-				}
-				ap = aml_tiling_tilestart(&tiling, abaseptr, k);
-	
+				aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, offset+k+1 + rowOffsetTile*rowSizeInTiles);
+				kernel(ap, &bp[k*rowSizeOfTile], cp, esz, (unsigned long)j, tid);
+				if(tid == 0)printf("\n");
+				fflush(stdout);
+				aml_scratch_wait(&sa, ar);
+				ap = aml_tiling_tilestart(&tiling, abaseptr, ai);
+				aml_scratch_release(&sa, oldai);
 			}
+			//for(k = 0; k < rowSizeOfTile; k++){
+			//	printf("%lu ", bp[k]);
+			//}
+			//printf("\n");
+
 			abaseptr = aml_scratch_baseptr(&sa);
-			printf("Waiting for async pull on b to finish: %lu\n", tid);	
 			aml_scratch_wait(&sb, br);
-			printf("The async pull on b is done and we can continue: %lu\n", tid);
-			bp = aml_tiling_tilestart(&tilingB, bbaseptr, j);
+			bp = aml_tiling_tilestart(&tilingB, bbaseptr, bi);
 			aml_scratch_release(&sb, oldbi);
 		}
 		//The tile in C should be done and we can now begin the next one
 		cp = aml_tiling_tilestart(&tiling, c, offset+i+1);
-		aml_scratch_release(&sa, oldai);
-	}
-	//Third argument may be wrong
-	for (j = 0; j < esz; j++){
-		kernel(ap, bp, cp + j, esz);	
 	}
 	
-
 }
 
 
@@ -147,13 +142,14 @@ int main(int argc, char *argv[])
 	aml_init(&argc, &argv);
 	assert(argc == 1);
 
-	omp_set_num_threads(1);
+	omp_set_num_threads(4);
 	/* use openmp env to figure out how many threads we want
 	 * (we actually use 3x as much)
 	 */
 	
 	#pragma omp parallel
 	{
+		rowLengthInBytes = (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)) * sizeof(unsigned long);
 		numthreads = omp_get_num_threads();
 		//CHUNKING = Total number of columns that will be handled by each thread
 		//Tilesz is found by dividing the length (in number of elements) of a dimension by the number of threads.
@@ -167,15 +163,16 @@ int main(int argc, char *argv[])
 		esz = tilesz/sizeof(unsigned long);
 		
 	}
+	
 	esize = MEMSIZE/sizeof(unsigned long);
 	numRows = (unsigned long)sqrt(esize);
 	//printf("Sizeof unsigned long: %lu", sizeof(unsigned long));
-	printf("The total memory size is: %lu\nWe are dealing with a %lu x %lu matrix multiplication\nThe number of threads: %d\nThe chunking is: %lu\nThe tilesz is: %lu\nThat means there are %lu elements per tile\nThere are %lu tiles total\n", MEMSIZE, (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)), (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)),numthreads, CHUNKING, tilesz, esz, numTiles);
+	printf("The total memory size is: %lu\nWe are dealing with a %lu x %lu matrix multiplication\nThe number of threads: %d\nThe chunking is: %lu\nThe tilesz is: %lu\nThat means there are %lu elements per tile\nThere are %lu tiles total\nThe length of a column in bytes is: %lu\n", MEMSIZE, (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)), (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)),numthreads, CHUNKING, tilesz, esz, numTiles, rowLengthInBytes);
 
 	/* initialize all the supporting struct */
 	assert(!aml_binding_init(&binding, AML_BINDING_TYPE_SINGLE, 0));
 	assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_2D, (unsigned long)sqrt(tilesz/sizeof(unsigned long))*sizeof(unsigned long), (unsigned long)sqrt(tilesz/sizeof(unsigned long))*sizeof(unsigned long), tilesz, MEMSIZE));
-	assert(!aml_tiling_init(&tilingB, AML_TILING_TYPE_1D, tilesz, MEMSIZE));
+	assert(!aml_tiling_init(&tilingB, AML_TILING_TYPE_1D, rowLengthInBytes, MEMSIZE));
 	AML_NODEMASK_ZERO(nodemask);
 	AML_NODEMASK_SET(nodemask, 0);
 	assert(!aml_arena_jemalloc_init(&arena, AML_ARENA_JEMALLOC_TYPE_REGULAR));
@@ -212,6 +209,29 @@ int main(int argc, char *argv[])
 		c[i] = 0;
 	}
 	
+	int newLines = 0;
+	printf("A MATRIX:\n");
+	for(unsigned long i = 0; i < esize; i++) {
+		printf("%lu ", a[i]);
+		newLines++;
+		if(newLines == (unsigned long)sqrt(esize)){
+			printf("\n");
+			newLines = 0;
+		}
+	}
+	printf("\nB MATRIX:\n");
+	
+	for(unsigned long i = 0; i < esize; i++) {
+		printf("%lu ", b[i]);
+		newLines++;
+		if(newLines == (unsigned long)sqrt(esize)){
+			printf("\n");
+			newLines = 0;
+		}
+	}
+	printf("\n");
+
+	
 
 	/* run kernel */
 	#pragma omp parallel for
@@ -221,7 +241,7 @@ int main(int argc, char *argv[])
 
 	/* validate */
 	printf("esize = %lu\n", esize);
-	int newLines = 0;
+	newLines = 0;
 	for(unsigned long i = 0; i < esize; i++) {
 		printf("%lu ", c[i]);
 		newLines++;
