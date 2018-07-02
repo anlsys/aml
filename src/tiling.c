@@ -158,7 +158,7 @@ int aml_tiling_vinit(struct aml_tiling *t, int type, va_list ap)
 			(struct aml_tiling_2d_data *)t->data;
 		data->rowsize = va_arg(ap, size_t);
 		data->colsize = va_arg(ap, size_t);
-		data->blocksize = data->rowsize * data->colsize;
+		data->blocksize = data->rowsize * data->colsize / sizeof(unsigned long);
 		data->totalsize = va_arg(ap, size_t);
 		err = data->blocksize > data->totalsize;
 	}
