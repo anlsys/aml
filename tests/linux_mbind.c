@@ -46,12 +46,15 @@ void doit(struct aml_area_linux_mbind_data *config,
 	 * Our bindings should resist those issues.
 	 */
 	ptr = mmap(NULL, ALLOC_SIZE, PROT_READ|PROT_WRITE,
-		   MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE, -1, 0);
+		   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	assert(ptr != MAP_FAILED);
 
 	err = ops->post_bind(config, ptr, ALLOC_SIZE);
 	assert(err == 0);
 
+	/* touch all pages */
+	for(char *p = ptr; p < (char*)ptr + ALLOC_SIZE; p += PAGE_SIZE)
+		*p = 0;
 	/* Retrieve the current policy for that alloc and compare.
 	 * get_mempolicy does not return the right policy if it was set using
 	 * set_mempolicy binding methods. As a result, we only check the mode
@@ -69,7 +72,7 @@ void doit(struct aml_area_linux_mbind_data *config,
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 struct aml_area_linux_mbind_ops *tocheck[] = {
 	&aml_area_linux_mbind_regular_ops,
-	&aml_area_linux_mbind_mempolicy_ops,
+	//&aml_area_linux_mbind_mempolicy_ops,
 };
 
 int main(int argc, char *argv[])
