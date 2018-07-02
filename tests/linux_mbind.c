@@ -87,7 +87,15 @@ int main(int argc, char *argv[])
 	 * default binding policy returns an empty nodemask, so it doesn't
 	 * really help us. We use the numa library directly instead.*/
 	allowed = numa_get_mems_allowed();
-	memcpy(nodemask, allowed->maskp, AML_NODEMASK_BYTES);
+
+	/* select the first numa node as the one used for this test. */
+	AML_NODEMASK_ZERO(nodemask);
+	for(int i = 0; i < AML_MAX_NUMA_NODES; i++)
+		if(numa_bitmask_isbitset(allowed, i))
+		{
+			AML_NODEMASK_SET(nodemask, i);
+			break;
+		}
 
 	/* use MPOL_BIND for checks, and make sure init worked. */
 	aml_area_linux_mbind_init(&config, MPOL_BIND, nodemask);
