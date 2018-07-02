@@ -4,6 +4,7 @@
 #include <omp.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <time.h>
 #include <math.h>
 #include <stdlib.h>
 
@@ -23,6 +24,8 @@ unsigned long *a, *b, *c;
 unsigned long esize, numRows, rowLengthInBytes;
 unsigned long rowSizeOfTile, rowSizeInTiles;
 unsigned long myId;
+unsigned long long beginTime, endTime;
+clock_t startClock, endClock;
 AML_TILING_2D_DECL(tiling);
 AML_TILING_1D_DECL(tilingB);
 AML_AREA_LINUX_DECL(slow);
@@ -30,7 +33,13 @@ AML_AREA_LINUX_DECL(fast);
 AML_SCRATCH_PAR_DECL(sa);
 AML_SCRATCH_PAR_DECL(sb);
 
-
+//This code will take cycles executed as a use for timing the kernel.
+static __inline__ unsigned long long rdtsc(void)
+{
+  unsigned hi, lo;
+  __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
+  return ( (unsigned long long)lo)|( ((unsigned long long)hi)<<32 );
+}
 
 int kernel(unsigned long *a, unsigned long *b, unsigned long *c, size_t n, unsigned long colNum, unsigned long tid)
 {
@@ -237,10 +246,15 @@ int main(int argc, char *argv[])
 	
 
 	/* run kernel */
+	startClock = clock();
+	beginTime = rdtsc();
 	#pragma omp parallel for
 	for(unsigned long i = 0; i < numthreads; i++) {
 		do_work(i);
 	}
+	endTime = rdtsc();
+	endClock = clock();
+	printf("Kernel Timing Statistics:\nRDTSC: %llu cycles\nCLOCK: %lf Seconds\n", beginTime - endTime, (startClock - endClock) / CLOCKS_PER_SEC);
 
 	/* validate */
 	unsigned long correct = 1;
