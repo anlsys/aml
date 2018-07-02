@@ -17,3 +17,22 @@ make:generic:
   except:
     - /^wip.*/
     - /^WIP.*/
+
+make:knl:
+  stage: build
+  script:
+    - ./autogen.sh
+    - mkdir build
+    - ./configure --prefix=`pwd`/build
+    - make
+    - make install
+    - make check
+  artifacts:
+    when: on_failure
+    paths:
+      - tests/*.log
+  except:
+    - /^wip.*/
+    - /^WIP.*/
+  tags:
+    - knl
