@@ -93,7 +93,7 @@ void do_work(unsigned long tid)
 		if(DEBUG && tid == 0)printf("\n\nBeginning C tile %d of %d\n", i+1+offset, numTiles);
 		struct aml_scratch_request *ar, *br;
 		unsigned long rowOffsetTile = i / rowSizeInTiles;
-		if(VERBOSE)printf("Beginning C tile %d of %d, tid %lu, tile is in row %lu\n", i+1+offset, numTiles, tid, rowOffsetTile);
+		//if(VERBOSE)printf("Beginning C tile %d of %d, tid %lu, tile is in row %lu\n", i+1+offset, numTiles, tid, rowOffsetTile);
 
 		//This is equal to number of columns to iterate for the given tile.
 		for (j = 0; j < rowSizeOfTile; j++)
