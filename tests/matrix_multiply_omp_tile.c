@@ -9,11 +9,13 @@
 #include <stdlib.h>
 
 #define ITER 10
-#define MEMSIZE 33554432//2048//128//67108864//1024 entries by 1024 entries * sizeof(unsigned long)
+#define MEMSIZES 134217728//1024 entries by 1024 entries * sizeof(unsigned long)
+#define NUMBER_OF_THREADS 32
 #define L2_CACHE_SIZE 1048576 //1MB
-#define HBM_SIZE 17179869184 //16 GB
+#define HBM_SIZE 17179869184 //16 GBi
 #define VERBOSE 1 //Verbose mode will print out extra information about what is happening
 #define DEBUG 0 //This will print out verbose messages and debugging statements
+#define PRINT_ARRAYS 0
 
 size_t numthreads;
 //size of 2D Tiles in A matrix
@@ -21,6 +23,7 @@ size_t tilesz, esz;
 size_t numTiles;
 unsigned long CHUNKING;
 unsigned long *a, *b, *c;
+unsigned long MEMSIZE;
 unsigned long esize, numRows, rowLengthInBytes;
 unsigned long rowSizeOfTile, rowSizeInTiles;
 unsigned long myId;
@@ -34,11 +37,10 @@ AML_SCRATCH_PAR_DECL(sa);
 AML_SCRATCH_PAR_DECL(sb);
 
 //This code will take cycles executed as a use for timing the kernel.
-static __inline__ unsigned long long rdtsc(void)
-{
-  unsigned hi, lo;
-  __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
-  return ( (unsigned long long)lo)|( ((unsigned long long)hi)<<32 );
+uint64_t rdtsc(){
+    unsigned int lo,hi;
+    __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
+    return ((uint64_t)hi << 32) | lo;
 }
 
 int kernel(unsigned long *a, unsigned long *b, unsigned long *c, size_t n, unsigned long colNum, unsigned long tid)
@@ -88,17 +90,18 @@ void do_work(unsigned long tid)
 	if(DEBUG && tid == 0)printf("The number of rows is: %lu\nThe row size of a tile is %lu\n", numRows, rowSizeOfTile);
 	//Iterate through all C tiles
 	for(i = 0; i < CHUNKING; i++) {
-		if(DEBUG && tid == 0)printf("\n\nBeginning C tile %d of %lu\n", i+1, CHUNKING);
+		if(DEBUG && tid == 0)printf("\n\nBeginning C tile %d of %d\n", i+1+offset, numTiles);
 		struct aml_scratch_request *ar, *br;
 		unsigned long rowOffsetTile = i / rowSizeInTiles;
-		
-		//This is equal to number of columns.
+		if(VERBOSE)printf("Beginning C tile %d of %d, tid %lu, tile is in row %lu\n", i+1+offset, numTiles, tid, rowOffsetTile);
+
+		//This is equal to number of columns to iterate for the given tile.
 		for (j = 0; j < rowSizeOfTile; j++)
 		{	
-			if(DEBUG && tid == 0)printf("Beginning B column %d of %lu\n", i*rowSizeOfTile + j+1, numRows);
+			if(DEBUG && tid == 0)printf("Beginning B column %d of %lu\n", (i%rowSizeInTiles)*rowSizeOfTile + j+1, numRows);
 			oldbi = bi;
 			bi = !bi;
-			aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, j+i*rowSizeOfTile);
+			aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, j+(i%rowSizeInTiles)*rowSizeOfTile);
 				
 			//This will iterate through the tiles in A that contribute to the respective C tile
 			for(k = 0; k < rowSizeInTiles; k++)
@@ -150,13 +153,31 @@ int main(int argc, char *argv[])
 	AML_DMA_LINUX_SEQ_DECL(dma);
 	unsigned long nodemask[AML_NODEMASK_SZ];
 	aml_init(&argc, &argv);
-	assert(argc == 1);
+	if(argc == 1){
+		if(VERBOSE) printf("No arguments provided, setting numThreads = %d and Memsize = %lu\n", NUMBER_OF_THREADS, MEMSIZE);
+		omp_set_num_threads(32);
+		MEMSIZE = MEMSIZES;
+	}
+	else if(argc == 2){	
+		if(VERBOSE) printf("Setting number of threads\n");
+		omp_set_num_threads(NUMBER_OF_THREADS);
+	 	if(VERBOSE) printf("Setting MEMSIZE\n");	
+		MEMSIZE = atol(argv[1]);
+		if(VERBOSE) printf("1 argument provided, setting numThreads = %d and Memsize = %lu\n", NUMBER_OF_THREADS, MEMSIZE);
+	}
+	else if(argc >= 3){
+		omp_set_num_threads(atoi(argv[2]));
+		MEMSIZE = atol(argv[1]);
+		if(VERBOSE) printf("Two arguments provided, setting numThreads = %d and Memsize = %lu\n", atoi(argv[2]), atol(argv[1]));
 
-	omp_set_num_threads(1);
+	}
+	
 	/* use openmp env to figure out how many threads we want
 	 * (we actually use 3x as much)
 	 */
-	
+	esize = MEMSIZE/sizeof(unsigned long);
+	numRows = (unsigned long)sqrt(esize);
+
 	#pragma omp parallel
 	{
 		rowLengthInBytes = (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)) * sizeof(unsigned long);
@@ -165,9 +186,14 @@ int main(int argc, char *argv[])
 		//Tilesz is found by dividing the length (in number of elements) of a dimension by the number of threads.
 		//It then checks to see if the tile is too large. If it is, then the size will be reduced until it will fit inside the L2 Cache
 		tilesz = ((unsigned long) pow( ( ( (unsigned long)sqrt(MEMSIZE / sizeof(unsigned long)) ) / numthreads), 2) ) * sizeof(unsigned long);
-		while(tilesz > L2_CACHE_SIZE/2){
-			tilesz = (unsigned long) pow( ( (unsigned long)sqrt(tilesz / sizeof(unsigned long) ) / 2 ), 2);
+		unsigned long multiplier = 2;
+		while(tilesz > L2_CACHE_SIZE/2 && argc != 4){
+			tilesz = pow((unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)) / (numthreads*multiplier),2)*sizeof(unsigned long);
+			
 			if(VERBOSE) printf("Resizing the tile size because it is too large for L2 cache. It is now of size: %lu\n", tilesz);
+		}
+		if(argc == 4){
+			tilesz = atol(argv[3]);
 		}
 		numTiles = MEMSIZE / tilesz; 
 		CHUNKING = numTiles / numthreads;
@@ -175,8 +201,6 @@ int main(int argc, char *argv[])
 		
 	}
 	
-	esize = MEMSIZE/sizeof(unsigned long);
-	numRows = (unsigned long)sqrt(esize);
 	if(DEBUG)printf("Sizeof unsigned long: %lu", sizeof(unsigned long));
 	if(DEBUG || VERBOSE)printf("The total memory size is: %lu\nWe are dealing with a %lu x %lu matrix multiplication\nThe number of threads: %d\nThe chunking is: %lu\nThe tilesz is: %lu\nThat means there are %lu elements per tile\nThere are %lu tiles total\nThe length of a column in bytes is: %lu\n", MEMSIZE, (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)), (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)),numthreads, CHUNKING, tilesz, esz, numTiles, rowLengthInBytes);
 
@@ -219,9 +243,10 @@ int main(int argc, char *argv[])
 		b[i] = 1;//numRows - (i % numRows);
 		c[i] = 0;
 	}
+	if(VERBOSE) printf("esize = %lu\n", esize);
 	
 	int newLines = 0;
-	if(DEBUG){
+	if(PRINT_ARRAYS){
 		printf("A MATRIX:\n");
 		for(unsigned long i = 0; i < esize; i++) {
 			printf("%lu ", a[i]);
@@ -250,11 +275,14 @@ int main(int argc, char *argv[])
 	beginTime = rdtsc();
 	#pragma omp parallel for
 	for(unsigned long i = 0; i < numthreads; i++) {
+		int cpu = sched_getcpu();
+        	//printf("%d ; %lu\n",cpu, i );
+
 		do_work(i);
 	}
 	endTime = rdtsc();
 	endClock = clock();
-	printf("Kernel Timing Statistics:\nRDTSC: %llu cycles\nCLOCK: %lf Seconds\n", beginTime - endTime, (startClock - endClock) / CLOCKS_PER_SEC);
+	printf("Kernel Timing Statistics:\nRDTSC: %lu cycles\nCLOCK: %lf Seconds\n", endTime - beginTime, (double)(endClock - startClock) / CLOCKS_PER_SEC);
 
 	/* validate */
 	unsigned long correct = 1;
@@ -264,7 +292,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if(DEBUG){
+	if(PRINT_ARRAYS){
 		printf("esize = %lu\n", esize);
 		newLines = 0;
 		for(unsigned long i = 0; i < esize; i++) {
