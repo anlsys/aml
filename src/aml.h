@@ -384,6 +384,12 @@ int aml_area_linux_manager_single_destroy(struct aml_area_linux_manager_data *da
  */
 #define AML_NODEMASK_SET(mask, i) (mask[AML_NODEMASK_ELT(i)] |= AML_NODEMASK_BITMASK(i))
 /*
+ * Clears a bit in a nodemask.
+ * "mask": an array of type "unsigned long", at least AML_NODEMASK_SZ long.
+ * "i": bit to clear, indicating a NUMA node.
+ */
+#define AML_NODEMASK_CLR(mask, i) (mask[AML_NODEMASK_ELT(i)] &= ~AML_NODEMASK_BITMASK(i))
+/*
  * Zero-initializes a nodemask.
  * "mask": an array of type "unsigned long", at least AML_NODEMASK_SZ long.
  */
