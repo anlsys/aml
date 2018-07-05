@@ -16,7 +16,7 @@
 #define VERBOSE 1 //Verbose mode will print out extra information about what is happening
 #define DEBUG 0 //This will print out verbose messages and debugging statements
 #define PRINT_ARRAYS 0
-#define HBM 0
+#define HBM 0 
 
 size_t numthreads;
 //size of 2D Tiles in A matrix
@@ -45,7 +45,7 @@ uint64_t rdtsc(){
     return ((uint64_t)hi << 32) | lo;
 }
 
-int kernel(unsigned long *a, unsigned long *b, unsigned long *c, size_t n, unsigned long colNum, unsigned long tid)
+int kernel(double *a, double *b, double *c, size_t n, unsigned long colNum, unsigned long tid)
 {
 	size_t i, j;
 	
@@ -64,7 +64,7 @@ void do_work(unsigned long tid)
 {
 	myId = tid;
 	int offset, i, j, k, ai, bi, iMod, oldai, oldbi;
-	unsigned long *ap, *bp, *cp;
+	double *ap, *bp, *cp;
 	void *abaseptr, *bbaseptr;
 	offset = tid*CHUNKING;
 	
@@ -201,15 +201,15 @@ int main(int argc, char *argv[])
 
 	#pragma omp parallel
 	{
-		rowLengthInBytes = (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)) * sizeof(unsigned long);
+		rowLengthInBytes = (unsigned long)sqrt(MEMSIZE/sizeof(double)) * sizeof(double);
 		numthreads = omp_get_num_threads();
 		//CHUNKING = Total number of columns that will be handled by each thread
 		//Tilesz is found by dividing the length (in number of elements) of a dimension by the number of threads.
 		//It then checks to see if the tile is too large. If it is, then the size will be reduced until it will fit inside the L2 Cache
-		tilesz = ((unsigned long) pow( ( ( (unsigned long)sqrt(MEMSIZE / sizeof(unsigned long)) ) / numthreads), 2) ) * sizeof(unsigned long);
-		unsigned long multiplier = 2;
+		tilesz = ((unsigned long) pow( ( ( sqrt(MEMSIZE / sizeof(double)) ) / numthreads), 2) ) * sizeof(double);
+		double multiplier = 2;
 		while(tilesz > L2_CACHE_SIZE/2 && argc != 4){
-			tilesz = pow((unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)) / (numthreads*multiplier),2)*sizeof(unsigned long);
+			tilesz = pow(sqrt(MEMSIZE/sizeof(double)) / (numthreads*multiplier),2)*sizeof(double);
 			
 			if(VERBOSE) printf("Resizing the tile size because it is too large for L2 cache. It is now of size: %lu\n", tilesz);
 		}
@@ -218,16 +218,16 @@ int main(int argc, char *argv[])
 		}
 		numTiles = MEMSIZE / tilesz; 
 		CHUNKING = numTiles / numthreads;
-		esz = tilesz/sizeof(unsigned long);
+		esz = tilesz/sizeof(double);
 		
 	}
 	
-	if(DEBUG)printf("Sizeof unsigned long: %lu", sizeof(unsigned long));
+	if(DEBUG)printf("Sizeof double: %d", sizeof(double));
 	if(DEBUG || VERBOSE)printf("The total memory size is: %lu\nWe are dealing with a %lu x %lu matrix multiplication\nThe number of threads: %d\nThe chunking is: %lu\nThe tilesz is: %lu\nThat means there are %lu elements per tile\nThere are %lu tiles total\nThe length of a column in bytes is: %lu\n", MEMSIZE, (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)), (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)),numthreads, CHUNKING, tilesz, esz, numTiles, rowLengthInBytes);
 
 	/* initialize all the supporting struct */
 	assert(!aml_binding_init(&binding, AML_BINDING_TYPE_SINGLE, 0));
-	assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_2D, (unsigned long)sqrt(tilesz/sizeof(unsigned long))*sizeof(unsigned long), (unsigned long)sqrt(tilesz/sizeof(unsigned long))*sizeof(unsigned long), tilesz, MEMSIZE));
+	assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_2D, (unsigned long)sqrt(tilesz/sizeof(double))*sizeof(double), (unsigned long)sqrt(tilesz/sizeof(double))*sizeof(double), tilesz, MEMSIZE));
 	assert(!aml_tiling_init(&tilingB, AML_TILING_TYPE_1D, rowLengthInBytes, MEMSIZE));
 	AML_NODEMASK_ZERO(nodemask);
 	AML_NODEMASK_SET(nodemask, 0);
@@ -238,19 +238,23 @@ int main(int argc, char *argv[])
 				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
 				    &arena, MPOL_BIND, nodemask));
+	AML_NODEMASK_ZERO(nodemask);
+	AML_NODEMASK_SET(nodemask, 1);
 	assert(!aml_area_linux_init(&fast,
 				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
 				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
 				    &arena, MPOL_BIND, nodemask));
 	assert(!aml_dma_linux_seq_init(&dma, numthreads*2));
-	if(DEBUG)printf("Declaring scratchpad for sa\n");
-	assert(!aml_scratch_par_init(&sa, &fast, &slow, &dma, &tiling,
+	if(HBM){
+		if(DEBUG)printf("Declaring scratchpad for sa\n");
+		assert(!aml_scratch_par_init(&sa, &fast, &slow, &dma, &tiling,
 				     2*numthreads, numthreads));
-	if(DEBUG)printf("Declaring scratchpad for sb\n");
-	assert(!aml_scratch_par_init(&sb, &fast, &slow, &dma, &tilingB,
+		if(DEBUG)printf("Declaring scratchpad for sb\n");
+		assert(!aml_scratch_par_init(&sb, &fast, &slow, &dma, &tilingB,
 				     2*numthreads, numthreads));
-	if(DEBUG)printf("Sucessfully created both sa and sb\n");
+		if(DEBUG)printf("Sucessfully created both sa and sb\n");
+	}
 	/* allocation */
 	a = aml_area_malloc(&slow, MEMSIZE);
 	b = aml_area_malloc(&slow, MEMSIZE);
@@ -262,12 +266,12 @@ int main(int argc, char *argv[])
 	}
 	assert(a != NULL && b != NULL && c != NULL);
 	if(DEBUG)printf("Allocated space for a, b, and c matrices\n");
-	esize = MEMSIZE/sizeof(unsigned long);
+	esize = MEMSIZE/sizeof(double);
 	numRows = (unsigned long)sqrt(esize);
 	for(unsigned long i = 0; i < esize; i++) {
-		a[i] = 1;//i % numRows;
-		b[i] = 1;//numRows - (i % numRows);
-		c[i] = 0;
+		a[i] = 1.0;//i % numRows;
+		b[i] = 1.0;//numRows - (i % numRows);
+		c[i] = 0.0;
 	}
 	if(VERBOSE) printf("esize = %lu\n", esize);
 	
@@ -275,7 +279,7 @@ int main(int argc, char *argv[])
 	if(PRINT_ARRAYS){
 		printf("A MATRIX:\n");
 		for(unsigned long i = 0; i < esize; i++) {
-			printf("%lu ", a[i]);
+			printf("%lf ", a[i]);
 			newLines++;
 			if(newLines == (unsigned long)sqrt(esize)){
 				printf("\n");
@@ -285,7 +289,7 @@ int main(int argc, char *argv[])
 		printf("\nB MATRIX:\n");
 	
 		for(unsigned long i = 0; i < esize; i++) {
-			printf("%lu ", b[i]);
+			printf("%lf ", b[i]);
 			newLines++;
 			if(newLines == (unsigned long)sqrt(esize)){
 				printf("\n");
@@ -322,7 +326,7 @@ int main(int argc, char *argv[])
 		printf("esize = %lu\n", esize);
 		newLines = 0;
 		for(unsigned long i = 0; i < esize; i++) {
-			printf("%lu ", c[i]);
+			printf("%lf ", c[i]);
 			newLines++;
 			if(newLines == (unsigned long)sqrt(esize)){
 				printf("\n");
