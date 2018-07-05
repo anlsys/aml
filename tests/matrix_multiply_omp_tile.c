@@ -16,6 +16,7 @@
 #define VERBOSE 1 //Verbose mode will print out extra information about what is happening
 #define DEBUG 0 //This will print out verbose messages and debugging statements
 #define PRINT_ARRAYS 0
+#define HBM 0
 
 size_t numthreads;
 //size of 2D Tiles in A matrix
@@ -28,6 +29,7 @@ unsigned long esize, numRows, rowLengthInBytes;
 unsigned long rowSizeOfTile, rowSizeInTiles;
 unsigned long myId;
 unsigned long long beginTime, endTime;
+unsigned long long waitingTime, totalWait;
 clock_t startClock, endClock;
 AML_TILING_2D_DECL(tiling);
 AML_TILING_1D_DECL(tilingB);
@@ -61,20 +63,22 @@ int kernel(unsigned long *a, unsigned long *b, unsigned long *c, size_t n, unsig
 void do_work(unsigned long tid)
 {
 	myId = tid;
-	int offset, i, j, k, ai, bi, oldai, oldbi;
+	int offset, i, j, k, ai, bi, iMod, oldai, oldbi;
 	unsigned long *ap, *bp, *cp;
 	void *abaseptr, *bbaseptr;
 	offset = tid*CHUNKING;
 	
 	
 	if(DEBUG) printf("Offset tile to begin for thread %lu is: %lu\n", tid, offset);
-
+        
 	ap = aml_tiling_tilestart(&tiling, a, offset);
 	bp = aml_tiling_tilestart(&tilingB, b, 0);
 	cp = aml_tiling_tilestart(&tiling, c, offset);
 	if(DEBUG)printf("Found initial tile starts\n");
-	abaseptr = aml_scratch_baseptr(&sa);
-	bbaseptr = aml_scratch_baseptr(&sb);
+	if(HBM){
+		abaseptr = aml_scratch_baseptr(&sa);
+		bbaseptr = aml_scratch_baseptr(&sb);
+	}
 	if(DEBUG)printf("Declared base pointers for a and b\n");
 	ai = -1; bi = -1;
 	
@@ -90,44 +94,61 @@ void do_work(unsigned long tid)
 	if(DEBUG && tid == 0)printf("The number of rows is: %lu\nThe row size of a tile is %lu\n", numRows, rowSizeOfTile);
 	//Iterate through all C tiles
 	for(i = 0; i < CHUNKING; i++) {
+		iMod = i%rowSizeInTiles * rowSizeOfTile;
 		if(DEBUG && tid == 0)printf("\n\nBeginning C tile %d of %d\n", i+1+offset, numTiles);
 		struct aml_scratch_request *ar, *br;
 		unsigned long rowOffsetTile = i / rowSizeInTiles;
+		unsigned long rowOffsetTileMulSize = rowOffsetTile * rowSizeInTiles;
 		//if(VERBOSE)printf("Beginning C tile %d of %d, tid %lu, tile is in row %lu\n", i+1+offset, numTiles, tid, rowOffsetTile);
 
 		//This is equal to number of columns to iterate for the given tile.
 		for (j = 0; j < rowSizeOfTile; j++)
 		{	
-			if(DEBUG && tid == 0)printf("Beginning B column %d of %lu\n", (i%rowSizeInTiles)*rowSizeOfTile + j+1, numRows);
-			oldbi = bi;
-			bi = !bi;
-			aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, j+(i%rowSizeInTiles)*rowSizeOfTile);
-				
+			if(DEBUG && tid == 0)printf("Beginning B column %d of %lu\n", iMod + j+1, numRows);
+			if(HBM){
+				oldbi = bi;
+				bi = !bi;
+				aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, j+(i%rowSizeInTiles)*rowSizeOfTile);
+			}
 			//This will iterate through the tiles in A that contribute to the respective C tile
 			for(k = 0; k < rowSizeInTiles; k++)
 			{
 				if(DEBUG && tid == 0)printf("Beginning A tile %d of %lu\n", k+1, rowSizeInTiles);
-				oldai = ai;
-				aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, offset+k+1 + rowOffsetTile*rowSizeInTiles);
+				if(HBM)oldai = ai;
+				if(HBM) aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, offset+k+1 + rowOffsetTileMulSize);
 				kernel(ap, &bp[k*rowSizeOfTile], cp, esz, (unsigned long)j, tid);
 				if(DEBUG && tid == 0){
 					printf("\n");
 					fflush(stdout);
 				}
-				aml_scratch_wait(&sa, ar);
-				ap = aml_tiling_tilestart(&tiling, abaseptr, ai);
-				aml_scratch_release(&sa, oldai);
+				if(HBM){ 
+					waitingTime = rdtsc();
+					aml_scratch_wait(&sa, ar);
+					totalWait += rdtsc() - waitingTime;
+					ap = aml_tiling_tilestart(&tiling, abaseptr, ai);
+					aml_scratch_release(&sa, oldai);
+				}
+				else{
+					ap = aml_tiling_tilestart(&tiling, a, offset + k + 1);
+				}
 			}
 			//for(k = 0; k < rowSizeOfTile; k++){
 			//	printf("%lu ", bp[k]);
 			//}
 			//printf("\n");
 
-			abaseptr = aml_scratch_baseptr(&sa);
+			if(HBM) abaseptr = aml_scratch_baseptr(&sa);
 			ap = aml_tiling_tilestart(&tiling, a, offset);
-			aml_scratch_wait(&sb, br);
-			bp = aml_tiling_tilestart(&tilingB, bbaseptr, bi);
-			aml_scratch_release(&sb, oldbi);
+			if(HBM){
+				waitingTime = rdtsc();
+				aml_scratch_wait(&sb, br);
+				totalWait += rdtsc() - waitingTime;
+				bp = aml_tiling_tilestart(&tilingB, bbaseptr, bi);
+				aml_scratch_release(&sb, oldbi);
+			}
+			else{
+				bp = aml_tiling_tilestart(&tilingB, b, j + iMod);
+			}
 		}
 		//The tile in C should be done and we can now begin the next one
 		cp = aml_tiling_tilestart(&tiling, c, offset+i+1);
@@ -233,7 +254,12 @@ int main(int argc, char *argv[])
 	/* allocation */
 	a = aml_area_malloc(&slow, MEMSIZE);
 	b = aml_area_malloc(&slow, MEMSIZE);
-	c = aml_area_malloc(&fast, MEMSIZE);
+	if(HBM){
+		c = aml_area_malloc(&fast, MEMSIZE);
+	}
+	else{
+		c = aml_area_malloc(&slow, MEMSIZE);
+	}
 	assert(a != NULL && b != NULL && c != NULL);
 	if(DEBUG)printf("Allocated space for a, b, and c matrices\n");
 	esize = MEMSIZE/sizeof(unsigned long);
@@ -282,7 +308,7 @@ int main(int argc, char *argv[])
 	}
 	endTime = rdtsc();
 	endClock = clock();
-	printf("Kernel Timing Statistics:\nRDTSC: %lu cycles\nCLOCK: %lf Seconds\n", endTime - beginTime, (double)(endClock - startClock) / CLOCKS_PER_SEC);
+	printf("Kernel Timing Statistics:\nRDTSC: %lu cycles\nCLOCK: %lf Seconds\nCycles waiting: %lu\n", endTime - beginTime, (double)(endClock - startClock) / CLOCKS_PER_SEC, totalWait);
 
 	/* validate */
 	unsigned long correct = 1;
