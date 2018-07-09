@@ -63,7 +63,7 @@ void multiplyTiles(double *a, double *b, double *c, int n, int m){
 void do_work()
 {
 	if(DEBUG) printf("Inside do_work()\n");	
-	int offset, i, j, k, l, ai, bi, iMod, oldai, oldbi, tilesPerCol;
+	int i, k, ai, bi, oldai, oldbi, tilesPerCol;
 	double *ap, *bp, *cp, *apLoc, *bpLoc;
 	void *abaseptr, *bbaseptr;
 	        
@@ -108,11 +108,14 @@ void do_work()
 		#pragma omp parallel for
 		for(k = 0; k < numthreads; k++)
 		{
+			int j, l, offset;
 			//This loop will cover if threads are handling multiple rows of tiles. This shouldn't be a necessarily large number
 			//This loop is technically O(n) but in reality will usually be O(1) because tilesPerCol will be a small number relative to rowSizeInTiles
 			for(j = 0; j < tilesPerCol; j++){
 				offset = (k * tilesPerCol) + j;
-				if(DEBUG) printf("Thread %d has an offset value of %d\n", k, offset);
+				if(DEBUG){
+					printf("Thread %d has an offset value of %d\n", k, offset);
+				}
 				//This will give the beginning offset for where each thread should point to in the tilingB sized ap array
 				apLoc = aml_tiling_tilestart(&tiling, ap, offset);
 				offset = (k * tilesPerCol) + j;
@@ -124,8 +127,11 @@ void do_work()
 					bpLoc = aml_tiling_tilestart(&tiling, bp, l);
 					
 					//This will begin at the tile row that is at x cordinate equal to bp offset, and y cordinate equal to ap offset
-					cp = aml_tiling_tilestart(&tiling, c, ((int)rowSizeInTiles * ((k * tilesPerCol) + j)) + l);
-					if(DEBUG) printf("Thread %d is beginning tile c at tile offset %d (offset = %d)\n", k, (int)rowSizeInTiles * ((k * tilesPerCol) + j) + l, offset);
+					offset = (((int)rowSizeInTiles * ((k * tilesPerCol)+ j) ) + l);
+					if(DEBUG){
+						printf("Thread %d is beginning tile c at tile offset<%d> = (rowSizeInTiles<%d> * ((k<%d> * tilesPerCol<%d>) + j<%d>)) + l<%d>\n", k, offset, (int)rowSizeInTiles, k, tilesPerCol, j, l);
+					} 
+					cp = aml_tiling_tilestart(&tiling, c, offset);
 					
 					if(0 && DEBUG && k == 0){
 						printf("Printing off the matrix tiles being worked on\n A MATRIX:\n");
@@ -145,7 +151,7 @@ void do_work()
 						} 
 
 					}
-					if(DEBUG && k == 0) printf("Beginning matrix multiply\n");
+					//if(DEBUG && k == 0) printf("Beginning matrix multiply\n");
 					//Currently we will call the user written kernel, but we will eventually use dgemm???
 					multiplyTiles(apLoc, bpLoc, cp, rowSizeOfTile, rowSizeOfTile);
 					
