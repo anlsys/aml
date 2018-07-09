@@ -15,9 +15,9 @@
 #define L2_CACHE_SIZE 1048576 //1MB
 #define HBM_SIZE 17179869184 //16 GBi
 #define VERBOSE 1 //Verbose mode will print out extra information about what is happening
-#define DEBUG 0 //This will print out verbose messages and debugging statements
-#define PRINT_ARRAYS 0
-#define HBM 0 
+#define DEBUG 1 //This will print out verbose messages and debugging statements
+#define PRINT_ARRAYS 1 
+#define HBM 1 
 
 size_t numthreads;
 //size of 2D Tiles in A matrix
@@ -49,7 +49,7 @@ uint64_t rdtsc(){
 
 void do_work()
 {
-	
+	if(DEBUG) printf("Inside do_work()\n");	
 	int offset, i, j, k, l, ai, bi, iMod, oldai, oldbi, tilesPerCol;
 	double *ap, *bp, *cp, *apLoc, *bpLoc, *cpLoc;
 	void *abaseptr, *bbaseptr;
@@ -57,9 +57,13 @@ void do_work()
 	if(HBM){
 		abaseptr = aml_scratch_baseptr(&sa);
 		bbaseptr = aml_scratch_baseptr(&sb);
+		if(DEBUG) printf("Got a and b baseptrs\n");
 	}
 	ai = -1; bi = -1;
 	
+	ap = a;
+	bp = b;
+	cp = c;
 
 	//This section works as follows:
 	//OUTER LOOP: Begin by requesting the next column of A tiles
@@ -73,9 +77,10 @@ void do_work()
 	struct aml_scratch_request *ar, *br;
 
 	tilesPerCol = rowSizeInTiles / CHUNKING; //This should evaluate to an integer value
-	
+		
 	//This will iterate through each column of tiles in A matrix
 	//This loop is O(rowSizeInTiles) (O(n))
+	if(DEBUG) printf("tilesPerCol = %d\n Beginning outerloop\n", tilesPerCol);
 	for(i = 0; i < rowSizeInTiles; i++) {
 		
 		//Request next column of tiles from A into the scratchpad for A	
@@ -83,7 +88,8 @@ void do_work()
 			oldbi = bi;
 			oldai = ai;
 			aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, i + 1);
-		 	aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, i + 1);	
+		 	aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, i + 1);
+			if(DEBUG) printf("Async pulling next columns of B and A (%d)\n", i);	
 		}		
 		//This will begin the dispersion of work accross threads, this loop is actually O(1) 
 		#pragma omp parallel for
@@ -92,7 +98,8 @@ void do_work()
 			//This loop will cover if threads are handling multiple rows of tiles. This shouldn't be a necessarily large number
 			//This loop is technically O(n) but in reality will usually be O(1) because tilesPerCol will be a small number relative to rowSizeInTiles
 			for(j = 0; j < tilesPerCol; j++){
-				offset = k * tilesPerCol + j;
+				offset = (k * tilesPerCol) + j;
+				if(k < numthreads / 4 && DEBUG && i == 0) printf("Thread %d has an offset value of %d\n", k, offset);
 				//This will give the beginning offset for where each thread should point to in the tilingB sized ap array
 				apLoc = aml_tiling_tilestart(&tiling, ap, offset);
 						
@@ -100,11 +107,43 @@ void do_work()
 				//This loop is O(n)
 				for(l = 0; l < rowSizeInTiles; l++){
 					bpLoc = aml_tiling_tilestart(&tiling, bp, l);
+					
 					//This will begin at the tile row that is at x cordinate equal to bp offset, and y cordinate equal to ap offset
 					cpLoc = aml_tiling_tilestart(&tiling, cp, (rowSizeInTiles * offset) + l);
-					
+
+					if(DEBUG && k == 0 && i < rowSizeInTiles / 4){
+						printf("Printing off the matrix tiles being worked on\n A MATRIX:\n");
+						int tempI, tempJ;
+						for(tempI = 0; tempI < rowSizeOfTile; tempI++){
+							for(tempJ = 0; tempJ < rowSizeOfTile; tempJ++){
+								printf("%lf ", apLoc[tempI*rowSizeOfTile + tempJ]);
+							}
+							printf("\n");
+						} 
+						printf("\nB MATRIX:\n");
+						for(tempI = 0; tempI < rowSizeOfTile; tempI++){
+							for(tempJ = 0; tempJ < rowSizeOfTile; tempJ++){
+								printf("%lf ", bpLoc[tempI*rowSizeOfTile + tempJ]);
+							}
+							printf("\n");
+						} 
+
+					}
+
 					//This function call is O(n^2), but should be more efficient
 					cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, rowSizeOfTile, rowSizeOfTile, rowSizeOfTile, 1.0, apLoc, rowSizeOfTile, bpLoc, rowSizeOfTile, 1.0, cpLoc, rowSizeOfTile);
+					
+					if(DEBUG && k == 0 && i <rowSizeInTiles / 4){
+						int tempI, tempJ;
+						printf("\nC MATRIX:\n");
+						for(tempI = 0; tempI < rowSizeOfTile; tempI++){
+							for(tempJ = 0; tempJ < rowSizeOfTile; tempJ++){
+								printf("%lf ", cpLoc[tempI*rowSizeOfTile + tempJ]);
+							}
+							printf("\n");
+						} 
+
+					}
 				}			
 			}
 			
@@ -195,7 +234,7 @@ int main(int argc, char *argv[])
 	}
 
 		
-	if(DEBUG)printf("Sizeof double: %d", sizeof(double));
+	if(DEBUG) printf("Sizeof double: %d\n", sizeof(double));
 	if(DEBUG || VERBOSE)printf("The total memory size is: %lu\nWe are dealing with a %lu x %lu matrix multiplication\nThe number of threads: %d\nThe chunking is: %lu\nThe tilesz is: %lu\nThat means there are %lu elements per tile\nThere are %lu tiles total\nThe length of a column in bytes is: %lu\n", MEMSIZE, (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)), (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)),numthreads, CHUNKING, tilesz, esz, numTiles, rowLengthInBytes);
 
 	/* initialize all the supporting struct */
@@ -205,6 +244,7 @@ int main(int argc, char *argv[])
 	rowSizeInTiles = numRows / rowSizeOfTile;
 	//This tiling B will be used for scratch pad memory movement of large tiled columns
 	assert(!aml_tiling_init(&tilingB, AML_TILING_TYPE_2D, rowSizeOfTile * sizeof(double), rowSizeInTiles * rowSizeOfTile * sizeof(double), tilesz * rowSizeInTiles, MEMSIZE));
+	if(DEBUG) printf("Row size in tiles = %lu\n", rowSizeInTiles);
 	AML_NODEMASK_ZERO(nodemask);
 	AML_NODEMASK_SET(nodemask, 0);
 	assert(!aml_arena_jemalloc_init(&arena, AML_ARENA_JEMALLOC_TYPE_REGULAR));
