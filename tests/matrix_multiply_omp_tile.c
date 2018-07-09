@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <math.h>
-#include "aml.h"
+#include "mkl.h"
 #include <stdlib.h>
 
 #define ITER 10
@@ -46,26 +46,12 @@ uint64_t rdtsc(){
     return ((uint64_t)hi << 32) | lo;
 }
 
-int kernel(double *a, double *b, double *c, size_t n, unsigned long colNum, unsigned long tid)
-{
-	size_t i, j;
-	
-	for(i = 0; i < rowSizeOfTile; i++)
-	{
-		for(j = 0; j < rowSizeOfTile; j++)
-		{
-			c[(unsigned long)(i*rowSizeOfTile + colNum)] += a[(unsigned long)(j + i*rowSizeOfTile)] * b[j];
-		}
-	}
-	return 0;
-}
-
 
 void do_work()
 {
 	
-	int offset, i, j, k, ai, bi, iMod, oldai, oldbi, tilesPerCol;
-	double *ap, *bp, *cp;
+	int offset, i, j, k, l, ai, bi, iMod, oldai, oldbi, tilesPerCol;
+	double *ap, *bp, *cp, *apLoc, *bpLoc, *cpLoc;
 	void *abaseptr, *bbaseptr;
 	        
 	if(HBM){
@@ -85,16 +71,12 @@ void do_work()
 	//Wait on A tiles, then repeat OUTER LOOP
 	//Mult done
 	struct aml_scratch_request *ar, *br;
-	
-	unsigned long rowOffsetTile = i / rowSizeInTiles;
-	unsigned long rowOffsetTileMulSize = rowOffsetTile * rowSizeInTiles;
-
-
 
 	tilesPerCol = rowSizeInTiles / CHUNKING; //This should evaluate to an integer value
-	//Iterate through all C tiles
-
-	for(i = 0; i < (int)sqrt(numTiles); i++) {
+	
+	//This will iterate through each column of tiles in A matrix
+	//This loop is O(rowSizeInTiles) (O(n))
+	for(i = 0; i < rowSizeInTiles; i++) {
 		
 		//Request next column of tiles from A into the scratchpad for A	
 		if(HBM){
@@ -103,51 +85,45 @@ void do_work()
 			aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, i + 1);
 		 	aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, i + 1);	
 		}		
-			//This will iterate trhough the tiles of B and multiply by the A tiles
-			#pragma omp parallel for
-			for(k = 0; k < numthreads; k++)
-			{
-				for(j = 0; j < tilesPerCol; j++){
-					offset = k * tilesPerCol + j;
-					//This will give the beginning offset for where each thread should point to in the tilingB sized ap array
-					ap = aml_tiling_tilestart(&tiling, ap, offset);
-					//Always begin with tile 0
-					bp = aml_tiling_tilestart(&tiling, bp, 0);
+		//This will begin the dispersion of work accross threads, this loop is actually O(1) 
+		#pragma omp parallel for
+		for(k = 0; k < numthreads; k++)
+		{
+			//This loop will cover if threads are handling multiple rows of tiles. This shouldn't be a necessarily large number
+			//This loop is technically O(n) but in reality will usually be O(1) because tilesPerCol will be a small number relative to rowSizeInTiles
+			for(j = 0; j < tilesPerCol; j++){
+				offset = k * tilesPerCol + j;
+				//This will give the beginning offset for where each thread should point to in the tilingB sized ap array
+				apLoc = aml_tiling_tilestart(&tiling, ap, offset);
+						
+				//Now we will iterate through all the tiles in the row of B tiles and compute a partial matrix multiplication
+				//This loop is O(n)
+				for(l = 0; l < rowSizeInTiles; l++){
+					bpLoc = aml_tiling_tilestart(&tiling, bp, l);
+					//This will begin at the tile row that is at x cordinate equal to bp offset, and y cordinate equal to ap offset
+					cpLoc = aml_tiling_tilestart(&tiling, cp, (rowSizeInTiles * offset) + l);
 					
-					cp = aml_tiling_tilestart(&tiling, cp, offset);
-
-								
-
-
-				//REPLACE THIS WITH DGEMM kernel(ap, &bp[k*rowSizeOfTile], cp, esz, (unsigned long)j, tid);
-
-			
-				
-				}
-				if(HBM){ 
-					aml_scratch_wait(&sa, ar);
-					totalWait += rdtsc() - waitingTime;
-					ap = aml_tiling_tilestart(&tiling, abaseptr, ai);
-					aml_scratch_release(&sa, oldai);
-				}
-				else{
-					ap = aml_tiling_tilestart(&tiling, a, offset + k + 1);
-				}
-
+					//This function call is O(n^2), but should be more efficient
+					cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, rowSizeOfTile, rowSizeOfTile, rowSizeOfTile, 1.0, apLoc, rowSizeOfTile, bpLoc, rowSizeOfTile, 1.0, cpLoc, rowSizeOfTile);
+				}			
 			}
 			
-			if(HBM) abaseptr = aml_scratch_baseptr(&sa);
-			ap = aml_tiling_tilestart(&tiling, a, offset);
-			if(HBM){
-				waitingTime = rdtsc();
-				aml_scratch_wait(&sb, br);
-				totalWait += rdtsc() - waitingTime;
-				bp = aml_tiling_tilestart(&tilingB, bbaseptr, bi);
-				aml_scratch_release(&sb, oldbi);
-			}
-			else{
-				bp = aml_tiling_tilestart(&tilingB, b, j + iMod);
-			}
+		}
+		
+		if(HBM){ 
+			aml_scratch_wait(&sa, ar);
+			aml_scratch_wait(&sb, br);
+			
+			ap = aml_tiling_tilestart(&tilingB, abaseptr, ai);
+			bp = aml_tiling_tilestart(&tilingB, bbaseptr, bi);
+			aml_scratch_release(&sa, oldai);
+			aml_scratch_release(&sb, oldbi);
+		}
+		else{
+			ap = aml_tiling_tilestart(&tilingB, a, i + 1);
+			bp = aml_tiling_tilestart(&tilingB, b, i + 1);
+		}		
+	
 	}
 	
 }
