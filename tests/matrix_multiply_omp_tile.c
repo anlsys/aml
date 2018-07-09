@@ -46,12 +46,25 @@ uint64_t rdtsc(){
     return ((uint64_t)hi << 32) | lo;
 }
 
+//This temporary kernel will be our dgemm replacement.
+void multiplyTiles(double *a, double *b, double *c, int n, int m){
+	unsigned long i, j, k;
+	
+	for(i = 0; i < m; i++){
+		for(j = 0; j < n; j++){
+			for(k = 0; k < m; k++){
+				c[i*m + j] += a[i*m + k] * b[j + k*n]; 
+			}		
+		}
+	}
+
+}
 
 void do_work()
 {
 	if(DEBUG) printf("Inside do_work()\n");	
 	int offset, i, j, k, l, ai, bi, iMod, oldai, oldbi, tilesPerCol;
-	double *ap, *bp, *cp, *apLoc, *bpLoc, *cpLoc;
+	double *ap, *bp, *cp, *apLoc, *bpLoc;
 	void *abaseptr, *bbaseptr;
 	        
 	if(HBM){
@@ -76,7 +89,7 @@ void do_work()
 	//Mult done
 	struct aml_scratch_request *ar, *br;
 
-	tilesPerCol = rowSizeInTiles / CHUNKING; //This should evaluate to an integer value
+	tilesPerCol = rowSizeInTiles / numthreads; //This should evaluate to an integer value
 		
 	//This will iterate through each column of tiles in A matrix
 	//This loop is O(rowSizeInTiles) (O(n))
@@ -99,19 +112,22 @@ void do_work()
 			//This loop is technically O(n) but in reality will usually be O(1) because tilesPerCol will be a small number relative to rowSizeInTiles
 			for(j = 0; j < tilesPerCol; j++){
 				offset = (k * tilesPerCol) + j;
-				if(k < numthreads / 4 && DEBUG && i == 0) printf("Thread %d has an offset value of %d\n", k, offset);
+				if(DEBUG) printf("Thread %d has an offset value of %d\n", k, offset);
 				//This will give the beginning offset for where each thread should point to in the tilingB sized ap array
 				apLoc = aml_tiling_tilestart(&tiling, ap, offset);
+				offset = (k * tilesPerCol) + j;
 						
 				//Now we will iterate through all the tiles in the row of B tiles and compute a partial matrix multiplication
 				//This loop is O(n)
 				for(l = 0; l < rowSizeInTiles; l++){
+					
 					bpLoc = aml_tiling_tilestart(&tiling, bp, l);
 					
 					//This will begin at the tile row that is at x cordinate equal to bp offset, and y cordinate equal to ap offset
-					cpLoc = aml_tiling_tilestart(&tiling, cp, (rowSizeInTiles * offset) + l);
-
-					if(DEBUG && k == 0 && i < rowSizeInTiles / 4){
+					cp = aml_tiling_tilestart(&tiling, c, ((int)rowSizeInTiles * ((k * tilesPerCol) + j)) + l);
+					if(DEBUG) printf("Thread %d is beginning tile c at tile offset %d (offset = %d)\n", k, (int)rowSizeInTiles * ((k * tilesPerCol) + j) + l, offset);
+					
+					if(0 && DEBUG && k == 0){
 						printf("Printing off the matrix tiles being worked on\n A MATRIX:\n");
 						int tempI, tempJ;
 						for(tempI = 0; tempI < rowSizeOfTile; tempI++){
@@ -129,16 +145,18 @@ void do_work()
 						} 
 
 					}
-
-					//This function call is O(n^2), but should be more efficient
-					cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, rowSizeOfTile, rowSizeOfTile, rowSizeOfTile, 1.0, apLoc, rowSizeOfTile, bpLoc, rowSizeOfTile, 1.0, cpLoc, rowSizeOfTile);
+					if(DEBUG && k == 0) printf("Beginning matrix multiply\n");
+					//Currently we will call the user written kernel, but we will eventually use dgemm???
+					multiplyTiles(apLoc, bpLoc, cp, rowSizeOfTile, rowSizeOfTile);
 					
-					if(DEBUG && k == 0 && i <rowSizeInTiles / 4){
+					//cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, rowSizeOfTile, rowSizeOfTile, rowSizeOfTile, 1.0, apLoc, rowSizeOfTile, bpLoc, rowSizeOfTile, 1.0, cpLoc, rowSizeOfTile);
+					//if(DEBUG && k == 0) printf("Returned from matrix multiply\n");
+					if(0 && DEBUG && k == 0){
 						int tempI, tempJ;
 						printf("\nC MATRIX:\n");
 						for(tempI = 0; tempI < rowSizeOfTile; tempI++){
 							for(tempJ = 0; tempJ < rowSizeOfTile; tempJ++){
-								printf("%lf ", cpLoc[tempI*rowSizeOfTile + tempJ]);
+								printf("%lf ", cp[tempI*rowSizeOfTile + tempJ]);
 							}
 							printf("\n");
 						} 
@@ -147,7 +165,21 @@ void do_work()
 				}			
 			}
 			
+		}	
+		if(DEBUG){
+			printf("Current C matrix\n");
+			int newLines = 0;
+			for(unsigned long i = 0; i < esize; i++) {
+				printf("%lf ", cp[i]);
+				newLines++;
+				if(newLines == (unsigned long)sqrt(esize)){
+					printf("\n");
+					newLines = 0;
+				}
+			}
+			printf("\n");
 		}
+
 		
 		if(HBM){ 
 			aml_scratch_wait(&sa, ar);
