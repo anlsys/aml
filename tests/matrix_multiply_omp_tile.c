@@ -13,11 +13,14 @@
 #define MEMSIZES 134217728//1024 entries by 1024 entries * sizeof(unsigned long)
 #define NUMBER_OF_THREADS 32
 #define L2_CACHE_SIZE 1048576 //1MB
-#define HBM_SIZE 17179869184 //16 GBi
+#define HBM_SIZE 17179869184 //16 GB
+
+#define CBLAS 0 //This will choose whether to use clblas dgemm or our kernel
 #define VERBOSE 1 //Verbose mode will print out extra information about what is happening
-#define DEBUG 1 //This will print out verbose messages and debugging statements
-#define PRINT_ARRAYS 1 
+#define DEBUG 0 //This will print out verbose messages and debugging statements
+#define PRINT_ARRAYS 0 
 #define HBM 1 
+#define DEBUG2 0 
 
 size_t numthreads;
 //size of 2D Tiles in A matrix
@@ -62,9 +65,13 @@ void multiplyTiles(double *a, double *b, double *c, int n, int m){
 
 void do_work()
 {
-	if(DEBUG) printf("Inside do_work()\n");	
+	totalWait = 0;
+	if(DEBUG2) printf("Inside do_work()\n");	
 	int i, k, ai, bi, oldai, oldbi, tilesPerCol;
-	double *ap, *bp, *cp, *apLoc, *bpLoc;
+	MKL_INT lda = (int)rowSizeOfTile, ldb, ldc;
+	ldb = lda;
+	ldc = lda;
+	double *ap, *bp, *cp;
 	void *abaseptr, *bbaseptr;
 	        
 	if(HBM){
@@ -93,7 +100,7 @@ void do_work()
 		
 	//This will iterate through each column of tiles in A matrix
 	//This loop is O(rowSizeInTiles) (O(n))
-	if(DEBUG) printf("tilesPerCol = %d\n Beginning outerloop\n", tilesPerCol);
+	if(DEBUG2) printf("tilesPerCol = %d\n Beginning outerloop\n", tilesPerCol);
 	for(i = 0; i < rowSizeInTiles; i++) {
 		
 		//Request next column of tiles from A into the scratchpad for A	
@@ -109,11 +116,12 @@ void do_work()
 		for(k = 0; k < numthreads; k++)
 		{
 			int j, l, offset;
+			double *apLoc, *bpLoc;
 			//This loop will cover if threads are handling multiple rows of tiles. This shouldn't be a necessarily large number
 			//This loop is technically O(n) but in reality will usually be O(1) because tilesPerCol will be a small number relative to rowSizeInTiles
 			for(j = 0; j < tilesPerCol; j++){
 				offset = (k * tilesPerCol) + j;
-				if(DEBUG){
+				if(DEBUG2){
 					printf("Thread %d has an offset value of %d\n", k, offset);
 				}
 				//This will give the beginning offset for where each thread should point to in the tilingB sized ap array
@@ -128,7 +136,7 @@ void do_work()
 					
 					//This will begin at the tile row that is at x cordinate equal to bp offset, and y cordinate equal to ap offset
 					offset = (((int)rowSizeInTiles * ((k * tilesPerCol)+ j) ) + l);
-					if(DEBUG){
+					if(DEBUG2){
 						printf("Thread %d is beginning tile c at tile offset<%d> = (rowSizeInTiles<%d> * ((k<%d> * tilesPerCol<%d>) + j<%d>)) + l<%d>\n", k, offset, (int)rowSizeInTiles, k, tilesPerCol, j, l);
 					} 
 					cp = aml_tiling_tilestart(&tiling, c, offset);
@@ -153,9 +161,16 @@ void do_work()
 					}
 					//if(DEBUG && k == 0) printf("Beginning matrix multiply\n");
 					//Currently we will call the user written kernel, but we will eventually use dgemm???
-					multiplyTiles(apLoc, bpLoc, cp, rowSizeOfTile, rowSizeOfTile);
-					
-					//cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, rowSizeOfTile, rowSizeOfTile, rowSizeOfTile, 1.0, apLoc, rowSizeOfTile, bpLoc, rowSizeOfTile, 1.0, cpLoc, rowSizeOfTile);
+					//
+					#if CBLAS == 1
+						if(DEBUG2){
+							printf("Beginning cblas dgemm\n");
+							fflush(stdout);
+						}
+						cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, rowSizeOfTile, rowSizeOfTile, rowSizeOfTile, 1.0, apLoc, lda, bpLoc, ldb, 1.0, cp, ldc);
+					#else
+						multiplyTiles(apLoc, bpLoc, cp, rowSizeOfTile, rowSizeOfTile);
+					#endif
 					//if(DEBUG && k == 0) printf("Returned from matrix multiply\n");
 					if(0 && DEBUG && k == 0){
 						int tempI, tempJ;
@@ -187,10 +202,11 @@ void do_work()
 		}
 
 		
-		if(HBM){ 
+		if(HBM){
+			waitingTime = rdtsc();
 			aml_scratch_wait(&sa, ar);
 			aml_scratch_wait(&sb, br);
-			
+			totalWait += rdtsc() - waitingTime;
 			ap = aml_tiling_tilestart(&tilingB, abaseptr, ai);
 			bp = aml_tiling_tilestart(&tilingB, bbaseptr, bi);
 			aml_scratch_release(&sa, oldai);
@@ -255,11 +271,10 @@ int main(int argc, char *argv[])
 		//CHUNKING = Total number of columns that will be handled by each thread
 		//Tilesz is found by dividing the length (in number of elements) of a dimension by the number of threads.
 		//It then checks to see if the tile is too large. If it is, then the size will be reduced until it will fit inside the L2 Cache
-		tilesz = ((unsigned long) pow( ( ( sqrt(MEMSIZE / sizeof(double)) ) / numthreads), 2) ) * sizeof(double);
+		tilesz = ((unsigned long) pow( ( ( sqrt(MEMSIZE / sizeof(double)) ) / (numthreads * 2) ), 2) ) * sizeof(double);
 		double multiplier = 2;
 		while(tilesz > L2_CACHE_SIZE && argc != 4){
-			tilesz = pow(sqrt(MEMSIZE/sizeof(double)) / (numthreads*multiplier),2)*sizeof(double);
-			
+			tilesz = (unsigned long)pow(((unsigned long)sqrt(tilesz/sizeof(double))/2), 2) * sizeof(double); 			
 			if(VERBOSE) printf("Resizing the tile size because it is too large for L2 cache. It is now of size: %lu\n", tilesz);
 		}
 		if(argc == 4){
