@@ -21,6 +21,8 @@
 #define PRINT_ARRAYS 0 
 #define HBM 1 
 #define DEBUG2 0 
+#define COMPINTEL 0
+
 
 size_t numthreads;
 //size of 2D Tiles in A matrix
@@ -41,7 +43,6 @@ AML_AREA_LINUX_DECL(slow);
 AML_AREA_LINUX_DECL(fast);
 AML_SCRATCH_PAR_DECL(sa);
 AML_SCRATCH_PAR_DECL(sb);
-
 //This code will take cycles executed as a use for timing the kernel.
 uint64_t rdtsc(){
     unsigned int lo,hi;
@@ -167,7 +168,7 @@ void do_work()
 							printf("Beginning cblas dgemm\n");
 							fflush(stdout);
 						}
-						cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, rowSizeOfTile, rowSizeOfTile, rowSizeOfTile, 1.0, apLoc, lda, bpLoc, ldb, 1.0, cp, ldc);
+						cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, ldc, lda, ldb, 1.0, apLoc, lda, bpLoc, ldb, 1.0, cp, ldc);
 					#else
 						multiplyTiles(apLoc, bpLoc, cp, rowSizeOfTile, rowSizeOfTile);
 					#endif
@@ -234,11 +235,15 @@ void do_work()
 //Another potential solution could be to tile the B matrix as well. This will require Atomic Additions though.  
 int main(int argc, char *argv[])
 {
+
 	AML_BINDING_SINGLE_DECL(binding);
 	AML_ARENA_JEMALLOC_DECL(arena);
 	AML_DMA_LINUX_SEQ_DECL(dma);
 	unsigned long nodemask[AML_NODEMASK_SZ];
 	aml_init(&argc, &argv);
+
+
+
 	if(argc == 1){
 		if(VERBOSE) printf("No arguments provided, setting numThreads = %d and Memsize = %lu\n", NUMBER_OF_THREADS, MEMSIZE);
 		omp_set_num_threads(NUMBER_OF_THREADS);
@@ -257,6 +262,45 @@ int main(int argc, char *argv[])
 		if(VERBOSE) printf("Two arguments provided, setting numThreads = %d and Memsize = %lu\n", atoi(argv[2]), atol(argv[1]));
 
 	}
+
+	if(COMPINTEL){
+		printf("Now running intel version for comparison\n");
+		double *aIntel, *bIntel, *cIntel;
+		int m,n,p;
+		unsigned long intelNumRows, intelEsize;
+		intelNumRows = (unsigned long)sqrt(MEMSIZE/8);
+		intelEsize = intelNumRows * intelNumRows;
+		m = n = p = intelNumRows;
+
+		printf("Declaring a, b, and c matrices\n");
+		aIntel = (double *)malloc( m*p*sizeof( double ) );
+    		bIntel = (double *)malloc( p*n*sizeof( double ) );
+    		cIntel = (double *)malloc( m*n*sizeof( double ) );
+		if (aIntel == NULL || bIntel == NULL || cIntel == NULL) {
+        		printf( "\n ERROR: Can't allocate memory for matrices. Aborting... \n\n");
+        		free(aIntel);
+        		free(bIntel);
+        		free(cIntel);
+        		return 1;
+    		}
+		printf("Initializing values in the matrices\n");
+		double alpha = 1.0, beta = 1.0;
+		for(int i = 0; i < intelEsize; i++){
+			aIntel[i] = 1.0;
+			bIntel[i] = 1.0;
+			cIntel[i] = 0.0;
+		}
+		printf("Beginning cblas\n");
+		startClock = clock();
+		beginTime = rdtsc();
+		mkl_set_num_threads(atoi(argv[2]));
+		cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, p, alpha, aIntel, p, bIntel, n, beta, cIntel, n);
+		endTime = rdtsc();
+		endClock = clock();
+		printf("Intel Timing Statistics:\nRDTSC: %lu cycles\nCLOCK: %lf Seconds\n", endTime - beginTime, (double)(endClock - startClock) / CLOCKS_PER_SEC);
+	}
+	
+
 	
 	/* use openmp env to figure out how many threads we want
 	 * (we actually use 3x as much)
@@ -315,14 +359,21 @@ int main(int argc, char *argv[])
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
 				    &arena, MPOL_BIND, nodemask));
 	
-	assert(!aml_dma_linux_seq_init(&dma, numthreads*2));
+	assert(!aml_dma_linux_seq_init(&dma, 2));
+	//assert(!aml_dma_linux_seq_init(&dma, numthreads*2));
 	if(HBM){
 		if(DEBUG)printf("Declaring scratchpad for sa\n");
 		assert(!aml_scratch_par_init(&sa, &fast, &slow, &dma, &tilingB,
-				     2*numthreads, numthreads));
+				     2, 2));
+		//assert(!aml_scratch_par_init(&sa, &fast, &slow, &dma, &tilingB,
+		//		     2*numthreads, numthreads));
+
 		if(DEBUG)printf("Declaring scratchpad for sb\n");
 		assert(!aml_scratch_par_init(&sb, &fast, &slow, &dma, &tilingB,
-				     2*numthreads, numthreads));
+				     2, 2));
+		//assert(!aml_scratch_par_init(&sb, &fast, &slow, &dma, &tilingB,
+				    // 2*numthreads, numthreads));
+
 		if(DEBUG)printf("Sucessfully created both sa and sb\n");
 	}
 	/* allocation */
@@ -406,19 +457,31 @@ int main(int argc, char *argv[])
 		printf("\n");
 	}
 
-	if(!correct) printf("The matrix multiplication failed. The last incorrect result is at location (%lu, %lu) in the C matrix\n", correct % numRows, correct / numRows);
+	if(!correct){
+		printf("The matrix multiplication failed. The last incorrect result is at location C(0,0) = %lf in the C matrix\n", c[0]);
+	}
+	else{
+		printf("The matrix multiplication suceeded, C(0,0) = %lf\n", c[0]);
+	}
 
-	aml_scratch_par_destroy(&sa);
-	aml_scratch_par_destroy(&sb);
-	aml_dma_linux_seq_destroy(&dma);
+	
+
+	if(HBM) aml_scratch_par_destroy(&sa);
+	if(HBM) aml_scratch_par_destroy(&sb);
+	if(HBM) aml_dma_linux_seq_destroy(&dma);
 	aml_area_free(&slow, a);
 	aml_area_free(&slow, b);
 	if(HBM) aml_area_free(&fast, c);
 	if(!HBM) aml_area_free(&slow, c);
 	aml_area_linux_destroy(&slow);
-	aml_area_linux_destroy(&fast);
+	if(HBM) aml_area_linux_destroy(&fast);
 	aml_tiling_destroy(&tiling, AML_TILING_TYPE_1D);
+	aml_tiling_destroy(&tilingB, AML_TILING_TYPE_2D);
 	aml_binding_destroy(&binding, AML_BINDING_TYPE_SINGLE);
 	aml_finalize();
+
+
+
+
 	return 0;
 }
