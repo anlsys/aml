@@ -21,7 +21,7 @@
 #define PRINT_ARRAYS 0 
 #define HBM 1 
 #define DEBUG2 0 
-#define COMPINTEL 0
+#define COMPINTEL 1
 
 
 size_t numthreads;
@@ -36,6 +36,7 @@ unsigned long rowSizeOfTile, rowSizeInTiles;
 unsigned long myId;
 unsigned long long beginTime, endTime;
 unsigned long long waitingTime, totalWait;
+unsigned long long forkingTime, totalForkTime;
 clock_t startClock, endClock;
 AML_TILING_2D_DECL(tiling);
 AML_TILING_2D_DECL(tilingB);
@@ -67,6 +68,7 @@ void multiplyTiles(double *a, double *b, double *c, int n, int m){
 void do_work()
 {
 	totalWait = 0;
+	totalForkTime = 0;
 	if(DEBUG2) printf("Inside do_work()\n");	
 	int i, k, ai, bi, oldai, oldbi, tilesPerCol;
 	MKL_INT lda = (int)rowSizeOfTile, ldb, ldc;
@@ -111,11 +113,17 @@ void do_work()
 			aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, i + 1);
 		 	aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, i + 1);
 			if(DEBUG) printf("Async pulling next columns of B and A (%d)\n", i);	
-		}		
+		}
+		forkingTime = rdtsc();		
 		//This will begin the dispersion of work accross threads, this loop is actually O(1) 
 		#pragma omp parallel for
 		for(k = 0; k < numthreads; k++)
 		{
+			if(k == numthreads - 1){
+				forkingTime = rdtsc() - forkingTime;
+				totalForkTime += forkingTime;
+				if(DEBUG) printf("forkingTime = %lu\n", forkingTime);
+			}
 			int j, l, offset;
 			double *apLoc, *bpLoc;
 			//This loop will cover if threads are handling multiple rows of tiles. This shouldn't be a necessarily large number
@@ -305,9 +313,10 @@ int main(int argc, char *argv[])
 	/* use openmp env to figure out how many threads we want
 	 * (we actually use 3x as much)
 	 */
-	esize = MEMSIZE/sizeof(unsigned long);
+	esize = (unsigned long)MEMSIZE/sizeof(double);
 	numRows = (unsigned long)sqrt(esize);
 
+	if(VERBOSE);
 	#pragma omp parallel
 	{
 		rowLengthInBytes = (unsigned long)sqrt(MEMSIZE/sizeof(double)) * sizeof(double);
@@ -433,7 +442,7 @@ int main(int argc, char *argv[])
 	//END MULTIPLICATION
 	endTime = rdtsc();
 	endClock = clock();
-	printf("Kernel Timing Statistics:\nRDTSC: %lu cycles\nCLOCK: %lf Seconds\nCycles waiting: %lu\n", endTime - beginTime, (double)(endClock - startClock) / CLOCKS_PER_SEC, totalWait);
+	printf("Kernel Timing Statistics:\nRDTSC: %lu cycles\nCLOCK: %lf Seconds\nCycles waiting on memory: %lu\nCycles waiting to fork: %lu\n", endTime - beginTime, (double)(endClock - startClock) / CLOCKS_PER_SEC, totalWait, totalForkTime);
 
 	/* validate */
 	unsigned long correct = 1;
