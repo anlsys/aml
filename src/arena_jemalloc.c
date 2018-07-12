@@ -203,7 +203,7 @@ int aml_arena_jemalloc_register_arena(struct aml_arena_data *a,
 	 * calling the extent hooks before we have a change of registering the
 	 * area.
 	 */
-	err = jemk_mallctl("arenas.create", &newidx, &unsigned_size, &hooks,
+	err = jemk_aml_mallctl("arenas.create", &newidx, &unsigned_size, &hooks,
 			   sizeof(hooks));
 	if(err)
 		goto exit;
@@ -226,7 +226,7 @@ int aml_arena_jemalloc_deregister_arena(struct aml_arena_data *a)
 	pthread_mutex_lock(&aml_arena_jemalloc_global.lock);
 
 	snprintf(cmd, sizeof(cmd), "arena.%u.purge", arena->uid);
-	jemk_mallctl(cmd, NULL, NULL, NULL, 0);
+	jemk_aml_mallctl(cmd, NULL, NULL, NULL, 0);
 	aml_arena_jemalloc_global.registry[arena->uid] = NULL;
 
 	pthread_mutex_unlock(&aml_arena_jemalloc_global.lock);
@@ -239,7 +239,7 @@ void *aml_arena_jemalloc_mallocx(struct aml_arena_data *a, size_t sz,
 	struct aml_arena_jemalloc_data *arena =
 		(struct aml_arena_jemalloc_data*) a;
 	int flags = arena->flags | aml_arena_jemalloc_flags(extraflags);
-	return jemk_mallocx(sz, flags);
+	return jemk_aml_mallocx(sz, flags);
 }
 
 void *aml_arena_jemalloc_reallocx(struct aml_arena_data *a, void *ptr,
@@ -248,7 +248,7 @@ void *aml_arena_jemalloc_reallocx(struct aml_arena_data *a, void *ptr,
 	struct aml_arena_jemalloc_data *arena =
 		(struct aml_arena_jemalloc_data*) a;
 	int flags = arena->flags | aml_arena_jemalloc_flags(extraflags);
-	return jemk_rallocx(ptr, sz, flags);
+	return jemk_aml_rallocx(ptr, sz, flags);
 }
 
 void aml_arena_jemalloc_dallocx(struct aml_arena_data *a, void *ptr,
@@ -257,7 +257,7 @@ void aml_arena_jemalloc_dallocx(struct aml_arena_data *a, void *ptr,
 	struct aml_arena_jemalloc_data *arena =
 		(struct aml_arena_jemalloc_data*) a;
 	int flags = arena->flags | aml_arena_jemalloc_flags(extraflags);
-	jemk_dallocx(ptr, flags);
+	jemk_aml_dallocx(ptr, flags);
 }
 
 struct aml_arena_ops aml_arena_jemalloc_ops = {
