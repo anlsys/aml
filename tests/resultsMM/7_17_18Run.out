@@ -1,0 +1,653 @@
+Running tests for 32 Threads
+7.03 GB
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 128402975558 cycles
+CLOCK: 3130.560000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 129911119468 cycles
+CLOCK: 3191.900000 Seconds
+Cycles waiting on memory: 976690
+Cycles waiting to fork: 3291002
+The matrix multiplication suceeded, C(0,0) = 30720.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 127284904903 cycles
+CLOCK: 3110.620000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 130591896812 cycles
+CLOCK: 3208.420000 Seconds
+Cycles waiting on memory: 1045720
+Cycles waiting to fork: 3140007
+The matrix multiplication suceeded, C(0,0) = 30720.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 128319683570 cycles
+CLOCK: 3129.750000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 99283839317 cycles
+CLOCK: 2435.800000 Seconds
+Cycles waiting on memory: 391534
+Cycles waiting to fork: 2765581
+The matrix multiplication suceeded, C(0,0) = 30720.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 128352453593 cycles
+CLOCK: 3150.550000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 99578615682 cycles
+CLOCK: 2443.010000 Seconds
+Cycles waiting on memory: 360828
+Cycles waiting to fork: 2614326
+The matrix multiplication suceeded, C(0,0) = 30720.000000
+12.5 GB
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 379679553539 cycles
+CLOCK: 9321.670000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 255428950842 cycles
+CLOCK: 6255.020000 Seconds
+Cycles waiting on memory: 588575
+Cycles waiting to fork: 5911022
+The matrix multiplication suceeded, C(0,0) = 40960.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 379923136307 cycles
+CLOCK: 9313.960000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 254630198056 cycles
+CLOCK: 6214.440000 Seconds
+Cycles waiting on memory: 522769
+Cycles waiting to fork: 11126700
+The matrix multiplication suceeded, C(0,0) = 40960.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 380763435910 cycles
+CLOCK: 9346.690000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 255899123051 cycles
+CLOCK: 6254.870000 Seconds
+Cycles waiting on memory: 546910
+Cycles waiting to fork: 8870498
+The matrix multiplication suceeded, C(0,0) = 40960.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 381412593601 cycles
+CLOCK: 9350.240000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 255211079253 cycles
+CLOCK: 6246.880000 Seconds
+Cycles waiting on memory: 477737
+Cycles waiting to fork: 6532773
+The matrix multiplication suceeded, C(0,0) = 40960.000000
+19.53125 GB
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 560451252504 cycles
+CLOCK: 13760.580000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 369577783497 cycles
+CLOCK: 8972.590000 Seconds
+Cycles waiting on memory: 816738
+Cycles waiting to fork: 21082191
+The matrix multiplication suceeded, C(0,0) = 51200.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 533217044334 cycles
+CLOCK: 13097.260000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 368238367952 cycles
+CLOCK: 8937.240000 Seconds
+Cycles waiting on memory: 713271
+Cycles waiting to fork: 20777913
+The matrix multiplication suceeded, C(0,0) = 51200.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 558520568086 cycles
+CLOCK: 13725.040000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 370016133435 cycles
+CLOCK: 8978.890000 Seconds
+Cycles waiting on memory: 837291
+Cycles waiting to fork: 20702877
+The matrix multiplication suceeded, C(0,0) = 51200.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 591066459191 cycles
+CLOCK: 14516.090000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 368507566557 cycles
+CLOCK: 8951.160000 Seconds
+Cycles waiting on memory: 741013
+Cycles waiting to fork: 20063589
+The matrix multiplication suceeded, C(0,0) = 51200.000000
+28.125 GB
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 1119437712211 cycles
+CLOCK: 27488.300000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 697430048822 cycles
+CLOCK: 17062.290000 Seconds
+Cycles waiting on memory: 2059798
+Cycles waiting to fork: 10021492
+The matrix multiplication suceeded, C(0,0) = 61440.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 1125508661199 cycles
+CLOCK: 27657.460000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 658848000876 cycles
+CLOCK: 16168.460000 Seconds
+Cycles waiting on memory: 2267460
+Cycles waiting to fork: 5834114
+The matrix multiplication suceeded, C(0,0) = 61440.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 1114204653419 cycles
+CLOCK: 27376.180000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 805646491208 cycles
+CLOCK: 16971.180000 Seconds
+Cycles waiting on memory: 5997251
+Cycles waiting to fork: 12472447
+The matrix multiplication suceeded, C(0,0) = 61440.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 1125135780236 cycles
+CLOCK: 27647.520000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 795696859152 cycles
+CLOCK: 17042.650000 Seconds
+Cycles waiting on memory: 5246592
+Cycles waiting to fork: 11855857
+The matrix multiplication suceeded, C(0,0) = 61440.000000
+Running tests for 48 Threads
+7.03 GB
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 108720148537 cycles
+CLOCK: 4000.260000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 116627489576 cycles
+CLOCK: 4293.990000 Seconds
+Cycles waiting on memory: 517634
+Cycles waiting to fork: 1961661
+The matrix multiplication suceeded, C(0,0) = 30720.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 110460420057 cycles
+CLOCK: 4027.760000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 120216900297 cycles
+CLOCK: 4425.420000 Seconds
+Cycles waiting on memory: 536289
+Cycles waiting to fork: 2888561
+The matrix multiplication suceeded, C(0,0) = 30720.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 110331934570 cycles
+CLOCK: 4037.260000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 124743659872 cycles
+CLOCK: 4570.810000 Seconds
+Cycles waiting on memory: 521872
+Cycles waiting to fork: 8472035
+The matrix multiplication suceeded, C(0,0) = 30720.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 109615245012 cycles
+CLOCK: 3993.950000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 117525352074 cycles
+CLOCK: 4323.920000 Seconds
+Cycles waiting on memory: 538746
+Cycles waiting to fork: 1858818
+The matrix multiplication suceeded, C(0,0) = 30720.000000
+15.82 GB
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 433830241377 cycles
+CLOCK: 15961.360000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 319474075141 cycles
+CLOCK: 10564.170000 Seconds
+Cycles waiting on memory: 807547
+Cycles waiting to fork: 33180342
+The matrix multiplication suceeded, C(0,0) = 46080.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 436811239163 cycles
+CLOCK: 16063.470000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 320444472075 cycles
+CLOCK: 10078.880000 Seconds
+Cycles waiting on memory: 818272
+Cycles waiting to fork: 33007403
+The matrix multiplication suceeded, C(0,0) = 46080.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 435985911270 cycles
+CLOCK: 16062.700000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 311680269628 cycles
+CLOCK: 9853.220000 Seconds
+Cycles waiting on memory: 771875
+Cycles waiting to fork: 31950035
+The matrix multiplication suceeded, C(0,0) = 46080.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 431545681814 cycles
+CLOCK: 15861.610000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 330744559860 cycles
+CLOCK: 10257.140000 Seconds
+Cycles waiting on memory: 746980
+Cycles waiting to fork: 32271603
+The matrix multiplication suceeded, C(0,0) = 46080.000000
+28.125 GB
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 1024808358327 cycles
+CLOCK: 37743.740000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 508966957590 cycles
+CLOCK: 18751.690000 Seconds
+Cycles waiting on memory: 1706406
+Cycles waiting to fork: 13226954
+The matrix multiplication suceeded, C(0,0) = 61440.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 1025502971597 cycles
+CLOCK: 37746.170000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 513893733704 cycles
+CLOCK: 18938.790000 Seconds
+Cycles waiting on memory: 1677728
+Cycles waiting to fork: 4502030
+The matrix multiplication suceeded, C(0,0) = 61440.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 1015777889672 cycles
+CLOCK: 37403.260000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 517235706871 cycles
+CLOCK: 18286.070000 Seconds
+Cycles waiting on memory: 7677436
+Cycles waiting to fork: 19015425
+The matrix multiplication suceeded, C(0,0) = 61440.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 1006138295396 cycles
+CLOCK: 37055.540000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 505876270107 cycles
+CLOCK: 17804.890000 Seconds
+Cycles waiting on memory: 4857905
+Cycles waiting to fork: 16779555
+The matrix multiplication suceeded, C(0,0) = 61440.000000
+Running tests for 64 Threads
+3.125 GB
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 30685201469 cycles
+CLOCK: 1474.340000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 41766652239 cycles
+CLOCK: 2048.570000 Seconds
+Cycles waiting on memory: 663039
+Cycles waiting to fork: 2842164
+The matrix multiplication suceeded, C(0,0) = 20480.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 31055074102 cycles
+CLOCK: 1504.190000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 40575948660 cycles
+CLOCK: 1990.450000 Seconds
+Cycles waiting on memory: 650884
+Cycles waiting to fork: 2540681
+The matrix multiplication suceeded, C(0,0) = 20480.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 30656275169 cycles
+CLOCK: 1440.260000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 42509447760 cycles
+CLOCK: 2085.570000 Seconds
+Cycles waiting on memory: 686699
+Cycles waiting to fork: 2542969
+The matrix multiplication suceeded, C(0,0) = 20480.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 30120965953 cycles
+CLOCK: 1463.130000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 39740913459 cycles
+CLOCK: 1949.160000 Seconds
+Cycles waiting on memory: 689117
+Cycles waiting to fork: 2590887
+The matrix multiplication suceeded, C(0,0) = 20480.000000
+12.5 GB
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 333832375812 cycles
+CLOCK: 16374.720000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 292655868154 cycles
+CLOCK: 13636.330000 Seconds
+Cycles waiting on memory: 901173
+Cycles waiting to fork: 32462066
+The matrix multiplication suceeded, C(0,0) = 40960.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 335207367937 cycles
+CLOCK: 16393.570000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 293567383980 cycles
+CLOCK: 13828.050000 Seconds
+Cycles waiting on memory: 931177
+Cycles waiting to fork: 33656467
+The matrix multiplication suceeded, C(0,0) = 40960.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 333223752602 cycles
+CLOCK: 16318.010000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 292410048528 cycles
+CLOCK: 14240.450000 Seconds
+Cycles waiting on memory: 907504
+Cycles waiting to fork: 15765737
+The matrix multiplication suceeded, C(0,0) = 40960.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 334921438332 cycles
+CLOCK: 16422.740000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 293624800521 cycles
+CLOCK: 13763.440000 Seconds
+Cycles waiting on memory: 1098097
+Cycles waiting to fork: 31307042
+The matrix multiplication suceeded, C(0,0) = 40960.000000
+28.125 GB
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 984808356987 cycles
+CLOCK: 48298.490000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 429418640443 cycles
+CLOCK: 19853.160000 Seconds
+Cycles waiting on memory: 2018991
+Cycles waiting to fork: 4818671
+The matrix multiplication suceeded, C(0,0) = 61440.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 974661828660 cycles
+CLOCK: 47808.960000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 385546751655 cycles
+CLOCK: 18721.370000 Seconds
+Cycles waiting on memory: 3211429
+Cycles waiting to fork: 7915362
+The matrix multiplication suceeded, C(0,0) = 61440.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 956224735375 cycles
+CLOCK: 46948.590000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 390967192850 cycles
+CLOCK: 18607.710000 Seconds
+Cycles waiting on memory: 3235570
+Cycles waiting to fork: 37807185
+The matrix multiplication suceeded, C(0,0) = 61440.000000
+
+
+-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----
+Beginning cblas
+Intel Timing Statistics:
+RDTSC: 958225441238 cycles
+CLOCK: 47042.560000 Seconds
+
+
+-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----
+Kernel Timing Statistics:
+RDTSC: 421419420019 cycles
+CLOCK: 19712.080000 Seconds
+Cycles waiting on memory: 1937234
+Cycles waiting to fork: 16210233
+The matrix multiplication suceeded, C(0,0) = 61440.000000

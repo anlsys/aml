@@ -14,14 +14,14 @@
 #define L2_CACHE_SIZE 1048576 //1MB
 #define HBM_SIZE 17179869184 //16 GB
 
-#define CBLAS 0 //This will choose whether to use clblas dgemm or our kernel
-#define VERBOSE 1 //Verbose mode will print out extra information about what is happening
+#define CBLAS 1 //This will choose whether to use clblas dgemm or our kernel
+#define VERBOSE 0 //Verbose mode will print out extra information about what is happening
 #define DEBUG 0 //This will print out verbose messages and debugging statements
 #define PRINT_ARRAYS 0 
 #define HBM 1 
 #define DEBUG2 0 
 #define INTEL 1
-#define ARGONNE 0
+#define ARGONNE 1 
 
 #if ARGONNE == 1
 	#include <aml.h>
@@ -243,87 +243,8 @@ void do_work()
 	
 }
 
-#endif
-
-
-//This matrix multiplication will implement matrix multiplication in the following way:
-//	The A, B, and C matrices will be broken into tiles that edge as close to 1 MB as possible (size of L2 cache) while also allowing all threads to work on data.
-//	The algorithm will chunk up the work dependent on number of tiles. The multiplication will go as follows:
-//		1) The algorithm will take a column of the tiles of A. (Prefetch next column of A tiles to fast memory).
-//		2) The algorithm will take a column of B tiles (prefetch next column into fast memory).
-//		3) Perform partial matrix multiplications using A tile and B Tile (using dgemm eventually). 
-//		4) Repeat 2 & 3 until columns of B tiles are exhausted. Then continue
-//		5) Repeat from 1 until columns of A tiles are exhausted. Then continue
-//		6) DONE
-//Another potential solution could be to tile the B matrix as well. This will require Atomic Additions though.  
-int main(int argc, char *argv[])
-{
-
-
-
-
-	if(argc == 1){
-		if(VERBOSE) printf("No arguments provided, setting numThreads = %d and Memsize = %lu\n", NUMBER_OF_THREADS, MEMSIZE);
-		omp_set_num_threads(NUMBER_OF_THREADS);
-		MEMSIZE = MEMSIZES;
-	}
-	else if(argc == 2){	
-		if(VERBOSE) printf("Setting number of threads\n");
-		omp_set_num_threads(NUMBER_OF_THREADS);
-	 	if(VERBOSE) printf("Setting MEMSIZE\n");	
-		MEMSIZE = atol(argv[1]);
-		if(VERBOSE) printf("1 argument provided, setting numThreads = %d and Memsize = %lu\n", NUMBER_OF_THREADS, MEMSIZE);
-	}
-	else if(argc >= 3){
-		omp_set_num_threads(atoi(argv[2]));
-		MEMSIZE = atol(argv[1]);
-		if(VERBOSE) printf("Two arguments provided, setting numThreads = %d and Memsize = %lu\n", atoi(argv[2]), atol(argv[1]));
-
-	}
-
-	#if INTEL == 1
-		printf("Now running intel version for comparison\n");
-		double *aIntel, *bIntel, *cIntel;
-		unsigned int m,n,p;
-		unsigned long intelNumRows, intelEsize;
-		intelNumRows = (unsigned long)sqrt(MEMSIZE/8);
-		intelEsize = intelNumRows * intelNumRows;
-		m = n = p = intelNumRows;
-
-		printf("Declaring a, b, and c matrices\n");
-		//aIntel = (double *)mkl_malloc( m*p*sizeof( double ), 64 );
-    		//bIntel = (double *)mkl_malloc( p*n*sizeof( double ), 64 );
-    		//cIntel = (double *)mkl_malloc( m*n*sizeof( double ), 64 );
-		aIntel = (double *)malloc(m*p*sizeof(double));
-		bIntel = (double *)malloc(p*n*sizeof(double));
-		cIntel = (double *)malloc(m*n*sizeof(double));
-		if (aIntel == NULL || bIntel == NULL || cIntel == NULL) {
-        		printf( "\n ERROR: Can't allocate memory for matrices. Aborting... \n\n");
-        		free(aIntel);
-        		free(bIntel);
-        		free(cIntel);
-        		return 1;
-    		}
-		printf("Initializing values in the matrices\n");
-		double alpha = 1.0, beta = 1.0;
-		for(unsigned long i = 0; i < intelEsize; i++){
-			//printf("%lu ", i);
-			aIntel[i] = 1.0;
-			bIntel[i] = 1.0;
-			cIntel[i] = 0.0;
-		}
-		printf("m = %d, n = %d, p = %d, alpha = %lf, beta = %lf, aIntel = %p, bIntel = %p, cIntel = %p\n", m, n , p, alpha, beta, aIntel, bIntel, cIntel);
-		printf("Beginning cblas\n");
-		startClock = clock();
-		beginTime = rdtsc();
-		mkl_set_num_threads(atoi(argv[2]));
-		cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, p, alpha, aIntel, p, bIntel, n, beta, cIntel, n);
-		endTime = rdtsc();
-		endClock = clock();
-		printf("Intel Timing Statistics:\nRDTSC: %lu cycles\nCLOCK: %lf Seconds\n", endTime - beginTime, (double)(endClock - startClock) / CLOCKS_PER_SEC);
-	#endif
-	
-	#if ARGONNE == 1
+int argoMM(int argc, char* argv[]){
+		printf("\n\n-----RUNNING ARGONNE MEMORY OPTIMIZED MATRIX MULTIPLICATION-----\n");
 		AML_BINDING_SINGLE_DECL(binding);
 		AML_ARENA_JEMALLOC_DECL(arena);
 		AML_DMA_LINUX_SEQ_DECL(dma);
@@ -522,8 +443,103 @@ int main(int argc, char *argv[])
 		aml_tiling_destroy(&tilingB, AML_TILING_TYPE_2D);
 		aml_binding_destroy(&binding, AML_BINDING_TYPE_SINGLE);
 		aml_finalize();
+}
+#endif
+
+
+
+#if INTEL == 1
+	int intelMM(int argc, char* argv[]){
+		printf("\n\n-----RUNNING INTEL MKL MATRIX MULTIPLICATION-----\n");
+		double *aIntel, *bIntel, *cIntel;
+		unsigned int m,n,p;
+		unsigned long intelNumRows, intelEsize;
+		intelNumRows = (unsigned long)sqrt(MEMSIZE/8);
+		intelEsize = intelNumRows * intelNumRows;
+		m = n = p = intelNumRows;
+
+		//printf("Declaring a, b, and c matrices\n");
+		aIntel = (double *)mkl_malloc( m*p*sizeof( double ), 64 );
+		bIntel = (double *)mkl_malloc( p*n*sizeof( double ), 64 );
+		cIntel = (double *)mkl_malloc( m*n*sizeof( double ), 64 );
+		//aIntel = (double *)malloc(m*p*sizeof(double));
+		//bIntel = (double *)malloc(p*n*sizeof(double));
+		//cIntel = (double *)malloc(m*n*sizeof(double));
+		if (aIntel == NULL || bIntel == NULL || cIntel == NULL) {
+			printf( "\n ERROR: Can't allocate memory for matrices. Aborting... \n\n");
+			free(aIntel);
+			free(bIntel);
+			free(cIntel);
+			return 1;
+		}
+		//printf("Initializing values in the matrices\n");
+		double alpha = 1.0, beta = 1.0;
+		for(unsigned long i = 0; i < intelEsize; i++){
+			//printf("%lu ", i);
+			aIntel[i] = 1.0;
+			bIntel[i] = 1.0;
+			cIntel[i] = 0.0;
+		}
+		//printf("m = %d, n = %d, p = %d, alpha = %lf, beta = %lf, aIntel = %p, bIntel = %p, cIntel = %p\n", m, n , p, alpha, beta, aIntel, bIntel, cIntel);
+		printf("Beginning cblas\n");
+		startClock = clock();
+		beginTime = rdtsc();
+		mkl_set_num_threads(atoi(argv[2]));
+		cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, p, alpha, aIntel, p, bIntel, n, beta, cIntel, n);
+		endTime = rdtsc();
+		endClock = clock();
+		printf("Intel Timing Statistics:\nRDTSC: %lu cycles\nCLOCK: %lf Seconds\n", endTime - beginTime, (double)(endClock - startClock) / CLOCKS_PER_SEC);
+
+		return 0; 
+	}
+
+#endif
+
+//This matrix multiplication will implement matrix multiplication in the following way:
+//	The A, B, and C matrices will be broken into tiles that edge as close to 1 MB as possible (size of L2 cache) while also allowing all threads to work on data.
+//	The algorithm will chunk up the work dependent on number of tiles. The multiplication will go as follows:
+//		1) The algorithm will take a column of the tiles of A. (Prefetch next column of A tiles to fast memory).
+//		2) The algorithm will take a column of B tiles (prefetch next column into fast memory).
+//		3) Perform partial matrix multiplications using A tile and B Tile (using dgemm eventually). 
+//		4) Repeat 2 & 3 until columns of B tiles are exhausted. Then continue
+//		5) Repeat from 1 until columns of A tiles are exhausted. Then continue
+//		6) DONE
+//Another potential solution could be to tile the B matrix as well. This will require Atomic Additions though.  
+int main(int argc, char *argv[])
+{
+
+
+
+
+	if(argc == 1){
+		if(VERBOSE) printf("No arguments provided, setting numThreads = %d and Memsize = %lu\n", NUMBER_OF_THREADS, MEMSIZE);
+		omp_set_num_threads(NUMBER_OF_THREADS);
+		MEMSIZE = MEMSIZES;
+	}
+	else if(argc == 2){	
+		if(VERBOSE) printf("Setting number of threads\n");
+		omp_set_num_threads(NUMBER_OF_THREADS);
+	 	if(VERBOSE) printf("Setting MEMSIZE\n");	
+		MEMSIZE = atol(argv[1]);
+		if(VERBOSE) printf("1 argument provided, setting numThreads = %d and Memsize = %lu\n", NUMBER_OF_THREADS, MEMSIZE);
+	}
+	else if(argc >= 3){
+		omp_set_num_threads(atoi(argv[2]));
+		MEMSIZE = atol(argv[1]);
+		if(VERBOSE) printf("Two arguments provided, setting numThreads = %d and Memsize = %lu\n", atoi(argv[2]), atol(argv[1]));
+
+	}
+
+
+
+	#if INTEL == 1
+		intelMM(argc, argv);	
 	#endif
 
+	#if ARGONNE == 1
+		argoMM(argc, argv);
+	#endif
+	
 
 
 	return 0;
