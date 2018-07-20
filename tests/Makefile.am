@@ -1,8 +1,8 @@
 AM_COLOR_TESTS = yes
 
 # add OpenMP to flags for test programs
-AM_CFLAGS = -fopenmp -I$(top_srcdir)/src
-AM_LDFLAGS = -fopenmp ../src/libaml.la ../jemalloc/lib/libjemalloc-aml.so
+AM_CFLAGS = -I$(top_srcdir)/src
+AM_LDFLAGS = ../src/libaml.la ../jemalloc/lib/libjemalloc-aml.so
 
 # valgrind support
 if TEST_VALGRIND
@@ -40,10 +40,7 @@ UNIT_TESTS = $(ARENA_JEMALLOC_TESTS) \
 	     $(DMA_LINUX_TESTS) \
 	     $(SCRATCH_TESTS)
 
-# fonctional tests
-FUNC_TESTS = stream_add_pth_st stream_add_omp_st stream_add_omp_mt
-
 # all tests
-TST_PROGS = $(UNIT_TESTS) $(FUNC_TESTS)
+TST_PROGS = $(UNIT_TESTS)
 check_PROGRAMS = $(TST_PROGS)
 TESTS = $(TST_PROGS)

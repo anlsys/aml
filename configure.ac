@@ -36,6 +36,18 @@ if [[ "x$valgrind" = xtrue ]]; then
 fi
 AM_CONDITIONAL([TEST_VALGRIND],[test "x$valgrind" = xtrue])
 
+# support for compiling benchmarks
+AC_ARG_ENABLE(benchmarks,
+[AS_HELP_STRING([--enable-benchmarks],[Compile additional benchmarks (default is no).])],
+[benchmarks=true],[benchmarks=false])
+
+if [[ "x$benchmarks" = xtrue ]]; then
+	AX_OPENMP([AC_SUBST(OPENMP_FLAG, $OPENMP_CFLAGS)])
+	AC_CHECK_LIB(m, sqrt)
+fi
+AM_CONDITIONAL([ADD_BENCHMARKS],[test "x$benchmarks" = xtrue])
+
+
 # dependencies
 AC_CHECK_HEADERS(numa.h)
 AC_CHECK_LIB(numa, move_pages)
@@ -51,5 +63,6 @@ AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 tests/Makefile
+		 benchmarks/Makefile
 		 aml.pc])
 AC_OUTPUT

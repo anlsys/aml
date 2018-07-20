@@ -1,6 +1,10 @@
 ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = jemalloc src tests
 
+if ADD_BENCHMARKS
+SUBDIRS += benchmarks
+endif
+
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = aml.pc
 
