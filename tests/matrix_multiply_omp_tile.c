@@ -21,7 +21,8 @@
 #define HBM 1 
 #define DEBUG2 0 
 #define INTEL 1
-#define ARGONNE 1 
+#define ARGONNE 0 
+#define BILLION 1000000000L
 
 #if ARGONNE == 1
 	#include <aml.h>
@@ -44,7 +45,9 @@ unsigned long myId;
 unsigned long long beginTime, endTime;
 unsigned long long waitingTime, totalWait;
 unsigned long long forkingTime, totalForkTime;
-clock_t startClock, endClock;
+struct timespec startClock, endClock;
+double elapsedTime;
+
 
 //AML_TILING_2D_DECL(tiling);
 //AML_TILING_2D_DECL(tilingB);
@@ -386,7 +389,8 @@ int argoMM(int argc, char* argv[]){
 		
 	
 		/* run kernel */
-		startClock = clock();
+		//This will execute on core 0
+		clock_gettime(CLOCK_REALTIME, &startClock);
 		beginTime = rdtsc();
 	
 		//BEGIN MULTIPLICATION
@@ -395,9 +399,12 @@ int argoMM(int argc, char* argv[]){
 		do_work();
 		//	}
 		//END MULTIPLICATION
+		//This will execute on core 0
 		endTime = rdtsc();
-		endClock = clock();
-		printf("Kernel Timing Statistics:\nRDTSC: %lu cycles\nCLOCK: %lf Seconds\nCycles waiting on memory: %lu\nCycles waiting to fork: %lu\n", endTime - beginTime, (double)(endClock - startClock) / CLOCKS_PER_SEC, totalWait, totalForkTime);
+		clock_gettime(CLOCK_REALTIME, &endClock);
+
+		elapsedTime = BILLION * ( endClock.tv_sec - startClock.tv_sec ) + (( stop.tv_nsec - start.tv_nsec ));
+		printf("Kernel Timing Statistics:\nRDTSC: %lu cycles\nCLOCK: %lf ns\nCycles waiting on memory: %lu\nCycles waiting to fork: %lu\n", endTime - beginTime, elapsedTime, totalWait, totalForkTime);
 	
 		/* validate */
 		unsigned long correct = 1;
@@ -482,13 +489,17 @@ int argoMM(int argc, char* argv[]){
 		}
 		//printf("m = %d, n = %d, p = %d, alpha = %lf, beta = %lf, aIntel = %p, bIntel = %p, cIntel = %p\n", m, n , p, alpha, beta, aIntel, bIntel, cIntel);
 		printf("Beginning cblas\n");
-		startClock = clock();
-		beginTime = rdtsc();
 		mkl_set_num_threads(atoi(argv[2]));
+
+		clock_gettime(CLOCK_REALTIME, &startClock);
+		beginTime = rdtsc();
 		cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, p, alpha, aIntel, p, bIntel, n, beta, cIntel, n);
+		//This will execute on core 0
 		endTime = rdtsc();
-		endClock = clock();
-		printf("Intel Timing Statistics:\nRDTSC: %lu cycles\nCLOCK: %lf Seconds\n", endTime - beginTime, (double)(endClock - startClock) / CLOCKS_PER_SEC);
+		clock_gettime(CLOCK_REALTIME, &endClock);
+		elapsedTime = BILLION * ( endClock.tv_sec - startClock.tv_sec ) + (( endClock.tv_nsec - startClock.tv_nsec ) );
+
+		printf("Intel Timing Statistics:\nRDTSC: %lu cycles\nCLOCK: %lf ns\n", endTime - beginTime, elapsedTime);
 
 		return 0; 
 	}
