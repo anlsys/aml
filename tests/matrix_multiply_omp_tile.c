@@ -20,8 +20,8 @@
 #define PRINT_ARRAYS 0 
 #define HBM 1 
 #define DEBUG2 0 
-#define INTEL 1
-#define ARGONNE 0 
+#define INTEL 0
+#define ARGONNE 1 
 #define BILLION 1000000000L
 
 #if ARGONNE == 1
