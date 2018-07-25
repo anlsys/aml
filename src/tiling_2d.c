@@ -59,14 +59,14 @@ size_t aml_tiling_2d_tilesize(const struct aml_tiling_data *t, int tileid)
 	return data->blocksize;
 }
 
-size_t aml_tiling_2d_rowsize(const struct aml_tiling_data *t, int tileid)
+size_t aml_tiling_2d_tilerowsize(const struct aml_tiling_data *t, int tileid)
 {
 	const struct aml_tiling_2d_data *data =
 		(const struct aml_tiling_2d_data *)t;
-	return data->rowsize;
+	return data->tilerowsize;
 }
 
-size_t aml_tiling_2d_colsize(const struct aml_tiling_data *t, int tileid)
+size_t aml_tiling_2d_tilecolsize(const struct aml_tiling_data *t, int tileid)
 {
 	const struct aml_tiling_2d_data *data =
 		(const struct aml_tiling_2d_data *)t;
@@ -125,7 +125,7 @@ struct aml_tiling_ops aml_tiling_2d_ops = {
 	aml_tiling_2d_init_iterator,
 	aml_tiling_2d_destroy_iterator,
 	aml_tiling_2d_tilesize,
-	aml_tiling_2d_rowsize,
-	aml_tiling_2d_colsize,
+	aml_tiling_2d_tilerowsize,
+	aml_tiling_2d_tilecolsize,
 	aml_tiling_2d_tilestart,
 };

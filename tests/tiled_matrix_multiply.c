@@ -24,10 +24,9 @@
 AML_TILING_2D_DECL(tiling);
 AML_TILING_2D_DECL(tilingB);
 AML_AREA_LINUX_DECL(slow);
-AML_AREA_LINUX_DECL(fast);
 AML_SCRATCH_PAR_DECL(sa);
 AML_SCRATCH_PAR_DECL(sb);
-AML_SCRATCH_PAR_DECL(sc);
+
 
 size_t numthreads;
 //size of 2D Tiles in A matrix
@@ -53,7 +52,6 @@ unsigned long rdtsc(){
 }
 
 
-
 void do_work()
 {
 	int i, k, ai, bi, oldai, oldbi, tilesPerCol;
@@ -61,32 +59,29 @@ void do_work()
 	ldb = lda;
 	ldc = lda;
 	double *ap, *bp, *cp;
-	void *abaseptr, *bbaseptr, *cbaseptr;
+	void *abaseptr, *bbaseptr;
 	        
-	if(HBM){
-		abaseptr = aml_scratch_baseptr(&sa);
-		bbaseptr = aml_scratch_baseptr(&sb);
-	}
 	ai = -1; bi = -1;
 	
 	ap = a;
 	bp = b;
 	cp = c;
 
-	struct aml_scratch_request *ar, *br, *cr, *cr2;
+	//This section works as follows:
+	//OUTER LOOP: Begin by requesting the next column of A tiles
+	//INNER LOOP: Request the next columns of B tiles
+	//Fork off and begin working on current tiles
+	//Run kernel and compute partial multiplications
+	//End forking
+	//Wait on B tiles, then repeat INNER LOOP
+	//Wait on A tiles, then repeat OUTER LOOP
+	//Mult done
+	struct aml_scratch_request *ar, *br;
 
 	tilesPerCol = rowSizeInTiles / numthreads; //This should evaluate to an integer value
 		
 	//This will iterate through each column of tiles in A matrix
-	//This loop is O(rowSizeInTiles) (O(n))
-	for(i = 0; i < rowSizeInTiles; i++) {
-		
-		//Request next column of tiles from A into the scratchpad for A	
-		
-		oldbi = bi;
-		oldai = ai;
-		aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, i + 1);
-		aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, i + 1);	
+	for(i = 0; i < rowSizeInTiles; i++) {	
 		//This will begin the dispersion of work accross threads, this loop is actually O(1) 
 		#pragma omp parallel for
 		for(k = 0; k < numthreads; k++)
@@ -113,13 +108,10 @@ void do_work()
 			}
 			
 		}	
-						
-		aml_scratch_wait(&sa, ar);
-		aml_scratch_wait(&sb, br);
-		ap = aml_tiling_tilestart(&tilingB, abaseptr, ai);
-		bp = aml_tiling_tilestart(&tilingB, bbaseptr, bi);
-		aml_scratch_release(&sa, oldai);
-		aml_scratch_release(&sb, oldbi);
+
+		ap = aml_tiling_tilestart(&tilingB, a, i + 1);
+		bp = aml_tiling_tilestart(&tilingB, b, i + 1);	
+	
 	}
 	
 }
@@ -127,7 +119,6 @@ void do_work()
 int argoMM(int argc, char* argv[]){
 		AML_BINDING_SINGLE_DECL(binding);
 		AML_ARENA_JEMALLOC_DECL(arena);
-		AML_DMA_LINUX_SEQ_DECL(dma);
 		unsigned long nodemask[AML_NODEMASK_SZ];
 		aml_init(&argc, &argv);
 		esize = (unsigned long)MEMSIZE/sizeof(double);
@@ -140,7 +131,7 @@ int argoMM(int argc, char* argv[]){
 			tilesz = ((unsigned long) pow( ( ( sqrt(MEMSIZE / sizeof(double)) ) / (numthreads * 2) ), 2) ) * sizeof(double);
 			double multiplier = 2;
 			if(argc == 4){
-				tilesz = sizeof(double)*(atol(argv[3]) * atol(argv[3]));
+				tilesz = atol(argv[3]);
 			}
 			numTiles = MEMSIZE / tilesz; 
 			CHUNKING = numTiles / numthreads;
@@ -158,28 +149,16 @@ int argoMM(int argc, char* argv[]){
 		AML_NODEMASK_ZERO(nodemask);
 		AML_NODEMASK_SET(nodemask, 0);
 		assert(!aml_arena_jemalloc_init(&arena, AML_ARENA_JEMALLOC_TYPE_REGULAR));
-	
 		assert(!aml_area_linux_init(&slow,
 					    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
 					    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
 					    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
 					    &arena, MPOL_BIND, nodemask));
-		AML_NODEMASK_ZERO(nodemask);
-		AML_NODEMASK_SET(nodemask, 1);
-		assert(!aml_area_linux_init(&fast,
-					    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
-					    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
-					    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-					    &arena, MPOL_BIND, nodemask));
-		
-		assert(!aml_dma_linux_seq_init(&dma, 3));
-		assert(!aml_scratch_par_init(&sa, &fast, &slow, &dma, &tilingB, 2, 2));
-		assert(!aml_scratch_par_init(&sb, &fast, &slow, &dma, &tilingB, 2, 2));
 		
 		/* allocation */
 		a = aml_area_malloc(&slow, MEMSIZE);
 		b = aml_area_malloc(&slow, MEMSIZE);
-		c = aml_area_malloc(&fast, MEMSIZE);
+		c = aml_area_malloc(&slow, MEMSIZE);
 		
 		assert(a != NULL && b != NULL && c != NULL);
 		esize = MEMSIZE/sizeof(double);
@@ -201,8 +180,6 @@ int argoMM(int argc, char* argv[]){
 		clock_gettime(CLOCK_REALTIME, &endClock);
 
 		elapsedTime = BILLION * ( endClock.tv_sec - startClock.tv_sec ) + (( endClock.tv_nsec - startClock.tv_nsec ));
-
-		//Prints RDTSC then CLOCK
 		printf("%lu\t%lf\n", endTime - beginTime, elapsedTime);
 	
 		/* validate */
@@ -217,21 +194,7 @@ int argoMM(int argc, char* argv[]){
 			printf("The matrix multiplication failed. The last incorrect result is at location C(0,0) = %lf in the C matrix\n", c[0]);
 		}	
 	
-		aml_scratch_par_destroy(&sa);
-		aml_scratch_par_destroy(&sb);
-		aml_dma_linux_seq_destroy(&dma);
-		aml_area_free(&slow, a);
-		aml_area_free(&slow, b);
-		aml_area_free(&fast, c);
-		aml_area_linux_destroy(&slow);
-		aml_area_linux_destroy(&fast);
-		aml_tiling_destroy(&tiling, AML_TILING_TYPE_1D);
-		aml_tiling_destroy(&tilingB, AML_TILING_TYPE_2D);
-		aml_binding_destroy(&binding, AML_BINDING_TYPE_SINGLE);
-		aml_finalize();
 }
-
-
 
 
 //This matrix multiplication will implement matrix multiplication in the following way:

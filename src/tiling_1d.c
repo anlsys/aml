@@ -59,16 +59,16 @@ size_t aml_tiling_1d_tilesize(const struct aml_tiling_data *t, int tileid)
 
 //A 1-D array is technically just a multidimensional array with all dimensions except the row size equal to 1
 //See aml_tiling_1d_colsize to understand.
-size_t aml_tiling_1d_rowsize(const struct aml_tiling_data *t, int tileid)
+size_t aml_tiling_1d_tilerowsize(const struct aml_tiling_data *t, int tileid)
 {
 	const struct aml_tiling_1d_data *data =
 		(const struct aml_tiling_1d_data *)t;
 	return data->blocksize;
 }
 
-size_t aml_tiling_1d_colsize(const struct aml_tiling_data *t, int tileid)
+size_t aml_tiling_1d_tilecolsize(const struct aml_tiling_data *t, int tileid)
 {
-	return 1;
+	return 8;
 }
 
 void* aml_tiling_1d_tilestart(const struct aml_tiling_data *t, const void *ptr, int tileid)
@@ -118,7 +118,7 @@ struct aml_tiling_ops aml_tiling_1d_ops = {
 	aml_tiling_1d_init_iterator,
 	aml_tiling_1d_destroy_iterator,
 	aml_tiling_1d_tilesize,
-	aml_tiling_1d_rowsize,
-	aml_tiling_1d_colsize,
+	aml_tiling_1d_tilerowsize,
+	aml_tiling_1d_tilecolsize,
 	aml_tiling_1d_tilestart,
 };

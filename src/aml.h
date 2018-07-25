@@ -763,8 +763,8 @@ struct aml_tiling_ops {
 	int (*destroy_iterator)(struct aml_tiling_data *tiling,
 				struct aml_tiling_iterator *iterator);
 	size_t (*tilesize)(const struct aml_tiling_data *tiling, int tileid);
-	size_t (*rowsize)(const struct aml_tiling_data *tiling, int tileid);
-	size_t (*colsize)(const struct aml_tiling_data *tiling, int tileid);
+	size_t (*tilerowsize)(const struct aml_tiling_data *tiling, int tileid);
+	size_t (*tilecolsize)(const struct aml_tiling_data *tiling, int tileid);
 	void* (*tilestart)(const struct aml_tiling_data *tiling,
 			   const void *ptr, int tileid);
 };
@@ -790,7 +790,7 @@ size_t aml_tiling_tilesize(const struct aml_tiling *tiling, int tileid);
  *           minus 1).
  * Returns the size of a tile row.
  */
-size_t aml_tiling_rowsize(const struct aml_tiling *tiling, int tileid);
+size_t aml_tiling_tilerowsize(const struct aml_tiling *tiling, int tileid);
 
 /*
  * Provides the information on the size of a tile column.
@@ -799,7 +799,7 @@ size_t aml_tiling_rowsize(const struct aml_tiling *tiling, int tileid);
  *           minus 1).
  * Returns the size of a tile col.
  */
-size_t aml_tiling_colsize(const struct aml_tiling *tiling, int tileid);
+size_t aml_tiling_tilecolsize(const struct aml_tiling *tiling, int tileid);
 
 /*
  * Provides the information on the location of a tile in memory.
@@ -975,8 +975,8 @@ extern struct aml_tiling_iterator_ops aml_tiling_iterator_2d_ops;
 
 struct aml_tiling_2d_data {
 	size_t blocksize;
-	size_t rowsize;
-	size_t colsize;
+	size_t tilerowsize;
+	size_t tilecolsize;
 	size_t totalsize;
 };
 

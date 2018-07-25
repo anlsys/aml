@@ -10,16 +10,16 @@ size_t aml_tiling_tilesize(const struct aml_tiling *t, int tileid)
 	return t->ops->tilesize(t->data, tileid);
 }
 
-size_t aml_tiling_rowsize(const struct aml_tiling *t, int tileid)
+size_t aml_tiling_tilerowsize(const struct aml_tiling *t, int tileid)
 {
 	assert(t != NULL);
-	return t->ops->rowsize(t->data, tileid);
+	return t->ops->tilerowsize(t->data, tileid);
 }
 
-size_t aml_tiling_colsize(const struct aml_tiling *t, int tileid)
+size_t aml_tiling_tilecolsize(const struct aml_tiling *t, int tileid)
 {
 	assert(t != NULL);
-	return t->ops->colsize(t->data, tileid);
+	return t->ops->tilecolsize(t->data, tileid);
 }
 
 void* aml_tiling_tilestart(const struct aml_tiling *t, const void *ptr, int tileid)
@@ -156,9 +156,9 @@ int aml_tiling_vinit(struct aml_tiling *t, int type, va_list ap)
 		t->ops = &aml_tiling_2d_ops;
 		struct aml_tiling_2d_data *data = 
 			(struct aml_tiling_2d_data *)t->data;
-		data->rowsize = va_arg(ap, size_t);
-		data->colsize = va_arg(ap, size_t);
-		data->blocksize = data->rowsize * data->colsize / sizeof(unsigned long);
+		data->tilerowsize = va_arg(ap, size_t);
+		data->tilecolsize = va_arg(ap, size_t);
+		data->blocksize = data->tilerowsize * data->tilecolsize / sizeof(unsigned long);
 		data->totalsize = va_arg(ap, size_t);
 		err = data->blocksize > data->totalsize;
 	}
