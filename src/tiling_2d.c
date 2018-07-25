@@ -70,7 +70,7 @@ size_t aml_tiling_2d_tilecolsize(const struct aml_tiling_data *t, int tileid)
 {
 	const struct aml_tiling_2d_data *data =
 		(const struct aml_tiling_2d_data *)t;
-	return data->colsize;
+	return data->tilecolsize;
 }
 
 void* aml_tiling_2d_tilestart(const struct aml_tiling_data *t, const void *ptr, int tileid)
