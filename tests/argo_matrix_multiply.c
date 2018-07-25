@@ -63,10 +63,8 @@ void do_work()
 	double *ap, *bp, *cp;
 	void *abaseptr, *bbaseptr, *cbaseptr;
 	        
-	if(HBM){
-		abaseptr = aml_scratch_baseptr(&sa);
-		bbaseptr = aml_scratch_baseptr(&sb);
-	}
+	abaseptr = aml_scratch_baseptr(&sa);
+	bbaseptr = aml_scratch_baseptr(&sb);
 	ai = -1; bi = -1;
 	
 	ap = a;

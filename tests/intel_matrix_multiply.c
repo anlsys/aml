@@ -20,6 +20,22 @@
 #define BILLION 1000000000L
 
 
+unsigned long MEMSIZE;
+struct timespec startClock, endClock;
+double elapsedTime;
+unsigned long long beginTime, endTime;
+
+
+//This code will take cycles executed as a use for timing the kernel.
+
+unsigned long rdtsc(){
+    unsigned int lo,hi;
+    __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
+    return ((unsigned long)hi << 32) | lo;
+}
+
+
+
 int intelMM(int argc, char* argv[]){
 	double *aIntel, *bIntel, *cIntel;
 	unsigned int m,n,p;
