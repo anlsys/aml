@@ -43,6 +43,7 @@ AC_ARG_ENABLE(benchmarks,
 
 if [[ "x$benchmarks" = xtrue ]]; then
 	AX_OPENMP([AC_SUBST(OPENMP_FLAG, $OPENMP_CFLAGS)])
+	AC_CHECK_LIB(cblas, cblas_dgemm)
 	AC_CHECK_LIB(m, sqrt)
 fi
 AM_CONDITIONAL([ADD_BENCHMARKS],[test "x$benchmarks" = xtrue])
