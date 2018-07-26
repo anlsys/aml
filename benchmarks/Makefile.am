@@ -9,5 +9,6 @@ noinst_PROGRAMS = stream_add_pth_st \
 		  stream_add_omp_st \
 		  stream_add_omp_mt \
 		  dgemm_vanilla \
+		  dgemm_mkl \
 		  dgemm_prefetch \
 		  dgemm_noprefetch
