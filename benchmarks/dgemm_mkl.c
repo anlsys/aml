@@ -1,6 +1,6 @@
 #include <assert.h>
-#include <cblas.h>
 #include <errno.h>
+#include <mkl.h>
 #include <omp.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -38,15 +38,15 @@ unsigned long rdtsc(){
 
 
 int intelMM(int argc, char* argv[]){
-	void *aIntel, *bIntel, *cIntel;
+	double *aIntel, *bIntel, *cIntel;
 	unsigned int m,n,p;
 	unsigned long intelNumRows, intelEsize;
 	intelNumRows = (unsigned long)sqrt(MEMSIZE/8);
 	intelEsize = intelNumRows * intelNumRows;
 	m = n = p = intelNumRows;
-	posix_memalign(&aIntel, 64, m*p*sizeof( double ));
-	posix_memalign(&bIntel, 64, p*n*sizeof( double ));
-	posix_memalign(&cIntel, 64, m*n*sizeof( double ));
+	aIntel = (double *)mkl_malloc( m*p*sizeof( double ), 64 );
+	bIntel = (double *)mkl_malloc( p*n*sizeof( double ), 64 );
+	cIntel = (double *)mkl_malloc( m*n*sizeof( double ), 64 );
 	if (aIntel == NULL || bIntel == NULL || cIntel == NULL) {
 		printf( "\n ERROR: Can't allocate memory for matrices. Aborting... \n");
 		free(aIntel);

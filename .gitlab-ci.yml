@@ -21,9 +21,10 @@ make:generic:
 make:knl:
   stage: build
   script:
+    - source /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh intel64
     - ./autogen.sh
     - mkdir build
-    - ./configure --prefix=`pwd`/build
+    - CC=icc CFLAGS="-mkl -xhost" ./configure --prefix=`pwd`/build --enable-benchmarks
     - make
     - make install
     - make check

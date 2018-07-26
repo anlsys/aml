@@ -1,6 +1,6 @@
 #include <assert.h>
-#include <cblas.h>
 #include <errno.h>
+#include <mkl.h>
 #include <omp.h>
 #include <pthread.h>
 #include <stdio.h>
