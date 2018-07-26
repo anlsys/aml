@@ -54,7 +54,7 @@ AC_CHECK_LIB(numa, move_pages)
 
 # internal jemalloc
 ac_configure_args="$ac_configure_args \
-			'--with-jemalloc-prefix=jemk_' \
+			'--with-jemalloc-prefix=jemk_aml_' \
 			'--with-install-suffix=-aml'"
 AC_CONFIG_SUBDIRS([jemalloc])
 
