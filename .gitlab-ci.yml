@@ -25,7 +25,7 @@ make:knl:
     - ./autogen.sh
     - mkdir build
     - CC=icc CFLAGS="-mkl -xhost" ./configure --prefix=`pwd`/build --enable-benchmarks
-    - make
+    - make -j64
     - make install
     - make check
   artifacts:
