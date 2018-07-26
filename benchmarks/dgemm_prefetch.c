@@ -28,7 +28,6 @@ AML_AREA_LINUX_DECL(slow);
 AML_AREA_LINUX_DECL(fast);
 AML_SCRATCH_PAR_DECL(sa);
 AML_SCRATCH_PAR_DECL(sb);
-AML_SCRATCH_PAR_DECL(sc);
 
 size_t numthreads;
 //size of 2D Tiles in A matrix
