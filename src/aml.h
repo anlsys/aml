@@ -769,6 +769,8 @@ struct aml_tiling_ops {
 	int (*destroy_iterator)(struct aml_tiling_data *tiling,
 				struct aml_tiling_iterator *iterator);
 	size_t (*tilesize)(const struct aml_tiling_data *tiling, int tileid);
+	size_t (*tilerowsize)(const struct aml_tiling_data *tiling, int tileid);
+	size_t (*tilecolsize)(const struct aml_tiling_data *tiling, int tileid);
 	void* (*tilestart)(const struct aml_tiling_data *tiling,
 			   const void *ptr, int tileid);
 };
@@ -786,6 +788,25 @@ struct aml_tiling {
  * Returns the size of a tile.
  */
 size_t aml_tiling_tilesize(const struct aml_tiling *tiling, int tileid);
+
+/*
+ * Provides the information on the size of a tile row.
+ * "tiling": an initialized tiling structure.
+ * "tileid": an identifier of a tile (a value between 0 and the number of tiles
+ *           minus 1).
+ * Returns the size of a tile row.
+ */
+size_t aml_tiling_tilerowsize(const struct aml_tiling *tiling, int tileid);
+
+/*
+ * Provides the information on the size of a tile column.
+ * "tiling": an initialized tiling structure.
+ * "tileid": an identifier of a tile (a value between 0 and the number of tiles
+ *           minus 1).
+ * Returns the size of a tile col.
+ */
+size_t aml_tiling_tilecolsize(const struct aml_tiling *tiling, int tileid);
+
 /*
  * Provides the information on the location of a tile in memory.
  * "tiling": an initialized tiling structure.
@@ -873,6 +894,7 @@ int aml_tiling_iterator_get(const struct aml_tiling_iterator *iterator, ...);
 /* Tiling types passed to the tiling create()/init()/vinit() routines.  */
 /* Regular, linear tiling with uniform tile sizes.  */
 #define AML_TILING_TYPE_1D 0
+#define AML_TILING_TYPE_2D 2
 
 /*
  * Allocates and initializes a new tiling.
@@ -948,6 +970,46 @@ struct aml_tiling_iterator_1d_data {
 
 #define AML_TILING_ITERATOR_1D_ALLOCSIZE \
 	(sizeof(struct aml_tiling_iterator_1d_data) + \
+	 sizeof(struct aml_tiling_iterator))
+
+/*******************************************************************************
+ * Tiling 2D:
+ ******************************************************************************/
+
+extern struct aml_tiling_ops aml_tiling_2d_ops;
+extern struct aml_tiling_iterator_ops aml_tiling_iterator_2d_ops;
+
+struct aml_tiling_2d_data {
+	size_t blocksize;
+	size_t tilerowsize;
+	size_t tilecolsize;
+	size_t totalsize;
+};
+
+struct aml_tiling_iterator_2d_data {
+	size_t i;
+	struct aml_tiling_2d_data *tiling;
+};
+
+#define AML_TILING_2D_DECL(name) \
+	struct aml_tiling_2d_data __ ##name## _inner_data; \
+	struct aml_tiling name = { \
+		&aml_tiling_2d_ops, \
+		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
+	};
+
+#define AML_TILING_ITERATOR_2D_DECL(name) \
+	struct aml_tiling_iterator_2d_data __ ##name## _inner_data; \
+	struct aml_tiling_iterator name = { \
+		&aml_tiling_iterator_2d_ops, \
+		(struct aml_tiling_iterator_data *)&__ ## name ## _inner_data, \
+	};
+
+#define AML_TILING_2D_ALLOCSIZE (sizeof(struct aml_tiling_2d_data) + \
+				 sizeof(struct aml_tiling))
+
+#define AML_TILING_ITERATOR_2D_ALLOCSIZE \
+	(sizeof(struct aml_tiling_iterator_2d_data) + \
 	 sizeof(struct aml_tiling_iterator))
 
 /*******************************************************************************
