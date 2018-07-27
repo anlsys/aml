@@ -81,12 +81,24 @@ void* aml_tiling_2d_tilestart(const struct aml_tiling_data *t, const void *ptr, 
 	return (void *)(p + tileid*data->blocksize);
 }
 
+int aml_tiling_2d_ndims(const struct aml_tiling_data *t, va_list ap)
+{
+	const struct aml_tiling_2d_data *data =
+		(const struct aml_tiling_2d_data *)t;
+	size_t *x = va_arg(ap, size_t *);
+	size_t *y = va_arg(ap, size_t *);
+	/* looks totally wrong */
+	*x = data->totalsize/(data->blocksize*data->tilecolsize);
+	*y = data->totalsize/(data->blocksize*data->tilerowsize);
+	return 0;
+}
+
 
 int aml_tiling_2d_init_iterator(struct aml_tiling_data *t,
 				struct aml_tiling_iterator *it, int flags)
 {
 	assert(it->data != NULL);
-	struct aml_tiling_iterator_1d_data *data = 
+	struct aml_tiling_iterator_1d_data *data =
 		(struct aml_tiling_iterator_2d_data *)it->data;
 	it->ops = &aml_tiling_iterator_2d_ops;
 	data->i = 0;
@@ -103,7 +115,7 @@ int aml_tiling_2d_create_iterator(struct aml_tiling_data *t,
 	struct aml_tiling_iterator *ret;
 	baseptr = (intptr_t) calloc(1, AML_TILING_ITERATOR_2D_ALLOCSIZE);
 	dataptr = baseptr + sizeof(struct aml_tiling_iterator);
-	
+
 	ret = (struct aml_tiling_iterator *)baseptr;
 	ret->data = (struct aml_tiling_iterator_data *)dataptr;
 
