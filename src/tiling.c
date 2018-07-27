@@ -28,6 +28,17 @@ void* aml_tiling_tilestart(const struct aml_tiling *t, const void *ptr, int tile
 	return t->ops->tilestart(t->data, ptr, tileid);
 }
 
+int aml_tiling_ndims(const struct aml_tiling *t, ...)
+{
+	assert(t != NULL);
+	va_list ap;
+	int err;
+	va_start(ap, t);
+	err = t->ops->ndims(t->data, ap);
+	va_end(ap);
+	return err;
+}
+
 /*******************************************************************************
  * Tiling Iterator functions
  ******************************************************************************/
@@ -128,6 +139,16 @@ int aml_tiling_create(struct aml_tiling **t, int type, ...)
 
 		err = aml_tiling_vinit(ret, type, ap);
 	}
+	else if(type == AML_TILING_TYPE_2D_CONTIG)
+	{
+		baseptr = (intptr_t) calloc(1, AML_TILING_2D_CONTIG_ALLOCSIZE);
+		dataptr = baseptr + sizeof(struct aml_tiling);
+
+		ret = (struct aml_tiling *)baseptr;
+		ret->data = (struct aml_tiling_data *)dataptr;
+
+		err = aml_tiling_vinit(ret, type, ap);
+	}
 
 	va_end(ap);
 	*t = ret;
@@ -160,6 +181,17 @@ int aml_tiling_vinit(struct aml_tiling *t, int type, va_list ap)
 		data->tilecolsize = va_arg(ap, size_t);
 		data->blocksize = data->tilerowsize * data->tilecolsize / sizeof(unsigned long);
 		data->totalsize = va_arg(ap, size_t);
+		err = data->blocksize > data->totalsize;
+	}
+	else if(type == AML_TILING_TYPE_2D_CONTIG)
+	{
+		t->ops = &aml_tiling_2d_contig_ops;
+		struct aml_tiling_2d_contig_data *data =
+			(struct aml_tiling_2d_contig_data *)t->data;
+		data->blocksize = va_arg(ap, size_t);
+		data->totalsize = va_arg(ap, size_t);
+		data->ndims[0] = va_arg(ap, size_t);
+		data->ndims[1] = va_arg(ap, size_t);
 		err = data->blocksize > data->totalsize;
 	}
 	return err;

@@ -79,6 +79,17 @@ void* aml_tiling_1d_tilestart(const struct aml_tiling_data *t, const void *ptr, 
 	return (void *)(p + tileid*data->blocksize);
 }
 
+int aml_tiling_1d_ndims(const struct aml_tiling_data *t, va_list ap)
+{
+	const struct aml_tiling_1d_data *data =
+		(const struct aml_tiling_1d_data *)t;
+	size_t *x = va_arg(ap, size_t *);
+	*x = data->totalsize/data->blocksize;
+	if(data->totalsize % data->blocksize != 0)
+		*x++;
+	return 0;
+}
+
 int aml_tiling_1d_init_iterator(struct aml_tiling_data *t,
 				struct aml_tiling_iterator *it, int flags)
 {
@@ -121,4 +132,5 @@ struct aml_tiling_ops aml_tiling_1d_ops = {
 	aml_tiling_1d_tilerowsize,
 	aml_tiling_1d_tilecolsize,
 	aml_tiling_1d_tilestart,
+	aml_tiling_1d_ndims,
 };
