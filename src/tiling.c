@@ -139,7 +139,8 @@ int aml_tiling_create(struct aml_tiling **t, int type, ...)
 
 		err = aml_tiling_vinit(ret, type, ap);
 	}
-	else if(type == AML_TILING_TYPE_2D_CONTIG)
+	else if(type == AML_TILING_TYPE_2D_CONTIG_ROWMAJOR ||
+		type == AML_TILING_TYPE_2D_CONTIG_COLMAJOR)
 	{
 		baseptr = (intptr_t) calloc(1, AML_TILING_2D_CONTIG_ALLOCSIZE);
 		dataptr = baseptr + sizeof(struct aml_tiling);
@@ -183,9 +184,20 @@ int aml_tiling_vinit(struct aml_tiling *t, int type, va_list ap)
 		data->totalsize = va_arg(ap, size_t);
 		err = data->blocksize > data->totalsize;
 	}
-	else if(type == AML_TILING_TYPE_2D_CONTIG)
+	else if(type == AML_TILING_TYPE_2D_CONTIG_ROWMAJOR)
 	{
-		t->ops = &aml_tiling_2d_contig_ops;
+		t->ops = &aml_tiling_2d_contig_rowmajor_ops;
+		struct aml_tiling_2d_contig_data *data =
+			(struct aml_tiling_2d_contig_data *)t->data;
+		data->blocksize = va_arg(ap, size_t);
+		data->totalsize = va_arg(ap, size_t);
+		data->ndims[0] = va_arg(ap, size_t);
+		data->ndims[1] = va_arg(ap, size_t);
+		err = data->blocksize > data->totalsize;
+	}
+	else if(type == AML_TILING_TYPE_2D_CONTIG_COLMAJOR)
+	{
+		t->ops = &aml_tiling_2d_contig_colmajor_ops;
 		struct aml_tiling_2d_contig_data *data =
 			(struct aml_tiling_2d_contig_data *)t->data;
 		data->blocksize = va_arg(ap, size_t);

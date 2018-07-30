@@ -47,6 +47,7 @@ struct aml_tiling_iterator_ops aml_tiling_iterator_2d_contig_ops = {
 
 /*******************************************************************************
  * 2D ops
+ * Tileids are always in rowmajor: for NM matrix[i][j], tileid = i*M + j
  ******************************************************************************/
 
 size_t aml_tiling_2d_contig_tilesize(const struct aml_tiling_data *t, int tileid)
@@ -56,12 +57,33 @@ size_t aml_tiling_2d_contig_tilesize(const struct aml_tiling_data *t, int tileid
 	return data->blocksize;
 }
 
-void* aml_tiling_2d_contig_tilestart(const struct aml_tiling_data *t, const void *ptr, int tileid)
+void* aml_tiling_2d_contig_rowmajor_tilestart(const struct aml_tiling_data *t,
+					      const void *ptr, int tileid)
 {
 	const struct aml_tiling_2d_contig_data *data =
 		(const struct aml_tiling_2d_contig_data *)t;
 	intptr_t p = (intptr_t)ptr;
-	return (void *)(p + tileid*data->blocksize);
+	size_t i = tileid/data->ndims[1];
+	size_t j = tileid % data->ndims[1];
+	if(i >= data->ndims[0] || j >= data->ndims[1])
+		return NULL;
+	else
+		return (void *)(p + tileid*data->blocksize);
+}
+
+void* aml_tiling_2d_contig_colmajor_tilestart(const struct aml_tiling_data *t,
+					      const void *ptr, int tileid)
+{
+	const struct aml_tiling_2d_contig_data *data =
+		(const struct aml_tiling_2d_contig_data *)t;
+	intptr_t p = (intptr_t)ptr;
+	size_t i = tileid/data->ndims[1];
+	size_t j = tileid % data->ndims[1];
+	size_t offset = j*data->ndims[0] + i;
+	if(i >= data->ndims[0] || j >= data->ndims[1])
+		return NULL;
+	else
+		return (void *)(p + offset*data->blocksize);
 }
 
 int aml_tiling_2d_contig_ndims(const struct aml_tiling_data *t, va_list ap)
@@ -112,13 +134,24 @@ int aml_tiling_2d_contig_destroy_iterator(struct aml_tiling_data *t,
 }
 
 
-struct aml_tiling_ops aml_tiling_2d_contig_ops = {
+struct aml_tiling_ops aml_tiling_2d_contig_rowmajor_ops = {
 	aml_tiling_2d_contig_create_iterator,
 	aml_tiling_2d_contig_init_iterator,
 	aml_tiling_2d_contig_destroy_iterator,
 	aml_tiling_2d_contig_tilesize,
 	NULL,
 	NULL,
-	aml_tiling_2d_contig_tilestart,
+	aml_tiling_2d_contig_rowmajor_tilestart,
+	aml_tiling_2d_contig_ndims,
+};
+
+struct aml_tiling_ops aml_tiling_2d_contig_colmajor_ops = {
+	aml_tiling_2d_contig_create_iterator,
+	aml_tiling_2d_contig_init_iterator,
+	aml_tiling_2d_contig_destroy_iterator,
+	aml_tiling_2d_contig_tilesize,
+	NULL,
+	NULL,
+	aml_tiling_2d_contig_colmajor_tilestart,
 	aml_tiling_2d_contig_ndims,
 };

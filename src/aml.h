@@ -905,8 +905,9 @@ int aml_tiling_iterator_get(const struct aml_tiling_iterator *iterator, ...);
 /* Tiling types passed to the tiling create()/init()/vinit() routines.  */
 /* Regular, linear tiling with uniform tile sizes.  */
 #define AML_TILING_TYPE_1D 0
-#define AML_TILING_TYPE_2D_CONTIG 1
 #define AML_TILING_TYPE_2D 2
+#define AML_TILING_TYPE_2D_CONTIG_ROWMAJOR 3
+#define AML_TILING_TYPE_2D_CONTIG_COLMAJOR 4
 
 /*
  * Allocates and initializes a new tiling.
@@ -1036,7 +1037,8 @@ struct aml_tiling_iterator_2d_data {
  * a contiguous memory area composed of contiguous tiles arranged in 2D grid.
  ******************************************************************************/
 
-extern struct aml_tiling_ops aml_tiling_2d_contig_ops;
+extern struct aml_tiling_ops aml_tiling_2d_contig_rowmajor_ops;
+extern struct aml_tiling_ops aml_tiling_2d_contig_colmajor_ops;
 extern struct aml_tiling_iterator_ops aml_tiling_iterator_2d_contig_ops;
 
 struct aml_tiling_2d_contig_data {
@@ -1050,10 +1052,17 @@ struct aml_tiling_iterator_2d_contig_data {
 	struct aml_tiling_2d_contig_data *tiling;
 };
 
-#define AML_TILING_2D_CONTIG_DECL(name) \
+#define AML_TILING_2D_CONTIG_ROWMAJOR_DECL(name) \
 	struct aml_tiling_2d_contig_data __ ##name## _inner_data; \
 	struct aml_tiling name = { \
-		&aml_tiling_2d_contig_ops, \
+		&aml_tiling_2d_contig_rowmajor_ops, \
+		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
+	};
+
+#define AML_TILING_2D_CONTIG_COLMAJOR_DECL(name) \
+	struct aml_tiling_2d_contig_data __ ##name## _inner_data; \
+	struct aml_tiling name = { \
+		&aml_tiling_2d_contig_colmajor_ops, \
 		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
 	};
 

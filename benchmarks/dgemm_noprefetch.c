@@ -9,7 +9,8 @@
 #include <math.h>
 #include <stdlib.h>
 
-AML_TILING_2D_CONTIG_DECL(tiling);
+AML_TILING_2D_CONTIG_ROWMAJOR_DECL(tiling_row);
+AML_TILING_2D_CONTIG_COLMAJOR_DECL(tiling_col);
 AML_AREA_LINUX_DECL(slow);
 AML_AREA_LINUX_DECL(fast);
 
@@ -24,22 +25,22 @@ void do_work()
 	ldc = lda;
 	double *ap, *bp, *cp;
 	size_t ndims[2];
-	aml_tiling_ndims(&tiling, &ndims[0], &ndims[1]);
+	aml_tiling_ndims(&tiling_row, &ndims[0], &ndims[1]);
 	size_t aoff, boff, coff;
 
-	for(int j = 0; j < ndims[1]; j++)
+	for(int k = 0; k < ndims[1]; k++)
 	{
-		for(int k = 0; k < ndims[1]; k++)
+		#pragma omp parallel for
+		for(int i = 0; i < ndims[0]; i++)
 		{
-			#pragma omp parallel for
-			for(int i = 0; i < ndims[1]; i++)
+			for(int j = 0; j < ndims[1]; j++)
 			{
-				aoff = i*ndims[0] + k;
-				boff = k*ndims[0] + j;
-				coff = i*ndims[0] + j;
-				ap = aml_tiling_tilestart(&tiling, ap, aoff);
-				bp = aml_tiling_tilestart(&tiling, bp, boff);
-				cp = aml_tiling_tilestart(&tiling, cp, coff);
+				aoff = i*ndims[1] + k;
+				boff = k*ndims[1] + j;
+				coff = i*ndims[1] + j;
+				ap = aml_tiling_tilestart(&tiling_col, ap, aoff);
+				bp = aml_tiling_tilestart(&tiling_row, bp, boff);
+				cp = aml_tiling_tilestart(&tiling_row, cp, coff);
 				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, ldc, lda, ldb, 1.0, ap, lda, bp, ldb, 1.0, cp, ldc);
 			}
 		}
@@ -63,7 +64,9 @@ int main(int argc, char* argv[])
 	tilesize = sizeof(double)*T*T;
 
 	/* the initial tiling, of 2D square tiles */
-	assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_2D_CONTIG,
+	assert(!aml_tiling_init(&tiling_row, AML_TILING_TYPE_2D_CONTIG_ROWMAJOR,
+				tilesize, memsize, N/T , N/T));
+	assert(!aml_tiling_init(&tiling_col, AML_TILING_TYPE_2D_CONTIG_COLMAJOR,
 				tilesize, memsize, N/T , N/T));
 	assert(!aml_arena_jemalloc_init(&arena, AML_ARENA_JEMALLOC_TYPE_REGULAR));
 	assert(!aml_area_linux_init(&slow,
@@ -94,13 +97,15 @@ int main(int argc, char* argv[])
                 1e9* (stop.tv_sec - start.tv_sec);
 	double flops = (2.0*N*N*N)/(time/1e9);
 	/* print the flops in GFLOPS */
-	printf("dgemm-mkl: %llu %lld %lld %f\n", N, memsize, time, flops/1e9);
+	printf("dgemm-noprefetch: %llu %lld %lld %f\n", N, memsize, time,
+	       flops/1e9);
 	aml_area_free(&slow, a);
 	aml_area_free(&slow, b);
 	aml_area_free(&fast, c);
 	aml_area_linux_destroy(&slow);
 	aml_area_linux_destroy(&fast);
-	aml_tiling_destroy(&tiling, AML_TILING_TYPE_2D_CONTIG);
+	aml_tiling_destroy(&tiling_row, AML_TILING_TYPE_2D_CONTIG_ROWMAJOR);
+	aml_tiling_destroy(&tiling_col, AML_TILING_TYPE_2D_CONTIG_ROWMAJOR);
 	aml_finalize();
 	return 0;
 }
