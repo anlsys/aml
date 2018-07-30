@@ -79,7 +79,6 @@ void do_work()
 	cp = c;	
 	//This is performing 7) in the comments, it will end when A and C tiles are all done		
 	for(i = 0; i < colSizeInTiles; i++) {
-
 		//Request next column of tiles from A into the scratchpad for A	
 		int l, k, offset;
 		//This loop will go through each row of B and each tile in a row of A
@@ -89,13 +88,15 @@ void do_work()
 			#pragma omp parallel for
 			for(l = 0; l < rowSizeInTiles; l++){
 				double *bpLoc, *cpLoc;
-				cpLoc = aml_tiling_tilestart(&tiling, cp, l);		
+				cpLoc = aml_tiling_tilestart(&tiling, cp, l);			
 				bpLoc = aml_tiling_tilestart(&tiling, bp, l);
-				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, ldc, lda, ldb, 1.0, apLoc, lda, bpLoc, ldb, 1.0, cp, ldc);	
+				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, ldc, lda, ldb, 1.0, apLoc, lda, bpLoc, ldb, 1.0, cpLoc, ldc);	
 			}
 			bp = aml_tiling_tilestart(&tilingB, b, k + 1);
+			
+		}
 		
-		}		
+
 		ap = aml_tiling_tilestart(&tilingB, a, i+1);
 		bp = aml_tiling_tilestart(&tilingB, b, 0);
 		cp = aml_tiling_tilestart(&tilingB, c, i+1);
@@ -114,10 +115,8 @@ int argoMM(int argc, char* argv[]){
 	
 		#pragma omp parallel
 		{
-			rowLengthInBytes = (unsigned long)sqrt(MEMSIZE/sizeof(double)) * sizeof(double);
 			numthreads = omp_get_num_threads();
-			tilesz = ((unsigned long) pow( ( ( sqrt(MEMSIZE / sizeof(double)) ) / (numthreads * 2) ), 2) ) * sizeof(double);
-			double multiplier = 2;
+			tilesz = pow( numRows / numthreads,2) * sizeof(double); 
 			if(argc == 4){
 				tilesz = sizeof(double)*(atol(argv[3]) * atol(argv[3]));
 			}
@@ -130,7 +129,7 @@ int argoMM(int argc, char* argv[]){
 		if(DEBUG || VERBOSE)printf("The total memory size is: %lu\nWe are dealing with a %lu x %lu matrix multiplication\nThe number of threads: %d\nThe chunking is: %lu\nThe tilesz is: %lu\nThat means there are %lu elements per tile\nThere are %lu tiles total\nThe length of a column in bytes is: %lu\n", MEMSIZE, (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)), (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)),numthreads, CHUNKING, tilesz, esz, numTiles, rowLengthInBytes);
 
 		assert(!aml_binding_init(&binding, AML_BINDING_TYPE_SINGLE, 0));
-		assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_2D, (unsigned long)sqrt(tilesz/sizeof(double))*sizeof(double), (unsigned long)sqrt(tilesz/sizeof(double))*sizeof(double), tilesz, MEMSIZE));	
+		assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_2D, (unsigned long)(sqrt(tilesz/sizeof(double))*sizeof(double)), (unsigned long)(sqrt(tilesz/sizeof(double))*sizeof(double)), tilesz, MEMSIZE));	
 		rowSizeOfTile = aml_tiling_tilerowsize(&tiling, 0) / sizeof(double); 
 		rowSizeInTiles = numRows / rowSizeOfTile;
 		assert(!aml_tiling_init(&tilingB, AML_TILING_TYPE_2D, rowSizeOfTile * sizeof(double), rowSizeInTiles * rowSizeOfTile * sizeof(double), tilesz * rowSizeInTiles, MEMSIZE));
@@ -151,9 +150,6 @@ int argoMM(int argc, char* argv[]){
 					    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
 					    &arena, MPOL_BIND, nodemask));
 		
-		assert(!aml_dma_linux_seq_init(&dma, 3));
-		assert(!aml_scratch_par_init(&sa, &fast, &slow, &dma, &tilingB, 2, 2));
-		assert(!aml_scratch_par_init(&sb, &fast, &slow, &dma, &tilingB, 2, 2));
 		
 		/* allocation */
 		//5.33333 GB
@@ -262,18 +258,21 @@ int main(int argc, char *argv[])
 		if(VERBOSE) printf("No arguments provided, setting numThreads = %d and Memsize = %lu\n", NUMBER_OF_THREADS, MEMSIZE);
 		omp_set_num_threads(NUMBER_OF_THREADS);
 		MEMSIZE = MEMSIZES;
+		rowLengthInBytes = (unsigned long)sqrt(MEMSIZE);
 	}
 	else if(argc == 2){	
 		if(VERBOSE) printf("Setting number of threads\n");
 		omp_set_num_threads(NUMBER_OF_THREADS);
 	 	if(VERBOSE) printf("Setting MEMSIZE\n");	
 		MEMSIZE = sizeof(double)*(atol(argv[1]) * atol(argv[1]));
+		rowLengthInBytes = atol(argv[1]) * sizeof(double);
 		if(VERBOSE) printf("1 argument provided, setting numThreads = %d and Memsize = %lu\n", NUMBER_OF_THREADS, MEMSIZE);
 	}
 	else if(argc >= 3){
 		omp_set_num_threads(atoi(argv[2]));
 		MEMSIZE = sizeof(double)*(atol(argv[1]) * atol(argv[1]));
-		if(VERBOSE) printf("Two arguments provided, setting numThreads = %d and Memsize = %lu\n", atoi(argv[2]), atol(argv[1]));
+		rowLengthInBytes = atol(argv[1]) * sizeof(double);
+		if(VERBOSE) printf("Two arguments provided, setting numThreads = %d and Elements per Row = %lu\n", atoi(argv[2]), atol(argv[1]));
 	}
 
 	argoMM(argc, argv);
