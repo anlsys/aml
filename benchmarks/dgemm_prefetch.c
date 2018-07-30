@@ -103,8 +103,8 @@ int main(int argc, char* argv[])
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
 				    &arena, MPOL_BIND, fastb->maskp));
 	assert(!aml_dma_linux_seq_init(&dma, 2));
-	assert(!aml_scratch_par_init(&sa, &fast, &slow, &dma, &tiling_prefetch, 2, 2));
-	assert(!aml_scratch_par_init(&sb, &fast, &slow, &dma, &tiling_prefetch, 2, 2));
+	assert(!aml_scratch_par_init(&sa, &fast, &slow, &dma, &tiling_prefetch, (size_t)2, (size_t)2));
+	assert(!aml_scratch_par_init(&sb, &fast, &slow, &dma, &tiling_prefetch, (size_t)2, (size_t)2));
 	/* allocation */
 	a = aml_area_malloc(&slow, memsize);
 	b = aml_area_malloc(&slow, memsize);

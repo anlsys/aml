@@ -38,9 +38,9 @@ void do_work()
 				aoff = i*ndims[1] + k;
 				boff = k*ndims[1] + j;
 				coff = i*ndims[1] + j;
-				ap = aml_tiling_tilestart(&tiling_col, ap, aoff);
-				bp = aml_tiling_tilestart(&tiling_row, bp, boff);
-				cp = aml_tiling_tilestart(&tiling_row, cp, coff);
+				ap = aml_tiling_tilestart(&tiling_col, a, aoff);
+				bp = aml_tiling_tilestart(&tiling_row, b, boff);
+				cp = aml_tiling_tilestart(&tiling_row, c, coff);
 				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, ldc, lda, ldb, 1.0, ap, lda, bp, ldb, 1.0, cp, ldc);
 			}
 		}
