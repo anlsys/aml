@@ -235,7 +235,7 @@ struct aml_arena_jemalloc_data {
 int aml_arena_jemalloc_create(struct aml_arena **arena, int type, ...);
 /*
  * Initializes a jemalloc arena.  This is a varargs-variant of the
- * aml_arena_jemalloc_init() routine.
+ * aml_arena_jemalloc_vinit() routine.
  * "arena": an allocated jemalloc arena structure.
  * "type": see aml_arena_jemalloc_create().
  * Variadic arguments: see aml_arena_jemalloc_create().
@@ -259,7 +259,7 @@ int aml_arena_jemalloc_destroy(struct aml_arena *arena);
 
 /*******************************************************************************
  * Areas:
- * embeds information about a byte-addressable physical memory location and well
+ * embeds information about a byte-addressable physical memory location as well
  * as binding policies over it.
  ******************************************************************************/
 
@@ -416,7 +416,7 @@ struct aml_area_linux_mbind_ops {
 /*
  * Sets memory policy of a Linux memory area.
  * "data": an initialized Linux memory policy structure.
- * "policy", "mask": see aml_area_linux_mbind_init().
+ * "policy", "nodemask": see aml_area_linux_mbind_init().
  * Returns 0 if successful; an error code otherwise.
  */
 int aml_area_linux_mbind_setdata(struct aml_area_linux_mbind_data *data,
@@ -803,7 +803,7 @@ size_t aml_tiling_tilerowsize(const struct aml_tiling *tiling, int tileid);
  * "tiling": an initialized tiling structure.
  * "tileid": an identifier of a tile (a value between 0 and the number of tiles
  *           minus 1).
- * Returns the size of a tile col.
+ * Returns the size of a tile column.
  */
 size_t aml_tiling_tilecolsize(const struct aml_tiling *tiling, int tileid);
 
@@ -843,7 +843,7 @@ int aml_tiling_init_iterator(struct aml_tiling *tiling,
 /*
  * Tears down an initialized tiling iterator.
  * "tiling": an initialized tiling structure.
- * "iterator": an initializing tiling iterator structure.
+ * "iterator": an initialized tiling iterator structure.
  * Returns 0 if successful; an error code otherwise.
  */
 int aml_tiling_destroy_iterator(struct aml_tiling *tiling,
@@ -864,26 +864,26 @@ struct aml_tiling_iterator {
 
 /*
  * Resets a tiling iterator to the first tile.
- * "iterator": an initializing tiling iterator structure.
+ * "iterator": an initialized tiling iterator structure.
  * Returns 0 if successful; an error code otherwise.
  */
 int aml_tiling_iterator_reset(struct aml_tiling_iterator *iterator);
 /*
  * Advances a tiling iterator to the next tile.
- * "iterator": an initializing tiling iterator structure.
+ * "iterator": an initialized tiling iterator structure.
  * Returns 0 if successful; an error code otherwise.
  */
 int aml_tiling_iterator_next(struct aml_tiling_iterator *iterator);
 /*
  * Checks whether the iterator is past the last tile.
- * "iterator": an initializing tiling iterator structure.
+ * "iterator": an initialized tiling iterator structure.
  * Returns 0 if the iterator points at a valid tile; 1 if it's past the last
  * tile.
  */
 int aml_tiling_iterator_end(const struct aml_tiling_iterator *iterator);
 /*
  * Queries the iterator.
- * "iterator": an initializing tiling iterator structure.
+ * "iterator": an initialized tiling iterator structure.
  * Variadic arguments:
  * - "x": an argument of type unsigned long*; on return gets filled with the
  *        identifier of the tile currently pointed to.
@@ -904,6 +904,13 @@ int aml_tiling_iterator_get(const struct aml_tiling_iterator *iterator, ...);
  * Variadic arguments:
  * - if "type" equals AML_TILING_TYPE_1D, two additional arguments are needed:
  *   - "tilesize": an argument of type size_t; provides the size of each tile.
+ *   - "totalsize": an argument of type size_t; provides the size of the
+ *                  complete user data structure to be tiled.
+ * - if "type" equals AML_TILING_TYPE_2D, three additional arguments are needed:
+ *   - "rowsize": an argument of type size_t; provides the size of the row of
+ *      each tile.
+ *   - "columnsize": an argument of type size_t; provides the size of the column
+ *      of each tile.
  *   - "totalsize": an argument of type size_t; provides the size of the
  *                  complete user data structure to be tiled.
  * Returns 0 if successful; an error code otherwise.
@@ -1039,7 +1046,7 @@ struct aml_binding {
 
 /*
  * Provides the size of a tile in memory, in pages.
- * "binding": an initializing binding structure.
+ * "binding": an initialized binding structure.
  * "tiling": an initialized tiling structure.
  * "ptr", "tileid": see aml_tiling_tilestart().
  * Returns the total number of pages that a tile occupies, including partial
@@ -1050,7 +1057,7 @@ int aml_binding_nbpages(const struct aml_binding *binding,
 			const void *ptr, int tileid);
 /*
  * Provides the addresses of pages that a tile occupies.
- * "binding": an initializing binding structure.
+ * "binding": an initialized binding structure.
  * "pages": an array that will be filled with start addresses of all pages
  *          that a tile occupies.  The array must be at least
  *          aml_binding_nbpages() elements long.
@@ -1063,7 +1070,7 @@ int aml_binding_pages(const struct aml_binding *binding, void **pages,
 		      int tileid);
 /*
  * Provides the NUMA node information of pages that a tile occupies.
- * "binding": an initializing binding structure.
+ * "binding": an initialized binding structure.
  * "nodes": an array that will be filled with NUMA node id's of all pages
  *          that a tile occupies.  The array must be at least
  *          aml_binding_nbpages() elements long.
@@ -1078,7 +1085,7 @@ int aml_binding_nodes(const struct aml_binding *binding, int *nodes,
 /* Binding types passed to the binding create()/init()/vinit() routines.  */
 /* Binding where all pages are bound to the same NUMA node.  */
 #define AML_BINDING_TYPE_SINGLE 0
-/* Binding where pages are interleaved among multple NUMA nodes.  */
+/* Binding where pages are interleaved among multiple NUMA nodes.  */
 #define AML_BINDING_TYPE_INTERLEAVE 1
 
 /*
@@ -1326,7 +1333,7 @@ struct aml_dma_linux_seq {
 int aml_dma_linux_seq_create(struct aml_dma **dma, ...);
 /*
  * Initializes a new sequential DMA.  This is a varargs-variant of the
- * aml_dma_linux_seq_create() routine.
+ * aml_dma_linux_seq_vinit() routine.
  * "dma": an allocated DMA structure.
  * Variadic arguments: see aml_dma_linux_seq_create().
  * Returns 0 if successful; an error code otherwise.
@@ -1341,7 +1348,7 @@ int aml_dma_linux_seq_init(struct aml_dma *dma, ...);
 int aml_dma_linux_seq_vinit(struct aml_dma *dma, va_list args);
 /*
  * Tears down an initialized sequential DMA.
- * "dma": an allocated DMA structure.
+ * "dma": an initialized DMA structure.
  * Returns 0 if successful; an error code otherwise.
  */
 int aml_dma_linux_seq_destroy(struct aml_dma *dma);
@@ -1417,7 +1424,7 @@ struct aml_dma_linux_par {
 int aml_dma_linux_par_create(struct aml_dma **, ...);
 /*
  * Initializes a new parallel DMA.  This is a varargs-variant of the
- * aml_dma_linux_par_create() routine.
+ * aml_dma_linux_par_vinit() routine.
  * "dma": an allocated DMA structure.
  * Variadic arguments: see aml_dma_linux_par_create().
  * Returns 0 if successful; an error code otherwise.
@@ -1432,14 +1439,14 @@ int aml_dma_linux_par_init(struct aml_dma *, ...);
 int aml_dma_linux_par_vinit(struct aml_dma *, va_list);
 /*
  * Tears down an initialized parallel DMA.
- * "dma": an allocated DMA structure.
+ * "dma": an initialized DMA structure.
  * Returns 0 if successful; an error code otherwise.
  */
 int aml_dma_linux_par_destroy(struct aml_dma *);
 
 /*******************************************************************************
  * Scratchpad:
- * Use an area to stage data from an another area in and out.
+ * Use an area to stage data from another area in and out.
  * A dma handles the movement itself.
  ******************************************************************************/
 
@@ -1500,9 +1507,9 @@ int aml_scratch_async_pull(struct aml_scratch *scratch,
  * Requests a synchronous push from the scratchpad to regular memory.
  * "scratch": an initialized scratchpad structure.
  * Variadic arguments:
- * - "srcptr": an argument of type void*; the start address of the complete
- *             source user data structure.
- * - "srcid": an argument of type int*; gets filled with the source tile
+ * - "dstptr": an argument of type void*; the start address of the complete
+ *             destination user data structure.
+ * - "dstid": an argument of type int*; gets filled with the destination tile
  *            identifier where the data will be pushed into (and where it was
  *            pulled from in the first place).
  * - "scratchptr": an argument of type void*; the scratchpad base pointer (see
@@ -1533,7 +1540,7 @@ int aml_scratch_wait(struct aml_scratch *scratch,
 
 /*
  * Tears down an asynchronous scratch request before it completes.
- * "scratch": an initialized scratch structure.
+ * "scratch": an initialized scratchpad structure.
  * "req": a scratch request obtained using aml_scratch_async_*() calls.
  * Returns 0 if successful; an error code otherwise.
  */
@@ -1541,7 +1548,7 @@ int aml_scratch_cancel(struct aml_scratch *scratch,
 		       struct aml_scratch_request *req);
 /*
  * Provides the location of the scratchpad.
- * "scratch": an initialized scratch structure.
+ * "scratch": an initialized scratchpad structure.
  * Returns a base pointer to the scratchpad memory buffer.
  */
 void* aml_scratch_baseptr(const struct aml_scratch *scratch);
@@ -1549,8 +1556,8 @@ void* aml_scratch_baseptr(const struct aml_scratch *scratch);
 /*
  * Release a scratch tile for immediate reuse.
  * "scratch": an initialized scratchpad structure.
- * "scratchid": an argument of type int; the scratchpad tile identifier.
- * Returns 0 if successuf; an error code otherwise.
+ * "scratchid": a scratchpad tile identifier.
+ * Returns 0 if successful; an error code otherwise.
  */
 int aml_scratch_release(struct aml_scratch *scratch, int scratchid);
 
@@ -1625,7 +1632,7 @@ struct aml_scratch_seq {
 int aml_scratch_seq_create(struct aml_scratch **scratch, ...);
 /*
  * Initializes a new sequential scratchpad.  This is a varargs-variant of the
- * aml_scratch_seq_init() routine.
+ * aml_scratch_seq_vinit() routine.
  * "scratch": an allocated scratchpad structure.
  * Variadic arguments: see aml_scratch_seq_create().
  * Returns 0 if successful; an error code otherwise.
@@ -1715,7 +1722,7 @@ struct aml_scratch_par {
 int aml_scratch_par_create(struct aml_scratch **scratch, ...);
 /*
  * Initializes a new parallel scratchpad.  This is a varargs-variant of the
- * aml_scratch_par_init() routine.
+ * aml_scratch_par_vinit() routine.
  * "scratch": an allocated scratchpad structure.
  * Variadic arguments: see aml_scratch_par_create().
  * Returns 0 if successful; an error code otherwise.
