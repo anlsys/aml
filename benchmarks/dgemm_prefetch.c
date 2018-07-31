@@ -56,7 +56,7 @@ unsigned long rdtsc(){
 
 void do_work()
 {
-	int i, k, ai, bi, oldai, oldbi, tilesPerCol;
+	int i, k, ai, bi, ci, oldai, oldbi, pushCi, pullCi, tilesPerCol;
 	int lda = (int)rowSizeOfTile, ldb, ldc;
 	ldb = lda;
 	ldc = lda;
@@ -65,13 +65,14 @@ void do_work()
 	        
 	abaseptr = aml_scratch_baseptr(&sa);
 	bbaseptr = aml_scratch_baseptr(&sb);
+	
 	ai = -1; bi = -1;
 	
 	ap = a;
 	bp = b;
 	cp = c;
 
-	struct aml_scratch_request *ar, *br, *cr, *cr2;
+	struct aml_scratch_request *ar, *br, *crPull, *crPush;
 
 	tilesPerCol = rowSizeInTiles / numthreads; //This should evaluate to an integer value
 		
@@ -84,7 +85,7 @@ void do_work()
 		oldbi = bi;
 		oldai = ai;
 		aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, i + 1);
-		aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, i + 1);	
+		aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, i + 1);
 		//This will begin the dispersion of work accross threads, this loop is actually O(1) 
 		#pragma omp parallel for
 		for(k = 0; k < numthreads; k++)

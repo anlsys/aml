@@ -57,28 +57,29 @@ unsigned long rdtsc(){
 
 //No Matrix is transposed for this algorithm anymore; however, a tile is assummed to be contiguous in memory.
 //This algorithm will work as follows:
-//Prefetch top row of tiles from A, B, and C
-//All Threads will begin on A[0]th tile of that row and do the following:
-//Grab the tiles within the first row of B and C that correspond to their threadnum.
-//Perform a matrix multiplication of their tiles. Once all the threads finish, the next row of B tiles is grabbed and the next tile in A is used.
-//Repeat until no more B rows / no A tiles
-//The C row of tiles is complete and the next A and C rows can be acquired.
-//Repeat process until no more A and C rows.
+//1) Prefetch top row of tiles from A, B, and C
+//2) All Threads will begin on A[0]th tile of that row and do the following:
+//3) Grab the tiles within the first row of B and C that correspond to their threadnum.
+//4) Perform a matrix multiplication of their tiles. Once all the threads finish, the next row of B tiles is grabbed and the next tile in A is used.
+//5) Repeat until no more B rows / no A tiles
+//6) The C row of tiles is complete and the next A and C rows can be acquired.
+//7) Repeat process until no more A and C rows. 
 //Matrix mutliplication is now complete.
 void do_work()
 {
-	int i, k, ai, bi, ci, oldai, oldbi, pushCi, pullCi, tilesPerCol;
+	int i, k, ai, bi, ci, oldai, oldbi, oldci, ciPush, ciPull, tilesPerCol;
 	int lda = (int)rowSizeOfTile, ldb, ldc;
 	ldb = lda;
 	ldc = lda;
 	double *ap, *bp, *cp;
 	void *abaseptr, *bbaseptr, *cbaseptr;
+	int colSizeInTiles = rowSizeInTiles;
 	        
 	abaseptr = aml_scratch_baseptr(&sa);
 	bbaseptr = aml_scratch_baseptr(&sb);
 	cbaseptr = aml_scratch_baseptr(&sc);
 
-	ai = -1; bi = -1;
+	ai = -1; bi = -1; ci = -1;
 	
 	ap = a;
 	bp = b;
@@ -86,53 +87,56 @@ void do_work()
 
 	struct aml_scratch_request *ar, *br, *crPull, *crPush;
 
-	tilesPerCol = rowSizeInTiles / numthreads; //This should evaluate to an integer value
+	
+	aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, i + 1);
+	aml_scratch_async_pull(&sc, &crPull, cbaseptr, &ciPull, c, i + 1);	
+	
+	//This is performing 7) in the comments, it will end when A and C tiles are all done		
+	for(i = 0; i < colSizeInTiles; i++) {
 		
-	//This will iterate through each column of tiles in A matrix
-	//This loop is O(rowSizeInTiles) (O(n))
-	for(i = 0; i < rowSizeInTiles; i++) {
-		
-		//Request next column of tiles from A into the scratchpad for A	
-		
-		oldbi = bi;
-		oldai = ai;
-		aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, i + 1);
-		aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, i + 1);
-		aml_scratch_async_pull(&sc, &crPull, cbaseptr, &ciPull, c, i + 1);	
-		//This will begin the dispersion of work accross threads, this loop is actually O(1) 
-		#pragma omp parallel for
-		for(k = 0; k < numthreads; k++)
-		{
-			int j, l, offset;
-			double *apLoc, *bpLoc, *cpLoc;
-			//This loop will cover if threads are handling multiple rows of tiles. This shouldn't be a necessarily large number
-			//This loop is technically O(n) but in reality will usually be O(1) because tilesPerCol will be a small number relative to rowSizeInTiles
-			for(j = 0; j < tilesPerCol; j++){
-				offset = (k * tilesPerCol) + j;
-				//This will give the beginning offset for where each thread should point to in the tilingB sized ap array
-				apLoc = aml_tiling_tilestart(&tiling, ap, offset);
-				offset = (k * tilesPerCol) + j;
-				cpLoc = aml_tiling_tilestart(&tiling, cp, offset);		
-				//Now we will iterate through all the tiles in the row of B tiles and compute a partial matrix multiplication
-				//This loop is O(n)
-				for(l = 0; l < rowSizeInTiles; l++){
-					bpLoc = aml_tiling_tilestart(&tiling, bp, l);
-					//This will begin at the tile row that is at x cordinate equal to bp offset, and y cordinate equal to ap offset
-					offset = (((int)rowSizeInTiles * ((k * tilesPerCol)+ j) ) + l);
-					cp = aml_tiling_tilestart(&tiling, c, offset);
-
-					cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, ldc, lda, ldb, 1.0, apLoc, lda, bpLoc, ldb, 1.0, cp, ldc);
-				}			
-			}
 			
-		}	
-						
+		//Request next column of tiles from A into the scratchpad for A	
+		oldai = ai;
+		int j, l, k, offset;
+		double *apLoc, *bpLoc, *cpLoc;
+		//This loop will go through each row of B and each tile in a row of A
+		for(k = 0; k < rowSizeInTiles; k++){
+			oldbi = bi;
+			aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, i + 1);
+			apLoc = aml_tiling_tilestart(&tiling, ap, k);
+			#pragma omp parallel for
+			for(l = 0; l < rowSizeInTiles; l++){
+				cpLoc = aml_tiling_tilestart(&tiling, cp, l);		
+				bpLoc = aml_tiling_tilestart(&tiling, bp, l);
+				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, ldc, lda, ldb, 1.0, apLoc, lda, bpLoc, ldb, 1.0, cp, ldc);	
+			}
+			aml_scratch_wait(&sb, br);
+			bp = aml_tiling_tilestart(&tilingB, bbaseptr, bi);
+			aml_scratch_release(&sb, oldbi);	
+		}		
+				
+			
+
+			
 		aml_scratch_wait(&sa, ar);
-		aml_scratch_wait(&sb, br);
+		aml_scratch_wait(&sc, crPull);
+		if(i != 0) {
+			aml_scratch_wait(&sc, crPush);
+			aml_scratch_release(&sc, ciPush);
+		}
+		
+		//This will rotate the ci pointers in scratchpad memory
+		oldci = ciPush;
+		ciPush = ci;
+		ci = ciPull;
+		ciPull = oldci;
+		
+		aml_scratch_async_push(&sc, &crPush, cbaseptr, &ciPush, c, i);
 		ap = aml_tiling_tilestart(&tilingB, abaseptr, ai);
-		bp = aml_tiling_tilestart(&tilingB, bbaseptr, bi);
+		cp = aml_tiling_tilestart(&tiling, cbaseptr, ci);
 		aml_scratch_release(&sa, oldai);
-		aml_scratch_release(&sb, oldbi);
+		
+		
 	}
 	
 }
