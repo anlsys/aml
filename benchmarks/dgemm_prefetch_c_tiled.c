@@ -16,7 +16,7 @@
 #define HBM_SIZE 17179869184 //16 GB
 
 #define VERBOSE 0 //Verbose mode will print out extra information about what is happening
-#define DEBUG 0 //This will print out verbose messages and debugging statements
+#define DEBUG 1 //This will print out verbose messages and debugging statements
 #define PRINT_ARRAYS 0 
 #define BILLION 1000000000L
 
@@ -28,6 +28,7 @@ AML_AREA_LINUX_DECL(slow);
 AML_AREA_LINUX_DECL(fast);
 AML_SCRATCH_PAR_DECL(sa);
 AML_SCRATCH_PAR_DECL(sb);
+AML_SCRATCH_PAR_DECL(sc);
 
 size_t numthreads;
 //size of 2D Tiles in A matrix
@@ -54,91 +55,87 @@ unsigned long rdtsc(){
 
 
 
-
-//No Matrix is transposed for this algorithm anymore; however, a tile is assummed to be contiguous in memory.
-//This algorithm will work as follows:
-//1) Prefetch top row of tiles from A, B, and C
-//2) All Threads will begin on A[0]th tile of that row and do the following:
-//3) Grab the tiles within the first row of B and C that correspond to their threadnum.
-//4) Perform a matrix multiplication of their tiles. Once all the threads finish, the next row of B tiles is grabbed and the next tile in A is used.
-//5) Repeat until no more B rows / no A tiles
-//6) The C row of tiles is complete and the next A and C rows can be acquired.
-//7) Repeat process until no more A and C rows. 
-//Matrix mutliplication is now complete.
 void do_work()
 {
-	int i, k, ai, bi, ci, oldai, oldbi, oldci, ciPush, ciPull, tilesPerCol;
-	int lda = (int)rowSizeOfTile, ldb, ldc;
+	int i, k, ai, bi, ci, oldai, oldbi, oldci, pushCi, pullCi, tilesPerCol;
+	unsigned long lda = rowSizeOfTile, ldb, ldc;
 	ldb = lda;
 	ldc = lda;
 	double *ap, *bp, *cp;
-	void *abaseptr, *bbaseptr, *cbaseptr;
+	double *abaseptr, *bbaseptr, *cbaseptr;
 	int colSizeInTiles = rowSizeInTiles;
-	        
+      	if(DEBUG) printf("Setting baseptrs for a b c in scratchpad\n"); 
 	abaseptr = aml_scratch_baseptr(&sa);
 	bbaseptr = aml_scratch_baseptr(&sb);
 	cbaseptr = aml_scratch_baseptr(&sc);
-
-	ai = -1; bi = -1; ci = -1;
+	if(DEBUG) printf("Suceeded, abaseptr = %p, bbaseptr = %p, cbaseptr = %p\n", abaseptr, bbaseptr, cbaseptr);	
+	ai = -1; bi = -1, ci = -1;
 	
 	ap = a;
 	bp = b;
 	cp = c;
 
 	struct aml_scratch_request *ar, *br, *crPull, *crPush;
-
-	
-	aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, i + 1);
-	aml_scratch_async_pull(&sc, &crPull, cbaseptr, &ciPull, c, i + 1);	
+		
 	
 	//This is performing 7) in the comments, it will end when A and C tiles are all done		
 	for(i = 0; i < colSizeInTiles; i++) {
-		
-			
 		//Request next column of tiles from A into the scratchpad for A	
+		int l, k;
 		oldai = ai;
-		int j, l, k, offset;
-		double *apLoc, *bpLoc, *cpLoc;
+		oldci = ci;
+		if(DEBUG) printf("Async pulling into sa at spot %d\nAsync pulling into sc at spot %d\n", ai, ci);
+		aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, i + 1);
+		aml_scratch_async_pull(&sc, &crPull, cbaseptr, &ci, c, i + 1);
+		if(DEBUG) printf("Async pulled into sa at spot %d\nAsync pulled into sc at spot %d\n", ai, ci);
+
 		//This loop will go through each row of B and each tile in a row of A
 		for(k = 0; k < rowSizeInTiles; k++){
+			double *apLoc;
 			oldbi = bi;
-			aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, i + 1);
+			if(k == rowSizeInTiles - 1){
+				aml_scratch_async_pull(&sb, &br, &bi, b, 0);
+			}
+			else{
+				aml_scratch_async_pull(&sb, &br, &bi, b, k+1);
+			}
+
 			apLoc = aml_tiling_tilestart(&tiling, ap, k);
+			if(DEBUG) printf("lda = %d = ldb = %d = ldc = %d\napLoc = %p\na     = %p\n\n", lda, ldb, ldc, apLoc, a);
 			#pragma omp parallel for
 			for(l = 0; l < rowSizeInTiles; l++){
-				cpLoc = aml_tiling_tilestart(&tiling, cp, l);		
-				bpLoc = aml_tiling_tilestart(&tiling, bp, l);
-				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, ldc, lda, ldb, 1.0, apLoc, lda, bpLoc, ldb, 1.0, cp, ldc);	
+				double *cpLoc = aml_tiling_tilestart(&tiling, cp, l);			
+				double *bpLoc = aml_tiling_tilestart(&tiling, bp, l);
+				if(DEBUG) printf("TID: %d\nbpLoc = %p\nb     = %p\ncpLoc = %p\nc     = %p\n", l, bpLoc, b, cpLoc, c);
+				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, ldc, lda, ldb, 1.0, a, lda, b, ldb, 1.0, c, ldc);	
 			}
+			if(DEBUG) printf("Done with a parfor iteration\n");
 			aml_scratch_wait(&sb, br);
 			bp = aml_tiling_tilestart(&tilingB, bbaseptr, bi);
-			aml_scratch_release(&sb, oldbi);	
-		}		
-				
+			aml_scratch_release(&sb, oldbi);
 			
-
 			
-		aml_scratch_wait(&sa, ar);
-		aml_scratch_wait(&sc, crPull);
-		if(i != 0) {
-			aml_scratch_wait(&sc, crPush);
-			aml_scratch_release(&sc, ciPush);
 		}
 		
-		//This will rotate the ci pointers in scratchpad memory
-		oldci = ciPush;
-		ciPush = ci;
-		ci = ciPull;
-		ciPull = oldci;
+		if(i != 0){
+			aml_scratch_wait(&sc, crPush);
+		}
 		
-		aml_scratch_async_push(&sc, &crPush, cbaseptr, &ciPush, c, i);
+		aml_scratch_wait(&sc, crPull);		
+		aml_scratch_wait(&sa, ar);
+		
+		oldci = pushCi;
+		pushCi = ci;
+		ci = pullCi;
+		pullCi = oldci;
+
+		aml_scratch_async_push(&sc, &crPush, cbaseptr, &pushCi, c, i);
 		ap = aml_tiling_tilestart(&tilingB, abaseptr, ai);
-		cp = aml_tiling_tilestart(&tiling, cbaseptr, ci);
-		aml_scratch_release(&sa, oldai);
-		
-		
+		cp = aml_tiling_tilestart(&tilingB, cbaseptr, ci);
+
+
 	}
-	
+
 }
 
 int argoMM(int argc, char* argv[]){
@@ -154,7 +151,7 @@ int argoMM(int argc, char* argv[]){
 		{
 			rowLengthInBytes = (unsigned long)sqrt(MEMSIZE/sizeof(double)) * sizeof(double);
 			numthreads = omp_get_num_threads();
-			tilesz = ((unsigned long) pow( ( ( sqrt(MEMSIZE / sizeof(double)) ) / (numthreads * 2) ), 2) ) * sizeof(double);
+			tilesz = ((unsigned long) pow( ( ( (unsigned long)sqrt(MEMSIZE / sizeof(double)) ) / numthreads ), 2) ) * sizeof(double);
 			double multiplier = 2;
 			if(argc == 4){
 				tilesz = sizeof(double)*(atol(argv[3]) * atol(argv[3]));
@@ -165,11 +162,11 @@ int argoMM(int argc, char* argv[]){
 		}
 	
 			
-		if(DEBUG || VERBOSE)printf("The total memory size is: %lu\nWe are dealing with a %lu x %lu matrix multiplication\nThe number of threads: %d\nThe chunking is: %lu\nThe tilesz is: %lu\nThat means there are %lu elements per tile\nThere are %lu tiles total\nThe length of a column in bytes is: %lu\n", MEMSIZE, (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)), (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)),numthreads, CHUNKING, tilesz, esz, numTiles, rowLengthInBytes);
+		if(DEBUG || VERBOSE)printf("The total memory size is: %lu\nWe are dealing with a %lu x %lu matrix multiplication\nThe number of threads: %d\nThe chunking is: %lu\nThe tilesz is: %lu\nThat is a %lu x %lu tile\nThat means there are %lu elements per tile\nThere are %lu tiles total\nThe length of a column in bytes is: %lu\n", MEMSIZE, (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)), (unsigned long)sqrt(MEMSIZE/sizeof(unsigned long)),numthreads, CHUNKING, tilesz, (unsigned long)sqrt(tilesz/sizeof(double)), (unsigned long)sqrt(tilesz/sizeof(double)), esz, numTiles, rowLengthInBytes);
 
 		assert(!aml_binding_init(&binding, AML_BINDING_TYPE_SINGLE, 0));
 		assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_2D, (unsigned long)sqrt(tilesz/sizeof(double))*sizeof(double), (unsigned long)sqrt(tilesz/sizeof(double))*sizeof(double), tilesz, MEMSIZE));	
-		rowSizeOfTile = aml_tiling_tilerowsize(&tiling, 0) / sizeof(double); 
+		rowSizeOfTile = (unsigned long)sqrt(tilesz/sizeof(double)); 
 		rowSizeInTiles = numRows / rowSizeOfTile;
 		assert(!aml_tiling_init(&tilingB, AML_TILING_TYPE_2D, rowSizeOfTile * sizeof(double), rowSizeInTiles * rowSizeOfTile * sizeof(double), tilesz * rowSizeInTiles, MEMSIZE));
 		AML_NODEMASK_ZERO(nodemask);
@@ -181,6 +178,7 @@ int argoMM(int argc, char* argv[]){
 					    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
 					    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
 					    &arena, MPOL_BIND, nodemask));
+
 		AML_NODEMASK_ZERO(nodemask);
 		AML_NODEMASK_SET(nodemask, 1);
 		assert(!aml_area_linux_init(&fast,
@@ -189,24 +187,27 @@ int argoMM(int argc, char* argv[]){
 					    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
 					    &arena, MPOL_BIND, nodemask));
 		
-		assert(!aml_dma_linux_seq_init(&dma, 3));
-		assert(!aml_scratch_par_init(&sa, &fast, &slow, &dma, &tilingB, 2, 2));
-		assert(!aml_scratch_par_init(&sb, &fast, &slow, &dma, &tilingB, 2, 2));
+		assert(!aml_dma_linux_seq_init(&dma, 4));
+
+		assert(!aml_scratch_par_init(&sa, &fast, &slow, &dma, &tilingB, (size_t)2, (size_t)1));
+		assert(!aml_scratch_par_init(&sb, &fast, &slow, &dma, &tilingB, (size_t)2, (size_t)1));
+		assert(!aml_scratch_par_init(&sc, &fast, &slow, &dma, &tilingB, (size_t)3, (size_t)2));
 		
 		/* allocation */
 		a = aml_area_malloc(&slow, MEMSIZE);
 		b = aml_area_malloc(&slow, MEMSIZE);
-		c = aml_area_malloc(&fast, MEMSIZE);
+		c = aml_area_malloc(&slow, MEMSIZE);
 		
 		assert(a != NULL && b != NULL && c != NULL);
 		esize = MEMSIZE/sizeof(double);
 		numRows = (unsigned long)sqrt(esize);
+		if(DEBUG)printf("a = %p\nb = %p\nc = %p\n", a, b, c);
 		for(unsigned long i = 0; i < esize; i++) {
 			a[i] = 1.0;//i % numRows;
 			b[i] = 1.0;//numRows - (i % numRows);
 			c[i] = 0.0;
 		}	
-		int newLines = 0;	
+
 		//This will execute on core 0
 		clock_gettime(CLOCK_REALTIME, &startClock);
 		beginTime = rdtsc();
@@ -236,10 +237,11 @@ int argoMM(int argc, char* argv[]){
 	
 		aml_scratch_par_destroy(&sa);
 		aml_scratch_par_destroy(&sb);
-		aml_dma_linux_seq_destroy(&dma);
+		aml_scratch_par_destroy(&sc);
+		aml_dma_linux_par_destroy(&dma);
 		aml_area_free(&slow, a);
 		aml_area_free(&slow, b);
-		aml_area_free(&fast, c);
+		aml_area_free(&slow, c);
 		aml_area_linux_destroy(&slow);
 		aml_area_linux_destroy(&fast);
 		aml_tiling_destroy(&tiling, AML_TILING_TYPE_1D);
