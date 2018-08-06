@@ -27,12 +27,10 @@ void do_work()
 	ldb = lda;
 	ldc = lda;
 	size_t ndims[2];
-	double *ap, *bp, *cp;
 	double *prea, *preb;
 	int ai, bi, oldai, oldbi;
 	void *abaseptr, *bbaseptr;
 	struct aml_scratch_request *ar, *br;
-	size_t coff;
 	aml_tiling_ndims(&tiling_row, &ndims[0], &ndims[1]);
 	abaseptr = aml_scratch_baseptr(&sa);
 	bbaseptr = aml_scratch_baseptr(&sb);
@@ -51,6 +49,8 @@ void do_work()
 		{
 			for(int j = 0; j < ndims[1]; j++)
 			{
+				size_t coff;
+				double *ap, *bp, *cp;
 				ap = aml_tiling_tilestart(&tiling_row, prea, i);
 				bp = aml_tiling_tilestart(&tiling_row, preb, j);
 				coff = i*ndims[1] + j;
@@ -110,11 +110,40 @@ int main(int argc, char* argv[])
 	b = aml_area_malloc(&slow, memsize);
 	c = aml_area_malloc(&fast, memsize);
 	assert(a != NULL && b != NULL && c != NULL);
-	for(unsigned long i = 0; i < N*N; i++) {
-		a[i] = (double)rand();
-		b[i] = (double)rand();
-		c[i] = 0.0;
+
+	size_t ntilerows, ntilecols, tilerowsize, tilecolsize, rowsize, colsize;
+	rowsize = colsize = N;
+	tilerowsize = tilecolsize = T;
+	ntilerows = ntilecols = N/T;
+	for(unsigned long i = 0; i < N*N; i+=tilerowsize) {
+		size_t tilerow, tilecol, row, column;
+		/* Tile row index (row-major).  */
+		tilerow = i / (tilerowsize * tilecolsize * ntilerows);
+		/* Tile column index (row-major).  */
+		tilecol = (i / tilerowsize) % ntilerows;
+		/* Row index within a tile (row-major).  */
+		row = (i / rowsize) % tilecolsize;
+		/* Column index within a tile (row-major).  */
+		/* column = i % tilerowsize; */
+
+		size_t a_offset, b_offset;
+		/* Tiles in A need to be transposed (column-major).  */
+		a_offset = (tilecol * ntilecols + tilerow) *
+			tilerowsize * tilecolsize +
+			row * tilerowsize;
+		/* Tiles in B are in row-major order.  */
+		b_offset = (tilerow * ntilerows + tilecol) *
+			tilerowsize * tilecolsize +
+			row * tilerowsize;
+		for (column = 0; column < tilerowsize; column++) {
+			a[a_offset + column] = (double)rand();
+			b[b_offset + column] = (double)rand();
+			/* C is tiled as well (row-major) but since it's
+			   all-zeros at this point, we don't bother.  */
+			c[i+column] = 0.0;
+		}
 	}
+
 	clock_gettime(CLOCK_REALTIME, &start);
 	do_work();
 	clock_gettime(CLOCK_REALTIME, &stop);
@@ -122,6 +151,24 @@ int main(int argc, char* argv[])
 	time =  (stop.tv_nsec - start.tv_nsec) +
                 1e9* (stop.tv_sec - start.tv_sec);
 	double flops = (2.0*N*N*N)/(time/1e9);
+
+	/* De-tile the result matrix (C).  I couldn't figure out how to do
+	   it in-place so we are de-tiling to the A matrix.  */
+	for(unsigned long i = 0; i < N*N; i+=tilerowsize) {
+		size_t tilerow, tilecol, row;
+		/* Tile row index (row-major).  */
+		tilerow = i / (tilerowsize * tilecolsize * ntilerows);
+		/* Tile column index (row-major).  */
+		tilecol = (i / tilerowsize) % ntilerows;
+		/* Row index within a tile (row-major).  */
+		row = (i / rowsize) % tilecolsize;
+		/* i converted to tiled.  */
+		unsigned long tiledi = (tilerow * ntilerows + tilecol) *
+			tilerowsize * tilecolsize + row * tilerowsize;
+
+		memcpy(&a[i], &c[tiledi], tilerowsize*sizeof(double));
+	}
+
 	/* print the flops in GFLOPS */
 	printf("dgemm-prefetch: %llu %lld %lld %f\n", N, memsize, time,
 	       flops/1e9);
