@@ -69,7 +69,8 @@ void do_work()
 
 int main(int argc, char* argv[])
 {
-	AML_ARENA_JEMALLOC_DECL(arena);
+	AML_ARENA_JEMALLOC_DECL(arns);
+	AML_ARENA_JEMALLOC_DECL(arnf);
 	AML_DMA_LINUX_SEQ_DECL(dma);
 	struct bitmask *slowb, *fastb;
 	aml_init(&argc, &argv);
@@ -91,17 +92,19 @@ int main(int argc, char* argv[])
 	/* the prefetch tiling, 1D sequence of columns of tiles */
 	assert(!aml_tiling_init(&tiling_prefetch, AML_TILING_TYPE_1D,
 				tilesize*(N/T), memsize));
-	assert(!aml_arena_jemalloc_init(&arena, AML_ARENA_JEMALLOC_TYPE_REGULAR));
+
+	assert(!aml_arena_jemalloc_init(&arns, AML_ARENA_JEMALLOC_TYPE_REGULAR));
 	assert(!aml_area_linux_init(&slow,
 				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
 				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arena, MPOL_BIND, slowb->maskp));
+				    &arns, MPOL_BIND, slowb->maskp));
+	assert(!aml_arena_jemalloc_init(&arnf, AML_ARENA_JEMALLOC_TYPE_REGULAR));
 	assert(!aml_area_linux_init(&fast,
 				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
 				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arena, MPOL_BIND, fastb->maskp));
+				    &arnf, MPOL_BIND, fastb->maskp));
 	assert(!aml_dma_linux_seq_init(&dma, 2));
 	assert(!aml_scratch_par_init(&sa, &fast, &slow, &dma, &tiling_prefetch, (size_t)2, (size_t)2));
 	assert(!aml_scratch_par_init(&sb, &fast, &slow, &dma, &tiling_prefetch, (size_t)2, (size_t)2));

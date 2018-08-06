@@ -12,7 +12,8 @@
 
 int main(int argc, char *argv[])
 {
-	AML_ARENA_JEMALLOC_DECL(arena);
+	AML_ARENA_JEMALLOC_DECL(arns);
+	AML_ARENA_JEMALLOC_DECL(arnf);
 	AML_AREA_LINUX_DECL(slow);
 	AML_AREA_LINUX_DECL(fast);
 	struct bitmask *slowb, *fastb;
@@ -25,17 +26,18 @@ int main(int argc, char *argv[])
 	long int N = atol(argv[3]);
 	unsigned long memsize = sizeof(double)*N*N;
 
-	assert(!aml_arena_jemalloc_init(&arena, AML_ARENA_JEMALLOC_TYPE_REGULAR));
+	assert(!aml_arena_jemalloc_init(&arns, AML_ARENA_JEMALLOC_TYPE_REGULAR));
 	assert(!aml_area_linux_init(&slow,
 				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
 				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arena, MPOL_BIND, slowb->maskp));
+				    &arns, MPOL_BIND, slowb->maskp));
+	assert(!aml_arena_jemalloc_init(&arnf, AML_ARENA_JEMALLOC_TYPE_REGULAR));
 	assert(!aml_area_linux_init(&fast,
 				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
 				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arena, MPOL_BIND, fastb->maskp));
+				    &arnf, MPOL_BIND, fastb->maskp));
 	a = aml_area_malloc(&slow, memsize);
 	b = aml_area_malloc(&slow, memsize);
 	c = aml_area_malloc(&fast, memsize);

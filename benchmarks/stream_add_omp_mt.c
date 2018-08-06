@@ -29,8 +29,8 @@ int kernel(unsigned long *a, unsigned long *b, unsigned long *c, size_t n)
 
 int main(int argc, char *argv[])
 {
-	AML_BINDING_SINGLE_DECL(binding);
-	AML_ARENA_JEMALLOC_DECL(arena);
+	AML_ARENA_JEMALLOC_DECL(arns);
+	AML_ARENA_JEMALLOC_DECL(arnf);
 	AML_DMA_LINUX_PAR_DECL(dma);
 	unsigned long nodemask[AML_NODEMASK_SZ];
 	struct bitmask *slowb, *fastb;
@@ -53,20 +53,20 @@ int main(int argc, char *argv[])
 	}
 
 	/* initialize all the supporting struct */
-	assert(!aml_binding_init(&binding, AML_BINDING_TYPE_SINGLE, 0));
 	assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_1D, tilesz, memsize));
-	assert(!aml_arena_jemalloc_init(&arena, AML_ARENA_JEMALLOC_TYPE_REGULAR));
 
+	assert(!aml_arena_jemalloc_init(&arns, AML_ARENA_JEMALLOC_TYPE_REGULAR));
 	assert(!aml_area_linux_init(&slow,
 				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
 				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arena, MPOL_BIND, slowb->maskp));
+				    &arns, MPOL_BIND, slowb->maskp));
+	assert(!aml_arena_jemalloc_init(&arnf, AML_ARENA_JEMALLOC_TYPE_REGULAR));
 	assert(!aml_area_linux_init(&fast,
 				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
 				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arena, MPOL_BIND, fastb->maskp));
+				    &arnf, MPOL_BIND, fastb->maskp));
 	assert(!aml_dma_linux_par_init(&dma, numthreads*2, numthreads));
 	assert(!aml_scratch_seq_init(&sa, &fast, &slow, &dma, &tiling,
 				     (size_t)2*numthreads, (size_t)1));
@@ -124,7 +124,6 @@ int main(int argc, char *argv[])
 	aml_area_linux_destroy(&slow);
 	aml_area_linux_destroy(&fast);
 	aml_tiling_destroy(&tiling, AML_TILING_TYPE_1D);
-	aml_binding_destroy(&binding, AML_BINDING_TYPE_SINGLE);
 	aml_finalize();
 	return 0;
 }
