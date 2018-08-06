@@ -41,7 +41,10 @@ int aml_area_linux_mbind_regular_post_bind(struct aml_area_linux_mbind_data *dat
 					   void *ptr, size_t sz)
 {
 	assert(data != NULL);
-	return mbind(ptr, sz, data->policy, data->nodemask, AML_MAX_NUMA_NODES, 0);
+	/* realign ptr to match mbind requirement that it is aligned on a page */
+	intptr_t aligned = (intptr_t)ptr & (intptr_t)(~(PAGE_SIZE -1));
+	size_t end = sz + ((intptr_t)ptr - aligned);
+	return mbind((void*)aligned, sz, data->policy, data->nodemask, AML_MAX_NUMA_NODES, 0);
 }
 
 struct aml_area_linux_mbind_ops aml_area_linux_mbind_regular_ops = {
