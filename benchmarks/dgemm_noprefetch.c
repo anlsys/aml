@@ -23,10 +23,8 @@ void do_work()
 	int lda = (int)T, ldb, ldc;
 	ldb = lda;
 	ldc = lda;
-	double *ap, *bp, *cp;
 	size_t ndims[2];
 	aml_tiling_ndims(&tiling_row, &ndims[0], &ndims[1]);
-	size_t aoff, boff, coff;
 
 	for(int k = 0; k < ndims[1]; k++)
 	{
@@ -35,6 +33,8 @@ void do_work()
 		{
 			for(int j = 0; j < ndims[1]; j++)
 			{
+				size_t aoff, boff, coff;
+				double *ap, *bp, *cp;
 				aoff = i*ndims[1] + k;
 				boff = k*ndims[1] + j;
 				coff = i*ndims[1] + j;
