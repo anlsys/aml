@@ -15,12 +15,8 @@
 void *aml_area_linux_mmap(struct aml_area_data *a, void *ptr, size_t sz)
 {
 	assert(a != NULL);
-	void *ret = NULL;
 	struct aml_area_linux *area = (struct aml_area_linux *)a;
-	area->ops.mbind.pre_bind(&area->data.mbind);
-	ret = area->ops.mmap.mmap(&area->data.mmap, ptr, sz);
-	area->ops.mbind.post_bind(&area->data.mbind, ret, sz);
-	return ret;
+	return area->ops.mmap.mmap(&area->data.mmap, ptr, sz);
 }
 
 int aml_area_linux_available(const struct aml_area_data *a)
@@ -47,10 +43,15 @@ void *aml_area_linux_malloc(struct aml_area_data *a, size_t size)
 	struct aml_area_linux *area = (struct aml_area_linux *)a;
 	struct aml_arena *arena = (struct aml_arena *)
 		area->ops.manager.get_arena(&area->data.manager);
+	void *ret;
 	assert(arena != NULL);
 	if(size == 0)
 		return NULL;
-	return aml_arena_mallocx(arena, size, AML_ARENA_FLAG_ZERO);
+
+	area->ops.mbind.pre_bind(&area->data.mbind);
+	ret = aml_arena_mallocx(arena, size, AML_ARENA_FLAG_ZERO);
+	area->ops.mbind.post_bind(&area->data.mbind, ret, size);
+	return ret;
 }
 
 void aml_area_linux_free(struct aml_area_data *a, void *ptr)
@@ -85,7 +86,11 @@ void *aml_area_linux_realloc(struct aml_area_data *a, void *ptr, size_t size)
 		aml_arena_dallocx(arena, ptr, 0);
 		return NULL;
 	}
-	return aml_arena_reallocx(arena, ptr, size, 0);
+
+	area->ops.mbind.pre_bind(&area->data.mbind);
+	ptr = aml_arena_reallocx(arena, ptr, size, 0);
+	area->ops.mbind.post_bind(&area->data.mbind, ptr, size);
+	return ptr;
 }
 
 void *aml_area_linux_acquire(struct aml_area_data *a, size_t size)
@@ -94,8 +99,12 @@ void *aml_area_linux_acquire(struct aml_area_data *a, size_t size)
 	struct aml_area_linux *area = (struct aml_area_linux *)a;
 	struct aml_arena *arena = (struct aml_arena *)
 		area->ops.manager.get_arena(&area->data.manager);
+	void *ret;
 	assert(arena != NULL);
-	return aml_arena_mallocx(arena, size, 0);
+	area->ops.mbind.pre_bind(&area->data.mbind);
+	ret = aml_arena_mallocx(arena, size, 0);
+	area->ops.mbind.post_bind(&area->data.mbind, ret, size);
+	return ret;
 }
 
 void aml_area_linux_release(struct aml_area_data *a, void *ptr)
