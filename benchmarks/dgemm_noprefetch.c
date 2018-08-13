@@ -16,7 +16,7 @@ AML_AREA_LINUX_DECL(fast);
 
 size_t memsize, tilesize, N, T;
 double *a, *b, *c;
-size_t globalOffset;
+size_t globalOffset, numThreads;
 struct timespec start, stop;
 
 void do_work()
@@ -25,8 +25,8 @@ void do_work()
 	ldb = lda;
 	ldc = lda;
 	size_t ndims[2];
-	ndims[0] = 4;
-	ndims[1] = 4;
+	ndims[0] = (size_t)sqrt(numThreads);
+	ndims[1] = (size_t)sqrt(numThreads);
 
 	//This for loop will assign each thread a specific C tile in the matrix like so:
 	// (4x4 C matrix with 16 threads, numbers are which tid gets the tile)
@@ -71,7 +71,9 @@ int main(int argc, char* argv[])
 	assert(N % T == 0);
 	memsize = sizeof(double)*N*N;
 	tilesize = sizeof(double)*T*T;
+	numThreads = omp_get_max_threads();
 
+	printf("Memsize: %lu\nTilesize: %lu\nNum Threads: %d\n", memsize, tilesize, numThreads);
 	/* the initial tiling, of 2D square tiles */
 	assert(!aml_tiling_init(&tiling_row, AML_TILING_TYPE_2D_CONTIG_ROWMAJOR,
 				tilesize, memsize, N/T , N/T));
@@ -134,9 +136,9 @@ int main(int argc, char* argv[])
 	//This is hardcoded to split the entire matrix into chunks of 4x4 tiles currently.
 	//This is also going to assume that the matrices are currently properly transformed to match whatever is needed.
 	//Formatting the matrix should not affect # of floating ops or locality in anyway. (But checking may be a good idea)
-	for(int i = 0; i < ((ntilerows*ntilecols) / 16); i += 16 ){
+	for(int i = 0; i < (ntilerows*ntilecols); i += numThreads){
 		globalOffset = (size_t)i;
-	//	printf("globalOffset is now: %d of %d\n", (int)globalOffset, (ntilerows*ntilecols)/16);
+		//printf("globalOffset is now: %d of %d\n", (int)globalOffset, (ntilerows*ntilecols)/numThreads);
 		do_work();
 	}
 
