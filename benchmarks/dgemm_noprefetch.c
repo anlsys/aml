@@ -25,8 +25,8 @@ void do_work()
 	ldb = lda;
 	ldc = lda;
 	size_t ndims[2];
-	aml_tiling_ndims(&tiling_row, &ndims[0], &ndims[1]);
-
+	ndims[0] = 4;
+	ndims[1] = 4;
 
 	//This for loop will assign each thread a specific C tile in the matrix like so:
 	// (4x4 C matrix with 16 threads, numbers are which tid gets the tile)
@@ -136,6 +136,7 @@ int main(int argc, char* argv[])
 	//Formatting the matrix should not affect # of floating ops or locality in anyway. (But checking may be a good idea)
 	for(int i = 0; i < ((ntilerows*ntilecols) / 16); i += 16 ){
 		globalOffset = (size_t)i;
+	//	printf("globalOffset is now: %d of %d\n", (int)globalOffset, (ntilerows*ntilecols)/16);
 		do_work();
 	}
 
@@ -163,7 +164,7 @@ int main(int argc, char* argv[])
 	}
 
 	/* print the flops in GFLOPS */
-	printf("dgemm-noprefetch: %llu %lld %lld %f\n", N, memsize, time,
+	printf("dgemm-noprefetch: %llu %lld %lld %lf\n", N, memsize, time,
 	       flops/1e9);
 	aml_area_free(&slow, a);
 	aml_area_free(&slow, b);
