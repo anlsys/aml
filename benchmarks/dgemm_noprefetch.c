@@ -16,7 +16,9 @@ AML_AREA_LINUX_DECL(fast);
 
 size_t memsize, tilesize, N, T;
 double *a, *b, *c;
-size_t globalOffset, numThreads;
+//globalOffset will give us the Offset for which tile of C is being computed 
+//iterOffset will give us the offset of which tiles of A and B are being used
+unsigned long aGlobalOffset, bGlobalOffset, cGlobalOffset, numThreads;
 struct timespec start, stop;
 
 void do_work()
@@ -44,9 +46,9 @@ void do_work()
 		for (int i = 0; i < ndims[0]; i++){
 			size_t aoff, boff, coff;
 			double *ap, *bp, *cp;
-			aoff = i + (aRow * ndims[1]) + globalOffset;
-			boff = (i * ndims[0]) + globalOffset;
-			coff = k + globalOffset;
+			aoff = i + (aRow * ndims[1]) + aGlobalOffset;
+			boff = (i * ndims[0]) + bGlobalOffset;
+			coff = k + cGlobalOffset;
 			ap = aml_tiling_tilestart(&tiling_col, a, aoff);
 			bp = aml_tiling_tilestart(&tiling_row, b, boff);
 			cp = aml_tiling_tilestart(&tiling_row, c, coff);
@@ -133,13 +135,26 @@ int main(int argc, char* argv[])
 
 	clock_gettime(CLOCK_REALTIME, &start);
 	
-	//This is hardcoded to split the entire matrix into chunks of 4x4 tiles currently.
+	//This is hardcoded to split the entire matrix into chunks that have tiles equal to number of threads currently.
 	//This is also going to assume that the matrices are currently properly transformed to match whatever is needed.
 	//Formatting the matrix should not affect # of floating ops or locality in anyway. (But checking may be a good idea)
-	for(int i = 0; i < (ntilerows*ntilecols); i += numThreads){
-		globalOffset = (size_t)i;
-		//printf("globalOffset is now: %d of %d\n", (int)globalOffset, (ntilerows*ntilecols)/numThreads);
-		do_work();
+	//printf("There are %d tiles in this matrix\n", ntilerows * ntilecols);
+
+	//This loop will iterate through the macro-tiles of A in a row. At the end of the loop, the entire matrix is done
+	for(unsigned long i = 0; i < ntilerows; i += (unsigned long)sqrt(numThreads)){
+		//This loop will iterate through macro-tiles of A in a col. At the end of the loop the entire macro-Column of A and respective C will never be needed again.
+		for(unsigned long j = 0; j < ntilecols; j += (unsigned long)sqrt(numThreads)){
+			aGlobalOffset = (j * ntilerows) + i; // (How many rows to offset in normal tiles) + how many cols to offset in normal tiles  
+			//printf("Dealing with macro-tile A %lu of %lu in macro-column %lu\n", j/(unsigned long)sqrt(numThreads) + 1, ntilerows / (unsigned long)sqrt(numThreads), i/(unsigned long)sqrt(numThreads));
+			//This loop will iterate through the macro-tiles of B in a row. At the end of the inner loop
+			//the A tile being used will not need to be used ever again.
+			for(unsigned long k = 0; k < ntilerows; k += (unsigned long)sqrt(numThreads)){
+				bGlobalOffset = k + i*ntilerows; //(which normal tile in row is beginning of macro-tile) + (How may rows to offset)
+				cGlobalOffset = (j * ntilerows) + k; //(which row) + (which column) 
+				do_work();
+			}
+		}
+		
 	}
 
 	clock_gettime(CLOCK_REALTIME, &stop);
