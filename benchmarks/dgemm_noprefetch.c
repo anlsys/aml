@@ -16,6 +16,7 @@ AML_AREA_LINUX_DECL(fast);
 
 size_t memsize, tilesize, N, T;
 double *a, *b, *c;
+size_t globalOffset;
 struct timespec start, stop;
 
 void do_work()
@@ -26,25 +27,32 @@ void do_work()
 	size_t ndims[2];
 	aml_tiling_ndims(&tiling_row, &ndims[0], &ndims[1]);
 
-	for(int k = 0; k < ndims[1]; k++)
-	{
-		#pragma omp parallel for
-		for(int i = 0; i < ndims[0]; i++)
-		{
-			for(int j = 0; j < ndims[1]; j++)
-			{
-				size_t aoff, boff, coff;
-				double *ap, *bp, *cp;
-				aoff = i*ndims[1] + k;
-				boff = k*ndims[1] + j;
-				coff = i*ndims[1] + j;
-				ap = aml_tiling_tilestart(&tiling_col, a, aoff);
-				bp = aml_tiling_tilestart(&tiling_row, b, boff);
-				cp = aml_tiling_tilestart(&tiling_row, c, coff);
-				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, ldc, lda, ldb, 1.0, ap, lda, bp, ldb, 1.0, cp, ldc);
-			}
+
+	//This for loop will assign each thread a specific C tile in the matrix like so:
+	// (4x4 C matrix with 16 threads, numbers are which tid gets the tile)
+	//
+	// 0 	1	2 	3
+	// 4 	5 	6 	7
+	// 8 	9 	10 	11
+	// 12	13	14	15
+	//
+	//This method will be more cache efficient and hopefully will help prefetching and L2 hit rate
+	#pragma omp parallel for
+	for(int k = 0; k < ndims[0] * ndims[1]; k++){
+		int bCol = k % ndims[0];
+		int aRow = k / ndims[1];
+		for (int i = 0; i < ndims[0]; i++){
+			size_t aoff, boff, coff;
+			double *ap, *bp, *cp;
+			aoff = i + (aRow * ndims[1]) + globalOffset;
+			boff = (i * ndims[0]) + globalOffset;
+			coff = k + globalOffset;
+			ap = aml_tiling_tilestart(&tiling_col, a, aoff);
+			bp = aml_tiling_tilestart(&tiling_row, b, boff);
+			cp = aml_tiling_tilestart(&tiling_row, c, coff);
+			cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, ldc, lda, ldb, 1.0, ap, lda, bp, ldb, 1.0, cp, ldc);
 		}
-	}
+	}	
 }
 
 int main(int argc, char* argv[])
@@ -122,7 +130,15 @@ int main(int argc, char* argv[])
 	}
 
 	clock_gettime(CLOCK_REALTIME, &start);
-	do_work();
+	
+	//This is hardcoded to split the entire matrix into chunks of 4x4 tiles currently.
+	//This is also going to assume that the matrices are currently properly transformed to match whatever is needed.
+	//Formatting the matrix should not affect # of floating ops or locality in anyway. (But checking may be a good idea)
+	for(int i = 0; i < ((ntilerows*ntilecols) / 16); i += 16 ){
+		globalOffset = (size_t)i;
+		do_work();
+	}
+
 	clock_gettime(CLOCK_REALTIME, &stop);
 	long long int time = 0;
 	time =  (stop.tv_nsec - start.tv_nsec) +
