@@ -11,4 +11,5 @@ noinst_PROGRAMS = stream_add_pth_st \
 		  dgemm_vanilla \
 		  dgemm_mkl \
 		  dgemm_prefetch \
-		  dgemm_noprefetch
+		  dgemm_noprefetch \
+		  cholesky_mkl
