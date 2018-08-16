@@ -12,21 +12,20 @@
 unsigned long tilesize;
 
 
-#pragma omp parallel
-#pragma omp master
 int cholOMP(double* L, unsigned long n){
+	#pragma omp parallel
 	for(int k = 0; k < n; k++){
-		#pragma omp task depend(inout:L(k*n + k)[0,n*n])
+		#pragma omp task depend(inout:L[(k*n + k):n])
 		{ LAPACKE_dpotrf(LAPACK_ROW_MAJOR, 'L', n, &L[k*n + k], n); }
 		for(int m = k + 1; m < n; m++)
-			#pragma omp task depend(in:L(k*n + k)[0, n*n]) depend(inout:L(m*n + k)[0,n*n])
+			#pragma omp task depend(in:L[(k*n + k):n]) depend(inout:L[(m*n + k):n])
 			{ cblas_dtrsm(CblasRowMajor, CblasLeft, CblasLower, CblasNoTrans, CblasNonUnit, n, n, 1.0, &L[k*n + k], n, &L[m*n + k, n], n);}
 		for(int m = k + 1; m < n; m++){
-			#pragma omp task depend(in:L(m*n + k)[0:n*n]) depend(inout:L(m*n + m)[0,n*n])
+			#pragma omp task depend(in:L[(m*n + k):n]) depend(inout:L[(m*n + m):n])
 			{cblas_dsyrk(CblasRowMajor, CblasLower, CblasNoTrans, n, n, 1.0, &L[m*n + k], n, 1.0, &L[m*n + m], n);}
 			for(int i = k + 1; i < m; i++)
-				#pragma omp task depend(in:L(m*n + i)[0,n*n]) \
-					depend(inout:L(m*n + i)[0:n*n])
+				#pragma omp task depend(in:L[(m*n + i):n]) \
+					depend(inout:L[(m*n + i):n])
 				{ cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, n, n, n, 1.0, &L[m*n + k], n, &L[i * n + k], n, 1.0, &L[m*n + i], n);}
 		}
 	}
