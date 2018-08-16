@@ -9,41 +9,27 @@
 #include <math.h>
 #include <stdlib.h>
 
+unsigned long tilesize;
 
+
+#pragma omp parallel
+#pragma omp master
 int cholOMP(double* L, unsigned long n){
-	unsigned long i, j, k;
-        omp_lock_t writelock;
-        omp_init_lock(&writelock);
-        
-        for (j = 0; j < n; j++) {
-                
-		for (i = 0; i < j; i++){                        
-                        L[i*n + j] = 0;
-                }
-                                
-                #pragma omp parallel for shared(L) private(k)
-                for (k = 0; k < i; k++) {
-                        omp_set_lock(&writelock);
-                        L[j*n + j] = L[j*n + j] - L[j*n + k] * L[j*n + k]; //Critical section.
-                        omp_unset_lock(&writelock);
-                }                        
-                
-                #pragma omp single        
-                L[i*n + i] = sqrt(L[j*n + j]);        
-                
-                #pragma omp parallel for shared(L) private(i, k)
-                for (i = j+1; i < n; i++) {
-                        for (k = 0; k < j; k++) {
-                                L[i*n + j] = L[i*n + j] - L[i*n + k] * L[j*n +k];
-                        }
-                        L[i*n + j] = L[i*n + j] / L[j*n + j];
-                }                
-        
-        }
-
-	omp_destroy_lock(&writelock);
-
-	return 0;
+	for(int k = 0; k < n; k++){
+		#pragma omp task depend(inout:L(k*n + k)[0,n*n])
+		{ LAPACKE_dpotrf(LAPACK_ROW_MAJOR, 'L', n, &L[k*n + k], n); }
+		for(int m = k + 1; m < n; m++)
+			#pragma omp task depend(in:L(k*n + k)[0, n*n]) depend(inout:L(m*n + k)[0,n*n])
+			{ cblas_dtrsm(CblasRowMajor, CblasLeft, CblasLower, CblasNoTrans, CblasNonUnit, n, n, 1.0, &L[k*n + k], n, &L[m*n + k, n], n);}
+		for(int m = k + 1; m < n; m++){
+			#pragma omp task depend(in:L(m*n + k)[0:n*n]) depend(inout:L(m*n + m)[0,n*n])
+			{cblas_dsyrk(CblasRowMajor, CblasLower, CblasNoTrans, n, n, 1.0, &L[m*n + k], n, 1.0, &L[m*n + m], n);}
+			for(int i = k + 1; i < m; i++)
+				#pragma omp task depend(in:L(m*n + i)[0,n*n]) \
+					depend(inout:L(m*n + i)[0:n*n])
+				{ cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, n, n, n, 1.0, &L[m*n + k], n, &L[i * n + k], n, 1.0, &L[m*n + i], n);}
+		}
+	}
 }
 
 
@@ -100,7 +86,7 @@ int main(int argc, char *argv[])
 
 	clock_gettime(CLOCK_REALTIME, &start0);
 		
-		cholOMP(b, N);		
+	cholOMP(b, N);		
 
 	clock_gettime(CLOCK_REALTIME, &stop0);
 	time =  (stop0.tv_nsec - start0.tv_nsec) +
