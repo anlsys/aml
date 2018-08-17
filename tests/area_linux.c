@@ -7,6 +7,7 @@ void doit(struct aml_area *area)
 {
 	void *ptr;
 	unsigned long *a, *b, *c;
+	intptr_t iptr;
 
 	/* try to allocate something */
 	ptr = aml_area_malloc(area, sizeof(unsigned long) * 10);
@@ -29,6 +30,14 @@ void doit(struct aml_area *area)
 	assert(a[0] == 0);
 	assert(a[0] == a[9]);
 	aml_area_free(area, ptr);
+
+	/* memalign */
+	ptr = aml_area_memalign(area, 16, sizeof(unsigned long));
+	assert(ptr != NULL);
+	iptr = ptr;
+	assert(iptr % 16 == 0);
+	aml_area_free(area, ptr);
+
 
 	/* libc API compatibility: calloc(0): same as malloc(0) */
 	ptr = aml_area_calloc(area, 0, sizeof(unsigned long));

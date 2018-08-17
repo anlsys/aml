@@ -7,6 +7,7 @@ int main(int argc, char *argv[])
 	void *ptr;
 	unsigned long *a, *b, *c;
 	unsigned long i;
+	intptr_t iptr;
 
 	/* library initialization */
 	aml_init(&argc, &argv);
@@ -34,6 +35,13 @@ int main(int argc, char *argv[])
 	a = (unsigned long *)ptr;
 	assert(a[0] == 0);
 	assert(a[0] == a[9]);
+	aml_area_free(&area, ptr);
+
+	/* memalign */
+	ptr = aml_area_memalign(&area, 16, sizeof(unsigned long));
+	assert(ptr != NULL);
+	iptr = ptr;
+	assert(iptr % 16 == 0);
 	aml_area_free(&area, ptr);
 
 	/* libc API compatibility: calloc(0): same as malloc(0) */

@@ -126,6 +126,8 @@ int aml_vector_destroy(struct aml_vector *vector);
 /* If passed as a flag to arena's mallocx()/reallocx() routines, the newly
  * allocated memory will be 0-initialized. */
 #define AML_ARENA_FLAG_ZERO ((int)0x40)
+/* As a flag to arena mallocx/reallocx, will align on (1<<a). */
+#define AML_ARENA_FLAG_ALIGN(a) ((int)(a))
 
 /* opaque handle to configuration data */
 struct aml_arena_data;
@@ -271,6 +273,7 @@ struct aml_area_ops {
 	void *(*malloc)(struct aml_area_data *area, size_t size);
 	void (*free)(struct aml_area_data *area, void *ptr);
 	void *(*calloc)(struct aml_area_data *area, size_t num, size_t size);
+	void *(*memalign)(struct aml_area_data *area, size_t align, size_t size);
 	void *(*realloc)(struct aml_area_data *area, void *ptr, size_t size);
 	void *(*acquire)(struct aml_area_data *area, size_t size);
 	void (*release)(struct aml_area_data *area, void *ptr);
@@ -711,6 +714,14 @@ void aml_area_free(struct aml_area *area, void *ptr);
  * Returns a pointer to the newly allocated memory buffer; NULL if unsuccessful.
  */
 void *aml_area_calloc(struct aml_area *area, size_t num, size_t size);
+/*
+ * Allocates a new, aligned, memory buffer from a memory area.
+ * "area": an initialized memory area structure.
+ * "align": an alignment for the returned pointer.
+ * "size": the buffer size in bytes; if 0 is passed, NULL will be returned.
+ * Returns a pointer to the newly allocated memory buffer; NULL if unsuccessful.
+ */
+void *aml_area_memalign(struct aml_area *area, size_t align, size_t size);
 /*
  * Changes the size of a previously allocated memory buffer.
  * "area": an initialized memory area structure.
