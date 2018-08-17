@@ -122,9 +122,10 @@ int aml_vector_destroy(struct aml_vector *vector);
  * areas.
  ******************************************************************************/
 
+/* Arena Flags: access to useful jemalloc flags, with the same values. */
 /* If passed as a flag to arena's mallocx()/reallocx() routines, the newly
- * allocated memory will be 0-initialized.  */
-#define AML_ARENA_FLAG_ZERO 1
+ * allocated memory will be 0-initialized. */
+#define AML_ARENA_FLAG_ZERO ((int)0x40)
 
 /* opaque handle to configuration data */
 struct aml_arena_data;
