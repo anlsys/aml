@@ -9,24 +9,27 @@
 #include <math.h>
 #include <stdlib.h>
 
-unsigned long tilesize;
+unsigned long tilesz, tileElements, memsize, tilesPerRow, N, T;
 
+AML_TILING_2D_CONTIG_ROWMAJOR_DECL(tiling_row);
+AML_AREA_LINUX_DECL(slow);
+AML_AREA_LINUX_DECL(fast);
 
-int cholOMP(double* L, unsigned long n){
+int cholOMP(double* L){
 	#pragma omp parallel
-	for(int k = 0; k < n; k++){
-		#pragma omp task depend(inout:L[(k*n + k):n])
-		{ LAPACKE_dpotrf(LAPACK_ROW_MAJOR, 'L', n, &L[k*n + k], n); }
-		for(int m = k + 1; m < n; m++)
-			#pragma omp task depend(in:L[(k*n + k):n]) depend(inout:L[(m*n + k):n])
-			{ cblas_dtrsm(CblasRowMajor, CblasLeft, CblasLower, CblasNoTrans, CblasNonUnit, n, n, 1.0, &L[k*n + k], n, &L[m*n + k, n], n);}
-		for(int m = k + 1; m < n; m++){
-			#pragma omp task depend(in:L[(m*n + k):n]) depend(inout:L[(m*n + m):n])
-			{cblas_dsyrk(CblasRowMajor, CblasLower, CblasNoTrans, n, n, 1.0, &L[m*n + k], n, 1.0, &L[m*n + m], n);}
+	for(int k = 0; k < tilesPerRow; k++){
+		#pragma omp task depend(inout:L[(k*tilesPerRow*tileElements + k*tileElements) : tileElements])
+		{ LAPACKE_dpotrf(LAPACK_ROW_MAJOR, 'L', T, &L[(k*tilesPerRow + k*tileElements)], T); }
+		for(int m = k + 1; m < tilesPerRow; m++)
+			#pragma omp task depend(in:L[(k*tilesPerRow*tileElements + k*tileElements) : tileElements]) depend(inout:L[(m*tilesPerRow*tileElements + k*tileElements) : tileElements])
+			{ cblas_dtrsm(CblasRowMajor, CblasLeft, CblasLower, CblasNoTrans, CblasNonUnit, T, T, 1.0, &L[(k*tilesPerRow*tileElements + k*tileElements)], T, &L[m*tilesPerRow*tileElements + k*tileElements], T);}
+		for(int m = k + 1; m < tilesPerRow; m++){
+			#pragma omp task depend(in:L[(m*tilesPerRow*tileElements + k*tileElements) : tileElements]) depend(inout:L[(m*tilesPerRow*tileElements + m*tileElements) : tileElements])
+			{cblas_dsyrk(CblasRowMajor, CblasLower, CblasNoTrans, T, T, 1.0, &L[m*tilesPerRow*tileElements + k*tileElements], T, 1.0, &L[m*tilesPerRow*tileElements + m*tileElements], T);}
 			for(int i = k + 1; i < m; i++)
-				#pragma omp task depend(in:L[(m*n + i):n]) \
-					depend(inout:L[(m*n + i):n])
-				{ cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, n, n, n, 1.0, &L[m*n + k], n, &L[i * n + k], n, 1.0, &L[m*n + i], n);}
+				#pragma omp task depend(in:L[(m*tilesPerRow*tileElements + i*tileElements) : tileElements]) \
+					depend(inout:L[(m*tilesPerRow*tileElements + i*tileElements) : tileElements])
+				{ cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, T, T, T, 1.0, &L[m*tilesPerRow*tileElements + k*tileElements], T, &L[i*tilesPerRow*tileElements + k*tileElements], T, 1.0, &L[m*tilesPerRow*tileElements + i*tileElements], T);}
 		}
 	}
 }
@@ -41,12 +44,16 @@ int main(int argc, char *argv[])
 	struct bitmask *slowb, *fastb;
 	struct timespec start, stop;
 	struct timespec start0, stop0;
-	double *a, *b, *c;
+	double *a;
 	aml_init(&argc, &argv);
 	fastb = numa_parse_nodestring_all(argv[1]);
 	slowb = numa_parse_nodestring_all(argv[2]);
-	unsigned long N = atol(argv[3]);
-	unsigned long memsize = sizeof(double)*N*N;
+	N = atol(argv[3]);
+	T = atol(argv[4]);
+ 	memsize = sizeof(double)*N*N;
+	tilesz = sizeof(double)*T*T;
+	tileElements = T * T;
+	tilesPerRow = N / T;
 
 	assert(!aml_arena_jemalloc_init(&arns, AML_ARENA_JEMALLOC_TYPE_REGULAR));
 	assert(!aml_area_linux_init(&slow,
@@ -61,13 +68,15 @@ int main(int argc, char *argv[])
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
 				    &arnf, MPOL_BIND, fastb->maskp));
 	a = aml_area_malloc(&fast, memsize);
-	b = aml_area_malloc(&fast, memsize);
-	assert(a != NULL && b != NULL && c != NULL);
+
+	assert(!aml_tiling_init(&tiling_row, AML_TILING_TYPE_2D_CONTIG_ROWMAJOR,
+				tilesz, memsize, N/T , N/T));
+
+	assert(a != NULL);
 
 	double alpha = 1.0, beta = 1.0;
 	for(unsigned long i = 0; i < N*N; i++){
 		a[i] = (double)1.0;
-		b[i] = (double)1.0;
 	}
 
 	clock_gettime(CLOCK_REALTIME, &start);
@@ -85,7 +94,7 @@ int main(int argc, char *argv[])
 
 	clock_gettime(CLOCK_REALTIME, &start0);
 		
-	cholOMP(b, N);		
+	cholOMP(a);		
 
 	clock_gettime(CLOCK_REALTIME, &stop0);
 	time =  (stop0.tv_nsec - start0.tv_nsec) +
@@ -93,10 +102,9 @@ int main(int argc, char *argv[])
 	flops = ((pow(N, 3.0)/3)/(time/1e9));
 	printf("cholesky-aml: %llu %lld %lld %lf\n", N, memsize, time, flops/1e9);	
 
-	//aml_area_free(&fast, a);
-	//aml_area_free(&slow, b);
-	//aml_area_linux_destroy(&slow);
-	//aml_area_linux_destroy(&fast);
-	//aml_finalize();
+	aml_area_free(&fast, a);
+	aml_area_linux_destroy(&slow);
+	aml_area_linux_destroy(&fast);
+	aml_finalize();
 	return 0;
 }
