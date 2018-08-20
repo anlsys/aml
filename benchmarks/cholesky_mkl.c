@@ -17,6 +17,7 @@ AML_AREA_LINUX_DECL(fast);
 
 int cholOMP(double* L){
 	#pragma omp parallel
+	#pragma omp master
 	for(int k = 0; k < tilesPerRow; k++){
 		#pragma omp task depend(inout:L[(k*tilesPerRow*tileElements + k*tileElements) : tileElements])
 		{ LAPACKE_dpotrf(LAPACK_ROW_MAJOR, 'L', T, &L[(k*tilesPerRow + k*tileElements)], T); }
