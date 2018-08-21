@@ -25,6 +25,12 @@ void *aml_area_calloc(struct aml_area *area, size_t num, size_t size)
 	return area->ops->calloc(area->data, num, size);
 }
 
+void *aml_area_memalign(struct aml_area *area, size_t align, size_t size)
+{
+	assert(area != NULL);
+	return area->ops->memalign(area->data, align, size);
+}
+
 void *aml_area_realloc(struct aml_area *area, void *ptr, size_t size)
 {
 	assert(area != NULL);

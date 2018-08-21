@@ -57,6 +57,13 @@ void *aml_area_posix_calloc(struct aml_area_data *data, size_t nm, size_t size)
 	return calloc(nm, size);
 }
 
+void *aml_area_posix_memalign(struct aml_area_data *data, size_t align,
+			      size_t size)
+{
+	assert(data != NULL);
+	return aligned_alloc(align, size);
+}
+
 void *aml_area_posix_realloc(struct aml_area_data *data, void *ptr, size_t size)
 {
 	assert(data != NULL);
@@ -79,6 +86,7 @@ struct aml_area_ops aml_area_posix_ops = {
 	aml_area_posix_malloc,
 	aml_area_posix_free,
 	aml_area_posix_calloc,
+	aml_area_posix_memalign,
 	aml_area_posix_realloc,
 	aml_area_posix_acquire,
 	aml_area_posix_release,

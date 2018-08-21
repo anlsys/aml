@@ -175,15 +175,6 @@ static extent_hooks_t aml_arena_extent_hooks = {
  * Tunable by changing initialization flags
  ******************************************************************************/
 
-
-int aml_arena_jemalloc_flags(int flags)
-{
-	int ret = 0;
-	if(flags & AML_ARENA_FLAG_ZERO)
-		ret |= MALLOCX_ZERO;
-	return ret;
-}
-
 /* TODO: make the function idempotent */
 int aml_arena_jemalloc_register_arena(struct aml_arena_data *a,
 				      struct aml_area *area)
@@ -238,7 +229,7 @@ void *aml_arena_jemalloc_mallocx(struct aml_arena_data *a, size_t sz,
 {
 	struct aml_arena_jemalloc_data *arena =
 		(struct aml_arena_jemalloc_data*) a;
-	int flags = arena->flags | aml_arena_jemalloc_flags(extraflags);
+	int flags = arena->flags | extraflags;
 	return jemk_aml_mallocx(sz, flags);
 }
 
@@ -247,7 +238,7 @@ void *aml_arena_jemalloc_reallocx(struct aml_arena_data *a, void *ptr,
 {
 	struct aml_arena_jemalloc_data *arena =
 		(struct aml_arena_jemalloc_data*) a;
-	int flags = arena->flags | aml_arena_jemalloc_flags(extraflags);
+	int flags = arena->flags | extraflags;
 	return jemk_aml_rallocx(ptr, sz, flags);
 }
 
@@ -256,7 +247,7 @@ void aml_arena_jemalloc_dallocx(struct aml_arena_data *a, void *ptr,
 {
 	struct aml_arena_jemalloc_data *arena =
 		(struct aml_arena_jemalloc_data*) a;
-	int flags = arena->flags | aml_arena_jemalloc_flags(extraflags);
+	int flags = arena->flags | extraflags;
 	jemk_aml_dallocx(ptr, flags);
 }
 

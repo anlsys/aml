@@ -72,6 +72,25 @@ void *aml_area_linux_calloc(struct aml_area_data *a, size_t num, size_t size)
 	return aml_area_linux_malloc(a, num*size);
 }
 
+void *aml_area_linux_memalign(struct aml_area_data *a, size_t align,
+			      size_t size)
+{
+	assert(a != NULL);
+	struct aml_area_linux *area = (struct aml_area_linux *)a;
+	struct aml_arena *arena = (struct aml_arena *)
+		area->ops.manager.get_arena(&area->data.manager);
+	void *ret;
+	assert(arena != NULL);
+	if(size == 0)
+		return NULL;
+
+	area->ops.mbind.pre_bind(&area->data.mbind);
+	ret = aml_arena_mallocx(arena, size, AML_ARENA_FLAG_ZERO |
+				AML_ARENA_FLAG_ALIGN(align));
+	area->ops.mbind.post_bind(&area->data.mbind, ret, size);
+	return ret;
+}
+
 void *aml_area_linux_realloc(struct aml_area_data *a, void *ptr, size_t size)
 {
 	assert(a != NULL);
@@ -121,6 +140,7 @@ struct aml_area_ops aml_area_linux_ops = {
 	aml_area_linux_malloc,
 	aml_area_linux_free,
 	aml_area_linux_calloc,
+	aml_area_linux_memalign,
 	aml_area_linux_realloc,
 	aml_area_linux_acquire,
 	aml_area_linux_release,
