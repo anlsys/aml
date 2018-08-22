@@ -1,4 +1,4 @@
-AM_CFLAGS = -I$(top_srcdir)/src -I. @OPENMP_FLAG@
+AM_CFLAGS = -I$(top_srcdir)/src -I. -qopenmp @OPENMP_FLAG@
 AM_LDFLAGS = ../src/libaml.la ../jemalloc/lib/libjemalloc-aml.so @OPENMP_FLAG@
 
 noinst_LIBRARIES = libutils.a
@@ -12,4 +12,6 @@ noinst_PROGRAMS = stream_add_pth_st \
 		  dgemm_mkl \
 		  dgemm_prefetch \
 		  dgemm_noprefetch \
-		  cholesky_mkl
+		  cholesky_mkl \
+		  cholesky_prefetch \
+		  cholesky_noprefetch
