@@ -9,8 +9,8 @@
 #include <math.h>
 #include <stdlib.h>
 
-AML_TILING_2D_CONTIG_ROWMAJOR_DECL(tiling_row);
-AML_TILING_2D_CONTIG_COLMAJOR_DECL(tiling_col);
+AML_TILING_2D_ROWMAJOR_DECL(tiling_row);
+AML_TILING_2D_COLMAJOR_DECL(tiling_col);
 AML_AREA_LINUX_DECL(slow);
 AML_AREA_LINUX_DECL(fast);
 
@@ -65,9 +65,9 @@ int main(int argc, char* argv[])
 	tilesize = sizeof(double)*T*T;
 
 	/* the initial tiling, of 2D square tiles */
-	assert(!aml_tiling_init(&tiling_row, AML_TILING_TYPE_2D_CONTIG_ROWMAJOR,
+	assert(!aml_tiling_init(&tiling_row, AML_TILING_TYPE_2D_ROWMAJOR,
 				tilesize, memsize, N/T , N/T));
-	assert(!aml_tiling_init(&tiling_col, AML_TILING_TYPE_2D_CONTIG_COLMAJOR,
+	assert(!aml_tiling_init(&tiling_col, AML_TILING_TYPE_2D_COLMAJOR,
 				tilesize, memsize, N/T , N/T));
 
 	assert(!aml_arena_jemalloc_init(&arns, AML_ARENA_JEMALLOC_TYPE_REGULAR));
@@ -154,8 +154,8 @@ int main(int argc, char* argv[])
 	aml_area_free(&fast, c);
 	aml_area_linux_destroy(&slow);
 	aml_area_linux_destroy(&fast);
-	aml_tiling_destroy(&tiling_row, AML_TILING_TYPE_2D_CONTIG_ROWMAJOR);
-	aml_tiling_destroy(&tiling_col, AML_TILING_TYPE_2D_CONTIG_ROWMAJOR);
+	aml_tiling_destroy(&tiling_row, AML_TILING_TYPE_2D_ROWMAJOR);
+	aml_tiling_destroy(&tiling_col, AML_TILING_TYPE_2D_ROWMAJOR);
 	aml_finalize();
 	return 0;
 }

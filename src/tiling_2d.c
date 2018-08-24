@@ -5,8 +5,6 @@
  * 2D Iterator
  ******************************************************************************/
 
-
-
 int aml_tiling_iterator_2d_reset(struct aml_tiling_iterator_data *data)
 {
 	struct aml_tiling_iterator_2d_data *it =
@@ -40,7 +38,6 @@ int aml_tiling_iterator_2d_get(const struct aml_tiling_iterator_data *data,
 	return 0;
 }
 
-
 struct aml_tiling_iterator_ops aml_tiling_iterator_2d_ops = {
 	aml_tiling_iterator_2d_reset,
 	aml_tiling_iterator_2d_next,
@@ -50,6 +47,7 @@ struct aml_tiling_iterator_ops aml_tiling_iterator_2d_ops = {
 
 /*******************************************************************************
  * 2D ops
+ * Tileids are always in rowmajor: for NM matrix[i][j], tileid = i*M + j
  ******************************************************************************/
 
 size_t aml_tiling_2d_tilesize(const struct aml_tiling_data *t, int tileid)
@@ -59,26 +57,33 @@ size_t aml_tiling_2d_tilesize(const struct aml_tiling_data *t, int tileid)
 	return data->blocksize;
 }
 
-size_t aml_tiling_2d_tilerowsize(const struct aml_tiling_data *t, int tileid)
-{
-	const struct aml_tiling_2d_data *data =
-		(const struct aml_tiling_2d_data *)t;
-	return data->tilerowsize;
-}
-
-size_t aml_tiling_2d_tilecolsize(const struct aml_tiling_data *t, int tileid)
-{
-	const struct aml_tiling_2d_data *data =
-		(const struct aml_tiling_2d_data *)t;
-	return data->tilecolsize;
-}
-
-void* aml_tiling_2d_tilestart(const struct aml_tiling_data *t, const void *ptr, int tileid)
+void* aml_tiling_2d_rowmajor_tilestart(const struct aml_tiling_data *t,
+					      const void *ptr, int tileid)
 {
 	const struct aml_tiling_2d_data *data =
 		(const struct aml_tiling_2d_data *)t;
 	intptr_t p = (intptr_t)ptr;
-	return (void *)(p + tileid*data->blocksize);
+	size_t i = tileid/data->ndims[1];
+	size_t j = tileid % data->ndims[1];
+	if(i >= data->ndims[0] || j >= data->ndims[1])
+		return NULL;
+	else
+		return (void *)(p + tileid*data->blocksize);
+}
+
+void* aml_tiling_2d_colmajor_tilestart(const struct aml_tiling_data *t,
+					      const void *ptr, int tileid)
+{
+	const struct aml_tiling_2d_data *data =
+		(const struct aml_tiling_2d_data *)t;
+	intptr_t p = (intptr_t)ptr;
+	size_t i = tileid/data->ndims[1];
+	size_t j = tileid % data->ndims[1];
+	size_t offset = j*data->ndims[0] + i;
+	if(i >= data->ndims[0] || j >= data->ndims[1])
+		return NULL;
+	else
+		return (void *)(p + offset*data->blocksize);
 }
 
 int aml_tiling_2d_ndims(const struct aml_tiling_data *t, va_list ap)
@@ -88,25 +93,22 @@ int aml_tiling_2d_ndims(const struct aml_tiling_data *t, va_list ap)
 	size_t *x = va_arg(ap, size_t *);
 	size_t *y = va_arg(ap, size_t *);
 	/* looks totally wrong */
-	*x = data->totalsize/(data->blocksize*data->tilecolsize);
-	*y = data->totalsize/(data->blocksize*data->tilerowsize);
+	*x = data->ndims[0];
+	*y = data->ndims[1];
 	return 0;
 }
-
 
 int aml_tiling_2d_init_iterator(struct aml_tiling_data *t,
 				struct aml_tiling_iterator *it, int flags)
 {
 	assert(it->data != NULL);
-	struct aml_tiling_iterator_1d_data *data =
+	struct aml_tiling_iterator_2d_data *data =
 		(struct aml_tiling_iterator_2d_data *)it->data;
 	it->ops = &aml_tiling_iterator_2d_ops;
 	data->i = 0;
 	data->tiling = (struct aml_tiling_2d_data *)t;
 	return 0;
 }
-
-
 
 int aml_tiling_2d_create_iterator(struct aml_tiling_data *t,
 				  struct aml_tiling_iterator **it, int flags)
@@ -132,12 +134,20 @@ int aml_tiling_2d_destroy_iterator(struct aml_tiling_data *t,
 }
 
 
-struct aml_tiling_ops aml_tiling_2d_ops = {
+struct aml_tiling_ops aml_tiling_2d_rowmajor_ops = {
 	aml_tiling_2d_create_iterator,
 	aml_tiling_2d_init_iterator,
 	aml_tiling_2d_destroy_iterator,
 	aml_tiling_2d_tilesize,
-	aml_tiling_2d_tilerowsize,
-	aml_tiling_2d_tilecolsize,
-	aml_tiling_2d_tilestart,
+	aml_tiling_2d_rowmajor_tilestart,
+	aml_tiling_2d_ndims,
+};
+
+struct aml_tiling_ops aml_tiling_2d_colmajor_ops = {
+	aml_tiling_2d_create_iterator,
+	aml_tiling_2d_init_iterator,
+	aml_tiling_2d_destroy_iterator,
+	aml_tiling_2d_tilesize,
+	aml_tiling_2d_colmajor_tilestart,
+	aml_tiling_2d_ndims,
 };

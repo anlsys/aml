@@ -12,8 +12,7 @@ AREA_POSIX_CSOURCES = area_posix.c
 
 TILING_CSOURCES = tiling.c \
 		  tiling_1d.c \
-		  tiling_2d.c \
-		  tiling_2d_contig.c
+		  tiling_2d.c
 
 BINDING_CSOURCES = binding.c \
 		   binding_single.c \
