@@ -10,6 +10,7 @@ noinst_PROGRAMS = stream_add_pth_st \
 		  stream_add_omp_mt \
 		  dgemm_vanilla \
 		  dgemm_mkl \
+		  dgemm_cblas \
 		  dgemm_prefetch \
 		  dgemm_prefetch_blocked \
 		  dgemm_noprefetch \
@@ -35,10 +36,16 @@ dgemm_noprefetch_gemm320_task_LDADD = $(gem_dir)/gemm_320_320_320.o
 dgemm_noprefetch_gemm384_task_LDADD = $(gem_dir)/gemm_384_384_384.o
 dgemm_noprefetch_gemm448_task_LDADD = $(gem_dir)/gemm_448_448_448.o
 dgemm_noprefetch_gemm512_task_LDADD = $(gem_dir)/gemm_512_512_512.o
-dgemm_noprefetch_gemm256_cblas_task_LDADD = -lblas
-dgemm_noprefetch_gemm320_cblas_task_LDADD = -lblas
-dgemm_noprefetch_gemm384_cblas_task_LDADD = -lblas
-dgemm_noprefetch_gemm448_cblas_task_LDADD = -lblas
-dgemm_noprefetch_gemm512_cblas_task_LDADD = -lblas
+dgemm_cblas_LDFLAGS = $(AM_LDFLAGS) -lblas
+dgemm_noprefetch_gemm256_cblas_task_LDFLAGS = $(AM_LDFLAGS) -lblas
+dgemm_noprefetch_gemm320_cblas_task_LDFLAGS = $(AM_LDFLAGS) -lblas
+dgemm_noprefetch_gemm384_cblas_task_LDFLAGS = $(AM_LDFLAGS) -lblas
+dgemm_noprefetch_gemm448_cblas_task_LDFLAGS = $(AM_LDFLAGS) -lblas
+dgemm_noprefetch_gemm512_cblas_task_LDFLAGS = $(AM_LDFLAGS) -lblas
 dgemm_prefetch_blocked_LDADD = $(gem_dir)/gemm_256_256_256.o $(gem_dir)/gemm_320_320_320.o $(gem_dir)/gemm_384_384_384.o $(gem_dir)/gemm_448_448_448.o $(gem_dir)/gemm_512_512_512.o
+dgemm_vanilla_LDFLAGS = $(AM_LDFLAGS) -lmkl_rt
+dgemm_mkl_LDFLAGS = $(AM_LDFLAGS) -lmkl_rt
+dgemm_noprefetch_LDFLAGS = $(AM_LDFLAGS) -lmkl_rt
+dgemm_noprefetch_task_LDFLAGS = $(AM_LDFLAGS) -lmkl_rt
+dgemm_prefetch_LDFLAGS = $(AM_LDFLAGS) -lmkl_rt
 #dgemm_noprefetch_gemm128_LDADD = gemm_128_128_12820180820_58220_1hgw8bn.o
