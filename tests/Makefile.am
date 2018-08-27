@@ -13,7 +13,7 @@ UTILS_TESTS = vector
 
 ARENA_JEMALLOC_TESTS = arena_jemalloc
 
-AREA_LINUX_TESTS = linux_mbind \
+AREA_LINUX_TESTS = \
 		   linux_mmap \
 		   linux_manager \
 		   area_linux

@@ -34,7 +34,7 @@ void doit(struct aml_area *area)
 	/* memalign */
 	ptr = aml_area_memalign(area, 16, sizeof(unsigned long));
 	assert(ptr != NULL);
-	iptr = ptr;
+	iptr = (intptr_t)ptr;
 	assert(iptr % 16 == 0);
 	aml_area_free(area, ptr);
 
