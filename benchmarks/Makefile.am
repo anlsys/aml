@@ -11,4 +11,34 @@ noinst_PROGRAMS = stream_add_pth_st \
 		  dgemm_vanilla \
 		  dgemm_mkl \
 		  dgemm_prefetch \
-		  dgemm_noprefetch
+		  dgemm_prefetch_blocked \
+		  dgemm_noprefetch \
+		  dgemm_noprefetch_task \
+		  dgemm_noprefetch_gemm256_task \
+		  dgemm_noprefetch_gemm320_task \
+		  dgemm_noprefetch_gemm384_task \
+		  dgemm_noprefetch_gemm448_task \
+		  dgemm_noprefetch_gemm512_task \
+		  dgemm_noprefetch_gemm256_cblas_task \
+		  dgemm_noprefetch_gemm320_cblas_task \
+		  dgemm_noprefetch_gemm384_cblas_task \
+		  dgemm_noprefetch_gemm448_cblas_task \
+		  dgemm_noprefetch_gemm512_cblas_task
+#		  dgemm_noprefetch_gemm128_task
+#		  dgemm_noprefetch_gemm128
+
+gem_dir = /home/videau/nauts/benchmarks/gemm
+
+#dgemm_noprefetch_gemm128_task_LDADD = gemm_128_128_12820180820_58220_1hgw8bn.o
+dgemm_noprefetch_gemm256_task_LDADD = $(gem_dir)/gemm_256_256_256.o
+dgemm_noprefetch_gemm320_task_LDADD = $(gem_dir)/gemm_320_320_320.o
+dgemm_noprefetch_gemm384_task_LDADD = $(gem_dir)/gemm_384_384_384.o
+dgemm_noprefetch_gemm448_task_LDADD = $(gem_dir)/gemm_448_448_448.o
+dgemm_noprefetch_gemm512_task_LDADD = $(gem_dir)/gemm_512_512_512.o
+dgemm_noprefetch_gemm256_cblas_task_LDADD = -lblas
+dgemm_noprefetch_gemm320_cblas_task_LDADD = -lblas
+dgemm_noprefetch_gemm384_cblas_task_LDADD = -lblas
+dgemm_noprefetch_gemm448_cblas_task_LDADD = -lblas
+dgemm_noprefetch_gemm512_cblas_task_LDADD = -lblas
+dgemm_prefetch_blocked_LDADD = $(gem_dir)/gemm_256_256_256.o $(gem_dir)/gemm_320_320_320.o $(gem_dir)/gemm_384_384_384.o $(gem_dir)/gemm_448_448_448.o $(gem_dir)/gemm_512_512_512.o
+#dgemm_noprefetch_gemm128_LDADD = gemm_128_128_12820180820_58220_1hgw8bn.o

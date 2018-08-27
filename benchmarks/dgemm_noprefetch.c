@@ -70,13 +70,13 @@ int main(int argc, char* argv[])
 	assert(!aml_tiling_init(&tiling_col, AML_TILING_TYPE_2D_CONTIG_COLMAJOR,
 				tilesize, memsize, N/T , N/T));
 
-	assert(!aml_arena_jemalloc_init(&arns, AML_ARENA_JEMALLOC_TYPE_REGULAR));
+	assert(!aml_arena_jemalloc_init(&arns, AML_ARENA_JEMALLOC_TYPE_ALIGNED, (size_t)(64)));
 	assert(!aml_area_linux_init(&slow,
 				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
 				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
 				    &arns, MPOL_BIND, slowb->maskp));
-	assert(!aml_arena_jemalloc_init(&arnf, AML_ARENA_JEMALLOC_TYPE_REGULAR));
+	assert(!aml_arena_jemalloc_init(&arnf, AML_ARENA_JEMALLOC_TYPE_ALIGNED, (size_t)(64)));
 	assert(!aml_area_linux_init(&fast,
 				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
 				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
