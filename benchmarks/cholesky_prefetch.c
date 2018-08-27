@@ -1,8 +1,9 @@
 #include <aml.h>
 #include <assert.h>
 #include <errno.h>
-#include <mkl.h>
-#include <mkl_scalapack.h>
+#include <openblas.h>
+//#include <mkl.h>
+//#include <mkl_scalapack.h>
 #include <omp.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -21,17 +22,36 @@ int cholOMP(double* L){
 	#pragma omp master
 	for(int k = 0; k < tilesPerRow; k++){
 		#pragma omp task depend(inout:L[(k*tilesPerRow*tileElements + k*tileElements) : tileElements])
-		{ LAPACKE_dpotrf(LAPACK_ROW_MAJOR, 'L', T, &L[(k*tilesPerRow + k*tileElements)], T); }
+		{
+			//async pull ext k,k tile (do I depend on L or the scratchpad?)
+			 LAPACKE_dpotrf(LAPACK_ROW_MAJOR, 'L', T, &L[(k*tilesPerRow + k*tileElements)], T); 
+			//async push the result (maybe not???)
+		
+		}
+		
 		for(int m = k + 1; m < tilesPerRow; m++)
 			#pragma omp task depend(in:L[(k*tilesPerRow*tileElements + k*tileElements) : tileElements]) depend(inout:L[(m*tilesPerRow*tileElements + k*tileElements) : tileElements])
-			{ cblas_dtrsm(CblasRowMajor, CblasLeft, CblasLower, CblasNoTrans, CblasNonUnit, T, T, 1.0, &L[(k*tilesPerRow*tileElements + k*tileElements)], T, &L[m*tilesPerRow*tileElements + k*tileElements], T);}
+			{ 	
+				//prefetch tile m,k and use tile k,k which should be in HBM already	
+				cblas_dtrsm(CblasRowMajor, CblasLeft, CblasLower, CblasNoTrans, CblasNonUnit, T, T, 1.0, &L[(k*tilesPerRow*tileElements + k*tileElements)], T, &L[m*tilesPerRow*tileElements + k*tileElements], T);
+				//push the result (maybe not since it gets used later?)
+			}
 		for(int m = k + 1; m < tilesPerRow; m++){
 			#pragma omp task depend(in:L[(m*tilesPerRow*tileElements + k*tileElements) : tileElements]) depend(inout:L[(m*tilesPerRow*tileElements + m*tileElements) : tileElements])
-			{cblas_dsyrk(CblasRowMajor, CblasLower, CblasNoTrans, T, T, 1.0, &L[m*tilesPerRow*tileElements + k*tileElements], T, 1.0, &L[m*tilesPerRow*tileElements + m*tileElements], T);}
+			{
+				//Async pull next m,m iteration and m,k should be in already
+				cblas_dsyrk(CblasRowMajor, CblasLower, CblasNoTrans, T, T, 1.0, &L[m*tilesPerRow*tileElements + k*tileElements], T, 1.0, &L[m*tilesPerRow*tileElements + m*tileElements], T);
+				//push the results, (maybe not since other iterations need it)
+			}
 			for(int i = k + 1; i < m; i++)
 				#pragma omp task depend(in:L[(m*tilesPerRow*tileElements + i*tileElements) : tileElements]) \
 					depend(inout:L[(m*tilesPerRow*tileElements + i*tileElements) : tileElements])
-				{ cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, T, T, T, 1.0, &L[m*tilesPerRow*tileElements + k*tileElements], T, &L[i*tilesPerRow*tileElements + k*tileElements], T, 1.0, &L[m*tilesPerRow*tileElements + i*tileElements], T);}
+				{ 
+					//Prefetch m,k i,k and m,i
+					cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, T, T, T, 1.0, &L[m*tilesPerRow*tileElements + k*tileElements], T, &L[i*tilesPerRow*tileElements + k*tileElements], T, 1.0, &L[m*tilesPerRow*tileElements + i*tileElements], T);
+					//Not sure what to do
+
+				}
 		}
 	}
 }
@@ -56,6 +76,10 @@ int main(int argc, char *argv[])
 	tilesz = sizeof(double)*T*T;
 	tileElements = T * T;
 	tilesPerRow = N / T;
+	
+	//Ensures no funny threading is happening within openblas kernels.
+	openblas_set_num_threads(1);
+
 
 	assert(!aml_arena_jemalloc_init(&arns, AML_ARENA_JEMALLOC_TYPE_REGULAR));
 	assert(!aml_area_linux_init(&slow,

@@ -1,4 +1,4 @@
-AM_CFLAGS = -I$(top_srcdir)/src -I. -qopenmp @OPENMP_FLAG@
+AM_CFLAGS = -I/opt/openblas/0.3.3/include -I/home/suchy/gsl/build/include -I$(top_srcdir)/src -I. -L/opt/OpenBLAS/lib -march=native -qopenmp @OPENMP_FLAG@ 
 AM_LDFLAGS = ../src/libaml.la ../jemalloc/lib/libjemalloc-aml.so @OPENMP_FLAG@
 
 noinst_LIBRARIES = libutils.a
@@ -14,4 +14,5 @@ noinst_PROGRAMS = stream_add_pth_st \
 		  dgemm_noprefetch \
 		  cholesky_mkl \
 		  cholesky_prefetch \
-		  cholesky_noprefetch
+		  cholesky_noprefetch \
+		  testBandwidth
