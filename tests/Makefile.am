@@ -20,7 +20,8 @@ AREA_LINUX_TESTS = linux_mbind \
 
 AREA_POSIX_TESTS = area_posix
 
-TILING_TESTS = tiling
+TILING_TESTS = tiling \
+	       tiling_2d
 
 BINDING_TESTS = binding
 

@@ -47,54 +47,64 @@ struct aml_tiling_iterator_ops aml_tiling_iterator_2d_ops = {
 
 /*******************************************************************************
  * 2D ops
- * Tileids are always in rowmajor: for NM matrix[i][j], tileid = i*M + j
+ * Tileids are the order in memory of the tiles.
  ******************************************************************************/
+
+int aml_tiling_2d_rowmajor_tileid(const struct aml_tiling_data *t, va_list ap)
+{
+	const struct aml_tiling_2d_data *data =
+		(const struct aml_tiling_2d_data *)t;
+	size_t row = va_arg(ap, size_t);
+	size_t col = va_arg(ap, size_t);
+	if(row >= data->ndims[0] || col >= data->ndims[1])
+		return -1;
+	else
+		return (row*data->ndims[1]) + col;
+}
+
+int aml_tiling_2d_colmajor_tileid(const struct aml_tiling_data *t, va_list ap)
+{
+	const struct aml_tiling_2d_data *data =
+		(const struct aml_tiling_2d_data *)t;
+	size_t row = va_arg(ap, size_t);
+	size_t col = va_arg(ap, size_t);
+	if(row >= data->ndims[0] || col >= data->ndims[1])
+		return -1;
+	else
+		return (col*data->ndims[0]) + row;
+}
 
 size_t aml_tiling_2d_tilesize(const struct aml_tiling_data *t, int tileid)
 {
 	const struct aml_tiling_2d_data *data =
 		(const struct aml_tiling_2d_data *)t;
-	return data->blocksize;
+	if(tileid < 0 || tileid >= data->ndims[0]*data->ndims[1])
+		return 0;
+	else
+		return data->blocksize;
 }
 
-void* aml_tiling_2d_rowmajor_tilestart(const struct aml_tiling_data *t,
-					      const void *ptr, int tileid)
+void* aml_tiling_2d_tilestart(const struct aml_tiling_data *t,
+			      const void *ptr, int tileid)
 {
 	const struct aml_tiling_2d_data *data =
 		(const struct aml_tiling_2d_data *)t;
 	intptr_t p = (intptr_t)ptr;
-	size_t i = tileid/data->ndims[1];
-	size_t j = tileid % data->ndims[1];
-	if(i >= data->ndims[0] || j >= data->ndims[1])
+	if(tileid < 0 || tileid >= data->ndims[0]*data->ndims[1])
 		return NULL;
 	else
 		return (void *)(p + tileid*data->blocksize);
-}
-
-void* aml_tiling_2d_colmajor_tilestart(const struct aml_tiling_data *t,
-					      const void *ptr, int tileid)
-{
-	const struct aml_tiling_2d_data *data =
-		(const struct aml_tiling_2d_data *)t;
-	intptr_t p = (intptr_t)ptr;
-	size_t i = tileid/data->ndims[1];
-	size_t j = tileid % data->ndims[1];
-	size_t offset = j*data->ndims[0] + i;
-	if(i >= data->ndims[0] || j >= data->ndims[1])
-		return NULL;
-	else
-		return (void *)(p + offset*data->blocksize);
 }
 
 int aml_tiling_2d_ndims(const struct aml_tiling_data *t, va_list ap)
 {
 	const struct aml_tiling_2d_data *data =
 		(const struct aml_tiling_2d_data *)t;
-	size_t *x = va_arg(ap, size_t *);
-	size_t *y = va_arg(ap, size_t *);
+	size_t *nrows = va_arg(ap, size_t *);
+	size_t *ncols = va_arg(ap, size_t *);
 	/* looks totally wrong */
-	*x = data->ndims[0];
-	*y = data->ndims[1];
+	*nrows = data->ndims[0];
+	*ncols = data->ndims[1];
 	return 0;
 }
 
@@ -138,8 +148,9 @@ struct aml_tiling_ops aml_tiling_2d_rowmajor_ops = {
 	aml_tiling_2d_create_iterator,
 	aml_tiling_2d_init_iterator,
 	aml_tiling_2d_destroy_iterator,
+	aml_tiling_2d_rowmajor_tileid,
 	aml_tiling_2d_tilesize,
-	aml_tiling_2d_rowmajor_tilestart,
+	aml_tiling_2d_tilestart,
 	aml_tiling_2d_ndims,
 };
 
@@ -147,7 +158,8 @@ struct aml_tiling_ops aml_tiling_2d_colmajor_ops = {
 	aml_tiling_2d_create_iterator,
 	aml_tiling_2d_init_iterator,
 	aml_tiling_2d_destroy_iterator,
+	aml_tiling_2d_colmajor_tileid,
 	aml_tiling_2d_tilesize,
-	aml_tiling_2d_colmajor_tilestart,
+	aml_tiling_2d_tilestart,
 	aml_tiling_2d_ndims,
 };

@@ -780,6 +780,7 @@ struct aml_tiling_ops {
 			     struct aml_tiling_iterator *iterator, int flags);
 	int (*destroy_iterator)(struct aml_tiling_data *tiling,
 				struct aml_tiling_iterator *iterator);
+	int (*tileid)(const struct aml_tiling_data *tiling, va_list);
 	size_t (*tilesize)(const struct aml_tiling_data *tiling, int tileid);
 	void* (*tilestart)(const struct aml_tiling_data *tiling,
 			   const void *ptr, int tileid);
@@ -790,6 +791,17 @@ struct aml_tiling {
 	struct aml_tiling_ops *ops;
 	struct aml_tiling_data *data;
 };
+
+/*
+ * Provides the tile id of a tile.
+ * "tiling": an initialized tiling structure.
+ * Variadic arguments:
+ *  - a list of size_t coordinates, one per dimension of the tiling.
+ * Returns the id of the tile (that is, its order in memory), to use with other
+ * functions.
+ * Returns -1 in case of invalid coordinates.
+ */
+int aml_tiling_tileid(const struct aml_tiling *tiling, ...);
 
 /*
  * Provides the information on the size of a tile.

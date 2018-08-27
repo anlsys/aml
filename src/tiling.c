@@ -4,6 +4,17 @@
 /*******************************************************************************
  * Tiling functions
  ******************************************************************************/
+int aml_tiling_tileid(const struct aml_tiling *t, ...)
+{
+	assert(t != NULL);
+	va_list ap;
+	int ret;
+	va_start(ap, t);
+	ret = t->ops->tileid(t->data, ap);
+	va_end(ap);
+	return ret;
+}
+
 size_t aml_tiling_tilesize(const struct aml_tiling *t, int tileid)
 {
 	assert(t != NULL);
