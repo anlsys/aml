@@ -53,7 +53,7 @@ void do_work()
 				double *ap, *bp, *cp;
 				ap = aml_tiling_tilestart(&tiling_row, prea, i);
 				bp = aml_tiling_tilestart(&tiling_row, preb, j);
-				coff = i*ndims[1] + j;
+				coff = aml_tiling_tileid(&tiling_row, i, j);
 				cp = aml_tiling_tilestart(&tiling_row, c, coff);
 				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, ldc, lda, ldb, 1.0, ap, lda, bp, ldb, 1.0, cp, ldc);
 			}

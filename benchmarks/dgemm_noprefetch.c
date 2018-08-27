@@ -35,9 +35,9 @@ void do_work()
 			{
 				size_t aoff, boff, coff;
 				double *ap, *bp, *cp;
-				aoff = i*ndims[1] + k;
-				boff = k*ndims[1] + j;
-				coff = i*ndims[1] + j;
+				aoff = aml_tiling_tileid(&tiling_col, i, k);
+				boff = aml_tiling_tileid(&tiling_row, k, j);
+				coff = aml_tiling_tileid(&tiling_row, i, j);
 				ap = aml_tiling_tilestart(&tiling_col, a, aoff);
 				bp = aml_tiling_tilestart(&tiling_row, b, boff);
 				cp = aml_tiling_tilestart(&tiling_row, c, coff);
