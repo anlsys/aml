@@ -11,13 +11,15 @@
 
 AML_TILING_2D_CONTIG_ROWMAJOR_DECL(tiling_inner);
 AML_TILING_2D_CONTIG_ROWMAJOR_DECL(tiling_prefetch);
-AML_AREA_LINUX_DECL(slow);
-AML_AREA_LINUX_DECL(fast);
+AML_AREA_LINUX_DECL(srcarea);
+AML_AREA_LINUX_DECL(carea);
+AML_AREA_LINUX_DECL(abarea);
 AML_SCRATCH_PAR_DECL(sa);
 AML_SCRATCH_PAR_DECL(sb);
+AML_SCRATCH_PAR_DECL(sc);
 
 size_t memsize, tilesize, blocksize, N, B, nB, T, nT;
-const char *fbs,  *sbs;
+const char *abmask,  *cmask;
 double *a, *b, *c;
 struct timespec start, stop;
 
@@ -27,8 +29,8 @@ typedef struct matrix_split_s {
         size_t block_number;
 	size_t tile_size;
 	size_t tile_number;
-        const char *fastb;
-        const char *slowb;
+        const char *abmask;
+        const char *cmask;
 } matrix_split_t;
 
 
@@ -382,32 +384,52 @@ int nextbi(int i, int j, int k)
 	else
 	{
 		if(j < nB -1)
-			return j; // b[0, j+1]
+			return j+1; // b[0, j+1]
 		else
 			if(i < nB -1)
-				return j; // b[0, 0]
+				return 0; // b[0, 0]
 			else
 				return -1;
 	}
 }
 
+int nextci(int i, int j)
+{
+	if(j < nB -1)
+		return  i*nB + j + 1// c[i, j+1]
+	else
+		if(i < nB -1)
+			return (i+1)*nB; // c[i+1, 0]
+		else
+			return -1;
+}
+
 void do_work()
 {
-	int ai, bi, oldai, oldbi;
-	void *abaseptr, *bbaseptr;
-	struct aml_scratch_request *ar, *br;
+	int ai, bi, ci, oldai, oldbi, oldci;
+	void *abaseptr, *bbaseptr, *cbaseptr;
+	struct aml_scratch_request *ar, *br, *cpush, *cpull;
 	abaseptr = aml_scratch_baseptr(&sa);
 	bbaseptr = aml_scratch_baseptr(&sb);
-	ai = -1; bi = -1;
+	cbaseptr = aml_scratch_baseptr(&sc);
+	ai = -1; bi = -1; ci = -1;
 	aml_scratch_pull(&sa, abaseptr, &ai, a, 0);
 	aml_scratch_pull(&sb, bbaseptr, &bi, b, 0);
+	aml_scratch_pull(&sc, cbaseptr, &ci, c, 0);
 	for(int i = 0; i < nB; i++)
 	{
 		for(int j = 0; j < nB; j++)
 		{
+			int nci;
+			double *cp;
+			oldci = ci;
+			nci = nextci(i,j);
+			if(i != 0 && j != 0) aml_scratch_wait(&sc, cpush);
+			if(nci != -1) aml_scratch_async_pull(&sc, &cpull, cbaseptr, &ci, c, nci);
+			cp = aml_tiling_tilestart(&tiling_prefetch, cbaseptr, oldci);
 			for(int k = 0; k < nB; k++)
 			{
-				double *ap, *bp, *cp;
+				double *ap, *bp;
 				int nai, nbi;
 				oldai = ai;
 				oldbi = bi;
@@ -417,17 +439,17 @@ void do_work()
 				if(nbi != -1) aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, nbi);
 				ap = aml_tiling_tilestart(&tiling_prefetch, abaseptr, oldai);
 				bp = aml_tiling_tilestart(&tiling_prefetch, bbaseptr, oldbi);
-				//ap = aml_tiling_tilestart(&tiling_prefetch, a, i*nB +k);
-				//bp = aml_tiling_tilestart(&tiling_prefetch, b, k*nB +j);
-				cp = aml_tiling_tilestart(&tiling_prefetch, c, i*nB + j);
 				do_innerwork(ap, bp, cp);
 				if(nai != -1) aml_scratch_wait(&sa, ar);
 				if(nbi != -1) aml_scratch_wait(&sb, br);
 				aml_scratch_release(&sa, oldai);
 				aml_scratch_release(&sb, oldbi);
 			}
+			if(nci != -1) aml_scratch_wait(&sc, cpull);
+			aml_scratch_async_push(&sc, &cpush, c, i*nB + j, cbaseptr, oldci);
 		}
 	}
+	aml_scratch_wait(&sc, &cpush);
 }
 
 void find_blocking_tiling()
@@ -439,8 +461,8 @@ void find_blocking_tiling()
 			T = matrix_splits[i].tile_size;
 			nB = matrix_splits[i].block_number;
 			nT = matrix_splits[i].tile_number;
-                        fbs = matrix_splits[i].fastb;
-                        sbs = matrix_splits[i].slowb;
+                        abmask = matrix_splits[i].abmask;
+                        cmask = matrix_splits[i].cmask;
 			switch(T) {
 			case 256:
 				gemm_ptr = & gemm_256_256_256;
@@ -466,16 +488,18 @@ void find_blocking_tiling()
 
 int main(int argc, char* argv[])
 {
-	AML_ARENA_JEMALLOC_DECL(arns);
-	AML_ARENA_JEMALLOC_DECL(arnf);
+	AML_ARENA_JEMALLOC_DECL(arnsrc);
+	AML_ARENA_JEMALLOC_DECL(arnab);
+	AML_ARENA_JEMALLOC_DECL(arnc);
 	AML_DMA_LINUX_SEQ_DECL(dma);
-	struct bitmask *slowb, *fastb;
+	struct bitmask *srcbm, *abbm, *cbm;
 	aml_init(&argc, &argv);
 	assert(argc == 2);
 	N = atol(argv[1]);
 	find_blocking_tiling();
-	fastb = numa_parse_nodestring_all(fbs);
-	slowb = numa_parse_nodestring_all(sbs);
+	srcbm = numa_parse_nodestring_all("0");
+	abbm = numa_parse_nodestring_all(abmask);
+	cbm = numa_parse_nodestring_all(cmask);
 	assert(N % T == 0);
 	memsize = sizeof(double)*N*N;
 	tilesize = sizeof(double)*T*T;
@@ -487,25 +511,32 @@ int main(int argc, char* argv[])
 	assert(!aml_tiling_init(&tiling_prefetch, AML_TILING_TYPE_2D_CONTIG_ROWMAJOR,
 				blocksize, memsize, nB, nB));
 
-	assert(!aml_arena_jemalloc_init(&arns, AML_ARENA_JEMALLOC_TYPE_ALIGNED, (size_t)(64)));
-	assert(!aml_area_linux_init(&slow,
+	assert(!aml_arena_jemalloc_init(&arnsrc, AML_ARENA_JEMALLOC_TYPE_ALIGNED, (size_t)(64)));
+	assert(!aml_area_linux_init(&srcarea,
 				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
 				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arns, MPOL_BIND, slowb->maskp));
-	assert(!aml_arena_jemalloc_init(&arnf, AML_ARENA_JEMALLOC_TYPE_ALIGNED, (size_t)(64)));
-	assert(!aml_area_linux_init(&fast,
+				    &arnsrc, MPOL_BIND, srcbm->maskp));
+	assert(!aml_arena_jemalloc_init(&arnab, AML_ARENA_JEMALLOC_TYPE_ALIGNED, (size_t)(64)));
+	assert(!aml_area_linux_init(&abarea,
 				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
 				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arnf, MPOL_BIND, fastb->maskp));
-	assert(!aml_dma_linux_seq_init(&dma, 2));
-	assert(!aml_scratch_par_init(&sa, &fast, &slow, &dma, &tiling_prefetch, (size_t)2, (size_t)2));
-	assert(!aml_scratch_par_init(&sb, &fast, &slow, &dma, &tiling_prefetch, (size_t)2, (size_t)2));
+				    &arnab, MPOL_BIND, abbm->maskp));
+	assert(!aml_arena_jemalloc_init(&arnc, AML_ARENA_JEMALLOC_TYPE_ALIGNED, (size_t)(64)));
+	assert(!aml_area_linux_init(&carea,
+				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
+				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
+				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
+				    &arnc, MPOL_BIND, cbm->maskp));
+	assert(!aml_dma_linux_seq_init(&dma, 3));
+	assert(!aml_scratch_par_init(&sa, &abarea, &srcarea, &dma, &tiling_prefetch, (size_t)2, (size_t)2));
+	assert(!aml_scratch_par_init(&sb, &abarea, &srcarea, &dma, &tiling_prefetch, (size_t)2, (size_t)2));
+	assert(!aml_scratch_par_init(&sc, &carea, &srcarea, &dma, &tiling_prefetch, (size_t)3, (size_t)3));
 	/* allocation */
-	a = aml_area_malloc(&slow, memsize);
-	b = aml_area_malloc(&slow, memsize);
-	c = aml_area_malloc(&slow, memsize);
+	a = aml_area_malloc(&srcarea, memsize);
+	b = aml_area_malloc(&srcarea, memsize);
+	c = aml_area_malloc(&srcarea, memsize);
 	assert(a != NULL && b != NULL && c != NULL);
 
 	clock_gettime(CLOCK_REALTIME, &start);
@@ -521,12 +552,14 @@ int main(int argc, char* argv[])
 	       flops/1e9);
 	aml_scratch_par_destroy(&sa);
 	aml_scratch_par_destroy(&sb);
+	aml_scratch_par_destroy(&sc);
 	aml_dma_linux_seq_destroy(&dma);
 	aml_area_free(&slow, a);
 	aml_area_free(&slow, b);
 	aml_area_free(&fast, c);
-	aml_area_linux_destroy(&slow);
-	aml_area_linux_destroy(&fast);
+	aml_area_linux_destroy(&srcarea);
+	aml_area_linux_destroy(&abarea);
+	aml_area_linux_destroy(&carea);
 	aml_tiling_destroy(&tiling_inner, AML_TILING_TYPE_2D_CONTIG_ROWMAJOR);
 	aml_tiling_destroy(&tiling_prefetch, AML_TILING_TYPE_2D_CONTIG_ROWMAJOR);
 	aml_finalize();
