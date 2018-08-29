@@ -29,8 +29,8 @@ typedef struct matrix_split_s {
         size_t block_number;
 	size_t tile_size;
 	size_t tile_number;
-        const char *abmask;
         const char *cmask;
+        const char *abmask;
 } matrix_split_t;
 
 
@@ -396,7 +396,7 @@ int nextbi(int i, int j, int k)
 int nextci(int i, int j)
 {
 	if(j < nB -1)
-		return  i*nB + j + 1// c[i, j+1]
+		return  i*nB + j + 1;// c[i, j+1]
 	else
 		if(i < nB -1)
 			return (i+1)*nB; // c[i+1, 0]
@@ -413,14 +413,18 @@ void do_work()
 	bbaseptr = aml_scratch_baseptr(&sb);
 	cbaseptr = aml_scratch_baseptr(&sc);
 	ai = -1; bi = -1; ci = -1;
-	aml_scratch_pull(&sa, abaseptr, &ai, a, 0);
-	aml_scratch_pull(&sb, bbaseptr, &bi, b, 0);
-	aml_scratch_pull(&sc, cbaseptr, &ci, c, 0);
+	aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, 0);
+	aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, 0);
+	aml_scratch_async_pull(&sc, &cpull, cbaseptr, &ci, c, 0);
+        aml_scratch_wait(&sc, cpull);
+        aml_scratch_wait(&sa, ar);
+        aml_scratch_wait(&sb, br);
 	for(int i = 0; i < nB; i++)
 	{
 		for(int j = 0; j < nB; j++)
 		{
 			int nci;
+                        int cci;
 			double *cp;
 			oldci = ci;
 			nci = nextci(i,j);
@@ -446,10 +450,11 @@ void do_work()
 				aml_scratch_release(&sb, oldbi);
 			}
 			if(nci != -1) aml_scratch_wait(&sc, cpull);
-			aml_scratch_async_push(&sc, &cpush, c, i*nB + j, cbaseptr, oldci);
+                        cci = i*nB + j;
+			aml_scratch_async_push(&sc, &cpush, c, &cci, cbaseptr, oldci);
 		}
 	}
-	aml_scratch_wait(&sc, &cpush);
+	aml_scratch_wait(&sc, cpush);
 }
 
 void find_blocking_tiling()
@@ -554,9 +559,9 @@ int main(int argc, char* argv[])
 	aml_scratch_par_destroy(&sb);
 	aml_scratch_par_destroy(&sc);
 	aml_dma_linux_seq_destroy(&dma);
-	aml_area_free(&slow, a);
-	aml_area_free(&slow, b);
-	aml_area_free(&fast, c);
+	aml_area_free(&srcarea, a);
+	aml_area_free(&srcarea, b);
+	aml_area_free(&srcarea, c);
 	aml_area_linux_destroy(&srcarea);
 	aml_area_linux_destroy(&abarea);
 	aml_area_linux_destroy(&carea);
