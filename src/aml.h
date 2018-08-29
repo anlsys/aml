@@ -780,9 +780,8 @@ struct aml_tiling_ops {
 			     struct aml_tiling_iterator *iterator, int flags);
 	int (*destroy_iterator)(struct aml_tiling_data *tiling,
 				struct aml_tiling_iterator *iterator);
+	int (*tileid)(const struct aml_tiling_data *tiling, va_list);
 	size_t (*tilesize)(const struct aml_tiling_data *tiling, int tileid);
-	size_t (*tilerowsize)(const struct aml_tiling_data *tiling, int tileid);
-	size_t (*tilecolsize)(const struct aml_tiling_data *tiling, int tileid);
 	void* (*tilestart)(const struct aml_tiling_data *tiling,
 			   const void *ptr, int tileid);
 	int (*ndims)(const struct aml_tiling_data *tiling, va_list);
@@ -794,6 +793,17 @@ struct aml_tiling {
 };
 
 /*
+ * Provides the tile id of a tile.
+ * "tiling": an initialized tiling structure.
+ * Variadic arguments:
+ *  - a list of size_t coordinates, one per dimension of the tiling.
+ * Returns the id of the tile (that is, its order in memory), to use with other
+ * functions.
+ * Returns -1 in case of invalid coordinates.
+ */
+int aml_tiling_tileid(const struct aml_tiling *tiling, ...);
+
+/*
  * Provides the information on the size of a tile.
  * "tiling": an initialized tiling structure.
  * "tileid": an identifier of a tile (a value between 0 and the number of tiles
@@ -801,24 +811,6 @@ struct aml_tiling {
  * Returns the size of a tile.
  */
 size_t aml_tiling_tilesize(const struct aml_tiling *tiling, int tileid);
-
-/*
- * Provides the information on the size of a tile row.
- * "tiling": an initialized tiling structure.
- * "tileid": an identifier of a tile (a value between 0 and the number of tiles
- *           minus 1).
- * Returns the size of a tile row.
- */
-size_t aml_tiling_tilerowsize(const struct aml_tiling *tiling, int tileid);
-
-/*
- * Provides the information on the size of a tile column.
- * "tiling": an initialized tiling structure.
- * "tileid": an identifier of a tile (a value between 0 and the number of tiles
- *           minus 1).
- * Returns the size of a tile column.
- */
-size_t aml_tiling_tilecolsize(const struct aml_tiling *tiling, int tileid);
 
 /*
  * Provides the information on the location of a tile in memory.
@@ -917,9 +909,8 @@ int aml_tiling_iterator_get(const struct aml_tiling_iterator *iterator, ...);
 /* Tiling types passed to the tiling create()/init()/vinit() routines.  */
 /* Regular, linear tiling with uniform tile sizes.  */
 #define AML_TILING_TYPE_1D 0
-#define AML_TILING_TYPE_2D 2
-#define AML_TILING_TYPE_2D_CONTIG_ROWMAJOR 3
-#define AML_TILING_TYPE_2D_CONTIG_COLMAJOR 4
+#define AML_TILING_TYPE_2D_ROWMAJOR 1
+#define AML_TILING_TYPE_2D_COLMAJOR 2
 
 /*
  * Allocates and initializes a new tiling.
@@ -931,13 +922,12 @@ int aml_tiling_iterator_get(const struct aml_tiling_iterator *iterator, ...);
  *   - "tilesize": an argument of type size_t; provides the size of each tile.
  *   - "totalsize": an argument of type size_t; provides the size of the
  *                  complete user data structure to be tiled.
- * - if "type" equals AML_TILING_TYPE_2D, three additional arguments are needed:
- *   - "rowsize": an argument of type size_t; provides the size of the row of
- *      each tile.
- *   - "columnsize": an argument of type size_t; provides the size of the column
- *      of each tile.
+ * - if "type" equals AML_TILING_TYPE_2D, four additional arguments are needed:
+ *   - "tilesize": an argument of type size_t; provides the size of a tile.
  *   - "totalsize": an argument of type size_t; provides the size of the
  *                  complete user data structure to be tiled.
+ *   - "rowsize": an argument of type size_t; the number of tiles in a row
+ *   - "colsize": an argument of type size_t; the number of tiles in a column
  * Returns 0 if successful; an error code otherwise.
  */
 int aml_tiling_create(struct aml_tiling **tiling, int type, ...);
@@ -1006,16 +996,17 @@ struct aml_tiling_iterator_1d_data {
 
 /*******************************************************************************
  * Tiling 2D:
+ * a contiguous memory area composed of contiguous tiles arranged in 2D grid.
  ******************************************************************************/
 
-extern struct aml_tiling_ops aml_tiling_2d_ops;
+extern struct aml_tiling_ops aml_tiling_2d_rowmajor_ops;
+extern struct aml_tiling_ops aml_tiling_2d_colmajor_ops;
 extern struct aml_tiling_iterator_ops aml_tiling_iterator_2d_ops;
 
 struct aml_tiling_2d_data {
 	size_t blocksize;
-	size_t tilerowsize;
-	size_t tilecolsize;
 	size_t totalsize;
+	size_t ndims[2]; /* # number of rows, # number of cols (in tiles) */
 };
 
 struct aml_tiling_iterator_2d_data {
@@ -1023,10 +1014,17 @@ struct aml_tiling_iterator_2d_data {
 	struct aml_tiling_2d_data *tiling;
 };
 
-#define AML_TILING_2D_DECL(name) \
+#define AML_TILING_2D_ROWMAJOR_DECL(name) \
 	struct aml_tiling_2d_data __ ##name## _inner_data; \
 	struct aml_tiling name = { \
-		&aml_tiling_2d_ops, \
+		&aml_tiling_2d_rowmajor_ops, \
+		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
+	};
+
+#define AML_TILING_2D_COLMAJOR_DECL(name) \
+	struct aml_tiling_2d_data __ ##name## _inner_data; \
+	struct aml_tiling name = { \
+		&aml_tiling_2d_colmajor_ops, \
 		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
 	};
 
@@ -1042,54 +1040,6 @@ struct aml_tiling_iterator_2d_data {
 
 #define AML_TILING_ITERATOR_2D_ALLOCSIZE \
 	(sizeof(struct aml_tiling_iterator_2d_data) + \
-	 sizeof(struct aml_tiling_iterator))
-
-/*******************************************************************************
- * Tiling 2D CONTIG:
- * a contiguous memory area composed of contiguous tiles arranged in 2D grid.
- ******************************************************************************/
-
-extern struct aml_tiling_ops aml_tiling_2d_contig_rowmajor_ops;
-extern struct aml_tiling_ops aml_tiling_2d_contig_colmajor_ops;
-extern struct aml_tiling_iterator_ops aml_tiling_iterator_2d_contig_ops;
-
-struct aml_tiling_2d_contig_data {
-	size_t blocksize;
-	size_t totalsize;
-	size_t ndims[2]; /* # of rows in tiles, # of columns in tiles */
-};
-
-struct aml_tiling_iterator_2d_contig_data {
-	size_t i;
-	struct aml_tiling_2d_contig_data *tiling;
-};
-
-#define AML_TILING_2D_CONTIG_ROWMAJOR_DECL(name) \
-	struct aml_tiling_2d_contig_data __ ##name## _inner_data; \
-	struct aml_tiling name = { \
-		&aml_tiling_2d_contig_rowmajor_ops, \
-		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
-	};
-
-#define AML_TILING_2D_CONTIG_COLMAJOR_DECL(name) \
-	struct aml_tiling_2d_contig_data __ ##name## _inner_data; \
-	struct aml_tiling name = { \
-		&aml_tiling_2d_contig_colmajor_ops, \
-		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
-	};
-
-#define AML_TILING_ITERATOR_2D_CONTIG_DECL(name) \
-	struct aml_tiling_iterator_2d_contig_data __ ##name## _inner_data; \
-	struct aml_tiling_iterator name = { \
-		&aml_tiling_iterator_2d_contig_ops, \
-		(struct aml_tiling_iterator_data *)&__ ## name ## _inner_data, \
-	};
-
-#define AML_TILING_2D_CONTIG_ALLOCSIZE (sizeof(struct aml_tiling_2d_contig_data) + \
-				 sizeof(struct aml_tiling))
-
-#define AML_TILING_ITERATOR_2D_CONTIG_ALLOCSIZE \
-	(sizeof(struct aml_tiling_iterator_2d_contig_data) + \
 	 sizeof(struct aml_tiling_iterator))
 
 /*******************************************************************************

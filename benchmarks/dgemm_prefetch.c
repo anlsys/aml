@@ -9,8 +9,8 @@
 #include <math.h>
 #include <stdlib.h>
 
-AML_TILING_2D_CONTIG_ROWMAJOR_DECL(tiling_row);
-AML_TILING_2D_CONTIG_COLMAJOR_DECL(tiling_col);
+AML_TILING_2D_ROWMAJOR_DECL(tiling_row);
+AML_TILING_2D_COLMAJOR_DECL(tiling_col);
 AML_TILING_1D_DECL(tiling_prefetch);
 AML_AREA_LINUX_DECL(slow);
 AML_AREA_LINUX_DECL(fast);
@@ -53,7 +53,7 @@ void do_work()
 				double *ap, *bp, *cp;
 				ap = aml_tiling_tilestart(&tiling_row, prea, i);
 				bp = aml_tiling_tilestart(&tiling_row, preb, j);
-				coff = i*ndims[1] + j;
+				coff = aml_tiling_tileid(&tiling_row, i, j);
 				cp = aml_tiling_tilestart(&tiling_row, c, coff);
 				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, ldc, lda, ldb, 1.0, ap, lda, bp, ldb, 1.0, cp, ldc);
 			}
@@ -85,9 +85,9 @@ int main(int argc, char* argv[])
 	tilesize = sizeof(double)*T*T;
 
 	/* the initial tiling, 2d grid of tiles */
-	assert(!aml_tiling_init(&tiling_row, AML_TILING_TYPE_2D_CONTIG_ROWMAJOR,
+	assert(!aml_tiling_init(&tiling_row, AML_TILING_TYPE_2D_ROWMAJOR,
 				tilesize, memsize, N/T , N/T));
-	assert(!aml_tiling_init(&tiling_col, AML_TILING_TYPE_2D_CONTIG_COLMAJOR,
+	assert(!aml_tiling_init(&tiling_col, AML_TILING_TYPE_2D_COLMAJOR,
 				tilesize, memsize, N/T , N/T));
 	/* the prefetch tiling, 1D sequence of columns of tiles */
 	assert(!aml_tiling_init(&tiling_prefetch, AML_TILING_TYPE_1D,
@@ -183,8 +183,8 @@ int main(int argc, char* argv[])
 	aml_area_free(&fast, c);
 	aml_area_linux_destroy(&slow);
 	aml_area_linux_destroy(&fast);
-	aml_tiling_destroy(&tiling_row, AML_TILING_TYPE_2D_CONTIG_ROWMAJOR);
-	aml_tiling_destroy(&tiling_col, AML_TILING_TYPE_2D_CONTIG_ROWMAJOR);
+	aml_tiling_destroy(&tiling_row, AML_TILING_TYPE_2D_ROWMAJOR);
+	aml_tiling_destroy(&tiling_col, AML_TILING_TYPE_2D_ROWMAJOR);
 	aml_tiling_destroy(&tiling_prefetch, AML_TILING_TYPE_1D);
 	aml_finalize();
 	return 0;

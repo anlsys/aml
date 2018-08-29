@@ -13,14 +13,15 @@ UTILS_TESTS = vector
 
 ARENA_JEMALLOC_TESTS = arena_jemalloc
 
-AREA_LINUX_TESTS = linux_mbind \
+AREA_LINUX_TESTS = \
 		   linux_mmap \
 		   linux_manager \
 		   area_linux
 
 AREA_POSIX_TESTS = area_posix
 
-TILING_TESTS = tiling
+TILING_TESTS = tiling \
+	       tiling_2d
 
 BINDING_TESTS = binding
 

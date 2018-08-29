@@ -30,92 +30,110 @@ int cholOMP(){
 	#pragma omp master
 	for(int k = 0; k < tilesPerRow; k++){
 
-		#pragma omp task depend(in:a[(k*tilesPerRow*tileElements + k*tileElements) : tileElements]) depend (out:b[(k*tilesPerRow*tileElements) : tileElements])
+		#pragma omp task depend(inout:tracker[k][k])
 		{
-			if(tracker[k][k] != 1){
-				int q = k*tilesPerRow + k - 1;
-				aml_scratch_pull(&sa, b, &q, a, (k*tilesPerRow) + k);
-				tracker[k][k] = 1;
+			if(tracker[k][k] == -1){
+				aml_scratch_pull(&sa, b, &tracker[k][k], a, (k*tilesPerRow) + k);	
 			}	
 		}		
 
-		#pragma omp task depend(inout:b[(k*tilesPerRow*tileElements + k*tileElements) : tileElements])
+		#pragma omp task depend(inout:tracker[k][k])
 		{
-			 LAPACKE_dpotrf(LAPACK_ROW_MAJOR, 'L', T, &b[(k*tilesPerRow + k*tileElements)], T); 
+			assert(tracker[k][k] != -1);
+			double* bTile = aml_tiling_tilestart(&tiling_row, b, tracker[k][k]);
+			LAPACKE_dpotrf(LAPACK_ROW_MAJOR, 'L', T, bTile, T); 
 		}
 		
 		for(int m = k + 1; m < tilesPerRow; m++){
-			#pragma omp task depend(in:a[(m*tilesPerRow*tileElements + k*tileElements) : tileElements], a[(k*tilesPerRow*tileElements + k*tileElements) : tileElements]) depend(out:b[(m*tilesPerRow*tileElements + k*tileElements) : tileElements], b[(k*tilesPerRow*tileElements + k*tileElements) : tileElements])
+			#pragma omp task depend(inout:tracker[m][k], tracker[k][k])
 			{
-				if(tracker[m][k] != 1){
-					int q = m*tilesPerRow + k - 1;
-					aml_scratch_pull(&sa, b, &q, a, (m*tilesPerRow) + k);
-					tracker[m][k] = 1;
+				if(tracker[m][k] != -1){
+					aml_scratch_pull(&sa, b, &tracker[m][k], a, (m*tilesPerRow) + k);
 				}
-				if(tracker[k][k] != 1){
-					int q = k*tilesPerRow + k - 1;
-					aml_scratch_pull(&sa, b, &q, a, (k*tilesPerRow) + k);
-					tracker[k][k] = 1;
+				if(tracker[k][k] != -1){
+					aml_scratch_pull(&sa, b, &tracker[k][k], a, (k*tilesPerRow) + k);
 				}		
 			}
 
-			#pragma omp task depend(in:b[(k*tilesPerRow*tileElements + k*tileElements) : tileElements]) depend(inout:b[(m*tilesPerRow*tileElements + k*tileElements) : tileElements])
-			{ 		
-				cblas_dtrsm(CblasRowMajor, CblasLeft, CblasLower, CblasNoTrans, CblasNonUnit, T, T, 1.0, &b[(k*tilesPerRow*tileElements + k*tileElements)], T, &b[m*tilesPerRow*tileElements + k*tileElements], T);
+			#pragma omp task depend(inout:tracker[m][k], tracker[k][k])
+			{ 
+				assert(tracker[m][k]);
+				assert(tracker[k][k]);
+				double* bTile0 = aml_tiling_tilestart(&tiling_row, b, tracker[m][k]);
+				double* bTile1 = aml_tiling_tilestart(&tiling_row, b, tracker[k][k]);
+				cblas_dtrsm(CblasRowMajor, CblasLeft, CblasLower, CblasNoTrans, CblasNonUnit, T, T, 1.0, bTile0, T, bTile1, T);
 			}
 		}
 			
 
 		for(int m = k + 1; m < tilesPerRow; m++){
 
-			#pragma omp task depend(in:a[(m*tilesPerRow*tileElements + k*tileElements) : tileElements], a[(m*tilesPerRow*tileElements + m*tileElements) : tileElements]) depend(out:b[(m*tilesPerRow*tileElements + k*tileElements) : tileElements], b[(m*tilesPerRow*tileElements + m*tileElements) : tileElements])
+			#pragma omp task depend(inout:tracker[m][k], tracker[m][m])
 			{
-				if(tracker[m][k] != 1){
-					int q = m*tilesPerRow + k - 1;
-					aml_scratch_pull(&sa, b, &q, a, (m*tilesPerRow) + k);
-					tracker[m][k] = 1;
+				if(tracker[m][k] != -1){
+					aml_scratch_pull(&sa, b, &tracker[m][k], a, (m*tilesPerRow) + k);
 				}
-				if(tracker[m][m] != 1){
-					int q = m*tilesPerRow + m - 1;
-					aml_scratch_pull(&sa, b, &q, a, (m*tilesPerRow) + m);
-					tracker[m][m] = 1;
+				if(tracker[m][m] != -1){
+					aml_scratch_pull(&sa, b, &tracker[m][m], a, (m*tilesPerRow) + m);
 				}
 			} 
 
-			#pragma omp task depend(in:b[(m*tilesPerRow*tileElements + k*tileElements) : tileElements]) depend(inout:b[(m*tilesPerRow*tileElements + m*tileElements) : tileElements])
+			#pragma omp task depend(inout:tracker[m][k], tracker[m][m])
 			{
-				cblas_dsyrk(CblasRowMajor, CblasLower, CblasNoTrans, T, T, 1.0, &b[m*tilesPerRow*tileElements + k*tileElements], T, 1.0, &b[m*tilesPerRow*tileElements + m*tileElements], T);
+				assert(tracker[m][k]);
+				assert(tracker[m][m]);
+				double* bTile0 = aml_tiling_tilestart(&tiling_row, b, tracker[m][k]);
+				double* bTile1 = aml_tiling_tilestart(&tiling_row, b, tracker[m][m]);
+				cblas_dsyrk(CblasRowMajor, CblasLower, CblasNoTrans, T, T, 1.0, bTile0, T, 1.0, bTile1, T);
 			}
 			for(int i = k + 1; i < m; i++){
 			
-				#pragma omp task depend(in:a[(m*tilesPerRow*tileElements + k*tileElements) : tileElements], a[(i*tilesPerRow*tileElements + k*tileElements) : tileElements], a[(m*tilesPerRow*tileElements + i*tileElements) : tileElements]) depend(out:b[(m*tilesPerRow*tileElements + k*tileElements) : tileElements], b[(i*tilesPerRow*tileElements + k*tileElements) : tileElements], b[(m*tilesPerRow*tileElements + i*tileElements) : tileElements])
+				#pragma omp task depend(inout:tracker[m][k], tracker[i][k], tracker[m][i])
 				{
 				
-					if(tracker[m][k] != 1){
-						int q = m*tilesPerRow + k - 1;
-						aml_scratch_pull(&sa, b, &q, a, (m*tilesPerRow) + k);
-
-						tracker[m][k] = 1;
+					if(tracker[m][k] != -1){
+						aml_scratch_pull(&sa, b, &tracker[m][k], a, (m*tilesPerRow) + k);
 					}
-					if(tracker[i][k] != 1){
-						int q = i*tilesPerRow + k - 1;
-						aml_scratch_pull(&sa, b, &q, a, (i*tilesPerRow) + k);
-						tracker[i][k] = 1;
+					if(tracker[i][k] != -1){
+						aml_scratch_pull(&sa, b, &tracker[i][k], a, (i*tilesPerRow) + k);
 					}
-					if(tracker[m][i] != 1){
-						int q = m*tilesPerRow + i - 1;
-						aml_scratch_pull(&sa, b, &q, a, (m*tilesPerRow) + i);
-						tracker[m][i] = 1;
+					if(tracker[m][i] != -1){
+						aml_scratch_pull(&sa, b, &tracker[m][i], a, (m*tilesPerRow) + i);
 					}
 
 				}				
 
-				#pragma omp task depend(in:b[(m*tilesPerRow*tileElements + k*tileElements) : tileElements], b[(i*tilesPerRow*tileElements + k*tileElements) : tileElements]) depend(inout:b[(m*tilesPerRow*tileElements + i*tileElements) : tileElements])
-				{ 
-					cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, T, T, T, 1.0, &b[m*tilesPerRow*tileElements + k*tileElements], T, &b[i*tilesPerRow*tileElements + k*tileElements], T, 1.0, &b[m*tilesPerRow*tileElements + i*tileElements], T);
+				#pragma omp task depend(inout:tracker[m][k], tracker[i][k], tracker[m][i])
+				{
+					assert(tracker[m][k]);
+					assert(tracker[i][k]);
+					assert(tracker[m][i]);
+					double* bTile0 = aml_tiling_tilestart(&tiling_row, b, tracker[m][k]);
+					double* bTile1 = aml_tiling_tilestart(&tiling_row, b, tracker[i][k]);
+ 					double* bTile2 = aml_tiling_tilestart(&tiling_row, b, tracker[m][i]);
+					cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, T, T, T, 1.0, bTile0, T, bTile1, T, 1.0, bTile2, T);
 				}
 			}
 		}
+
+	#pragma omp task depend(inout:tracker[0:k][0:k])
+	{
+		//send back the row and col
+		for(int i = 0; i<k; i++){
+			//Send a row tile
+			aml_scratch_push(&sa, b, &tracker[i][k], a, (i*tilesPerRow) + k);
+			tracker[i][k] = -1;
+			//Send a col tile
+			aml_scratch_push(&sa, b, &tracker[k][i], a, (k*tilesPerRow) + i);
+			tracker[k][i] = -1;
+		}
+		//send back the diagonal
+		aml_scratch_push(&sa, b, &tracker[k][k], a, (k*tilesPerRow) + k);
+		tracker[k][k] = -1;
+	}
+		
+	
+	
 	}
 }
 
