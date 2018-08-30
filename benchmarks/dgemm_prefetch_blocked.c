@@ -406,55 +406,52 @@ int nextci(int i, int j)
 
 void do_work()
 {
-	int ai, bi, ci, oldai, oldbi, oldci;
+	int ai, bi, ci; // indexes in fast
+	int oldai, oldbi, oldci; // previous scratch index
+	int aoff, boff, coff, oldcoff; // offsets in slow
 	void *abaseptr, *bbaseptr, *cbaseptr;
-	struct aml_scratch_request *ar, *br, *cpush, *cpull;
+	struct aml_scratch_request *ar, *br, *cr, *cpush;
 	abaseptr = aml_scratch_baseptr(&sa);
 	bbaseptr = aml_scratch_baseptr(&sb);
 	cbaseptr = aml_scratch_baseptr(&sc);
-	ai = -1; bi = -1; ci = -1;
-	aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, 0);
-	aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, 0);
-	aml_scratch_async_pull(&sc, &cpull, cbaseptr, &ci, c, 0);
-        aml_scratch_wait(&sc, cpull);
+	aoff = 0; boff = 0; coff = 0; oldci = -1;
+	aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, aoff);
+	aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, boff);
+	aml_scratch_async_pull(&sc, &cr, cbaseptr, &ci, c, coff);
+        aml_scratch_wait(&sc, cr);
         aml_scratch_wait(&sa, ar);
         aml_scratch_wait(&sb, br);
 	for(int i = 0; i < nB; i++)
 	{
 		for(int j = 0; j < nB; j++)
 		{
-			int nci;
-                        int cci;
 			double *cp;
+			coff = nextci(i, j);
+			cp = aml_tiling_tilestart(&tiling_prefetch, cbaseptr, ci);
+			if(i +j != 0) aml_scratch_async_push(&sc, &cpush, c, &oldcoff, cbaseptr, oldci);
 			oldci = ci;
-			nci = nextci(i,j);
-			if(i != 0 && j != 0) aml_scratch_wait(&sc, cpush);
-			if(nci != -1) aml_scratch_async_pull(&sc, &cpull, cbaseptr, &ci, c, nci);
-			cp = aml_tiling_tilestart(&tiling_prefetch, cbaseptr, oldci);
+			aml_scratch_async_pull(&sc, &cr, cbaseptr, &ci, c, coff);
 			for(int k = 0; k < nB; k++)
 			{
 				double *ap, *bp;
-				int nai, nbi;
-				oldai = ai;
-				oldbi = bi;
-				nai = nextai(i,j,k);
-				nbi = nextbi(i,j,k);
-				if(nai != -1) aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, nai);
-				if(nbi != -1) aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, nbi);
-				ap = aml_tiling_tilestart(&tiling_prefetch, abaseptr, oldai);
-				bp = aml_tiling_tilestart(&tiling_prefetch, bbaseptr, oldbi);
+				ap = aml_tiling_tilestart(&tiling_prefetch, abaseptr, ai);
+				bp = aml_tiling_tilestart(&tiling_prefetch, bbaseptr, bi);
+				aoff = nextai(i, j, k);
+				boff = nextbi(i, j, k);
+				oldai = ai; oldbi = bi;
+				if(aoff != -1) aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, aoff);
+				if(boff != -1) aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, boff);
 				do_innerwork(ap, bp, cp);
-				if(nai != -1) aml_scratch_wait(&sa, ar);
-				if(nbi != -1) aml_scratch_wait(&sb, br);
+				if(aoff != -1) aml_scratch_wait(&sa, ar);
+				if(boff != -1) aml_scratch_wait(&sb, br);
 				aml_scratch_release(&sa, oldai);
 				aml_scratch_release(&sb, oldbi);
 			}
-			if(nci != -1) aml_scratch_wait(&sc, cpull);
-                        cci = i*nB + j;
-			aml_scratch_async_push(&sc, &cpush, c, &cci, cbaseptr, oldci);
+			if(coff != -1) aml_scratch_wait(&sc, cr);
+			if(i + j != 0) aml_scratch_wait(&sc, cpush);
 		}
 	}
-	aml_scratch_wait(&sc, cpush);
+	aml_scratch_push(&sc, c, &oldcoff, cbaseptr, oldci);
 }
 
 void find_blocking_tiling()
