@@ -430,7 +430,7 @@ void do_work()
 			cp = aml_tiling_tilestart(&tiling_prefetch, cbaseptr, ci);
 			if(i +j != 0) aml_scratch_async_push(&sc, &cpush, c, &oldcoff, cbaseptr, oldci);
 			oldci = ci;
-			aml_scratch_async_pull(&sc, &cr, cbaseptr, &ci, c, coff);
+			if(coff != -1) aml_scratch_async_pull(&sc, &cr, cbaseptr, &ci, c, coff);
 			for(int k = 0; k < nB; k++)
 			{
 				double *ap, *bp;
@@ -531,7 +531,7 @@ int main(int argc, char* argv[])
 				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
 				    &arnc, MPOL_BIND, cbm->maskp));
-	assert(!aml_dma_linux_seq_init(&dma, 3));
+	assert(!aml_dma_linux_seq_init(&dma, 4));
 	assert(!aml_scratch_par_init(&sa, &abarea, &srcarea, &dma, &tiling_prefetch, (size_t)2, (size_t)2));
 	assert(!aml_scratch_par_init(&sb, &abarea, &srcarea, &dma, &tiling_prefetch, (size_t)2, (size_t)2));
 	assert(!aml_scratch_par_init(&sc, &carea, &srcarea, &dma, &tiling_prefetch, (size_t)3, (size_t)3));
