@@ -28,7 +28,7 @@ noinst_PROGRAMS = stream_add_pth_st \
 #		  dgemm_noprefetch_gemm128_task
 #		  dgemm_noprefetch_gemm128
 
-gem_dir = /home/videau/nauts/benchmarks/gemm
+gem_dir = ./gemm
 
 #dgemm_noprefetch_gemm128_task_LDADD = gemm_128_128_12820180820_58220_1hgw8bn.o
 dgemm_noprefetch_gemm256_task_LDADD = $(gem_dir)/gemm_256_256_256.o
