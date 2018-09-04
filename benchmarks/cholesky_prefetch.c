@@ -25,44 +25,35 @@ struct timespec start0, stop0;
 int **tracker;	
 
 int cholOMP(){
+
 	#pragma omp parallel
 	#pragma omp master
 	for(int k = 0; k < tilesPerRow; k++){
 
-		#pragma omp task depend(inout:tracker[k][k])
-		{
-			if(tracker[k][k] == -1){
-				printf("Pulling tracker[%d][%d] for potrf\n", k, k);
+		if(tracker[k][k] == -1){
+				//printf("Pulling tracker[%d][%d] for potrf\n", k, k);
 				aml_scratch_pull(&sa, b, &tracker[k][k], a, aml_tiling_tileid(&tiling_row, k, k));	
-			}	
 		}		
 
 		#pragma omp task depend(in:tracker[k][k])
 		{
-			printf("Asserting tracker for potrf\n");
+			//printf("Asserting tracker for potrf\n");
 			assert(tracker[k][k] != -1);
 			double* bTile = aml_tiling_tilestart(&tiling_row, b, tracker[k][k]);
 			LAPACKE_dpotrf(LAPACK_ROW_MAJOR, 'L', T, bTile, T); 
 		}
 		
 		for(int m = k + 1; m < tilesPerRow; m++){
-			#pragma omp task depend(inout:tracker[m][k], tracker[k][k])
-			{
-								
-	
-				if(tracker[m][k] == -1){
-					printf("Pulling tracker[%d][%d] for trsm\n", m, k);
-					aml_scratch_pull(&sa, b, &tracker[m][k], a, aml_tiling_tileid(&tiling_row, m, k));
-				}
-				if(tracker[k][k] == -1){
-					printf("Pulling tracker[%d][%d] for trsm\n", k, k);
-					aml_scratch_pull(&sa, b, &tracker[k][k], a, aml_tiling_tileid(&tiling_row, k, k));
-				}		
+
+			if(tracker[m][k] == -1){
+				//printf("Pulling tracker[%d][%d] for trsm\n", m, k);
+				aml_scratch_pull(&sa, b, &tracker[m][k], a, aml_tiling_tileid(&tiling_row, m, k));
 			}
 
 			#pragma omp task depend(in:tracker[m][k], tracker[k][k])
 			{ 
-				printf("Asserting trackers for dtrsm\n");
+
+				//printf("Asserting trackers for dtrsm\n");
 				assert(tracker[m][k] != -1);
 				assert(tracker[k][k] != -1);
 				double* bTile0 = aml_tiling_tilestart(&tiling_row, b, tracker[m][k]);
@@ -74,23 +65,16 @@ int cholOMP(){
 
 		for(int m = k + 1; m < tilesPerRow; m++){
 
-			#pragma omp task depend(inout:tracker[m][k], tracker[m][m])
-			{
-								
-
-				if(tracker[m][k] == -1){
-					printf("Pulling tracker[%d][%d] for syrk\n", m, k);
-					aml_scratch_pull(&sa, b, &tracker[m][k], a, aml_tiling_tileid(&tiling_row, m, k));
-				}
-				if(tracker[m][m] == -1){
-					printf("Pulling tracker[%d][%d] for syrk\n", m, m);
+			if(tracker[m][m] == -1){
+					//printf("Pulling tracker[%d][%d] for syrk\n", m, m);
 					aml_scratch_pull(&sa, b, &tracker[m][m], a, aml_tiling_tileid(&tiling_row, m, m));
-				}
-			} 
+			}
 
+		
 			#pragma omp task depend(in:tracker[m][k], tracker[m][m])
 			{
-				printf("Asserting trackers for syrk\n");
+
+				//printf("Asserting trackers for syrk\n");
 				assert(tracker[m][k] != -1);
 				assert(tracker[m][m] != -1);
 				double* bTile0 = aml_tiling_tilestart(&tiling_row, b, tracker[m][k]);
@@ -99,28 +83,24 @@ int cholOMP(){
 			}
 			for(int i = k + 1; i < m; i++){
 				
-				#pragma omp task depend(inout:tracker[m][k], tracker[i][k], tracker[m][i])
-				{
-												
-
-					if(tracker[m][k] == -1){
-						printf("Pulling tracker[%d][%d] for gemm\n", m, k);
-						aml_scratch_pull(&sa, b, &tracker[m][k], a, aml_tiling_tileid(&tiling_row, m, k));
-					}
-					if(tracker[i][k] == -1){
-						printf("Pulling tracker[%d][%d] for gemm\n", i, k);
-						aml_scratch_pull(&sa, b, &tracker[i][k], a, aml_tiling_tileid(&tiling_row, i, k));
-					}
-					if(tracker[m][i] == -1){
-						printf("Pulling tracker[%d][%d] for gemm\n", m, i);
-						aml_scratch_pull(&sa, b, &tracker[m][i], a, aml_tiling_tileid(&tiling_row, m, i));
-					}
-
-				}				
+				if(tracker[m][k] == -1){
+					//printf("Pulling tracker[%d][%d] for gemm\n", m, k);
+					aml_scratch_pull(&sa, b, &tracker[m][k], a, aml_tiling_tileid(&tiling_row, m, k));
+				}
+				if(tracker[i][k] == -1){
+					//printf("Pulling tracker[%d][%d] for gemm\n", i, k);
+					aml_scratch_pull(&sa, b, &tracker[i][k], a, aml_tiling_tileid(&tiling_row, i, k));
+				}
+				if(tracker[m][i] == -1){
+					//printf("Pulling tracker[%d][%d] for gemm\n", m, i);
+					aml_scratch_pull(&sa, b, &tracker[m][i], a, aml_tiling_tileid(&tiling_row, m, i));
+				}
+				
 
 				#pragma omp task depend(in:tracker[m][k], tracker[i][k], tracker[m][i])
 				{
-					printf("Asserting trackers for gemm\n");
+
+					//printf("Asserting trackers for gemm\n");
 					assert(tracker[m][k] != -1);
 					assert(tracker[i][k] != -1);
 					assert(tracker[m][i] != -1);
@@ -131,6 +111,8 @@ int cholOMP(){
 				}
 			}
 		}
+
+
 
 	//#pragma omp task depend(inout:tracker[0:k][0:k])
 	{
