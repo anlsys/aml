@@ -12,7 +12,7 @@
 
 unsigned long tilesz, tileElements, memsize, tilesPerRow, N, T;
 
-AML_TILING_2D_CONTIG_ROWMAJOR_DECL(tiling_row);
+AML_TILING_2D_ROWMAJOR_DECL(tiling_row);
 AML_AREA_LINUX_DECL(slow);
 AML_AREA_LINUX_DECL(fast);
 
@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
 	slowb = numa_parse_nodestring_all(argv[2]);
 	N = atol(argv[3]);
 	T = atol(argv[4]);
+
  	memsize = sizeof(double)*N*N;
 	tilesz = sizeof(double)*T*T;
 	tileElements = T * T;
@@ -71,7 +72,7 @@ int main(int argc, char *argv[])
 				    &arnf, MPOL_BIND, fastb->maskp));
 	a = aml_area_malloc(&fast, memsize);
 
-	assert(!aml_tiling_init(&tiling_row, AML_TILING_TYPE_2D_CONTIG_ROWMAJOR,
+	assert(!aml_tiling_init(&tiling_row, AML_TILING_TYPE_2D_ROWMAJOR,
 				tilesz, memsize, N/T , N/T));
 
 	assert(a != NULL);
@@ -90,15 +91,15 @@ int main(int argc, char *argv[])
 	clock_gettime(CLOCK_REALTIME, &stop);
 	long long int time = 0;
 	double flops;
-
+	cholOMP(a);
 	clock_gettime(CLOCK_REALTIME, &start0);
-		
-	cholOMP(a);		
-
+	for(int s = 0; s < 10; s++){	
+		cholOMP(a);		
+	}
 	clock_gettime(CLOCK_REALTIME, &stop0);
 	time =  (stop0.tv_nsec - start0.tv_nsec) +
                 1e9* (stop0.tv_sec - start0.tv_sec);
-	flops = ((pow(N, 3.0)/3)/(time/1e9));
+	flops = ((pow(N, 3.0)/3)/(time/1e9))*10;
 	printf("cholesky-aml: %llu %lld %lld %lf\n", N, memsize, time, flops/1e9);	
 
 	aml_area_free(&fast, a);

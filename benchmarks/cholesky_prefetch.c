@@ -14,6 +14,7 @@
 #include <stdlib.h>
 
 unsigned long tilesz, tileElements, memsize, tilesPerRow, N, T;
+
 AML_TILING_2D_ROWMAJOR_DECL(tiling_row);
 AML_AREA_LINUX_DECL(slow);
 AML_AREA_LINUX_DECL(fast);
@@ -30,13 +31,14 @@ int cholOMP(){
 	#pragma omp master
 	for(int k = 0; k < tilesPerRow; k++){
 
-		if(tracker[k][k] == -1){
+			if(tracker[k][k] == -1){
 				//printf("Pulling tracker[%d][%d] for potrf\n", k, k);
 				aml_scratch_pull(&sa, b, &tracker[k][k], a, aml_tiling_tileid(&tiling_row, k, k));	
-		}		
+			}	
 
-		#pragma omp task depend(in:tracker[k][k])
+		#pragma omp task depend(inout:tracker[k][k])
 		{
+			
 			//printf("Asserting tracker for potrf\n");
 			assert(tracker[k][k] != -1);
 			double* bTile = aml_tiling_tilestart(&tiling_row, b, tracker[k][k]);
@@ -46,14 +48,14 @@ int cholOMP(){
 		for(int m = k + 1; m < tilesPerRow; m++){
 
 			if(tracker[m][k] == -1){
-				//printf("Pulling tracker[%d][%d] for trsm\n", m, k);
-				aml_scratch_pull(&sa, b, &tracker[m][k], a, aml_tiling_tileid(&tiling_row, m, k));
-			}
+					//printf("Pulling tracker[%d][%d] for trsm\n", m, k);
+					aml_scratch_pull(&sa, b, &tracker[m][k], a, aml_tiling_tileid(&tiling_row, m, k));
+				}
 
-			#pragma omp task depend(in:tracker[m][k], tracker[k][k])
+			#pragma omp task depend(inout:tracker[m][k], tracker[k][k])
 			{ 
 
-				//printf("Asserting trackers for dtrsm\n");
+							//printf("Asserting trackers for dtrsm\n");
 				assert(tracker[m][k] != -1);
 				assert(tracker[k][k] != -1);
 				double* bTile0 = aml_tiling_tilestart(&tiling_row, b, tracker[m][k]);
@@ -65,16 +67,16 @@ int cholOMP(){
 
 		for(int m = k + 1; m < tilesPerRow; m++){
 
-			if(tracker[m][m] == -1){
+		if(tracker[m][m] == -1){
 					//printf("Pulling tracker[%d][%d] for syrk\n", m, m);
 					aml_scratch_pull(&sa, b, &tracker[m][m], a, aml_tiling_tileid(&tiling_row, m, m));
-			}
+				}
 
 		
-			#pragma omp task depend(in:tracker[m][k], tracker[m][m])
+			#pragma omp task depend(inout:tracker[m][k], tracker[m][m])
 			{
 
-				//printf("Asserting trackers for syrk\n");
+								//printf("Asserting trackers for syrk\n");
 				assert(tracker[m][k] != -1);
 				assert(tracker[m][m] != -1);
 				double* bTile0 = aml_tiling_tilestart(&tiling_row, b, tracker[m][k]);
@@ -83,23 +85,24 @@ int cholOMP(){
 			}
 			for(int i = k + 1; i < m; i++){
 				
-				if(tracker[m][k] == -1){
-					//printf("Pulling tracker[%d][%d] for gemm\n", m, k);
-					aml_scratch_pull(&sa, b, &tracker[m][k], a, aml_tiling_tileid(&tiling_row, m, k));
-				}
-				if(tracker[i][k] == -1){
-					//printf("Pulling tracker[%d][%d] for gemm\n", i, k);
-					aml_scratch_pull(&sa, b, &tracker[i][k], a, aml_tiling_tileid(&tiling_row, i, k));
-				}
-				if(tracker[m][i] == -1){
-					//printf("Pulling tracker[%d][%d] for gemm\n", m, i);
-					aml_scratch_pull(&sa, b, &tracker[m][i], a, aml_tiling_tileid(&tiling_row, m, i));
-				}
-				
+							if(tracker[m][k] == -1){
+						//printf("Pulling tracker[%d][%d] for gemm\n", m, k);
+						aml_scratch_pull(&sa, b, &tracker[m][k], a, aml_tiling_tileid(&tiling_row, m, k));
+					}
+					if(tracker[i][k] == -1){
+						//printf("Pulling tracker[%d][%d] for gemm\n", i, k);
+						aml_scratch_pull(&sa, b, &tracker[i][k], a, aml_tiling_tileid(&tiling_row, i, k));
+					}
+					if(tracker[m][i] == -1){
+						//printf("Pulling tracker[%d][%d] for gemm\n", m, i);
+						aml_scratch_pull(&sa, b, &tracker[m][i], a, aml_tiling_tileid(&tiling_row, m, i));
+					}
+		
 
-				#pragma omp task depend(in:tracker[m][k], tracker[i][k], tracker[m][i])
+				#pragma omp task depend(inout:tracker[m][k], tracker[i][k], tracker[m][i])
 				{
 
+					
 					//printf("Asserting trackers for gemm\n");
 					assert(tracker[m][k] != -1);
 					assert(tracker[i][k] != -1);
@@ -148,6 +151,7 @@ int main(int argc, char *argv[])
 	slowb = numa_parse_nodestring_all(argv[2]);
 	N = atol(argv[3]);
 	T = atol(argv[4]);
+	
  	memsize = sizeof(double)*N*N;
 	tilesz = sizeof(double)*T*T;
 	tileElements = T * T;
@@ -160,6 +164,7 @@ int main(int argc, char *argv[])
 	}
 	for(int i = 0; i < tilesPerRow; i++){
 		for(int j = 0; j <tilesPerRow; j++){
+			aml_scratch_release(&sa, tracker[i][j]);
 			tracker[i][j] = -1;
 		}
 	}
@@ -185,9 +190,9 @@ int main(int argc, char *argv[])
 				    &arnf, MPOL_BIND, fastb->maskp));
 	assert(!aml_dma_linux_seq_init(&dma, 4));
 
-	printf("Attempting to make scratchpad in fast mem\n");
+	printf(" ");
 	assert(!aml_scratch_seq_init(&sa, &fast, &slow, &dma, &tiling_row, (size_t)(tilesPerRow*tilesPerRow), 2));
-	printf("Sucessfully created a scratchpad in fast mem\n");
+	printf(" ");
 	
 	a = aml_area_malloc(&slow, memsize);
 	b = aml_scratch_baseptr(&sa);
@@ -204,18 +209,33 @@ int main(int argc, char *argv[])
 	int index = 0;
 	char uplo = 'L';
 	int descA[9];
+	cholOMP();
+	for(int i = 0; i < tilesPerRow; i++){
+		for(int j = 0; j< tilesPerRow; j++){
+			tracker[i][j] = -1;
+		}
+	}
 
 	clock_gettime(CLOCK_REALTIME, &stop);
 	long long int time = 0;
 	double flops;
 
 	clock_gettime(CLOCK_REALTIME, &start0);
-		
-	cholOMP();		
-
-	clock_gettime(CLOCK_REALTIME, &stop0);
-	time =  (stop0.tv_nsec - start0.tv_nsec) +
+	for(int g = 0; g < 10; g++){
+		clock_gettime(CLOCK_REALTIME, &start0);		
+		cholOMP();
+		clock_gettime(CLOCK_REALTIME, &stop0);
+		time +=  (stop0.tv_nsec - start0.tv_nsec) +
                 1e9* (stop0.tv_sec - start0.tv_sec);
+		for(int i = 0; i < tilesPerRow; i++){
+			for(int j = 0; j< tilesPerRow; j++){
+				tracker[i][j] = -1;
+			}
+		}
+
+	}
+
+		time = time/10;
 	flops = ((pow(N, 3.0)/3)/(time/1e9));
 	printf("cholesky-aml: %llu %lld %lld %lf\n", N, memsize, time, flops/1e9);	
 
