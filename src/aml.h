@@ -1766,6 +1766,57 @@ int aml_scratch_par_vinit(struct aml_scratch *scratch, va_list args);
 int aml_scratch_par_destroy(struct aml_scratch *scratch);
 
 /*******************************************************************************
+ * Hypervolume copy and transpose functions.
+ ******************************************************************************/
+
+/*
+ * Copies a (sub-)hypervolume to another (sub-)hypervolume.
+ * "d": number of dimensions.
+ * "dst": pointer to the destination hypervolume.
+ * "dst_pitch": pointer to d-1 pitch values representing the pitch
+ *              in each dimension of the destination hypervolume.
+ * "src": pointer to the source hypervolume.
+ * "src_pitch": pointer to d-1 pitch values representing the pitch
+ *              in each dimension of the source hypervolume.
+ * "elem_number": pointer to d values representing the number of elements
+ *                in each dimension of the (sub-)hypervolume to copy.
+ * "elem_size": size of memory elements.
+ */
+int aml_copy_nd(size_t d, void *dst, const size_t *dst_pitch, const void *src, const size_t *src_pitch, const size_t *elem_number, const size_t elem_size);
+/*
+ * Copies a (sub-)hypervolume to another (sub-)hypervolume while transposing.
+ * Reverse of aml_copy_rtnd.
+ * Example a[3][4][5] -> b[5][3][4] (C notation).
+ * "d": number of dimensions.
+ * "dst": pointer to the destination hypervolume.
+ * "dst_pitch": pointer to d-1 pitch values representing the pitch
+ *              in each dimension of the destination hypervolume.
+ * "src": pointer to the source hypervolume.
+ * "src_pitch": pointer to d-1 pitch values representing the pitch
+ *              in each dimension of the source hypervolume.
+ * "elem_number": pointer to d values representing the number of elements
+ *                in each dimension of the (sub-)hypervolume to copy.
+ * "elem_size": size of memory elements in the src hypervolume order.
+ */
+int aml_copy_tnd(size_t d, void *dst, const size_t *dst_pitch, const void *src, const size_t *src_pitch, const size_t *elem_number, const size_t elem_size);
+/*
+ * Copies a (sub-)hypervolume to another (sub-)hypervolume while transposing.
+ * Reverse of aml_copy_tnd.
+ * Example a[3][4][5] -> b[4][5][3] (C notation).
+ * "d": number of dimensions.
+ * "dst": pointer to the destination hypervolume.
+ * "dst_pitch": pointer to d-1 pitch values representing the pitch
+ *              in each dimension of the destination hypervolume.
+ * "src": pointer to the source hypervolume.
+ * "src_pitch": pointer to d-1 pitch values representing the pitch
+ *              in each dimension of the source hypervolume.
+ * "elem_number": pointer to d values representing the number of elements
+ *                in each dimension of the (sub-)hypervolume to copy.
+ * "elem_size": size of memory elements in the src hypervolume order.
+ */
+int aml_copy_rtnd(size_t d, void *dst, const size_t *dst_pitch, const void *src, const size_t *src_pitch, const size_t *elem_number, const size_t elem_size);
+
+/*******************************************************************************
  * General functions:
  * Initialize internal structures, cleanup everything at the end.
  ******************************************************************************/

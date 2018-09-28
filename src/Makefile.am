@@ -14,6 +14,8 @@ TILING_CSOURCES = tiling.c \
 		  tiling_1d.c \
 		  tiling_2d.c
 
+COPYND_CSOURCES = copy_nd.c
+
 BINDING_CSOURCES = binding.c \
 		   binding_single.c \
 		   binding_interleave.c
@@ -34,6 +36,7 @@ LIBCSOURCES = aml.c area.c arena.c \
 	      $(AREA_LINUX_CSOURCES) \
 	      $(AREA_POSIX_CSOURCES) \
 	      $(TILING_CSOURCES) \
+	      $(COPYND_CSOURCES) \
 	      $(BINDING_CSOURCES) \
 	      $(DMA_CSOURCES) \
 	      $(SCRATCH_CSOURCES)
