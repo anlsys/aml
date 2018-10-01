@@ -115,22 +115,19 @@ static void aml_copy_rtnd_helper(size_t d, void *dst, size_t *cumul_dst_pitch, c
         if(d == 2)
                 aml_copy_t2d(dst, cumul_dst_pitch, src, cumul_src_pitch, elem_number, elem_size);
         else {
-                size_t * new_cumul_dst_pitch = (size_t *)alloca((d-2)*sizeof(size_t));
                 size_t * new_cumul_src_pitch = (size_t *)alloca((d-2)*sizeof(size_t));
                 size_t * new_elem_number = (size_t *)alloca((d-1)*sizeof(size_t));
-                // process dimension 1
-                new_cumul_dst_pitch[0] = cumul_dst_pitch[0];
-                for(int i = 1; i < d-2; i++)
-                        new_cumul_dst_pitch[i] = cumul_dst_pitch[i+1];
+                // process dimension d-2
+                for(int i = 0; i < d-3; i++)
+                        new_cumul_src_pitch[i] = cumul_src_pitch[i];
+                new_cumul_src_pitch[d-3] = cumul_src_pitch[d-2];
                 for(int i = 0; i < d-2; i++)
-                        new_cumul_src_pitch[i] = cumul_src_pitch[i+1];
-                new_elem_number[0] = elem_number[0];
-                for(int i = 1; i < d-1; i++)
-                        new_elem_number[i] = elem_number[i+1];
-                for(int i = 0; i < elem_number[1]; i++) {
-                        aml_copy_rtnd_helper(d-1, dst, new_cumul_dst_pitch, src, new_cumul_src_pitch, new_elem_number, elem_size);
-                        dst += cumul_dst_pitch[1];
-                        src += cumul_src_pitch[0];
+                        new_elem_number[i] = elem_number[i];
+                new_elem_number[d-2] = elem_number[d-1];
+                for(int i = 0; i < elem_number[d-2]; i++) {
+                        aml_copy_rtnd_helper(d-1, dst, cumul_dst_pitch, src, new_cumul_src_pitch, new_elem_number, elem_size);
+                        dst += cumul_dst_pitch[d-2];
+                        src += cumul_src_pitch[d-3];
                 }
         }
 }
