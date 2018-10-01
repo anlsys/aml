@@ -270,6 +270,7 @@ void test_copy_t4d() {
 }
 
 int main(int argc, char *argv[])
+{
         test_copy_2d();
         test_copy_t2d();
         test_copy_3d();
