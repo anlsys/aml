@@ -63,13 +63,13 @@ static inline void aml_copy_t2d(void *dst, const size_t *cumul_dst_pitch, const 
 // s[i + j * sp[0]]
 // s[i + j * sp[0] + k * sp[0] * sp[1]]
 // s[i + j * sp[0] + k * sp[0] * sp[1] + l * sp[0] * sp[1] * sp[2]]
-static inline void aml_copy_tnd_helper(size_t d, void *dst, size_t *cumul_dst_pitch, const void *src, const size_t *cumul_src_pitch, const size_t *elem_number, const size_t elem_size)
+static void aml_copy_tnd_helper(size_t d, void *dst, size_t *cumul_dst_pitch, const void *src, const size_t *cumul_src_pitch, const size_t *elem_number, const size_t elem_size)
 {
         if(d == 2)
                 aml_copy_t2d(dst, cumul_dst_pitch, src, cumul_src_pitch, elem_number, elem_size);
         else {
                 size_t * new_cumul_dst_pitch = (size_t *)alloca((d-1)*sizeof(size_t));
-                //process dimension d-1
+                // process dimension d-1
                 for(int i = 0; i < d-3; i++)
                         new_cumul_dst_pitch[i] = cumul_dst_pitch[i];
                 new_cumul_dst_pitch[d-3] = cumul_dst_pitch[d-2];
@@ -110,7 +110,7 @@ int aml_copy_tnd(size_t d, void *dst, const size_t *dst_pitch, const void *src, 
 // s[i + l * sp[0]]
 // s[i + k * sp[0] + l * sp[0] * sp[1]]
 // s[i + j * sp[0] + k * sp[0] * sp[1] + l * sp[0] * sp[1] * sp[2]]
-static inline void aml_copy_rtnd_helper(size_t d, void *dst, size_t *cumul_dst_pitch, const void *src, size_t *cumul_src_pitch, size_t *elem_number, const size_t elem_size)
+static void aml_copy_rtnd_helper(size_t d, void *dst, size_t *cumul_dst_pitch, const void *src, size_t *cumul_src_pitch, size_t *elem_number, const size_t elem_size)
 {
         if(d == 2)
                 aml_copy_t2d(dst, cumul_dst_pitch, src, cumul_src_pitch, elem_number, elem_size);
