@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-static inline void aml_copy_2d(void *dst, const size_t *cumul_dst_pitch, const void *src, const size_t *cumul_src_pitch, const size_t *elem_number, size_t elem_size)
+static inline void aml_copy_2d_helper(void *dst, const size_t *cumul_dst_pitch, const void *src, const size_t *cumul_src_pitch, const size_t *elem_number, size_t elem_size)
 {
         for(int i = 0; i < elem_number[1]; i++) {
                 memcpy(dst, src, elem_number[0]*elem_size);
@@ -13,7 +13,7 @@ static inline void aml_copy_2d(void *dst, const size_t *cumul_dst_pitch, const v
 
 static inline void aml_copy_nd_helper(size_t d, void *dst, const size_t *cumul_dst_pitch, const void *src, const size_t *cumul_src_pitch, const size_t *elem_number, const size_t elem_size) {
         if(d == 2)
-                aml_copy_2d(dst, cumul_dst_pitch, src, cumul_src_pitch, elem_number, elem_size);
+                aml_copy_2d_helper(dst, cumul_dst_pitch, src, cumul_src_pitch, elem_number, elem_size);
         else {
                 for(int i = 0; i < elem_number[d-1]; i++) {
                         aml_copy_nd_helper(d-1, dst, cumul_dst_pitch, src, cumul_src_pitch, elem_number, elem_size);
@@ -27,9 +27,8 @@ int aml_copy_nd(size_t d, void *dst, const size_t *dst_pitch, const void *src, c
 {
         assert(d > 0);
         if(d == 1)
-        {
                 memcpy(dst, src, elem_number[0]*elem_size);
-        } else {
+        else {
                 size_t * cumul_dst_pitch = (size_t *)alloca((d-1)*sizeof(size_t));
                 size_t * cumul_src_pitch = (size_t *)alloca((d-1)*sizeof(size_t));
                 assert(dst_pitch[0] >= elem_number[0]);
@@ -48,7 +47,7 @@ int aml_copy_nd(size_t d, void *dst, const size_t *dst_pitch, const void *src, c
 }
 
 
-static inline void aml_copy_t2d(void *dst, const size_t *cumul_dst_pitch, const void *src, const size_t *cumul_src_pitch, const size_t *elem_number, const size_t elem_size)
+static inline void aml_copy_t2d_helper(void *dst, const size_t *cumul_dst_pitch, const void *src, const size_t *cumul_src_pitch, const size_t *elem_number, const size_t elem_size)
 {
         for(int j = 0; j < elem_number[1]; j++)
                 for(int i = 0; i < elem_number[0]; i++)
@@ -66,7 +65,7 @@ static inline void aml_copy_t2d(void *dst, const size_t *cumul_dst_pitch, const 
 static void aml_copy_tnd_helper(size_t d, void *dst, size_t *cumul_dst_pitch, const void *src, const size_t *cumul_src_pitch, const size_t *elem_number, const size_t elem_size)
 {
         if(d == 2)
-                aml_copy_t2d(dst, cumul_dst_pitch, src, cumul_src_pitch, elem_number, elem_size);
+                aml_copy_t2d_helper(dst, cumul_dst_pitch, src, cumul_src_pitch, elem_number, elem_size);
         else {
                 size_t * new_cumul_dst_pitch = (size_t *)alloca((d-1)*sizeof(size_t));
                 // process dimension d-1
@@ -85,9 +84,8 @@ int aml_copy_tnd(size_t d, void *dst, const size_t *dst_pitch, const void *src, 
 {
         assert(d > 0);
         if(d == 1)
-        {
                 memcpy(dst, src, elem_number[0]*elem_size);
-        } else {
+        else {
                 size_t * cumul_dst_pitch = (size_t *)alloca((d-1)*sizeof(size_t));
                 size_t * cumul_src_pitch = (size_t *)alloca((d-1)*sizeof(size_t));
                 assert(dst_pitch[0] >= elem_number[1]);
@@ -110,10 +108,10 @@ int aml_copy_tnd(size_t d, void *dst, const size_t *dst_pitch, const void *src, 
 // s[i + l * sp[0]]
 // s[i + k * sp[0] + l * sp[0] * sp[1]]
 // s[i + j * sp[0] + k * sp[0] * sp[1] + l * sp[0] * sp[1] * sp[2]]
-static void aml_copy_rtnd_helper(size_t d, void *dst, size_t *cumul_dst_pitch, const void *src, size_t *cumul_src_pitch, size_t *elem_number, const size_t elem_size)
+static void aml_copy_rtnd_helper(size_t d, void *dst, const size_t *cumul_dst_pitch, const void *src, const size_t *cumul_src_pitch, const size_t *elem_number, const size_t elem_size)
 {
         if(d == 2)
-                aml_copy_t2d(dst, cumul_dst_pitch, src, cumul_src_pitch, elem_number, elem_size);
+                aml_copy_t2d_helper(dst, cumul_dst_pitch, src, cumul_src_pitch, elem_number, elem_size);
         else {
                 size_t * new_cumul_src_pitch = (size_t *)alloca((d-2)*sizeof(size_t));
                 size_t * new_elem_number = (size_t *)alloca((d-1)*sizeof(size_t));
@@ -136,9 +134,8 @@ int aml_copy_rtnd(size_t d, void *dst, const size_t *dst_pitch, const void *src,
 {
         assert(d > 0);
         if(d == 1)
-        {
                 memcpy(dst, src, elem_number[0]*elem_size);
-        } else {
+        else {
                 size_t * cumul_dst_pitch = (size_t *)alloca((d-1)*sizeof(size_t));
                 size_t * cumul_src_pitch = (size_t *)alloca((d-1)*sizeof(size_t));
                 size_t * new_elem_number = (size_t *)alloca(d*sizeof(size_t));
