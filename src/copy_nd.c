@@ -12,7 +12,7 @@ static inline void aml_copy_2d_helper(void *dst, const size_t *cumul_dst_pitch, 
         }
 }
 
-static inline void aml_copy_nd_helper(size_t d, void *dst, const size_t *cumul_dst_pitch, const void *src, const size_t *cumul_src_pitch, const size_t *elem_number, const size_t elem_size) {
+static void aml_copy_nd_helper(size_t d, void *dst, const size_t *cumul_dst_pitch, const void *src, const size_t *cumul_src_pitch, const size_t *elem_number, const size_t elem_size) {
         if(d == 2)
                 aml_copy_2d_helper(dst, cumul_dst_pitch, src, cumul_src_pitch, elem_number, elem_size);
         else {
