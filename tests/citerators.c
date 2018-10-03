@@ -110,7 +110,7 @@ void test_range_iterator(void) {
 	citerator_free( its[1] );
 	citerator_free( its[2] );
 
-	assert( citerator_split(it, 24, its) == ERANGE );
+	assert( citerator_split(it, 24, its) == EDOM );
 	assert( citerator_split(it, 0, its) == EINVAL );
 	assert( citerator_split(it, -1, its) == EINVAL );
 	citerator_free( it );
@@ -297,7 +297,7 @@ void test_product_iterators(void) {
 	citerator_free(its[0]);
 	citerator_free(its[1]);
 
-	assert( citerator_product_split_dim(it, 2, 15, its) == ERANGE );
+	assert( citerator_product_split_dim(it, 2, 15, its) == EDOM );
 
 	assert( citerator_split(it, 5, its) == 0 );
 
@@ -649,7 +649,7 @@ void test_hilbert2d_iterator() {
 	citerator_free(its[1]);
 	citerator_free(its[2]);
 
-	assert( citerator_split(it, 17, its) == ERANGE );
+	assert( citerator_split(it, 17, its) == EDOM );
 
 	citerator_free(it);
 }

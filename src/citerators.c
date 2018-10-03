@@ -179,7 +179,7 @@ int citerator_slice_init( citerator_t iterator, citerator_t src, citerator_t ind
 	if (err)
 		return err;
 	if (size_indexer > size_src)
-		return ERANGE;
+		return EDOM;
 	it->src = src;
 	it->indexer = indexer;
 	iterator->dimension = src->dimension;
@@ -277,7 +277,7 @@ static int product_iterator_nth( const citerator_t data, citerator_index_t n, ci
 	if (err)
 		return err;
 	if (n < 0 || n >= size)
-		return ERANGE;
+		return EDOM;
 	product_iterator_t *iterator = (product_iterator_t *)data->data;
 	if( indexes ) {
 		citerator_index_t subsize = 0;
@@ -454,7 +454,7 @@ int citerator_product_split_dim( const citerator_t iterator, citerator_index_t d
 	if (err)
 		return err;
 	if ( dim >= count )
-		return ERANGE;
+		return EDOM;
 	product_iterator_t * product_iterator = (product_iterator_t *)iterator->data;
 	err = citerator_split( product_iterator->iterators[dim], n, results);
 	if (err)
@@ -668,7 +668,7 @@ static int cons_iterator_nth( const citerator_t data, citerator_index_t n, citer
 	if (err)
 		return err;
 	if (n < 0 || n >= size)
-		return ERANGE;
+		return EDOM;
 	cons_iterator_t *iterator = (cons_iterator_t *)data->data;
 	int dim = iterator->iterator->dimension;
 	if (indexes) {
@@ -884,7 +884,7 @@ static int repeat_iterator_nth( const citerator_t data, citerator_index_t n, cit
 	if (err)
 		return err;
 	if (n < 0 || n >= size)
-		return ERANGE;
+		return EDOM;
 	repeat_iterator_t *iterator = (repeat_iterator_t *)data->data;
 	return citerator_nth(iterator->iterator, n / iterator->n, val);
 }
@@ -1247,7 +1247,7 @@ static int range_iterator_nth( const citerator_t data, citerator_index_t n, cite
 	if (err)
 		return err;
 	if (n < 0 || n >= size)
-		return ERANGE;
+		return EDOM;
 	if (val) {
 		range_iterator_t *iterator = (range_iterator_t *)data->data;
 		*val = iterator->first + n*iterator->step;
@@ -1290,7 +1290,7 @@ static int range_iterator_split( const citerator_t data, citerator_index_t n, ci
 		return err;
 	int block_size = size/n;
 	if (block_size <= 0)
-		return ERANGE;
+		return EDOM;
 	if (!results)
 		return 0;
 	citerator_index_t new_last = iterator->last;
