@@ -14,6 +14,8 @@ TILING_CSOURCES = tiling.c \
 		  tiling_1d.c \
 		  tiling_2d.c
 
+CITERATORS_CSOURCES = citerators.c
+
 COPYND_CSOURCES = copy_nd.c
 
 BINDING_CSOURCES = binding.c \
@@ -36,12 +38,14 @@ LIBCSOURCES = aml.c area.c arena.c \
 	      $(AREA_LINUX_CSOURCES) \
 	      $(AREA_POSIX_CSOURCES) \
 	      $(TILING_CSOURCES) \
+	      $(CITERATORS_CSOURCES) \
 	      $(COPYND_CSOURCES) \
 	      $(BINDING_CSOURCES) \
 	      $(DMA_CSOURCES) \
 	      $(SCRATCH_CSOURCES)
 
-LIBHSOURCES = aml.h
+LIBHSOURCES = aml.h \
+              citerators.h
 
 libaml_la_SOURCES = $(LIBCSOURCES) $(LIBHSOURCES)
 libaml_la_LIBADD = -L$(top_srcdir)/jemalloc/lib/ -ljemalloc-aml

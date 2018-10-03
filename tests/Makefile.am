@@ -23,6 +23,8 @@ AREA_POSIX_TESTS = area_posix
 TILING_TESTS = tiling \
 	       tiling_2d
 
+CITERATORS_TESTS = citerators
+
 COPYND_TESTS = copy_nd
 
 BINDING_TESTS = binding
@@ -38,6 +40,7 @@ UNIT_TESTS = $(ARENA_JEMALLOC_TESTS) \
 	     $(UTILS_TESTS) \
 	     $(TILING_TESTS) \
 	     $(COPYND_TESTS) \
+	     $(CITERATORS_TESTS) \
 	     $(BINDING_TESTS) \
 	     $(AREA_LINUX_TESTS) \
 	     $(AREA_POSIX_TESTS) \
