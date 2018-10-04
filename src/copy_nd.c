@@ -2,13 +2,14 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <alloca.h>
 
 static inline void aml_copy_2d_helper(void *dst, const size_t *cumul_dst_pitch, const void *src, const size_t *cumul_src_pitch, const size_t *elem_number, size_t elem_size)
 {
         for(int i = 0; i < elem_number[1]; i++) {
                 memcpy(dst, src, elem_number[0]*elem_size);
-                dst += cumul_dst_pitch[0];
-                src += cumul_src_pitch[0];
+                dst = (void *)((uintptr_t)dst + cumul_dst_pitch[0]);
+                src = (void *)((uintptr_t)src + cumul_src_pitch[0]);
         }
 }
 
@@ -18,8 +19,8 @@ static void aml_copy_nd_helper(size_t d, void *dst, const size_t *cumul_dst_pitc
         else {
                 for(int i = 0; i < elem_number[d-1]; i++) {
                         aml_copy_nd_helper(d-1, dst, cumul_dst_pitch, src, cumul_src_pitch, elem_number, elem_size);
-                        dst += cumul_dst_pitch[d-2];
-                        src += cumul_src_pitch[d-2];
+                        dst = (void *)((uintptr_t)dst + cumul_dst_pitch[d-2]);
+                        src = (void *)((uintptr_t)src + cumul_src_pitch[d-2]);
                 }
         }
 }
@@ -51,8 +52,8 @@ static void aml_copy_sh2d_helper(const size_t *target_dims, void *dst, const siz
 {
         for(int j = 0; j < elem_number[1]; j++)
                 for(int i = 0; i < elem_number[0]; i++)
-                        memcpy(dst + i * cumul_dst_pitch[target_dims[0]] + j * cumul_dst_pitch[target_dims[1]],
-                               src + i * cumul_src_pitch[0] + j * cumul_src_pitch[1],
+                        memcpy((void *)((uintptr_t)dst + i * cumul_dst_pitch[target_dims[0]] + j * cumul_dst_pitch[target_dims[1]]),
+                               (void *)((uintptr_t)src + i * cumul_src_pitch[0] + j * cumul_src_pitch[1]),
                                elem_size);
 }
 
@@ -64,8 +65,8 @@ static void aml_copy_shnd_helper(size_t d, const size_t *target_dims, void *dst,
                 // process dimension d-1
                 for(int i = 0; i < elem_number[d-1]; i++) {
                         aml_copy_shnd_helper(d-1, target_dims, dst, cumul_dst_pitch, src, cumul_src_pitch, elem_number, elem_size);
-                        dst += cumul_dst_pitch[target_dims[d-1]];
-                        src += cumul_src_pitch[d-1];
+                        dst = (void *)((uintptr_t)dst + cumul_dst_pitch[target_dims[d-1]]);
+                        src = (void *)((uintptr_t)src + cumul_src_pitch[d-1]);
                 }
         }
 }

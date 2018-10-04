@@ -827,7 +827,7 @@ static int repeat_iterator_alloc( citerator_t data ) {
 	iterator->n = 0;
 	iterator->counter = 0;
 	return 0;
-};
+}
 
 static void repeat_iterator_free( citerator_t data ) {
 	repeat_iterator_t *iterator = (repeat_iterator_t *)data->data;
