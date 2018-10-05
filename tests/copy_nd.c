@@ -117,6 +117,48 @@ void test_copy_3d() {
 
 }
 
+void test_copy_3dstr() {
+	size_t elem_number[3] = {5, 3, 2};
+	size_t src_pitch[3] = {10, 6, 4};
+	size_t src_stride[3] = {2, 2, 2};
+	size_t dst_pitch[3] = {5, 3, 2};
+	size_t dst_stride[3] = {1, 1, 1};
+
+	double src[4][6][10];
+	double dst[2][3][5];
+	double dst2[4][6][10];
+
+	double ref_dst2[4][6][10];
+	double ref_dst[2][3][5];
+
+	for(int k = 0; k < 4; k++)
+	for(int j = 0; j < 6; j++)
+	for(int i = 0; i < 10; i++) {
+		src[k][j][i] = (double)(i + j*10 + k*10*6);
+		ref_dst2[k][j][i] = 0.0;
+		dst2[k][j][i] = 0.0;
+	}
+	for(int k = 0; k < 2; k++)
+	for(int j = 0; j < 3; j++)
+	for(int i = 0; i < 5; i++) {
+		dst[k][j][i] = 0.0;
+		ref_dst[k][j][i] = src[2*k][2*j][2*i];
+		ref_dst2[2*k][2*j][2*i] = src[2*k][2*j][2*i];
+	}
+
+	aml_copy_ndstr(3, dst, dst_pitch, dst_stride, src, src_pitch, src_stride, elem_number, sizeof(double));
+	for(int k = 0; k < 2; k++)
+	for(int j = 0; j < 3; j++)
+	for(int i = 0; i < 5; i++)
+		assert( ref_dst[k][j][i] == dst[k][j][i] );
+
+	aml_copy_ndstr(3, dst2, src_pitch, src_stride, dst, dst_pitch, dst_stride, elem_number, sizeof(double));
+	for(int k = 0; k < 4; k++)
+	for(int j = 0; j < 6; j++)
+	for(int i = 0; i < 10; i++)
+		assert( ref_dst2[k][j][i] == dst2[k][j][i] );
+}
+
 void test_copy_t3d() {
 	size_t elem_number[3] = {5, 3, 2};
 	size_t elem_number2[3] = {3, 2, 5};
@@ -323,6 +365,7 @@ int main(int argc, char *argv[])
 	test_copy_2d();
 	test_copy_t2d();
 	test_copy_3d();
+	test_copy_3dstr();
 	test_copy_t3d();
 	test_copy_rt3d();
 	test_copy_t4d();
