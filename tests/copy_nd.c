@@ -343,6 +343,63 @@ void test_copy_t4d()
 
 }
 
+void test_copy_t4dstr()
+{
+	size_t elem_number[4] = { 5, 3, 2, 4 };
+	size_t elem_number2[4] = { 3, 2, 4, 5 };
+	size_t src_pitch[4] = { 10, 6, 4, 8 };
+	size_t src_stride[4] = { 2, 2, 2, 2 };
+	size_t dst_pitch[4] = { 3, 2, 4, 5 };
+	size_t dst_stride[4] = { 1, 1, 1, 1 };
+
+	double src[8][4][6][10];
+	double dst[5][4][2][3];
+	double dst2[8][4][6][10];
+
+	double ref_dst[5][4][2][3];
+	double ref_dst2[8][4][6][10];
+
+	for (int l = 0; l < 8; l++)
+		for (int k = 0; k < 4; k++)
+			for (int j = 0; j < 6; j++)
+				for (int i = 0; i < 10; i++) {
+					src[l][k][j][i] =
+					    (double)(i + j * 10 + k * 10 * 6 +
+						     l * 10 * 6 * 4);
+					ref_dst2[l][k][j][i] = 0.0;
+					dst2[l][k][j][i] = 0.0;
+				}
+	for (int l = 0; l < 4; l++)
+		for (int k = 0; k < 2; k++)
+			for (int j = 0; j < 3; j++)
+				for (int i = 0; i < 5; i++) {
+					dst[i][l][k][j] = 0.0;
+					ref_dst[i][l][k][j] =
+					    src[2 * l][2 * k][2 * j][2 * i];
+					ref_dst2[2 * l][2 * k][2 * j][2 * i] =
+					    src[2 * l][2 * k][2 * j][2 * i];
+				}
+
+	aml_copy_tndstr(4, dst, dst_pitch, dst_stride, src, src_pitch,
+			src_stride, elem_number, sizeof(double));
+	for (int l = 0; l < 4; l++)
+		for (int k = 0; k < 2; k++)
+			for (int j = 0; j < 3; j++)
+				for (int i = 0; i < 5; i++)
+					assert(ref_dst[i][l][k][j] ==
+					       dst[i][l][k][j]);
+
+	aml_copy_rtndstr(4, dst2, src_pitch, src_stride, dst, dst_pitch,
+			 dst_stride, elem_number2, sizeof(double));
+	for (int l = 0; l < 8; l++)
+		for (int k = 0; k < 4; k++)
+			for (int j = 0; j < 6; j++)
+				for (int i = 0; i < 10; i++)
+					assert(ref_dst2[l][k][j][i] ==
+					       dst2[l][k][j][i]);
+
+}
+
 void test_copy_sh4d()
 {
 	size_t elem_number[4] = { 5, 3, 2, 4 };
@@ -399,6 +456,66 @@ void test_copy_sh4d()
 
 }
 
+void test_copy_sh4dstr()
+{
+	size_t elem_number[4] = { 5, 3, 2, 4 };
+	size_t elem_number2[4] = { 2, 3, 4, 5 };
+	size_t target_dims[4] = { 3, 1, 0, 2 };
+	size_t target_dims2[4] = { 2, 1, 3, 0 };
+	size_t src_pitch[4] = { 10, 6, 4, 8 };
+	size_t src_stride[4] = { 2, 2, 2, 2 };
+	size_t dst_pitch[4] = { 2, 3, 4, 5 };
+	size_t dst_stride[4] = { 1, 1, 1, 1 };
+
+	double src[8][4][6][10];
+	double dst[5][4][3][2];
+	double dst2[8][4][6][10];
+
+	double ref_dst[5][4][3][2];
+	double ref_dst2[8][4][6][10];
+
+	for (int l = 0; l < 8; l++)
+		for (int k = 0; k < 4; k++)
+			for (int j = 0; j < 6; j++)
+				for (int i = 0; i < 10; i++) {
+					src[l][k][j][i] =
+					    (double)(i + j * 10 + k * 10 * 6 +
+						     l * 10 * 6 * 4);
+					ref_dst2[l][k][j][i] = 0.0;
+					dst2[l][k][j][i] = 0.0;
+				}
+
+	for (int l = 0; l < 4; l++)
+		for (int k = 0; k < 2; k++)
+			for (int j = 0; j < 3; j++)
+				for (int i = 0; i < 5; i++) {
+					dst[i][l][j][k] = 0.0;
+					ref_dst[i][l][j][k] =
+					    src[2 * l][2 * k][2 * j][2 * i];
+					ref_dst2[2 * l][2 * k][2 * j][2 * i] =
+					    src[2 * l][2 * k][2 * j][2 * i];
+				}
+
+	aml_copy_shndstr(4, target_dims, dst, dst_pitch, dst_stride, src,
+			 src_pitch, src_stride, elem_number, sizeof(double));
+	for (int l = 0; l < 4; l++)
+		for (int k = 0; k < 2; k++)
+			for (int j = 0; j < 3; j++)
+				for (int i = 0; i < 5; i++)
+					assert(ref_dst[i][l][j][k] ==
+					       dst[i][l][j][k]);
+
+	aml_copy_shndstr(4, target_dims2, dst2, src_pitch, src_stride, dst,
+			 dst_pitch, dst_stride, elem_number2, sizeof(double));
+	for (int l = 0; l < 8; l++)
+		for (int k = 0; k < 4; k++)
+			for (int j = 0; j < 6; j++)
+				for (int i = 0; i < 10; i++)
+					assert(ref_dst2[l][k][j][i] ==
+					       dst2[l][k][j][i]);
+
+}
+
 int main(int argc, char *argv[])
 {
 	test_copy_2d();
@@ -409,5 +526,6 @@ int main(int argc, char *argv[])
 	test_copy_rt3d();
 	test_copy_t4d();
 	test_copy_sh4d();
+	test_copy_sh4dstr();
 	return 0;
 }

@@ -1783,7 +1783,9 @@ int aml_scratch_par_destroy(struct aml_scratch *scratch);
  * "elem_size": size of memory elements.
  * Returns 0 if successful; an error code otherwise.
  */
-int aml_copy_nd(size_t d, void *dst, const size_t *dst_pitch, const void *src, const size_t *src_pitch, const size_t *elem_number, const size_t elem_size);
+int aml_copy_nd(size_t d, void *dst, const size_t *dst_pitch,
+		const void *src, const size_t *src_pitch,
+		const size_t *elem_number, const size_t elem_size);
 /*
  * Copies a (sub-)hypervolume to another (sub-)hypervolume while transposing.
  * Reverse of aml_copy_rtnd.
@@ -1800,7 +1802,9 @@ int aml_copy_nd(size_t d, void *dst, const size_t *dst_pitch, const void *src, c
  * "elem_size": size of memory elements in the src hypervolume order.
  * Returns 0 if successful; an error code otherwise.
  */
-int aml_copy_tnd(size_t d, void *dst, const size_t *dst_pitch, const void *src, const size_t *src_pitch, const size_t *elem_number, const size_t elem_size);
+int aml_copy_tnd(size_t d, void *dst, const size_t *dst_pitch,
+		 const void *src, const size_t *src_pitch,
+		 const size_t *elem_number, const size_t elem_size);
 /*
  * Copies a (sub-)hypervolume to another (sub-)hypervolume while transposing.
  * Reverse of aml_copy_tnd.
@@ -1817,7 +1821,9 @@ int aml_copy_tnd(size_t d, void *dst, const size_t *dst_pitch, const void *src, 
  * "elem_size": size of memory elements in the src hypervolume order.
  * Returns 0 if successful; an error code otherwise.
  */
-int aml_copy_rtnd(size_t d, void *dst, const size_t *dst_pitch, const void *src, const size_t *src_pitch, const size_t *elem_number, const size_t elem_size);
+int aml_copy_rtnd(size_t d, void *dst, const size_t *dst_pitch,
+		  const void *src, const size_t *src_pitch,
+		  const size_t *elem_number, const size_t elem_size);
 
 /*
  * Copies a (sub-)hypervolume to another (sub-)hypervolume while shuffling dimensions.
@@ -1837,7 +1843,39 @@ int aml_copy_rtnd(size_t d, void *dst, const size_t *dst_pitch, const void *src,
  * "elem_size": size of memory elements in the src hypervolume order.
  * Returns 0 if successful; an error code otherwise.
  */
-int aml_copy_shnd(size_t d, const size_t *target_dims, void *dst, const size_t *dst_pitch, const void *src, const size_t *src_pitch, const size_t *elem_number, const size_t elem_size);
+int aml_copy_shnd(size_t d, const size_t *target_dims, void *dst,
+		  const size_t *dst_pitch, const void *src,
+		  const size_t *src_pitch, const size_t *elem_number,
+		  const size_t elem_size);
+/*
+ * Strided version of aml_copy_nd.
+ */
+int aml_copy_ndstr(size_t d, void *dst, const size_t * dst_pitch,
+		   const size_t * dst_stride, const void *src,
+		   const size_t * src_pitch, const size_t * src_stride,
+		   const size_t * elem_number, const size_t elem_size);
+/*
+ * Strided version of aml_copy_tnd.
+ */
+int aml_copy_tndstr(size_t d, void *dst, const size_t * dst_pitch,
+		    const size_t * dst_stride, const void *src,
+		    const size_t * src_pitch, const size_t * src_stride,
+		    const size_t * elem_number, const size_t elem_size);
+/*
+ * Strided version of aml_copy_rtnd.
+ */
+int aml_copy_rtndstr(size_t d, void *dst, const size_t * dst_pitch,
+		     const size_t * dst_stride, const void *src,
+		     const size_t * src_pitch, const size_t * src_stride,
+		     const size_t * elem_number, const size_t elem_size);
+/*
+ * Strided version of aml_copy_shnd.
+ */
+int aml_copy_shndstr(size_t d, const size_t * target_dims, void *dst,
+		     const size_t * dst_pitch, const size_t * dst_stride,
+		     const void *src, const size_t * src_pitch,
+		     const size_t * src_stride, const size_t * elem_number,
+		     const size_t elem_size);
 /*******************************************************************************
  * General functions:
  * Initialize internal structures, cleanup everything at the end.
