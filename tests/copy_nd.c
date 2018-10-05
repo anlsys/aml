@@ -1,7 +1,7 @@
 #include <aml.h>
 #include <assert.h>
 
-void test_copy_2d()
+void test_copy_2d(void)
 {
 	size_t elem_number[2] = { 5, 3 };
 	size_t src_pitch[2] = { 10, 6 };
@@ -41,7 +41,7 @@ void test_copy_2d()
 
 }
 
-void test_copy_t2d()
+void test_copy_t2d(void)
 {
 	size_t elem_number[2] = { 5, 3 };
 	size_t elem_number2[2] = { 3, 5 };
@@ -82,7 +82,7 @@ void test_copy_t2d()
 
 }
 
-void test_copy_3d()
+void test_copy_3d(void)
 {
 	size_t elem_number[3] = { 5, 3, 2 };
 	size_t src_pitch[3] = { 10, 6, 4 };
@@ -127,7 +127,7 @@ void test_copy_3d()
 
 }
 
-void test_copy_3dstr()
+void test_copy_3dstr(void)
 {
 	size_t elem_number[3] = { 5, 3, 2 };
 	size_t src_pitch[3] = { 10, 6, 4 };
@@ -174,7 +174,7 @@ void test_copy_3dstr()
 				assert(ref_dst2[k][j][i] == dst2[k][j][i]);
 }
 
-void test_copy_t3d()
+void test_copy_t3d(void)
 {
 	size_t elem_number[3] = { 5, 3, 2 };
 	size_t elem_number2[3] = { 3, 2, 5 };
@@ -232,7 +232,7 @@ void test_copy_t3d()
 				assert(ref_dst3[k][j][i] == dst3[k][j][i]);
 }
 
-void test_copy_rt3d()
+void test_copy_rt3d(void)
 {
 	size_t elem_number[3] = { 5, 3, 2 };
 	size_t elem_number2[3] = { 2, 5, 3 };
@@ -290,7 +290,7 @@ void test_copy_rt3d()
 				assert(ref_dst3[k][j][i] == dst3[k][j][i]);
 }
 
-void test_copy_t4d()
+void test_copy_t4d(void)
 {
 	size_t elem_number[4] = { 5, 3, 2, 4 };
 	size_t elem_number2[4] = { 3, 2, 4, 5 };
@@ -343,7 +343,7 @@ void test_copy_t4d()
 
 }
 
-void test_copy_t4dstr()
+void test_copy_t4dstr(void)
 {
 	size_t elem_number[4] = { 5, 3, 2, 4 };
 	size_t elem_number2[4] = { 3, 2, 4, 5 };
@@ -400,7 +400,7 @@ void test_copy_t4dstr()
 
 }
 
-void test_copy_sh4d()
+void test_copy_sh4d(void)
 {
 	size_t elem_number[4] = { 5, 3, 2, 4 };
 	size_t elem_number2[4] = { 2, 3, 4, 5 };
@@ -456,7 +456,7 @@ void test_copy_sh4d()
 
 }
 
-void test_copy_sh4dstr()
+void test_copy_sh4dstr(void)
 {
 	size_t elem_number[4] = { 5, 3, 2, 4 };
 	size_t elem_number2[4] = { 2, 3, 4, 5 };

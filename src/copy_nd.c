@@ -4,10 +4,10 @@
 #include <string.h>
 #include <alloca.h>
 
-static inline void aml_copy_2d_helper(void *dst, const size_t * cumul_dst_pitch,
+static inline void aml_copy_2d_helper(void *dst, const size_t *cumul_dst_pitch,
 				      const void *src,
-				      const size_t * cumul_src_pitch,
-				      const size_t * elem_number,
+				      const size_t *cumul_src_pitch,
+				      const size_t *elem_number,
 				      size_t elem_size)
 {
 	for (int i = 0; i < elem_number[1]; i++) {
@@ -18,9 +18,9 @@ static inline void aml_copy_2d_helper(void *dst, const size_t * cumul_dst_pitch,
 }
 
 static void aml_copy_nd_helper(size_t d, void *dst,
-			       const size_t * cumul_dst_pitch, const void *src,
-			       const size_t * cumul_src_pitch,
-			       const size_t * elem_number,
+			       const size_t *cumul_dst_pitch, const void *src,
+			       const size_t *cumul_src_pitch,
+			       const size_t *elem_number,
 			       const size_t elem_size)
 {
 	if (d == 2)
@@ -39,8 +39,8 @@ static void aml_copy_nd_helper(size_t d, void *dst,
 	}
 }
 
-int aml_copy_nd(size_t d, void *dst, const size_t * dst_pitch, const void *src,
-		const size_t * src_pitch, const size_t * elem_number,
+int aml_copy_nd(size_t d, void *dst, const size_t *dst_pitch, const void *src,
+		const size_t *src_pitch, const size_t *elem_number,
 		size_t elem_size)
 {
 	assert(d > 0);
@@ -71,11 +71,11 @@ int aml_copy_nd(size_t d, void *dst, const size_t * dst_pitch, const void *src,
 }
 
 static void aml_copy_ndstr_helper(size_t d, void *dst,
-				  const size_t * cumul_dst_pitch,
-				  const size_t * dst_stride, const void *src,
-				  const size_t * cumul_src_pitch,
-				  const size_t * src_stride,
-				  const size_t * elem_number, size_t elem_size)
+				  const size_t *cumul_dst_pitch,
+				  const size_t *dst_stride, const void *src,
+				  const size_t *cumul_src_pitch,
+				  const size_t *src_stride,
+				  const size_t *elem_number, size_t elem_size)
 {
 	if (d == 1)
 		for (int i = 0; i < elem_number[0]; i++)
@@ -102,10 +102,10 @@ static void aml_copy_ndstr_helper(size_t d, void *dst,
 	}
 }
 
-int aml_copy_ndstr(size_t d, void *dst, const size_t * dst_pitch,
-		   const size_t * dst_stride, const void *src,
-		   const size_t * src_pitch, const size_t * src_stride,
-		   const size_t * elem_number, const size_t elem_size)
+int aml_copy_ndstr(size_t d, void *dst, const size_t *dst_pitch,
+		   const size_t *dst_stride, const void *src,
+		   const size_t *src_pitch, const size_t *src_stride,
+		   const size_t *elem_number, const size_t elem_size)
 {
 	assert(d > 0);
 	if (d == 1)
@@ -138,11 +138,11 @@ int aml_copy_ndstr(size_t d, void *dst, const size_t * dst_pitch,
 	return 0;
 }
 
-static void aml_copy_sh2d_helper(const size_t * target_dims, void *dst,
-				 const size_t * cumul_dst_pitch,
+static void aml_copy_sh2d_helper(const size_t *target_dims, void *dst,
+				 const size_t *cumul_dst_pitch,
 				 const void *src,
-				 const size_t * cumul_src_pitch,
-				 const size_t * elem_number,
+				 const size_t *cumul_src_pitch,
+				 const size_t *elem_number,
 				 const size_t elem_size)
 {
 	for (int j = 0; j < elem_number[1]; j++)
@@ -155,11 +155,11 @@ static void aml_copy_sh2d_helper(const size_t * target_dims, void *dst,
 					j * cumul_src_pitch[1]), elem_size);
 }
 
-static void aml_copy_shnd_helper(size_t d, const size_t * target_dims,
-				 void *dst, const size_t * cumul_dst_pitch,
+static void aml_copy_shnd_helper(size_t d, const size_t *target_dims,
+				 void *dst, const size_t *cumul_dst_pitch,
 				 const void *src,
-				 const size_t * cumul_src_pitch,
-				 const size_t * elem_number,
+				 const size_t *cumul_src_pitch,
+				 const size_t *elem_number,
 				 const size_t elem_size)
 {
 	if (d == 2)
@@ -181,9 +181,9 @@ static void aml_copy_shnd_helper(size_t d, const size_t * target_dims,
 	}
 }
 
-int aml_copy_shnd(size_t d, const size_t * target_dims, void *dst,
-		  const size_t * dst_pitch, const void *src,
-		  const size_t * src_pitch, const size_t * elem_number,
+int aml_copy_shnd(size_t d, const size_t *target_dims, void *dst,
+		  const size_t *dst_pitch, const void *src,
+		  const size_t *src_pitch, const size_t *elem_number,
 		  const size_t elem_size)
 {
 	assert(d > 0);
@@ -219,8 +219,8 @@ int aml_copy_shnd(size_t d, const size_t * target_dims, void *dst,
 	return 0;
 }
 
-int aml_copy_tnd(size_t d, void *dst, const size_t * dst_pitch, const void *src,
-		 const size_t * src_pitch, const size_t * elem_number,
+int aml_copy_tnd(size_t d, void *dst, const size_t *dst_pitch, const void *src,
+		 const size_t *src_pitch, const size_t *elem_number,
 		 const size_t elem_size)
 {
 	assert(d > 0);
@@ -234,9 +234,9 @@ int aml_copy_tnd(size_t d, void *dst, const size_t * dst_pitch, const void *src,
 	return 0;
 }
 
-int aml_copy_rtnd(size_t d, void *dst, const size_t * dst_pitch,
-		  const void *src, const size_t * src_pitch,
-		  const size_t * elem_number, const size_t elem_size)
+int aml_copy_rtnd(size_t d, void *dst, const size_t *dst_pitch,
+		  const void *src, const size_t *src_pitch,
+		  const size_t *elem_number, const size_t elem_size)
 {
 	assert(d > 0);
 	size_t *target_dims = (size_t *) alloca(d * sizeof(size_t));
@@ -249,12 +249,12 @@ int aml_copy_rtnd(size_t d, void *dst, const size_t * dst_pitch,
 	return 0;
 }
 
-static void aml_copy_shndstr_helper(size_t d, const size_t * target_dims,
-				    void *dst, const size_t * cumul_dst_pitch,
-				    const size_t * dst_stride, const void *src,
-				    const size_t * cumul_src_pitch,
-				    const size_t * src_stride,
-				    const size_t * elem_number,
+static void aml_copy_shndstr_helper(size_t d, const size_t *target_dims,
+				    void *dst, const size_t *cumul_dst_pitch,
+				    const size_t *dst_stride, const void *src,
+				    const size_t *cumul_src_pitch,
+				    const size_t *src_stride,
+				    const size_t *elem_number,
 				    const size_t elem_size)
 {
 	if (d == 1)
@@ -285,10 +285,10 @@ static void aml_copy_shndstr_helper(size_t d, const size_t * target_dims,
 	}
 }
 
-int aml_copy_shndstr(size_t d, const size_t * target_dims, void *dst,
-		     const size_t * dst_pitch, const size_t * dst_stride,
-		     const void *src, const size_t * src_pitch,
-		     const size_t * src_stride, const size_t * elem_number,
+int aml_copy_shndstr(size_t d, const size_t *target_dims, void *dst,
+		     const size_t *dst_pitch, const size_t *dst_stride,
+		     const void *src, const size_t *src_pitch,
+		     const size_t *src_stride, const size_t *elem_number,
 		     const size_t elem_size)
 {
 	assert(d > 0);
@@ -330,10 +330,10 @@ int aml_copy_shndstr(size_t d, const size_t * target_dims, void *dst,
 	return 0;
 }
 
-int aml_copy_tndstr(size_t d, void *dst, const size_t * dst_pitch,
-		    const size_t * dst_stride, const void *src,
-		    const size_t * src_pitch, const size_t * src_stride,
-		    const size_t * elem_number, const size_t elem_size)
+int aml_copy_tndstr(size_t d, void *dst, const size_t *dst_pitch,
+		    const size_t *dst_stride, const void *src,
+		    const size_t *src_pitch, const size_t *src_stride,
+		    const size_t *elem_number, const size_t elem_size)
 {
 	assert(d > 0);
 	size_t *target_dims = (size_t *) alloca(d * sizeof(size_t));
@@ -346,10 +346,10 @@ int aml_copy_tndstr(size_t d, void *dst, const size_t * dst_pitch,
 	return 0;
 }
 
-int aml_copy_rtndstr(size_t d, void *dst, const size_t * dst_pitch,
-		     const size_t * dst_stride, const void *src,
-		     const size_t * src_pitch, const size_t * src_stride,
-		     const size_t * elem_number, const size_t elem_size)
+int aml_copy_rtndstr(size_t d, void *dst, const size_t *dst_pitch,
+		     const size_t *dst_stride, const void *src,
+		     const size_t *src_pitch, const size_t *src_stride,
+		     const size_t *elem_number, const size_t elem_size)
 {
 	assert(d > 0);
 	size_t *target_dims = (size_t *) alloca(d * sizeof(size_t));

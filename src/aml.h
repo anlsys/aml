@@ -1850,31 +1850,31 @@ int aml_copy_shnd(size_t d, const size_t *target_dims, void *dst,
 /*
  * Strided version of aml_copy_nd.
  */
-int aml_copy_ndstr(size_t d, void *dst, const size_t * dst_pitch,
-		   const size_t * dst_stride, const void *src,
-		   const size_t * src_pitch, const size_t * src_stride,
-		   const size_t * elem_number, const size_t elem_size);
+int aml_copy_ndstr(size_t d, void *dst, const size_t *dst_pitch,
+		   const size_t *dst_stride, const void *src,
+		   const size_t *src_pitch, const size_t *src_stride,
+		   const size_t *elem_number, const size_t elem_size);
 /*
  * Strided version of aml_copy_tnd.
  */
-int aml_copy_tndstr(size_t d, void *dst, const size_t * dst_pitch,
-		    const size_t * dst_stride, const void *src,
-		    const size_t * src_pitch, const size_t * src_stride,
-		    const size_t * elem_number, const size_t elem_size);
+int aml_copy_tndstr(size_t d, void *dst, const size_t *dst_pitch,
+		    const size_t *dst_stride, const void *src,
+		    const size_t *src_pitch, const size_t *src_stride,
+		    const size_t *elem_number, const size_t elem_size);
 /*
  * Strided version of aml_copy_rtnd.
  */
-int aml_copy_rtndstr(size_t d, void *dst, const size_t * dst_pitch,
-		     const size_t * dst_stride, const void *src,
-		     const size_t * src_pitch, const size_t * src_stride,
-		     const size_t * elem_number, const size_t elem_size);
+int aml_copy_rtndstr(size_t d, void *dst, const size_t *dst_pitch,
+		     const size_t *dst_stride, const void *src,
+		     const size_t *src_pitch, const size_t *src_stride,
+		     const size_t *elem_number, const size_t elem_size);
 /*
  * Strided version of aml_copy_shnd.
  */
-int aml_copy_shndstr(size_t d, const size_t * target_dims, void *dst,
-		     const size_t * dst_pitch, const size_t * dst_stride,
-		     const void *src, const size_t * src_pitch,
-		     const size_t * src_stride, const size_t * elem_number,
+int aml_copy_shndstr(size_t d, const size_t *target_dims, void *dst,
+		     const size_t *dst_pitch, const size_t *dst_stride,
+		     const void *src, const size_t *src_pitch,
+		     const size_t *src_stride, const size_t *elem_number,
 		     const size_t elem_size);
 /*******************************************************************************
  * General functions:
