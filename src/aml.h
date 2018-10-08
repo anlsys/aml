@@ -1826,8 +1826,8 @@ int aml_copy_rtnd(size_t d, void *dst, const size_t *dst_pitch,
 		  const size_t *elem_number, const size_t elem_size);
 
 /*
- * Copies a (sub-)hypervolume to another (sub-)hypervolume while shuffling dimensions.
- * Example a[4][2][3][5] -> b[5][4][3][2] (C notation).
+ * Copies a (sub-)hypervolume to another (sub-)hypervolume while shuffling
+ * dimensions. Example a[4][2][3][5] -> b[5][4][3][2] (C notation).
  * "d": number of dimensions.
  * "target_dims": array of d dimension index representing the mapping
  *                between the source dimensions and the target dimensions.
@@ -1876,6 +1876,60 @@ int aml_copy_shndstr(size_t d, const size_t *target_dims, void *dst,
 		     const void *src, const size_t *src_pitch,
 		     const size_t *src_stride, const size_t *elem_number,
 		     const size_t elem_size);
+/*
+ * Version of aml_copy_nd using cumulative pitch.
+ */
+int aml_copy_nd_c(size_t d, void *dst, const size_t *cumul_dst_pitch,
+		  const void *src, const size_t *cumul_src_pitch,
+		  const size_t *elem_number, const size_t elem_size);
+/*
+ * Version of aml_copy_ndstr using cumulative pitch.
+ */
+int aml_copy_ndstr_c(size_t d, void *dst, const size_t *dst_pitch,
+		     const size_t *cumul_dst_stride, const void *src,
+		     const size_t *src_pitch, const size_t *cumul_src_stride,
+		     const size_t *elem_number, const size_t elem_size);
+/*
+ * Version of aml_copy_nd using cumulative pitch.
+ */
+int aml_copy_tnd_c(size_t d, void *dst, const size_t *cumul_dst_pitch,
+		   const void *src, const size_t *cumul_src_pitch,
+		   const size_t *elem_number, const size_t elem_size);
+/*
+ * Version of aml_copy_nd using cumulative pitch.
+ */
+int aml_copy_rtnd_c(size_t d, void *dst, const size_t *cumul_dst_pitch,
+		    const void *src, const size_t *cumul_src_pitch,
+		    const size_t *elem_number, const size_t elem_size);
+/*
+ * Version of aml_copy_shnd using cumulative pitch.
+ */
+int aml_copy_shnd_c(size_t d, const size_t *target_dims, void *dst,
+		    const size_t *cumul_dst_pitch, const void *src,
+		    const size_t *cumul_src_pitch, const size_t *elem_number,
+		    const size_t elem_size);
+/*
+ * Version of aml_copy_tndstr using cumulative pitch.
+ */
+int aml_copy_tndstr_c(size_t d, void *dst, const size_t *cumul_dst_pitch,
+		      const size_t *dst_stride, const void *src,
+		      const size_t *cumul_src_pitch, const size_t *src_stride,
+		      const size_t *elem_number, const size_t elem_size);
+/*
+ * Version of aml_copy_rtndstr using cumulative pitch.
+ */
+int aml_copy_rtndstr_c(size_t d, void *dst, const size_t *cumul_dst_pitch,
+		       const size_t *dst_stride, const void *src,
+		       const size_t *cumul_src_pitch, const size_t *src_stride,
+		       const size_t *elem_number, const size_t elem_size);
+/*
+ * Version of aml_copy_shndstr using cumulative pitch.
+ */
+int aml_copy_shndstr_c(size_t d, const size_t *target_dims, void *dst,
+		       const size_t *cumul_dst_pitch, const size_t *dst_stride,
+		       const void *src, const size_t *cumul_src_pitch,
+		       const size_t *src_stride, const size_t *elem_number,
+		       const size_t elem_size);
 /*******************************************************************************
  * General functions:
  * Initialize internal structures, cleanup everything at the end.
