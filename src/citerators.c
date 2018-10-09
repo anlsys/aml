@@ -491,6 +491,8 @@ static int product_iterator_split(const citerator_t data, citerator_index_t n,
 
 	if (err)
 		return err;
+	if (size < n)
+		return -EDOM;
 	if (!results)
 		return 0;
 	citerator_t range = citerator_alloc(CITERATOR_RANGE);
@@ -544,8 +546,10 @@ int citerator_product_split_dim(const citerator_t iterator,
 				citerator_index_t dim, citerator_index_t n,
 				citerator_t *results)
 {
-	if (!iterator || iterator->type != CITERATOR_PRODUCT || n <= 0)
+	if (!iterator || iterator->type != CITERATOR_PRODUCT)
 		return -EINVAL;
+	if (n <= 0)
+		return -EDOM;
 	int count;
 	int err = citerator_product_count(iterator, &count);
 
@@ -750,6 +754,8 @@ static int cons_iterator_split(const citerator_t data, citerator_index_t n,
 
 	if (err)
 		return err;
+	if (size < n)
+		return -EDOM;
 	if (!results)
 		return 0;
 	citerator_t range = citerator_alloc(CITERATOR_RANGE);
@@ -1100,8 +1106,6 @@ static int repeat_iterator_pos(const citerator_t data, citerator_index_t *n)
 static int repeat_iterator_split(const citerator_t data, citerator_index_t n,
 				 citerator_t *results)
 {
-	if (n <= 0)
-		return -EINVAL;
 	const struct repeat_iterator_s *iterator =
 	    (const struct repeat_iterator_s *) data->data;
 	int err = citerator_split(iterator->iterator, n, results);
@@ -1345,8 +1349,6 @@ static int hilbert2d_iterator_pos(const citerator_t data, citerator_index_t *n)
 static int hilbert2d_iterator_split(const citerator_t data, citerator_index_t n,
 				    citerator_t *results)
 {
-	if (n <= 0)
-		return -EINVAL;
 	const struct hilbert2d_iterator_s *iterator =
 	    (struct hilbert2d_iterator_s *) data->data;
 	int err = citerator_split(iterator->range_iterator, n, results);
@@ -1571,8 +1573,6 @@ static int range_iterator_pos(const citerator_t data, citerator_index_t *n)
 static int range_iterator_split(const citerator_t data, citerator_index_t n,
 				citerator_t *results)
 {
-	if (n <= 0)
-		return -EINVAL;
 	const struct range_iterator_s *iterator =
 	    (struct range_iterator_s *) data->data;
 	citerator_index_t size;
@@ -1778,6 +1778,8 @@ int citerator_split(const citerator_t iterator, citerator_index_t n,
 {
 	if (!iterator || !iterator->functions)
 		return -EINVAL;
+	if (n <= 0)
+		return -EDOM;
 	if (!iterator->functions->split)
 		return -ENOTSUP;
 	return iterator->functions->split(iterator, n, results);

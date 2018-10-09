@@ -110,8 +110,8 @@ void test_range_iterator(void)
 	citerator_free(its[2]);
 
 	assert(citerator_split(it, 24, its) == -EDOM);
-	assert(citerator_split(it, 0, its) == -EINVAL);
-	assert(citerator_split(it, -1, its) == -EINVAL);
+	assert(citerator_split(it, 0, its) == -EDOM);
+	assert(citerator_split(it, -1, its) == -EDOM);
 	citerator_free(it);
 }
 
