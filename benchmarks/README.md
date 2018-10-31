@@ -3,7 +3,7 @@ KNL is in quadrant with MCDRAM in flat mode, hyperthreading is off.
 
 ```bash
 module load gcc/8.2.0 mkl/2018.3.222 ruby/2.5.1
-./configure CC=gcc CFLAGS=-O3 -funroll-loops -g --enable-benchmarks
+./configure CC=gcc CFLAGS="-O3 -funroll-loops -g" --enable-benchmarks
 make
 cd benchmarks
 # Benchmark all block size using all possible memory placements
