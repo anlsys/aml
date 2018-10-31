@@ -32,6 +32,7 @@ int main(int argc, char *argv[])
 		c[i] = 0.0;
 	}
 
+	cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, N, N, N, alpha, a, N, b, N, beta, c, N);
 	clock_gettime(CLOCK_REALTIME, &start);
 	cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, N, N, N, alpha, a, N, b, N, beta, c, N);
 	clock_gettime(CLOCK_REALTIME, &stop);
