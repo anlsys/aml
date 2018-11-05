@@ -53,6 +53,33 @@ struct aml_tiling_nd_iterator {
 				(sizeof(struct aml_tiling_nd_iterator) +\
 				 sizeof(struct aml_tiling_nd_iterator_data))
 
+#define AML_SMART_POINTER_DECL(name, ndims) \
+	size_t __ ##name## _inner_data[ndims * 2]; \
+	struct aml_smart_pointer name = { \
+		NULL, \
+		ndims, \
+		__ ##name## _inner_data, \
+		__ ##name## _inner_data + ndims \
+	};
+
+#define AML_TILING_ND_DECL(name, ndims) \
+	struct __aml_tiling_nd_ ##name## _data { \
+		aml_tiling_nd_data nd_data; \
+		size_t data[ndims * 3]; \
+	} __ ##name## _inner_data = { \
+		{ \
+			NULL, \
+			ndims, \
+			__ ##name## _inner_data.data, \
+			__ ##name## _inner_data.data + ndims \
+		}, \
+		__ ##name## _inner_data.data + 2 * ndims\
+	}; \
+	struct aml_tiling_nd name = { \
+		&aml_tiling_nd_ops_s, \
+		&__ ##name## _inner_data \
+	};
+
 int aml_smart_pointer_create(struct aml_smart_pointer **p, void *ptr,
 			     size_t ndims, const size_t *dims,
 			     const size_t *pitch)
