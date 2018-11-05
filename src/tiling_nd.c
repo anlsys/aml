@@ -80,23 +80,39 @@ struct aml_tiling_nd_iterator {
 		&__ ##name## _inner_data \
 	};
 
+inline int aml_smart_pointer_struct_init(struct aml_smart_pointer *p,
+					 size_t ndims, void *data_ptr)
+{
+	p->ndims = ndims;
+	p->dims = (size_t *)data_ptr;
+	p->pitch = p->dims + ndims;
+	return 0;
+}
+
+inline int aml_smart_pointer_init(struct aml_smart_pointer *p, void *ptr,
+				  size_t ndims, const size_t *dims,
+				  const size_t *pitch)
+{
+	assert( p->ndims == ndims);
+	assert( p->dims );
+	assert( p->pitch );
+	p->ptr = ptr;
+	memcpy(p->dims, dims, ndims * sizeof(size_t));
+	memcpy(p->pitch, pitch, ndims * sizeof(size_t));
+	return 0;
+}
+
 int aml_smart_pointer_create(struct aml_smart_pointer **p, void *ptr,
 			     size_t ndims, const size_t *dims,
 			     const size_t *pitch)
 {
 	assert(ndims > 0);
 	void *baseptr = calloc(1, AML_SMART_POINTER_ALLOCSIZE(ndims));
-	struct aml_smart_pointer *ret = (struct aml_smart_pointer *)baseptr;
+	*p = (struct aml_smart_pointer *)baseptr;
 	baseptr = (void *)((uintptr_t)baseptr +
 		      sizeof(struct aml_smart_pointer));
-	ret->ptr = ptr;
-	ret->ndims = ndims;
-	ret->dims = (size_t *)baseptr;
-	ret->pitch = ret->dims + ndims;
-
-	memcpy(ret->dims, dims, ndims * sizeof(size_t));
-	memcpy(ret->pitch, pitch, ndims * sizeof(size_t));
-	*p = ret;
+	aml_smart_pointer_struct_init(*p, ndims, baseptr);
+	aml_smart_pointer_init(*p, ptr, ndims, dims, pitch);
 	return 0;
 }
 
@@ -113,14 +129,11 @@ int aml_tiling_nd_create(struct aml_tiling_nd **t, void *ptr, size_t ndims,
 	baseptr = (void *)((uintptr_t)baseptr +
 		      sizeof(struct aml_tiling_nd_data));
 
-	ret->data->sptr.ptr = ptr;
-	ret->data->sptr.ndims = ndims;
-	ret->data->sptr.dims = (size_t *)baseptr;
-	ret->data->sptr.pitch = ret->data->sptr.dims + ndims;
+	aml_smart_pointer_struct_init(&ret->data->sptr, ndims, baseptr);
 	ret->data->tile_dims = ret->data->sptr.pitch + ndims;
 
-	memcpy(ret->data->sptr.dims, dims, ndims * sizeof(size_t));
-	memcpy(ret->data->sptr.pitch, pitch, ndims * sizeof(size_t));
+	aml_smart_pointer_init(&ret->data->sptr, ptr, ndims, dims, pitch);
+
 	memcpy(ret->data->tile_dims, tile_dims, ndims * sizeof(size_t));
         *t = ret;
 	return 0;
