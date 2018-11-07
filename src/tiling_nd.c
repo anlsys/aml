@@ -77,7 +77,7 @@ struct aml_tiling_nd_iterator {
 	}; \
 	struct aml_tiling_nd name = { \
 		&aml_tiling_nd_ops_s, \
-		&__ ##name## _inner_data \
+		&__ ##name## _inner_data.nd_data; \
 	};
 
 inline int aml_smart_pointer_struct_init(struct aml_smart_pointer *p,
