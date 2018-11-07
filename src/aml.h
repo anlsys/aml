@@ -1930,6 +1930,24 @@ int aml_copy_shndstr_c(size_t d, const size_t *target_dims, void *dst,
 		       const void *src, const size_t *cumul_src_pitch,
 		       const size_t *src_stride, const size_t *elem_number,
 		       const size_t elem_size);
+
+
+
+struct aml_layout {
+	void *ptr;
+	size_t ndims;
+	size_t *dims;
+	size_t *pitch;
+	size_t *stride;
+};
+
+int aml_copy_layout(struct aml_layout *dst, const struct aml_layout *src);
+int aml_transform_layout(struct aml_layout *dst, const struct aml_layout *src,
+                         const size_t *target_dims);
+int aml_transpose_layout(struct aml_layout *dst, const struct aml_layout *src);
+int aml_reverse_transpose_layout(struct aml_layout *dst,
+				 const struct aml_layout *src);
+
 /*******************************************************************************
  * General functions:
  * Initialize internal structures, cleanup everything at the end.
