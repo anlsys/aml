@@ -37,9 +37,9 @@ LIBCSOURCES = aml.c area.c arena.c \
 	      $(BINDING_CSOURCES) \
 	      $(DMA_CSOURCES) \
 	      $(SCRATCH_CSOURCES) \
-	      layout.c
+	      layout.c copy.c
 
-LIBHSOURCES = aml.h aml-layout.h
+LIBHSOURCES = aml.h aml-layout.h aml-copy.h
 
 libaml_la_SOURCES = $(LIBCSOURCES) $(LIBHSOURCES)
 libaml_la_LIBADD = -L$(top_srcdir)/jemalloc/lib/ -ljemalloc-aml
