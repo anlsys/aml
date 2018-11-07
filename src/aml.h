@@ -1,6 +1,7 @@
 #ifndef AML_H
 #define AML_H 1
 
+#include <assert.h>
 #include <inttypes.h>
 #include <numa.h>
 #include <numaif.h>
@@ -18,7 +19,7 @@
 #define PAGE_SIZE 4096
 #endif
 
-
+#include "aml-layout.h"
 /*******************************************************************************
  * Forward Declarations:
  ******************************************************************************/
