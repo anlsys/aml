@@ -483,7 +483,7 @@ int aml_copy_layout(struct aml_layout *dst, const struct aml_layout *src)
 	assert(d > 0);
 
 	size_t elem_size = src->pitch[0];
-	assert(d == dst->dims[0]);
+	assert(d == dst->ndims);
 	assert(elem_size == dst->pitch[0]);
 	for (int i = 0; i < d; i++)
 		assert( src->dims[i] == dst->dims[i] );
@@ -498,7 +498,7 @@ int aml_transform_layout(struct aml_layout *dst, const struct aml_layout *src,
 	assert(d > 0);
 
 	size_t elem_size = src->pitch[0];
-	assert(d == dst->dims[0]);
+	assert(d == dst->ndims);
 	assert(elem_size == dst->pitch[0]);
 	for (int i = 0; i < d; i++)
 		assert( src->dims[i] == dst->dims[target_dims[i]]);
