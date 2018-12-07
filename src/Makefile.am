@@ -10,6 +10,9 @@ AREA_LINUX_CSOURCES = area_linux.c \
 
 AREA_POSIX_CSOURCES = area_posix.c
 
+LAYOUT_CSOURCES = layout.c \
+		  layout_dense.c
+
 TILING_CSOURCES = tiling.c \
 		  tiling_1d.c \
 		  tiling_2d.c
@@ -37,7 +40,8 @@ LIBCSOURCES = aml.c area.c arena.c \
 	      $(BINDING_CSOURCES) \
 	      $(DMA_CSOURCES) \
 	      $(SCRATCH_CSOURCES) \
-	      layout.c copy.c
+	      $(LAYOUT_CSOURCES) \
+	      copy.c
 
 LIBHSOURCES = aml.h aml-layout.h aml-copy.h
 
