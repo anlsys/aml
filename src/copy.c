@@ -479,37 +479,42 @@ int aml_copy_rtndstr_c(size_t d, void *dst, const size_t *cumul_dst_pitch,
 
 int aml_copy_layout(struct aml_layout *dst, const struct aml_layout *src)
 {
-	size_t d = src->ndims;
+	struct aml_layout_data *ddst = dst->data;
+	struct aml_layout_data *dsrc = src->data;
+	size_t d = dsrc->ndims;
 	assert(d > 0);
 
-	size_t elem_size = src->pitch[0];
-	assert(d == dst->ndims);
-	assert(elem_size == dst->pitch[0]);
+	size_t elem_size = dsrc->pitch[0];
+	assert(d == ddst->ndims);
+	assert(elem_size == ddst->pitch[0]);
 	for (int i = 0; i < d; i++)
-		assert( src->dims[i] == dst->dims[i] );
-	return aml_copy_ndstr_c(d, dst->ptr, dst->pitch, dst->stride, src->ptr,
-				src->pitch, src->stride, src->dims, elem_size);
+		assert( dsrc->dims[i] == ddst->dims[i] );
+	return aml_copy_ndstr_c(d, ddst->ptr, ddst->pitch, ddst->stride,
+				dsrc->ptr, dsrc->pitch, dsrc->stride,
+				dsrc->dims, elem_size);
 }
 
 int aml_transform_layout(struct aml_layout *dst, const struct aml_layout *src,
 			 const size_t *target_dims)
 {
-	size_t d = src->ndims;
+	struct aml_layout_data *ddst = dst->data;
+	struct aml_layout_data *dsrc = src->data;
+	size_t d = dsrc->ndims;
 	assert(d > 0);
 
-	size_t elem_size = src->pitch[0];
-	assert(d == dst->ndims);
-	assert(elem_size == dst->pitch[0]);
+	size_t elem_size = dsrc->pitch[0];
+	assert(d == ddst->ndims);
+	assert(elem_size == ddst->pitch[0]);
 	for (int i = 0; i < d; i++)
-		assert( src->dims[i] == dst->dims[target_dims[i]]);
-	return aml_copy_shndstr_c(d, target_dims, dst->ptr, dst->pitch,
-				  dst->stride, src->ptr, src->pitch,
-				  src->stride, src->dims, elem_size);
+		assert( dsrc->dims[i] == ddst->dims[target_dims[i]]);
+	return aml_copy_shndstr_c(d, target_dims, ddst->ptr, ddst->pitch,
+				  ddst->stride, dsrc->ptr, dsrc->pitch,
+				  dsrc->stride, dsrc->dims, elem_size);
 }
 
 int aml_transpose_layout(struct aml_layout *dst, const struct aml_layout *src)
 {
-	size_t d = src->ndims;
+	size_t d = src->data->ndims;
 	assert(d > 0);
 
 	size_t *target_dims = (size_t *) alloca(d * sizeof(size_t));
@@ -522,7 +527,7 @@ int aml_transpose_layout(struct aml_layout *dst, const struct aml_layout *src)
 int aml_reverse_transpose_layout(struct aml_layout *dst,
 				 const struct aml_layout *src)
 {
-	size_t d = src->ndims;
+	size_t d = src->data->ndims;
 	assert(d > 0);
 
 	size_t *target_dims = (size_t *) alloca(d * sizeof(size_t));

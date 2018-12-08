@@ -847,9 +847,9 @@ void test_copy_sh4dstr_c(void)
 void test_copy_layout(void)
 {
 	size_t elem_number[3] = { 5, 3, 2 };
-	size_t c_src_pitch[4] = { 8, 8 * 10, 8 * 10 * 6, 8 * 10 * 6 * 4 };
+	size_t c_src_pitch[3] = { 10, 6, 4 };
 	size_t src_stride[3] = { 1, 1, 1};
-	size_t c_dst_pitch[4] = { 8, 8 * 5, 8 * 5 * 3, 8 * 5 * 3 * 2 };
+	size_t c_dst_pitch[3] = { 5, 3, 2 };
 	size_t dst_stride[3] = { 1, 1, 1};
 
 	double src[4][6][10];
@@ -859,27 +859,19 @@ void test_copy_layout(void)
 	double ref_dst2[4][6][10];
 	double ref_dst[2][3][5];
 
-	struct aml_layout src_layout = {
-		(void *)src,
-		3,
-		elem_number,
-		c_src_pitch,
-		src_stride
-	};
-	struct aml_layout dst_layout = {
-		(void *)dst,
-		3,
-		elem_number,
-		c_dst_pitch,
-		dst_stride
-	};
-	struct aml_layout dst2_layout = {
-		(void *)dst2,
-		3,
-		elem_number,
-		c_src_pitch,
-		src_stride
-	};
+	AML_LAYOUT_DECL(src_layout, 3);
+	AML_LAYOUT_DECL(dst_layout, 3);
+	AML_LAYOUT_DECL(dst2_layout, 3);
+
+	aml_layout_ainit(&src_layout, AML_TYPE_LAYOUT_ROW_ORDER,
+			 (void *)src, sizeof(double), 3, elem_number,
+			 src_stride, c_src_pitch);
+	aml_layout_ainit(&dst_layout, AML_TYPE_LAYOUT_ROW_ORDER,
+			 (void *)dst, sizeof(double), 3, elem_number,
+			 dst_stride, c_dst_pitch);
+	aml_layout_ainit(&dst2_layout, AML_TYPE_LAYOUT_ROW_ORDER,
+			 (void *)dst2, sizeof(double), 3, elem_number,
+			 src_stride, c_src_pitch);
 
 	for (int k = 0; k < 4; k++)
 		for (int j = 0; j < 6; j++)
@@ -915,11 +907,9 @@ void test_transpose_layout(void)
 {
 	size_t elem_number[4] = { 5, 3, 2, 4 };
 	size_t elem_number2[4] = { 3, 2, 4, 5 };
-	size_t c_src_pitch[5] = { 8, 8 * 10, 8 * 10 * 6, 8 * 10 * 6 * 4,
-				  8 * 10 * 6 * 4 * 8 };
+	size_t c_src_pitch[4] = { 10, 6, 4, 8 };
 	size_t src_stride[4] = { 2, 2, 2, 2 };
-	size_t c_dst_pitch[5] = { 8, 8 * 3, 8 * 3 * 2, 8 * 3 * 2 * 4,
-				  8 * 3 * 2 * 4 * 5 };
+	size_t c_dst_pitch[4] = { 3, 2, 4, 5 };
 	size_t dst_stride[4] = { 1, 1, 1, 1 };
 
 	double src[8][4][6][10];
@@ -929,27 +919,19 @@ void test_transpose_layout(void)
 	double ref_dst[5][4][2][3];
 	double ref_dst2[8][4][6][10];
 
-	struct aml_layout src_layout = {
-		(void *)src,
-		4,
-		elem_number,
-		c_src_pitch,
-		src_stride
-	};
-	struct aml_layout dst_layout = {
-		(void *)dst,
-		4,
-		elem_number2,
-		c_dst_pitch,
-		dst_stride
-	};
-	struct aml_layout dst2_layout = {
-		(void *)dst2,
-		4,
-		elem_number,
-		c_src_pitch,
-		src_stride
-	};
+	AML_LAYOUT_DECL(src_layout, 4);
+	AML_LAYOUT_DECL(dst_layout, 4);
+	AML_LAYOUT_DECL(dst2_layout, 4);
+
+	aml_layout_ainit(&src_layout, AML_TYPE_LAYOUT_ROW_ORDER,
+			 (void *)src, sizeof(double), 4, elem_number,
+			 src_stride, c_src_pitch);
+	aml_layout_ainit(&dst_layout, AML_TYPE_LAYOUT_ROW_ORDER,
+			 (void *)dst, sizeof(double), 4, elem_number2,
+			 dst_stride, c_dst_pitch);
+	aml_layout_ainit(&dst2_layout, AML_TYPE_LAYOUT_ROW_ORDER,
+			 (void *)dst2, sizeof(double), 4, elem_number,
+			 src_stride, c_src_pitch);
 
 	for (int l = 0; l < 8; l++)
 		for (int k = 0; k < 4; k++)
