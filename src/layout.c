@@ -50,8 +50,8 @@ int aml_layout_struct_init(struct aml_layout *layout,
 		      sizeof(struct aml_layout_data));
 	layout->data->ndims = ndims;
 	layout->data->dims = (size_t *)memory;
-	layout->data->pitch = layout->data->dims + ndims;
-	layout->data->stride = layout->data->pitch + ndims;
+	layout->data->stride = layout->data->dims + ndims;
+	layout->data->pitch = layout->data->stride + ndims;
 	return 0;
 }
 
@@ -134,7 +134,7 @@ int aml_layout_acreate(struct aml_layout **layout, uint64_t tags, void *ptr,
 	void *baseptr = calloc(1, AML_LAYOUT_ALLOCSIZE(ndims));
 	*layout = (struct aml_layout *)baseptr;
 	aml_layout_struct_init(*layout, ndims, baseptr);
-	aml_layout_init(*layout, tags, ptr, element_size, ndims, dims, stride, pitch);
+	aml_layout_ainit(*layout, tags, ptr, element_size, ndims, dims, stride, pitch);
 	return 0;
 }
 
