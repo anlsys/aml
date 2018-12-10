@@ -17,9 +17,9 @@ int main(int argc, char *argv[])
 	aml_init(&argc, &argv);
 
 	/* initialize the layouts */
-	aml_layout_acreate(&a, AML_TYPE_LAYOUT_ROW_ORDER, (void *)memory,
+	aml_layout_acreate(&a, AML_TYPE_LAYOUT_COLUMN_ORDER, (void *)memory,
 			   sizeof(float), 5, dims, stride, pitch);
-	aml_layout_ainit(&b, AML_TYPE_LAYOUT_ROW_ORDER, (void *)memory,
+	aml_layout_ainit(&b, AML_TYPE_LAYOUT_COLUMN_ORDER, (void *)memory,
 			 sizeof(float), 5, dims, stride, pitch);
 
 	assert( (intptr_t)(a->data->stride) - (intptr_t)(a->data->dims)

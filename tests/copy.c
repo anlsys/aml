@@ -863,13 +863,13 @@ void test_copy_layout(void)
 	AML_LAYOUT_DECL(dst_layout, 3);
 	AML_LAYOUT_DECL(dst2_layout, 3);
 
-	aml_layout_ainit(&src_layout, AML_TYPE_LAYOUT_ROW_ORDER,
+	aml_layout_ainit(&src_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
 			 (void *)src, sizeof(double), 3, elem_number,
 			 src_stride, c_src_pitch);
-	aml_layout_ainit(&dst_layout, AML_TYPE_LAYOUT_ROW_ORDER,
+	aml_layout_ainit(&dst_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
 			 (void *)dst, sizeof(double), 3, elem_number,
 			 dst_stride, c_dst_pitch);
-	aml_layout_ainit(&dst2_layout, AML_TYPE_LAYOUT_ROW_ORDER,
+	aml_layout_ainit(&dst2_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
 			 (void *)dst2, sizeof(double), 3, elem_number,
 			 src_stride, c_src_pitch);
 
@@ -923,13 +923,13 @@ void test_transpose_layout(void)
 	AML_LAYOUT_DECL(dst_layout, 4);
 	AML_LAYOUT_DECL(dst2_layout, 4);
 
-	aml_layout_ainit(&src_layout, AML_TYPE_LAYOUT_ROW_ORDER,
+	aml_layout_ainit(&src_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
 			 (void *)src, sizeof(double), 4, elem_number,
 			 src_stride, c_src_pitch);
-	aml_layout_ainit(&dst_layout, AML_TYPE_LAYOUT_ROW_ORDER,
+	aml_layout_ainit(&dst_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
 			 (void *)dst, sizeof(double), 4, elem_number2,
 			 dst_stride, c_dst_pitch);
-	aml_layout_ainit(&dst2_layout, AML_TYPE_LAYOUT_ROW_ORDER,
+	aml_layout_ainit(&dst2_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
 			 (void *)dst2, sizeof(double), 4, elem_number,
 			 src_stride, c_src_pitch);
 
