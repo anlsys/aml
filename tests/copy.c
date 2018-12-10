@@ -610,8 +610,8 @@ void test_copy_sh4d(void)
 {
 	size_t elem_number[4] = { 5, 3, 2, 4 };
 	size_t elem_number2[4] = { 2, 3, 4, 5 };
-	size_t target_dims[4] = { 3, 1, 0, 2 };
-	size_t target_dims2[4] = { 2, 1, 3, 0 };
+	size_t target_dims[4] = { 2, 1, 3, 0 };
+	size_t target_dims2[4] = { 3, 1, 0, 2 };
 	size_t src_pitch[4] = { 10, 6, 4, 8 };
 	size_t dst_pitch[4] = { 2, 3, 4, 5 };
 
@@ -666,8 +666,8 @@ void test_copy_sh4d_c(void)
 {
 	size_t elem_number[4] = { 5, 3, 2, 4 };
 	size_t elem_number2[4] = { 2, 3, 4, 5 };
-	size_t target_dims[4] = { 3, 1, 0, 2 };
-	size_t target_dims2[4] = { 2, 1, 3, 0 };
+	size_t target_dims[4] = { 2, 1, 3, 0 };
+	size_t target_dims2[4] = { 3, 1, 0, 2 };
 	size_t c_src_pitch[5] = { 8, 8 * 10, 8 * 10 * 6, 8 * 10 * 6 * 4,
 				  8 * 10 * 6 * 4 * 8 };
 	size_t c_dst_pitch[5] = { 8, 8 * 2, 8 * 2 * 3, 8 * 2 * 3 * 4,
@@ -724,8 +724,8 @@ void test_copy_sh4dstr(void)
 {
 	size_t elem_number[4] = { 5, 3, 2, 4 };
 	size_t elem_number2[4] = { 2, 3, 4, 5 };
-	size_t target_dims[4] = { 3, 1, 0, 2 };
-	size_t target_dims2[4] = { 2, 1, 3, 0 };
+	size_t target_dims[4] = { 2, 1, 3, 0 };
+	size_t target_dims2[4] = { 3, 1, 0, 2 };
 	size_t src_pitch[4] = { 10, 6, 4, 8 };
 	size_t src_stride[4] = { 2, 2, 2, 2 };
 	size_t dst_pitch[4] = { 2, 3, 4, 5 };
@@ -784,8 +784,8 @@ void test_copy_sh4dstr_c(void)
 {
 	size_t elem_number[4] = { 5, 3, 2, 4 };
 	size_t elem_number2[4] = { 2, 3, 4, 5 };
-	size_t target_dims[4] = { 3, 1, 0, 2 };
-	size_t target_dims2[4] = { 2, 1, 3, 0 };
+	size_t target_dims[4] = { 2, 1, 3, 0 };
+	size_t target_dims2[4] = { 3, 1, 0, 2 };
 	size_t c_src_pitch[5] = { 8, 8 * 10, 8 * 10 * 6, 8 * 10 * 6 * 4,
 				  8 * 10 * 6 * 4 * 8 };
 	size_t src_stride[4] = { 2, 2, 2, 2 };
