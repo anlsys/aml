@@ -889,13 +889,13 @@ void test_copy_layout(void)
 				ref_dst2[k][j][i] = src[k][j][i];
 			}
 
-	aml_copy_layout(&dst_layout, &src_layout);
+	aml_copy_layout_native(&dst_layout, &src_layout);
 	for (int k = 0; k < 2; k++)
 		for (int j = 0; j < 3; j++)
 			for (int i = 0; i < 5; i++)
 				assert(ref_dst[k][j][i] == dst[k][j][i]);
 
-	aml_copy_layout(&dst2_layout, &dst_layout);
+	aml_copy_layout_native(&dst2_layout, &dst_layout);
 	for (int k = 0; k < 4; k++)
 		for (int j = 0; j < 6; j++)
 			for (int i = 0; i < 10; i++)
@@ -954,7 +954,7 @@ void test_transpose_layout(void)
 					    src[2 * l][2 * k][2 * j][2 * i];
 				}
 
-	aml_transpose_layout(&dst_layout, &src_layout);
+	aml_copy_layout_transpose_native(&dst_layout, &src_layout);
 	for (int l = 0; l < 4; l++)
 		for (int k = 0; k < 2; k++)
 			for (int j = 0; j < 3; j++)
@@ -962,7 +962,7 @@ void test_transpose_layout(void)
 					assert(ref_dst[i][l][k][j] ==
 					       dst[i][l][k][j]);
 
-	aml_reverse_transpose_layout(&dst2_layout, &dst_layout);
+	aml_copy_layout_reverse_transpose_native(&dst2_layout, &dst_layout);
 	for (int l = 0; l < 8; l++)
 		for (int k = 0; k < 4; k++)
 			for (int j = 0; j < 6; j++)

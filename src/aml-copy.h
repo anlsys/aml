@@ -167,11 +167,18 @@ int aml_copy_shndstr_c(size_t d, const size_t *target_dims, void *dst,
 		       const size_t *src_stride, const size_t *elem_number,
 		       const size_t elem_size);
 
-int aml_copy_layout(struct aml_layout *dst, const struct aml_layout *src);
-int aml_transform_layout(struct aml_layout *dst, const struct aml_layout *src,
-                         const size_t *target_dims);
-int aml_transpose_layout(struct aml_layout *dst, const struct aml_layout *src);
-int aml_reverse_transpose_layout(struct aml_layout *dst,
+ /*******************************************************************************
+ * Generic building block API: Native version
+ * Native means using AML-internal layouts.
+ ******************************************************************************/
+
+int aml_copy_layout_native(struct aml_layout *dst,
+			   const struct aml_layout *src);
+int aml_copy_layout_transform_native(struct aml_layout *dst,
+				     const struct aml_layout *src,
+				     const size_t *target_dims);
+int aml_copy_layout_transpose_native(struct aml_layout *dst, const struct aml_layout *src);
+int aml_copy_layout_reverse_transpose_native(struct aml_layout *dst,
 				 const struct aml_layout *src);
 
 #endif

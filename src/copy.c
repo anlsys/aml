@@ -477,7 +477,7 @@ int aml_copy_rtndstr_c(size_t d, void *dst, const size_t *cumul_dst_pitch,
 	return 0;
 }
 
-int aml_copy_layout(struct aml_layout *dst, const struct aml_layout *src)
+int aml_copy_layout_native(struct aml_layout *dst, const struct aml_layout *src)
 {
 	struct aml_layout_data *ddst = dst->data;
 	struct aml_layout_data *dsrc = src->data;
@@ -494,7 +494,7 @@ int aml_copy_layout(struct aml_layout *dst, const struct aml_layout *src)
 				dsrc->dims, elem_size);
 }
 
-int aml_transform_layout(struct aml_layout *dst, const struct aml_layout *src,
+int aml_copy_layout_transform_native(struct aml_layout *dst, const struct aml_layout *src,
 			 const size_t *target_dims)
 {
 	struct aml_layout_data *ddst = dst->data;
@@ -512,7 +512,7 @@ int aml_transform_layout(struct aml_layout *dst, const struct aml_layout *src,
 				  dsrc->stride, dsrc->dims, elem_size);
 }
 
-int aml_transpose_layout(struct aml_layout *dst, const struct aml_layout *src)
+int aml_copy_layout_transpose_native(struct aml_layout *dst, const struct aml_layout *src)
 {
 	size_t d = src->data->ndims;
 	assert(d > 0);
@@ -521,10 +521,10 @@ int aml_transpose_layout(struct aml_layout *dst, const struct aml_layout *src)
 	target_dims[0] = d - 1;
 	for (int i = 1; i < d; i++)
 		target_dims[i] = i - 1;
-	return aml_transform_layout(dst, src, target_dims);
+	return aml_copy_layout_transform_native(dst, src, target_dims);
 }
 
-int aml_reverse_transpose_layout(struct aml_layout *dst,
+int aml_copy_layout_reverse_transpose_native(struct aml_layout *dst,
 				 const struct aml_layout *src)
 {
 	size_t d = src->data->ndims;
@@ -534,5 +534,5 @@ int aml_reverse_transpose_layout(struct aml_layout *dst,
 	target_dims[d - 1] = 0;
 	for (int i = 0; i < d - 1; i++)
 		target_dims[i] = i + 1;
-	return aml_transform_layout(dst, src, target_dims);
+	return aml_copy_layout_transform_native(dst, src, target_dims);
 }
