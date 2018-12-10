@@ -12,6 +12,18 @@ struct aml_layout_data;
  * Generic layout, with support for sparsity and strides.
  ******************************************************************************/
 
+/* Layout type tags. Defined as the bit offset to set to one. */
+#define AML_TYPE_LAYOUT_ORDER (1 << 0)
+#define AML_TYPE_MAX (1 << 1)
+
+#define AML_TYPE_LAYOUT_ROW_ORDER 0
+#define AML_TYPE_LAYOUT_COLUMN_ORDER 1
+
+#define AML_TYPE_GET(tags, bit) (tags & bit)
+#define AML_TYPE_CLEAR(tags, bit) (tags & ~bit)
+#define AML_TYPE_SET(tags, bit) (tags | bit)
+
+
 /* Layout: describes how a  multi-dimensional data structure is collapsed into a
  * linear (and contiguous) virtual address range.
  * "ptr": base pointer of the address range
@@ -22,10 +34,6 @@ struct aml_layout_data;
  *          (pitch[0] is the element size in bytes).
  * "stride": offset between elements of the same dimension.
  */
-
-#define AML_TYPE_LAYOUT_COLUMN_ORDER 0
-#define AML_TYPE_LAYOUT_ROW_ORDER 1
-
 struct aml_layout_data {
 	void *ptr;
 	size_t ndims;

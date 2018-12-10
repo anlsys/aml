@@ -68,9 +68,10 @@ int aml_layout_ainit(struct aml_layout *layout, uint64_t tags, void *ptr,
 	assert(data->pitch);
 	assert(data->stride);
 	data->ptr = ptr;
-	if(tags == AML_TYPE_LAYOUT_COLUMN_ORDER)
+	int type = AML_TYPE_GET(tags, AML_TYPE_LAYOUT_ORDER);
+	if(type == AML_TYPE_LAYOUT_COLUMN_ORDER)
 	{
-		layout->tags = tags;
+		AML_TYPE_SET(layout->tags, AML_TYPE_LAYOUT_COLUMN_ORDER);
 		layout->ops = &aml_layout_column_ops;
 		for(size_t i = 0; i < ndims; i++)
 		{
@@ -81,9 +82,9 @@ int aml_layout_ainit(struct aml_layout *layout, uint64_t tags, void *ptr,
 		for(size_t i = 1; i < ndims; i++)
 			data->pitch[i] = data->pitch[i-1]*pitch[ndims-i-1];
 	}
-	else if(tags == AML_TYPE_LAYOUT_ROW_ORDER)
+	else if(type == AML_TYPE_LAYOUT_ROW_ORDER)
 	{
-		layout->tags = tags;
+		AML_TYPE_SET(layout->tags, AML_TYPE_LAYOUT_ROW_ORDER);
 		layout->ops = &aml_layout_row_ops;
 		memcpy(data->dims, dims, ndims * sizeof(size_t));
 		/* pitches are only necessary for ndims-1 dimensions. Since we
