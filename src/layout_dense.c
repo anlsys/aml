@@ -6,26 +6,55 @@
 
 void *aml_layout_column_deref(const struct aml_layout_data *d, va_list coords)
 {
-	return NULL;
+	void *ptr;
+	assert(d != NULL);
+	assert(d->ptr != NULL);
+	ptr = d->ptr;
+	for(size_t i = 0; i < d->ndims; i++)
+	{
+		size_t c = va_arg(coords, size_t);
+		assert(c < d->dims[i]);
+		ptr += c*d->pitch[i]*d->stride[i];
+	}
+	return ptr;
 }
 
 void *aml_layout_column_aderef(const struct aml_layout_data *d, size_t *coords)
 {
-	return NULL;
+	void *ptr;
+	assert(d != NULL);
+	assert(d->ptr != NULL);
+	ptr = d->ptr;
+	for(size_t i = 0; i < d->ndims; i++)
+	{
+		assert(coords[i] < d->dims[i]);
+		ptr += coords[i]*d->pitch[i]*d->stride[i];
+	}
+	return ptr;
 }
 
 int aml_layout_column_order(const struct aml_layout_data *d)
 {
-	return 0;
+	return AML_TYPE_LAYOUT_COLUMN_ORDER;
 }
 
 int aml_layout_column_dims(const struct aml_layout_data *d, va_list dims)
 {
+	assert(d != NULL);
+	for(size_t i = 0; i < d->ndims; i++)
+	{
+		size_t *dim = va_arg(dims, size_t*);
+		assert(dim != NULL);
+		*dim = d->dims[i];
+	}
 	return 0;
 }
 
-int aml_layout_column_adims(const struct aml_layout_data *d, const size_t *dims)
+int aml_layout_column_adims(const struct aml_layout_data *d, size_t *dims)
 {
+	assert(d != NULL);
+	assert(dims != NULL);
+	memcpy((void*)dims, (void*)d->dims, sizeof(size_t)*d->ndims);
 	return 0;
 }
 
@@ -44,26 +73,58 @@ struct aml_layout_ops aml_layout_column_ops = {
 
 void *aml_layout_row_deref(const struct aml_layout_data *d, va_list coords)
 {
-	return NULL;
+	void *ptr;
+	assert(d != NULL);
+	assert(d->ptr != NULL);
+	ptr = d->ptr;
+	for(size_t i = 0; i < d->ndims; i++)
+	{
+		size_t c = va_arg(coords, size_t);
+		assert(c < d->dims[d->ndims - i - 1]);
+		ptr += c*d->pitch[d->ndims - i - 1]*d->stride[d->ndims - i - 1];
+	}
+	return ptr;
 }
 
 void *aml_layout_row_aderef(const struct aml_layout_data *d, size_t *coords)
 {
-	return NULL;
+	void *ptr;
+	assert(d != NULL);
+	assert(d->ptr != NULL);
+	ptr = d->ptr;
+	for(size_t i = 0; i < d->ndims; i++)
+	{
+		size_t c = coords[i];
+		assert(c < d->dims[d->ndims - i - 1]);
+		ptr += c*d->pitch[d->ndims - i - 1]*d->stride[d->ndims - i - 1];
+	}
+	return ptr;
 }
 
 int aml_layout_row_order(const struct aml_layout_data *d)
 {
-	return 0;
+	return AML_TYPE_LAYOUT_ROW_ORDER;
 }
 
 int aml_layout_row_dims(const struct aml_layout_data *d, va_list dims)
 {
+	assert(d != NULL);
+	for(size_t i = 0; i < d->ndims; i++)
+	{
+		size_t *dim = va_arg(dims, size_t*);
+		assert(dim != NULL);
+		*dim = d->dims[d->ndims - i - 1];
+	}
 	return 0;
 }
 
-int aml_layout_row_adims(const struct aml_layout_data *d, const size_t *dims)
+int aml_layout_row_adims(const struct aml_layout_data *d, size_t *dims)
 {
+	assert(d != NULL);
+	for(size_t i = 0; i < d->ndims; i++)
+	{
+		dims[i] = d->dims[d->ndims - i - 1];
+	}
 	return 0;
 }
 

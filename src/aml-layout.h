@@ -47,7 +47,7 @@ struct aml_layout_ops {
 	void *(*aderef)(const struct aml_layout_data *, const size_t *coords);
 	int (*order)(const struct aml_layout_data *);
 	int (*dims)(const struct aml_layout_data *, va_list dim_ptrs);
-	int (*adims)(const struct aml_layout_data *, const size_t *dims);
+	int (*adims)(const struct aml_layout_data *, size_t *dims);
 };
 
 struct aml_layout {
@@ -105,7 +105,7 @@ void *aml_layout_column_deref(const struct aml_layout_data *d, va_list coords);
 void *aml_layout_column_aderef(const struct aml_layout_data *d, size_t *coords);
 int aml_layout_column_order(const struct aml_layout_data *d);
 int aml_layout_column_dims(const struct aml_layout_data *d, va_list dims);
-int aml_layout_column_adims(const struct aml_layout_data *d, const size_t *dims);
+int aml_layout_column_adims(const struct aml_layout_data *d, size_t *dims);
 
 extern struct aml_layout_ops aml_layout_column_ops;
 
@@ -113,7 +113,7 @@ void *aml_layout_row_deref(const struct aml_layout_data *d, va_list coords);
 void *aml_layout_row_aderef(const struct aml_layout_data *d, size_t *coords);
 int aml_layout_row_order(const struct aml_layout_data *d);
 int aml_layout_row_dims(const struct aml_layout_data *d, va_list dims);
-int aml_layout_row_adims(const struct aml_layout_data *d, const size_t *dims);
+int aml_layout_row_adims(const struct aml_layout_data *d, size_t *dims);
 
 extern struct aml_layout_ops aml_layout_row_ops;
 #endif
