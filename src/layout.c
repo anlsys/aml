@@ -16,6 +16,13 @@ void *aml_layout_deref(const struct aml_layout *layout, ...)
 	return ret;
 }
 
+void *aml_layout_aderef(const struct aml_layout *layout, const size_t *coords)
+{
+	assert(layout != NULL);
+	assert(layout->ops != NULL);
+	return layout->ops->aderef(layout->data, coords);
+}
+
 int aml_layout_order(const struct aml_layout *layout)
 {
 	assert(layout != NULL);
@@ -33,6 +40,13 @@ int aml_layout_dims(const struct aml_layout *layout, ...)
 	ret = layout->ops->dims(layout->data, ap);
 	va_end(ap);
 	return ret;
+}
+
+int aml_layout_adims(const struct aml_layout *layout, size_t *dims)
+{
+	assert(layout != NULL);
+	assert(layout->ops != NULL);
+	return layout->ops->adims(layout->data, dims);
 }
 
 /*******************************************************************************
@@ -65,14 +79,14 @@ int aml_layout_ainit(struct aml_layout *layout, uint64_t tags, void *ptr,
 	struct aml_layout_data *data = layout->data;
 	assert(data->ndims == ndims);
 	assert(data->dims);
-	assert(data->pitch);
 	assert(data->stride);
+	assert(data->pitch);
 	data->ptr = ptr;
 	int type = AML_TYPE_GET(tags, AML_TYPE_LAYOUT_ORDER);
 	if(type == AML_TYPE_LAYOUT_ROW_ORDER)
 	{
 		AML_TYPE_SET(layout->tags, AML_TYPE_LAYOUT_ROW_ORDER);
-		layout->ops = &aml_layout_column_ops;
+		layout->ops = &aml_layout_row_ops;
 		for(size_t i = 0; i < ndims; i++)
 		{
 			data->dims[i] = dims[ndims-i-1];
@@ -80,12 +94,12 @@ int aml_layout_ainit(struct aml_layout *layout, uint64_t tags, void *ptr,
 		}
 		data->pitch[0] = element_size;
 		for(size_t i = 1; i < ndims; i++)
-			data->pitch[i] = data->pitch[i-1]*pitch[ndims-i-1];
+			data->pitch[i] = data->pitch[i-1]*pitch[ndims-i];
 	}
 	else if(type == AML_TYPE_LAYOUT_COLUMN_ORDER)
 	{
 		AML_TYPE_SET(layout->tags, AML_TYPE_LAYOUT_COLUMN_ORDER);
-		layout->ops = &aml_layout_row_ops;
+		layout->ops = &aml_layout_column_ops;
 		memcpy(data->dims, dims, ndims * sizeof(size_t));
 		/* pitches are only necessary for ndims-1 dimensions. Since we
 		 * store element size as p->pitch[0], there's still ndims
@@ -109,7 +123,7 @@ int aml_layout_vinit(struct aml_layout *p, uint64_t tags, void *ptr,
 		dims[i] = va_arg(ap, size_t);
 	for(size_t i = 0; i < ndims; i++)
 		stride[i] = va_arg(ap, size_t);
-	for(size_t i = 0; i < ndims-1; i++)
+	for(size_t i = 0; i < ndims; i++)
 		pitch[i] = va_arg(ap, size_t);
 	return aml_layout_ainit(p, tags, ptr, element_size, ndims, dims, stride,
 			       pitch);

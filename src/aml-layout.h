@@ -94,15 +94,18 @@ int aml_layout_create(struct aml_layout **l, uint64_t tags, void *ptr,
 		      const size_t element_size, size_t ndims, ...);
 
 void *aml_layout_deref(const struct aml_layout *l, ...);
+void *aml_layout_aderef(const struct aml_layout *l, const size_t *coords);
 int aml_layout_order(const struct aml_layout *l);
 int aml_layout_dims(const struct aml_layout *l, ...);
+int aml_layout_adims(const struct aml_layout *l, size_t *dims);
 
 /*******************************************************************************
  * Dense Layout Operators.
  ******************************************************************************/
 
 void *aml_layout_column_deref(const struct aml_layout_data *d, va_list coords);
-void *aml_layout_column_aderef(const struct aml_layout_data *d, size_t *coords);
+void *aml_layout_column_aderef(const struct aml_layout_data *d,
+			       const size_t *coords);
 int aml_layout_column_order(const struct aml_layout_data *d);
 int aml_layout_column_dims(const struct aml_layout_data *d, va_list dims);
 int aml_layout_column_adims(const struct aml_layout_data *d, size_t *dims);
@@ -110,7 +113,8 @@ int aml_layout_column_adims(const struct aml_layout_data *d, size_t *dims);
 extern struct aml_layout_ops aml_layout_column_ops;
 
 void *aml_layout_row_deref(const struct aml_layout_data *d, va_list coords);
-void *aml_layout_row_aderef(const struct aml_layout_data *d, size_t *coords);
+void *aml_layout_row_aderef(const struct aml_layout_data *d,
+			    const size_t *coords);
 int aml_layout_row_order(const struct aml_layout_data *d);
 int aml_layout_row_dims(const struct aml_layout_data *d, va_list dims);
 int aml_layout_row_adims(const struct aml_layout_data *d, size_t *dims);

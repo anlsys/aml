@@ -19,7 +19,7 @@ void *aml_layout_column_deref(const struct aml_layout_data *d, va_list coords)
 	return ptr;
 }
 
-void *aml_layout_column_aderef(const struct aml_layout_data *d, size_t *coords)
+void *aml_layout_column_aderef(const struct aml_layout_data *d, const size_t *coords)
 {
 	void *ptr;
 	assert(d != NULL);
@@ -86,7 +86,7 @@ void *aml_layout_row_deref(const struct aml_layout_data *d, va_list coords)
 	return ptr;
 }
 
-void *aml_layout_row_aderef(const struct aml_layout_data *d, size_t *coords)
+void *aml_layout_row_aderef(const struct aml_layout_data *d, const size_t *coords)
 {
 	void *ptr;
 	assert(d != NULL);
