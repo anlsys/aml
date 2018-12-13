@@ -488,13 +488,13 @@ int aml_copy_layout_native(struct aml_layout *dst, const struct aml_layout *src)
 	size_t d = dsrc->ndims;
 	assert(d > 0);
 
-	size_t elem_size = dsrc->pitch[0];
+	size_t elem_size = dsrc->cpitch[0];
 	assert(d == ddst->ndims);
-	assert(elem_size == ddst->pitch[0]);
+	assert(elem_size == ddst->cpitch[0]);
 	for (int i = 0; i < d; i++)
 		assert( dsrc->dims[i] == ddst->dims[i] );
-	return aml_copy_ndstr_c(d, ddst->ptr, ddst->pitch, ddst->stride,
-				dsrc->ptr, dsrc->pitch, dsrc->stride,
+	return aml_copy_ndstr_c(d, ddst->ptr, ddst->cpitch, ddst->stride,
+				dsrc->ptr, dsrc->cpitch, dsrc->stride,
 				dsrc->dims, elem_size);
 }
 
@@ -507,13 +507,13 @@ int aml_copy_layout_transform_native(struct aml_layout *dst,
 	size_t d = dsrc->ndims;
 	assert(d > 0);
 
-	size_t elem_size = dsrc->pitch[0];
+	size_t elem_size = dsrc->cpitch[0];
 	assert(d == ddst->ndims);
-	assert(elem_size == ddst->pitch[0]);
+	assert(elem_size == ddst->cpitch[0]);
 	for (int i = 0; i < d; i++)
 		assert( dsrc->dims[target_dims[i]] == ddst->dims[i]);
-	return aml_copy_shndstr_c(d, target_dims, ddst->ptr, ddst->pitch,
-				  ddst->stride, dsrc->ptr, dsrc->pitch,
+	return aml_copy_shndstr_c(d, target_dims, ddst->ptr, ddst->cpitch,
+				  ddst->stride, dsrc->ptr, dsrc->cpitch,
 				  dsrc->stride, dsrc->dims, elem_size);
 }
 

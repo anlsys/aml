@@ -14,7 +14,7 @@ void *aml_layout_column_deref(const struct aml_layout_data *d, va_list coords)
 	{
 		size_t c = va_arg(coords, size_t);
 		assert(c < d->dims[i]);
-		ptr += c*d->pitch[i]*d->stride[i];
+		ptr += c*d->cpitch[i]*d->stride[i];
 	}
 	return ptr;
 }
@@ -28,7 +28,7 @@ void *aml_layout_column_aderef(const struct aml_layout_data *d, const size_t *co
 	for(size_t i = 0; i < d->ndims; i++)
 	{
 		assert(coords[i] < d->dims[i]);
-		ptr += coords[i]*d->pitch[i]*d->stride[i];
+		ptr += coords[i]*d->cpitch[i]*d->stride[i];
 	}
 	return ptr;
 }
@@ -81,7 +81,7 @@ void *aml_layout_row_deref(const struct aml_layout_data *d, va_list coords)
 	{
 		size_t c = va_arg(coords, size_t);
 		assert(c < d->dims[d->ndims - i - 1]);
-		ptr += c*d->pitch[d->ndims - i - 1]*d->stride[d->ndims - i - 1];
+		ptr += c*d->cpitch[d->ndims - i - 1]*d->stride[d->ndims - i - 1];
 	}
 	return ptr;
 }
@@ -96,7 +96,7 @@ void *aml_layout_row_aderef(const struct aml_layout_data *d, const size_t *coord
 	{
 		size_t c = coords[i];
 		assert(c < d->dims[d->ndims - i - 1]);
-		ptr += c*d->pitch[d->ndims - i - 1]*d->stride[d->ndims - i - 1];
+		ptr += c*d->cpitch[d->ndims - i - 1]*d->stride[d->ndims - i - 1];
 	}
 	return ptr;
 }

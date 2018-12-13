@@ -66,6 +66,7 @@ int aml_layout_struct_init(struct aml_layout *layout,
 	layout->data->dims = (size_t *)memory;
 	layout->data->stride = layout->data->dims + ndims;
 	layout->data->pitch = layout->data->stride + ndims;
+	layout->data->cpitch = layout->data->pitch + ndims;
 	return 0;
 }
 
@@ -81,6 +82,7 @@ int aml_layout_ainit(struct aml_layout *layout, uint64_t tags, void *ptr,
 	assert(data->dims);
 	assert(data->stride);
 	assert(data->pitch);
+	assert(data->cpitch);
 	data->ptr = ptr;
 	int type = AML_TYPE_GET(tags, AML_TYPE_LAYOUT_ORDER);
 	if(type == AML_TYPE_LAYOUT_ROW_ORDER)
@@ -91,24 +93,26 @@ int aml_layout_ainit(struct aml_layout *layout, uint64_t tags, void *ptr,
 		{
 			data->dims[i] = dims[ndims-i-1];
 			data->stride[i] = stride[ndims-i-1];
+			data->pitch[i] = pitch[ndims-i-1];
 		}
-		data->pitch[0] = element_size;
+		data->cpitch[0] = element_size;
 		for(size_t i = 1; i < ndims; i++)
-			data->pitch[i] = data->pitch[i-1]*pitch[ndims-i];
+			data->cpitch[i] = data->cpitch[i-1]*pitch[ndims-i];
 	}
 	else if(type == AML_TYPE_LAYOUT_COLUMN_ORDER)
 	{
 		AML_TYPE_SET(layout->tags, AML_TYPE_LAYOUT_COLUMN_ORDER);
 		layout->ops = &aml_layout_column_ops;
 		memcpy(data->dims, dims, ndims * sizeof(size_t));
+		memcpy(data->stride, stride, ndims * sizeof(size_t));
+		memcpy(data->pitch, pitch, ndims * sizeof(size_t));
 		/* pitches are only necessary for ndims-1 dimensions. Since we
-		 * store element size as p->pitch[0], there's still ndims
+		 * store element size as p->cpitch[0], there's still ndims
 		 * elements in the array.
 		 */
-		data->pitch[0] = element_size;
+		data->cpitch[0] = element_size;
 		for(size_t i = 1; i < ndims; i++)
-			data->pitch[i] = data->pitch[i-1]*pitch[i-1];
-		memcpy(data->stride, stride, ndims * sizeof(size_t));
+			data->cpitch[i] = data->cpitch[i-1]*pitch[i-1];
 	}
 	return 0;
 }

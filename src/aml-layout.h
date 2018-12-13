@@ -30,16 +30,19 @@ struct aml_layout_data;
  * "ndims": number of dimensions
  * "dims": dimensions, in element size, of the data structure, by order of
  *         appearance in memory.
- * "pitch": cumulative distances between two elements in the same dimension
- *          (pitch[0] is the element size in bytes).
  * "stride": offset between elements of the same dimension.
+ * "pitch": distances between two elements of the next dimension (or total
+            dimension of the layout in this dimension).
+ * "cpitch": cumulative distances between two elements in the same dimension
+ *           (pitch[0] is the element size in bytes).
  */
 struct aml_layout_data {
 	void *ptr;
 	size_t ndims;
 	size_t *dims;
-	size_t *pitch;
 	size_t *stride;
+	size_t *pitch;
+	size_t *cpitch;
 };
 
 struct aml_layout_ops {
@@ -58,16 +61,17 @@ struct aml_layout {
 
 #define AML_LAYOUT_ALLOCSIZE(ndims) (sizeof(struct aml_layout) +\
 					sizeof(struct aml_layout_data) +\
-					ndims * 3 * sizeof(size_t))
+					ndims * 4 * sizeof(size_t))
 
 #define AML_LAYOUT_DECL(name, ndims) \
-	size_t __ ##name## _inner_data[ndims * 3]; \
+	size_t __ ##name## _inner_data[ndims * 4]; \
 	struct aml_layout_data __ ##name## _inner_struct = { \
 		NULL, \
 		ndims, \
 		__ ##name## _inner_data, \
 		__ ##name## _inner_data + ndims, \
 		__ ##name## _inner_data + 2 * ndims, \
+		__ ##name## _inner_data + 3 * ndims, \
 	}; \
 	struct aml_layout name = { \
 		0, \
