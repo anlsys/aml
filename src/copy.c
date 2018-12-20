@@ -26,20 +26,18 @@ static inline void aml_copy_nd_helper(size_t d, void *dst,
 				      const size_t * elem_number,
 				      size_t elem_size)
 {
-	if (d == 1) {
+	if (d == 1)
 		if (cumul_dst_pitch[0] == elem_size
-		    && cumul_src_pitch[0] == elem_size) {
+		    && cumul_src_pitch[0] == elem_size)
 			memcpy(dst, src, elem_number[0] * elem_size);
-		} else {
-			for (size_t i = 0; i < elem_number[0]; i += 1) {
+		else
+			for (size_t i = 0; i < elem_number[0]; i += 1)
 				memcpy((void *)((intptr_t) dst +
 						i * cumul_dst_pitch[0]),
 				       (void *)((intptr_t) src +
 						i * cumul_src_pitch[0]),
 				       elem_size);
-			}
-		}
-	} else {
+	else
 		for (size_t i = 0; i < elem_number[d - 1]; i += 1) {
 			aml_copy_nd_helper(d - 1, dst, cumul_dst_pitch, src,
 					   cumul_src_pitch, elem_number,
@@ -47,7 +45,6 @@ static inline void aml_copy_nd_helper(size_t d, void *dst,
 			dst = (void *)((intptr_t) dst + cumul_dst_pitch[d - 1]);
 			src = (void *)((intptr_t) src + cumul_src_pitch[d - 1]);
 		}
-	}
 }
 
 int aml_copy_nd_c(size_t d, void *dst, const size_t * cumul_dst_pitch,
@@ -91,12 +88,12 @@ static inline void aml_copy_ndstr_helper(size_t d, void *dst,
 					 const size_t * elem_number,
 					 size_t elem_size)
 {
-	if (d == 1) {
+	if (d == 1)
 		if (dst_stride[0] * cumul_dst_pitch[0] == elem_size
-		    && src_stride[0] * cumul_src_pitch[0] == elem_size) {
+		    && src_stride[0] * cumul_src_pitch[0] == elem_size)
 			memcpy(dst, src, elem_number[0] * elem_size);
-		} else {
-			for (size_t i = 0; i < elem_number[0]; i += 1) {
+		else
+			for (size_t i = 0; i < elem_number[0]; i += 1)
 				memcpy((void *)((intptr_t) dst +
 						i * (dst_stride[0] *
 						     cumul_dst_pitch[0])),
@@ -104,9 +101,7 @@ static inline void aml_copy_ndstr_helper(size_t d, void *dst,
 						i * (src_stride[0] *
 						     cumul_src_pitch[0])),
 				       elem_size);
-			}
-		}
-	} else {
+	else
 		for (size_t i = 0; i < elem_number[d - 1]; i += 1) {
 			aml_copy_ndstr_helper(d - 1, dst, cumul_dst_pitch,
 					      dst_stride, src, cumul_src_pitch,
@@ -121,7 +116,6 @@ static inline void aml_copy_ndstr_helper(size_t d, void *dst,
 				     src_stride[d - 1] * cumul_src_pitch[d -
 									 1]);
 		}
-	}
 }
 
 int aml_copy_ndstr_c(size_t d, void *dst, const size_t * cumul_dst_pitch,
@@ -167,14 +161,14 @@ static inline void aml_copy_shnd_helper(size_t d, const size_t * target_dims,
 					const size_t * elem_number,
 					size_t elem_size)
 {
-	if (d == 1) {
+	if (d == 1)
 		if (cumul_dst_pitch[0] == elem_size
-		    && cumul_src_pitch[target_dims[0]] == elem_size) {
+		    && cumul_src_pitch[target_dims[0]] == elem_size)
 			memcpy(dst, src,
 			       elem_number[target_dims[0]] * elem_size);
-		} else {
+		else
 			for (size_t i = 0; i < elem_number[target_dims[0]];
-			     i += 1) {
+			     i += 1)
 				memcpy((void *)((intptr_t) dst +
 						i * cumul_dst_pitch[0]),
 				       (void *)((intptr_t) src +
@@ -182,9 +176,7 @@ static inline void aml_copy_shnd_helper(size_t d, const size_t * target_dims,
 						cumul_src_pitch[target_dims
 								[0]]),
 				       elem_size);
-			}
-		}
-	} else {
+	else
 		for (size_t i = 0; i < elem_number[target_dims[d - 1]]; i += 1) {
 			aml_copy_shnd_helper(d - 1, target_dims, dst,
 					     cumul_dst_pitch, src,
@@ -195,7 +187,6 @@ static inline void aml_copy_shnd_helper(size_t d, const size_t * target_dims,
 			    (void *)((intptr_t) src +
 				     cumul_src_pitch[target_dims[d - 1]]);
 		}
-	}
 }
 
 int aml_copy_shnd_c(size_t d, const size_t * target_dims, void *dst,
@@ -210,9 +201,8 @@ int aml_copy_shnd_c(size_t d, const size_t * target_dims, void *dst,
 		assert(target_dims[i] < d);
 		present_dims |= 1 << target_dims[i];
 	}
-	for (size_t i = 0; i < d; i += 1) {
+	for (size_t i = 0; i < d; i += 1)
 		assert(present_dims & 1 << i);
-	}
 	for (size_t i = 0; i < d - 1; i += 1) {
 		assert(cumul_dst_pitch[i + 1] >=
 		       cumul_dst_pitch[i] * elem_number[target_dims[i]]);
@@ -249,9 +239,8 @@ int aml_copy_tnd(size_t d, void *dst, const size_t * dst_pitch, const void *src,
 	size_t *target_dims;
 	target_dims = (size_t *) alloca(d * sizeof(size_t));
 	target_dims[d - 1] = 0;
-	for (size_t i = 0; i < d - 1; i += 1) {
+	for (size_t i = 0; i < d - 1; i += 1)
 		target_dims[i] = i + 1;
-	}
 	aml_copy_shnd(d, target_dims, dst, dst_pitch, src, src_pitch,
 		      elem_number, elem_size);
 	return 0;
@@ -265,9 +254,8 @@ int aml_copy_tnd_c(size_t d, void *dst, const size_t * cumul_dst_pitch,
 	size_t *target_dims;
 	target_dims = (size_t *) alloca(d * sizeof(size_t));
 	target_dims[d - 1] = 0;
-	for (size_t i = 0; i < d - 1; i += 1) {
+	for (size_t i = 0; i < d - 1; i += 1)
 		target_dims[i] = i + 1;
-	}
 	aml_copy_shnd_c(d, target_dims, dst, cumul_dst_pitch, src,
 			cumul_src_pitch, elem_number, elem_size);
 	return 0;
@@ -281,9 +269,8 @@ int aml_copy_rtnd(size_t d, void *dst, const size_t * dst_pitch,
 	size_t *target_dims;
 	target_dims = (size_t *) alloca(d * sizeof(size_t));
 	target_dims[0] = d - 1;
-	for (size_t i = 1; i < d; i += 1) {
+	for (size_t i = 1; i < d; i += 1)
 		target_dims[i] = i - 1;
-	}
 	aml_copy_shnd(d, target_dims, dst, dst_pitch, src, src_pitch,
 		      elem_number, elem_size);
 	return 0;
@@ -297,9 +284,8 @@ int aml_copy_rtnd_c(size_t d, void *dst, const size_t * cumul_dst_pitch,
 	size_t *target_dims;
 	target_dims = (size_t *) alloca(d * sizeof(size_t));
 	target_dims[0] = d - 1;
-	for (size_t i = 1; i < d; i += 1) {
+	for (size_t i = 1; i < d; i += 1)
 		target_dims[i] = i - 1;
-	}
 	aml_copy_shnd_c(d, target_dims, dst, cumul_dst_pitch, src,
 			cumul_src_pitch, elem_number, elem_size);
 	return 0;
@@ -315,15 +301,15 @@ static inline void aml_copy_shndstr_helper(size_t d, const size_t * target_dims,
 					   const size_t * elem_number,
 					   size_t elem_size)
 {
-	if (d == 1) {
+	if (d == 1)
 		if (dst_stride[0] * cumul_dst_pitch[0] == elem_size
 		    && src_stride[target_dims[0]] *
-		    cumul_src_pitch[target_dims[0]] == elem_size) {
+		    cumul_src_pitch[target_dims[0]] == elem_size)
 			memcpy(dst, src,
 			       elem_number[target_dims[0]] * elem_size);
-		} else {
+		else
 			for (size_t i = 0; i < elem_number[target_dims[0]];
-			     i += 1) {
+			     i += 1)
 				memcpy((void *)((intptr_t) dst +
 						i * (dst_stride[0] *
 						     cumul_dst_pitch[0])),
@@ -333,9 +319,7 @@ static inline void aml_copy_shndstr_helper(size_t d, const size_t * target_dims,
 						 cumul_src_pitch[target_dims
 								 [0]])),
 				       elem_size);
-			}
-		}
-	} else {
+	else
 		for (size_t i = 0; i < elem_number[target_dims[d - 1]]; i += 1) {
 			aml_copy_shndstr_helper(d - 1, target_dims, dst,
 						cumul_dst_pitch, dst_stride,
@@ -351,7 +335,6 @@ static inline void aml_copy_shndstr_helper(size_t d, const size_t * target_dims,
 				     src_stride[target_dims[d - 1]] *
 				     cumul_src_pitch[target_dims[d - 1]]);
 		}
-	}
 }
 
 int aml_copy_shndstr_c(size_t d, const size_t * target_dims, void *dst,
@@ -368,9 +351,8 @@ int aml_copy_shndstr_c(size_t d, const size_t * target_dims, void *dst,
 		assert(target_dims[i] < d);
 		present_dims |= 1 << target_dims[i];
 	}
-	for (size_t i = 0; i < d; i += 1) {
+	for (size_t i = 0; i < d; i += 1)
 		assert(present_dims & 1 << i);
-	}
 	for (size_t i = 0; i < d - 1; i += 1) {
 		assert(cumul_dst_pitch[i + 1] >=
 		       dst_stride[i] * cumul_dst_pitch[i] *
@@ -412,9 +394,8 @@ int aml_copy_tndstr(size_t d, void *dst, const size_t * dst_pitch,
 	size_t *target_dims;
 	target_dims = (size_t *) alloca(d * sizeof(size_t));
 	target_dims[d - 1] = 0;
-	for (size_t i = 0; i < d - 1; i += 1) {
+	for (size_t i = 0; i < d - 1; i += 1)
 		target_dims[i] = i + 1;
-	}
 	aml_copy_shndstr(d, target_dims, dst, dst_pitch, dst_stride, src,
 			 src_pitch, src_stride, elem_number, elem_size);
 	return 0;
@@ -429,9 +410,8 @@ int aml_copy_tndstr_c(size_t d, void *dst, const size_t * cumul_dst_pitch,
 	size_t *target_dims;
 	target_dims = (size_t *) alloca(d * sizeof(size_t));
 	target_dims[d - 1] = 0;
-	for (size_t i = 0; i < d - 1; i += 1) {
+	for (size_t i = 0; i < d - 1; i += 1)
 		target_dims[i] = i + 1;
-	}
 	aml_copy_shndstr_c(d, target_dims, dst, cumul_dst_pitch, dst_stride,
 			   src, cumul_src_pitch, src_stride, elem_number,
 			   elem_size);
@@ -447,9 +427,8 @@ int aml_copy_rtndstr(size_t d, void *dst, const size_t * dst_pitch,
 	size_t *target_dims;
 	target_dims = (size_t *) alloca(d * sizeof(size_t));
 	target_dims[0] = d - 1;
-	for (size_t i = 1; i < d; i += 1) {
+	for (size_t i = 1; i < d; i += 1)
 		target_dims[i] = i - 1;
-	}
 	aml_copy_shndstr(d, target_dims, dst, dst_pitch, dst_stride, src,
 			 src_pitch, src_stride, elem_number, elem_size);
 	return 0;
@@ -465,9 +444,8 @@ int aml_copy_rtndstr_c(size_t d, void *dst, const size_t * cumul_dst_pitch,
 	size_t *target_dims;
 	target_dims = (size_t *) alloca(d * sizeof(size_t));
 	target_dims[0] = d - 1;
-	for (size_t i = 1; i < d; i += 1) {
+	for (size_t i = 1; i < d; i += 1)
 		target_dims[i] = i - 1;
-	}
 	aml_copy_shndstr_c(d, target_dims, dst, cumul_dst_pitch, dst_stride,
 			   src, cumul_src_pitch, src_stride, elem_number,
 			   elem_size);
@@ -487,9 +465,8 @@ int aml_copy_layout_native(struct aml_layout *dst, const struct aml_layout *src)
 	elem_size = dsrc->cpitch[0];
 	assert(d == ddst->ndims);
 	assert(elem_size == ddst->cpitch[0]);
-	for (size_t i = 0; i < d; i += 1) {
+	for (size_t i = 0; i < d; i += 1)
 		assert(dsrc->dims[i] == ddst->dims[i]);
-	}
 	return aml_copy_ndstr_c(d, ddst->ptr, ddst->cpitch, ddst->stride,
 				dsrc->ptr, dsrc->cpitch, dsrc->stride,
 				dsrc->dims, elem_size);
@@ -510,9 +487,8 @@ int aml_copy_layout_transform_native(struct aml_layout *dst,
 	elem_size = dsrc->cpitch[0];
 	assert(d == ddst->ndims);
 	assert(elem_size == ddst->cpitch[0]);
-	for (size_t i = 0; i < d; i += 1) {
+	for (size_t i = 0; i < d; i += 1)
 		assert(dsrc->dims[target_dims[i]] == ddst->dims[i]);
-	}
 	return aml_copy_shndstr_c(d, target_dims, ddst->ptr, ddst->cpitch,
 				  ddst->stride, dsrc->ptr, dsrc->cpitch,
 				  dsrc->stride, dsrc->dims, elem_size);
@@ -526,9 +502,8 @@ int aml_copy_layout_transpose_native(struct aml_layout *dst,
 	d = src->data->ndims;
 	target_dims = (size_t *) alloca(d * sizeof(size_t));
 	target_dims[d - 1] = 0;
-	for (size_t i = 0; i < d - 1; i += 1) {
+	for (size_t i = 0; i < d - 1; i += 1)
 		target_dims[i] = i + 1;
-	}
 	return aml_copy_layout_transform_native(dst, src, target_dims);
 }
 
@@ -540,8 +515,7 @@ int aml_copy_layout_reverse_transpose_native(struct aml_layout *dst,
 	d = src->data->ndims;
 	target_dims = (size_t *) alloca(d * sizeof(size_t));
 	target_dims[0] = d - 1;
-	for (size_t i = 1; i < d; i += 1) {
+	for (size_t i = 1; i < d; i += 1)
 		target_dims[i] = i - 1;
-	}
 	return aml_copy_layout_transform_native(dst, src, target_dims);
 }

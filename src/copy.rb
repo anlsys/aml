@@ -30,6 +30,12 @@ EOF
   ast = parser.parse(stdin1.read)
   stdin1.close
 
+  ast.postorder { |n|
+    n.stmt = n.stmt.stmts.first if n.For? && n.stmt.Block? && n.stmt.stmts.size == 1
+    n.then = n.then.stmts.first if n.If? && n.then.Block? && n.then.stmts.size == 1
+    n.else = n.else.stmts.first if n.If? && n.else && n.else.Block? && n.else.stmts.size == 1
+  }
+
   stdout1.puts <<EOF
 #include <aml.h>
 #include <assert.h>
