@@ -145,7 +145,7 @@ def aml_copy_nd_helper(stride: false, shuffle: false)
   args += [ dst_stride ] if stride
   args += [ src, cumul_src_pitch ]
   args += [ src_stride ] if stride
-  args +=  [ elem_number, elem_size ]
+  args += [ elem_number, elem_size ]
 
   effective_dst_pitch = lambda { |d| cumul_dst_pitch[d] }
   effective_src_pitch = lambda { |d| cumul_src_pitch[d] }
@@ -214,7 +214,7 @@ def aml_copy_nd_c(stride: false, shuffle: false)
   args += [ dst_stride ] if stride
   args += [ src, cumul_src_pitch]
   args += [ src_stride ] if stride
-  args +=  [ elem_number, elem_size]
+  args += [ elem_number, elem_size]
 
   effective_dst_pitch = lambda { |d| cumul_dst_pitch[d] }
   effective_src_pitch = lambda { |d| cumul_src_pitch[d] }
@@ -277,7 +277,7 @@ def aml_copy_nd(stride: false, shuffle: false)
   args += [ dst_stride ] if stride
   args += [ src, src_pitch]
   args += [ src_stride ] if stride
-  args +=  [ elem_number, elem_size]
+  args += [ elem_number, elem_size]
 
   name = name(stride: stride, shuffle: shuffle)
 
@@ -324,7 +324,7 @@ def aml_copy_tnd(reverse: false, stride: false, cumulative: false)
   args += [ src ]
   args += cumulative ? [ cumul_src_pitch ] : [ src_pitch ]
   args += [ src_stride ] if stride
-  args +=  [ elem_number, elem_size]
+  args += [ elem_number, elem_size]
 
   target_dims = Sizet :target_dims, dim: Dim(d)
   i = Sizet :i
@@ -360,7 +360,7 @@ def aml_copy_tnd(reverse: false, stride: false, cumulative: false)
   }
 end
 
-def aml_copy_layout_native(shuffle: false)
+def aml_copy_layout(native: true, shuffle: false)
   dst = Pointer :dst, type: CStruct::new(type_name: :aml_layout, members: {}), dir: :inout
   src = Pointer :src, type: CStruct::new(type_name: :aml_layout, members: {}), dir: :in
   target_dims = Sizet :target_dims, dim: Dim(), dir: :in
@@ -379,7 +379,7 @@ def aml_copy_layout_native(shuffle: false)
 
   name = name_prefix + "layout_"
   name << "transform_" if shuffle
-  name << "native"
+  name << (native ? "native" : "generic")
 
   args = [dst, src]
   args += [target_dims] if shuffle
@@ -410,7 +410,7 @@ def aml_copy_layout_native(shuffle: false)
   }
 end
 
-def aml_copy_layout_transpose_native(reverse: false)
+def aml_copy_layout_transpose(native: true, reverse: false)
   dst = Pointer :dst, type: CStruct::new(type_name: :aml_layout, members: {}), dir: :inout
   src = Pointer :src, type: CStruct::new(type_name: :aml_layout, members: {}), dir: :in
 
@@ -420,7 +420,8 @@ def aml_copy_layout_transpose_native(reverse: false)
 
   name = name_prefix + "layout_"
   name << "reverse_" if reverse
-  name << "transpose_native"
+  name << "transpose_"
+  name << (native ? "native" : "generic")
   p = Procedure( name, [ dst, src ], return_type: Int ) {
     decl d
     decl target_dims
@@ -438,7 +439,7 @@ def aml_copy_layout_transpose_native(reverse: false)
         pr target_dims[i] === i + 1
       }
     end
-    pr Return( aml_copy_layout_native(shuffle: true).call( dst, src, target_dims) )
+    pr Return( aml_copy_layout(native: true, shuffle: true).call( dst, src, target_dims) )
   }
 end
 
@@ -469,10 +470,10 @@ transpose_generation_space.each { |params|
   pr aml_copy_tnd(**params)
 }
 
-pr aml_copy_layout_native
-pr aml_copy_layout_native(shuffle: true)
-pr aml_copy_layout_transpose_native
-pr aml_copy_layout_transpose_native(reverse: true)
+pr aml_copy_layout
+pr aml_copy_layout(shuffle: true)
+pr aml_copy_layout_transpose
+pr aml_copy_layout_transpose(reverse: true)
 
 stdout0.close
 
