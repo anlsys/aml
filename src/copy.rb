@@ -410,7 +410,7 @@ def aml_copy_layout_native(shuffle: false)
   }
 end
 
-def aml_copy_transpose_native(reverse: false)
+def aml_copy_layout_transpose_native(reverse: false)
   dst = Pointer :dst, type: CStruct::new(type_name: :aml_layout, members: {}), dir: :inout
   src = Pointer :src, type: CStruct::new(type_name: :aml_layout, members: {}), dir: :in
 
@@ -465,8 +465,8 @@ pr $aml_copy_rtndstr = aml_copy_tnd(reverse: true, stride: true)
 pr $aml_copy_rtndstr_c = aml_copy_tnd(reverse: true, stride: true, cumulative: true)
 pr $aml_copy_layout_native = aml_copy_layout_native
 pr $aml_copy_layout_tranform_native = aml_copy_layout_native(shuffle: true)
-pr $aml_copy_transpose_native = aml_copy_transpose_native
-pr $aml_copy_transpose_reverse_native = aml_copy_transpose_native(reverse: true)
+pr $aml_copy_layout_transpose_native = aml_copy_layout_transpose_native
+pr $aml_copy_layout_transpose_reverse_native = aml_copy_layout_transpose_native(reverse: true)
 
 stdout0.close
 
