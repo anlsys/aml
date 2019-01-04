@@ -443,30 +443,36 @@ def aml_copy_layout_transpose_native(reverse: false)
 end
 
 pr $aml_compute_cumulative_pitch = aml_compute_cumulative_pitch
-pr $aml_copy_nd_helper = aml_copy_nd_helper
-pr $aml_copy_nd_c = aml_copy_nd_c
-pr $aml_copy_nd = aml_copy_nd
-pr $aml_copy_ndstr_helper = aml_copy_nd_helper(stride: true)
-pr $aml_copy_ndstr_c = aml_copy_nd_c(stride: true)
-pr $aml_copy_ndstr = aml_copy_nd(stride: true)
-pr $aml_copy_shnd_helper = aml_copy_nd_helper(shuffle: true)
-pr $aml_copy_shnd_c = aml_copy_nd_c(shuffle: true)
-pr $aml_copy_shnd = aml_copy_nd(shuffle: true)
-pr $aml_copy_tnd = aml_copy_tnd
-pr $aml_copy_tnd_c = aml_copy_tnd(cumulative: true)
-pr $aml_copy_rtnd = aml_copy_tnd(reverse: true)
-pr $aml_copy_rtnd_c = aml_copy_tnd(reverse: true, cumulative: true)
-pr $aml_copy_shndstr_helper = aml_copy_nd_helper(stride: true, shuffle: true)
-pr $aml_copy_shndstr_c = aml_copy_nd_c(stride: true, shuffle: true)
-pr $aml_copy_shndstr = aml_copy_nd(stride: true, shuffle: true)
-pr $aml_copy_tndstr = aml_copy_tnd(stride: true)
-pr $aml_copy_tndstr_c = aml_copy_tnd(stride: true, cumulative: true)
-pr $aml_copy_rtndstr = aml_copy_tnd(reverse: true, stride: true)
-pr $aml_copy_rtndstr_c = aml_copy_tnd(reverse: true, stride: true, cumulative: true)
-pr $aml_copy_layout_native = aml_copy_layout_native
-pr $aml_copy_layout_tranform_native = aml_copy_layout_native(shuffle: true)
-pr $aml_copy_layout_transpose_native = aml_copy_layout_transpose_native
-pr $aml_copy_layout_transpose_reverse_native = aml_copy_layout_transpose_native(reverse: true)
+
+generation_space = BruteForceOptimizer::new(
+  OptimizationSpace::new(
+    shuffle: [false, true],
+    stride: [false, true]
+  )
+)
+
+transpose_generation_space = BruteForceOptimizer::new(
+  OptimizationSpace::new(
+    stride: [false, true],
+    reverse: [false, true],
+    cumulative: [false, true]
+  )
+)
+
+generation_space.each { |params|
+  pr aml_copy_nd_helper(**params)
+  pr aml_copy_nd_c(**params)
+  pr aml_copy_nd(**params)
+}
+
+transpose_generation_space.each { |params|
+  pr aml_copy_tnd(**params)
+}
+
+pr aml_copy_layout_native
+pr aml_copy_layout_native(shuffle: true)
+pr aml_copy_layout_transpose_native
+pr aml_copy_layout_transpose_native(reverse: true)
 
 stdout0.close
 
