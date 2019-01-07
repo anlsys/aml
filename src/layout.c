@@ -49,6 +49,20 @@ int aml_layout_adims(const struct aml_layout *layout, size_t *dims)
 	return layout->ops->adims(layout->data, dims);
 }
 
+size_t aml_layout_ndims(const struct aml_layout *layout)
+{
+	assert(layout != NULL);
+	assert(layout->ops != NULL);
+	return layout->ops->ndims(layout->data);
+}
+
+size_t aml_layout_element_size(const struct aml_layout *layout)
+{
+	assert(layout != NULL);
+	assert(layout->ops != NULL);
+	return layout->ops->element_size(layout->data);
+}
+
 /*******************************************************************************
  * Layout initialization:
  ******************************************************************************/

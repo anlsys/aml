@@ -58,12 +58,24 @@ int aml_layout_column_adims(const struct aml_layout_data *d, size_t *dims)
 	return 0;
 }
 
+size_t aml_layout_column_ndims(const struct aml_layout_data *d)
+{
+	return d->ndims;
+}
+
+size_t aml_layout_column_element_size(const struct aml_layout_data *d)
+{
+	return d->cpitch[0];
+}
+
 struct aml_layout_ops aml_layout_column_ops = {
 	aml_layout_column_deref,
 	aml_layout_column_aderef,
 	aml_layout_column_order,
 	aml_layout_column_dims,
 	aml_layout_column_adims,
+	aml_layout_column_ndims,
+	aml_layout_column_element_size
 };
 
 
@@ -128,11 +140,23 @@ int aml_layout_row_adims(const struct aml_layout_data *d, size_t *dims)
 	return 0;
 }
 
+size_t aml_layout_row_ndims(const struct aml_layout_data *d)
+{
+	return d->ndims;
+}
+
+size_t aml_layout_row_element_size(const struct aml_layout_data *d)
+{
+	return d->cpitch[0];
+}
+
 struct aml_layout_ops aml_layout_row_ops = {
 	aml_layout_row_deref,
 	aml_layout_row_aderef,
 	aml_layout_row_order,
 	aml_layout_row_dims,
 	aml_layout_row_adims,
+	aml_layout_row_ndims,
+	aml_layout_row_element_size
 };
 
