@@ -360,6 +360,57 @@ def aml_copy_tnd(reverse: false, stride: false, cumulative: false)
   }
 end
 
+def aml_copy_layout_generic_helper(shuffle: false)
+  d = Sizet :d
+  dst = Pointer :dst, type: CStruct::new(type_name: :aml_layout, members: {}), dir: :inout
+  src = Pointer :src, type: CStruct::new(type_name: :aml_layout, members: {}), dir: :in
+  elem_number = Sizet :elem_number, dim: Dim(), dir: :in
+  elem_size = Sizet :elem_size
+  coords = Sizet :coords, dim: Dim(), dir: :inout
+  coords_out = Sizet :coords_out, dim: Dim(), dir: :inout
+  target_dims = Sizet :target_dims, dim: Dim(), dir: :in
+
+  i = Sizet :i
+
+  name = name_prefix + "layout_"
+  name << "transform_" if shuffle
+  name << "generic_helper"
+
+  args = [d, dst, src, elem_number, elem_size, coords]
+  args << coords_out << target_dims if shuffle
+
+  src_index = lambda { |d| d }
+  dst_index = lambda { |d| d }
+  elem_index = lambda { |d| d }
+  if shuffle
+    elem_index = lambda { |d| target_dims[d] }
+    src_index = lambda { |d| target_dims[d] }
+  end
+
+  coord_src = coords
+  coord_dst = coords
+  if shuffle
+    coord_dst = coords_out
+  end
+
+  p = Procedure( name, args, local: true, inline: true ) {
+    pr If( d == 1 => lambda {
+      pr For( i, 0, elem_number[elem_index[0]], operator: '<', declit: true ) {
+        pr coord_dst[dst_index[0]] === i
+        pr coord_src[src_index[0]] === i
+        pr memcpy( FuncCall(:aml_layout_aderef, dst, coord_dst), FuncCall(:aml_layout_aderef, src, coord_src), elem_size )
+      }
+    }, else: lambda {
+      pr For( i, 0, elem_number[elem_index[d - 1]], operator: '<', declit: true ) {
+        args[0] = d - 1
+        pr coord_dst[dst_index[d - 1]] === i
+        pr coord_src[src_index[d - 1]] === i
+        pr p.call(*args)
+      }
+    })
+  }
+end
+
 def aml_copy_layout(native: true, shuffle: false)
   dst = Pointer :dst, type: CStruct::new(type_name: :aml_layout, members: {}), dir: :inout
   src = Pointer :src, type: CStruct::new(type_name: :aml_layout, members: {}), dir: :in
@@ -382,31 +433,56 @@ def aml_copy_layout(native: true, shuffle: false)
   name << (native ? "native" : "generic")
 
   args = [dst, src]
-  args += [target_dims] if shuffle
+  args << target_dims if shuffle
 
   p = Procedure( name, args, return_type: Int ) {
-    decl ddst, dsrc
     decl d, elem_size
 
-    pr ddst === "#{dst}->data"
-    pr dsrc === "#{src}->data"
-    pr d === "#{dsrc}->ndims"
-    pr assert(d > 0);
+    if native
+      decl ddst, dsrc
 
-    pr elem_size === "#{dsrc}->cpitch[0]"
-    pr assert(d == "#{ddst}->ndims")
-    pr assert(elem_size == "#{ddst}->cpitch[0]")
-    pr For(i, 0, d, operator: '<', declit: true) {
-      pr assert( "#{dsrc}->dims[#{src_index[i]}] == #{ddst}->dims[#{dst_index[i]}]" )
-    }
+      pr ddst === "#{dst}->data"
+      pr dsrc === "#{src}->data"
+      pr d === "#{dsrc}->ndims"
+      pr assert(d > 0);
 
-    args = []
-    args += [ d ]
-    args += [ target_dims ] if shuffle
-    args += [ "#{ddst}->ptr", "#{ddst}->cpitch", "#{ddst}->stride",
-              "#{dsrc}->ptr", "#{dsrc}->cpitch", "#{dsrc}->stride",
-              "#{dsrc}->dims", elem_size ]
-    pr Return(aml_copy_nd_c(stride: true, shuffle: shuffle).call(*args))
+      pr elem_size === "#{dsrc}->cpitch[0]"
+      pr assert(d == "#{ddst}->ndims")
+      pr assert(elem_size == "#{ddst}->cpitch[0]")
+      pr For(i, 0, d, operator: '<', declit: true) {
+        pr assert( "#{dsrc}->dims[#{src_index[i]}] == #{ddst}->dims[#{dst_index[i]}]" )
+      }
+
+      args = []
+      args += [ d ]
+      args += [ target_dims ] if shuffle
+      args += [ "#{ddst}->ptr", "#{ddst}->cpitch", "#{ddst}->stride",
+                "#{dsrc}->ptr", "#{dsrc}->cpitch", "#{dsrc}->stride",
+                "#{dsrc}->dims", elem_size ]
+      pr Return(aml_copy_nd_c(stride: true, shuffle: shuffle).call(*args))
+    else
+      coords = Sizet :coords, dim: Dim()
+      coords_out = Sizet :coords_out, dim: Dim()
+      elem_number = Sizet :elem_number, dim: Dim()
+      decl coords
+      decl coords_out if shuffle
+      decl elem_number
+
+      pr assert( FuncCall( :aml_layout_ndims, dst ) == FuncCall( :aml_layout_ndims, src ) )
+      pr d === FuncCall( :aml_layout_ndims, dst )
+      pr assert( FuncCall( :aml_layout_element_size, dst ) == FuncCall( :aml_layout_element_size, src ) )
+      pr elem_size === FuncCall( :aml_layout_element_size, dst )
+      pr coords === alloca(d * sizeof("size_t")).cast(coords)
+      pr coords_out === alloca(d * sizeof("size_t")).cast(coords_out) if shuffle
+      pr elem_number === alloca(d * sizeof("size_t")).cast(elem_number)
+      pr FuncCall( :aml_layout_adims, src, elem_number )
+
+      new_args = [d, dst, src, elem_number, elem_size, coords]
+      new_args << coords_out << target_dims if shuffle
+
+      pr aml_copy_layout_generic_helper(shuffle: shuffle).call(*new_args)
+      pr Return(0)
+    end
   }
 end
 
@@ -439,7 +515,7 @@ def aml_copy_layout_transpose(native: true, reverse: false)
         pr target_dims[i] === i + 1
       }
     end
-    pr Return( aml_copy_layout(native: true, shuffle: true).call( dst, src, target_dims) )
+    pr Return( aml_copy_layout(native: native, shuffle: true).call( dst, src, target_dims) )
   }
 end
 
@@ -474,6 +550,13 @@ pr aml_copy_layout
 pr aml_copy_layout(shuffle: true)
 pr aml_copy_layout_transpose
 pr aml_copy_layout_transpose(reverse: true)
+
+pr aml_copy_layout_generic_helper(shuffle: false)
+pr aml_copy_layout_generic_helper(shuffle: true)
+pr aml_copy_layout(native: false)
+pr aml_copy_layout(native: false, shuffle: true)
+pr aml_copy_layout_transpose(native: false)
+pr aml_copy_layout_transpose(native: false, reverse: true)
 
 stdout0.close
 

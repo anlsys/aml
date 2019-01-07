@@ -903,6 +903,65 @@ void test_copy_layout(void)
 
 }
 
+void test_copy_layout_generic(void)
+{
+	size_t elem_number[3] = { 5, 3, 2 };
+	size_t c_src_pitch[3] = { 10, 6, 4 };
+	size_t src_stride[3] = { 1, 1, 1};
+	size_t c_dst_pitch[3] = { 5, 3, 2 };
+	size_t dst_stride[3] = { 1, 1, 1};
+
+	double src[4][6][10];
+	double dst[2][3][5];
+	double dst2[4][6][10];
+
+	double ref_dst2[4][6][10];
+	double ref_dst[2][3][5];
+
+	AML_LAYOUT_DECL(src_layout, 3);
+	AML_LAYOUT_DECL(dst_layout, 3);
+	AML_LAYOUT_DECL(dst2_layout, 3);
+
+	aml_layout_ainit(&src_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+			 (void *)src, sizeof(double), 3, elem_number,
+			 src_stride, c_src_pitch);
+	aml_layout_ainit(&dst_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+			 (void *)dst, sizeof(double), 3, elem_number,
+			 dst_stride, c_dst_pitch);
+	aml_layout_ainit(&dst2_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+			 (void *)dst2, sizeof(double), 3, elem_number,
+			 src_stride, c_src_pitch);
+
+	for (int k = 0; k < 4; k++)
+		for (int j = 0; j < 6; j++)
+			for (int i = 0; i < 10; i++) {
+				src[k][j][i] =
+				    (double)(i + j * 10 + k * 10 * 6);
+				ref_dst2[k][j][i] = 0.0;
+				dst2[k][j][i] = 0.0;
+			}
+	for (int k = 0; k < 2; k++)
+		for (int j = 0; j < 3; j++)
+			for (int i = 0; i < 5; i++) {
+				dst[k][j][i] = 0.0;
+				ref_dst[k][j][i] = src[k][j][i];
+				ref_dst2[k][j][i] = src[k][j][i];
+			}
+
+	aml_copy_layout_generic(&dst_layout, &src_layout);
+	for (int k = 0; k < 2; k++)
+		for (int j = 0; j < 3; j++)
+			for (int i = 0; i < 5; i++)
+				assert(ref_dst[k][j][i] == dst[k][j][i]);
+
+	aml_copy_layout_generic(&dst2_layout, &dst_layout);
+	for (int k = 0; k < 4; k++)
+		for (int j = 0; j < 6; j++)
+			for (int i = 0; i < 10; i++)
+				assert(ref_dst2[k][j][i] == dst2[k][j][i]);
+
+}
+
 void test_transpose_layout(void)
 {
 	size_t elem_number[4] = { 5, 3, 2, 4 };
@@ -972,6 +1031,75 @@ void test_transpose_layout(void)
 
 }
 
+void test_transpose_layout_generic(void)
+{
+	size_t elem_number[4] = { 5, 3, 2, 4 };
+	size_t elem_number2[4] = { 3, 2, 4, 5 };
+	size_t c_src_pitch[4] = { 10, 6, 4, 8 };
+	size_t src_stride[4] = { 2, 2, 2, 2 };
+	size_t c_dst_pitch[4] = { 3, 2, 4, 5 };
+	size_t dst_stride[4] = { 1, 1, 1, 1 };
+
+	double src[8][4][6][10];
+	double dst[5][4][2][3];
+	double dst2[8][4][6][10];
+
+	double ref_dst[5][4][2][3];
+	double ref_dst2[8][4][6][10];
+
+	AML_LAYOUT_DECL(src_layout, 4);
+	AML_LAYOUT_DECL(dst_layout, 4);
+	AML_LAYOUT_DECL(dst2_layout, 4);
+
+	aml_layout_ainit(&src_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+			 (void *)src, sizeof(double), 4, elem_number,
+			 src_stride, c_src_pitch);
+	aml_layout_ainit(&dst_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+			 (void *)dst, sizeof(double), 4, elem_number2,
+			 dst_stride, c_dst_pitch);
+	aml_layout_ainit(&dst2_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+			 (void *)dst2, sizeof(double), 4, elem_number,
+			 src_stride, c_src_pitch);
+
+	for (int l = 0; l < 8; l++)
+		for (int k = 0; k < 4; k++)
+			for (int j = 0; j < 6; j++)
+				for (int i = 0; i < 10; i++) {
+					src[l][k][j][i] =
+					    (double)(i + j * 10 + k * 10 * 6 +
+						     l * 10 * 6 * 4);
+					ref_dst2[l][k][j][i] = 0.0;
+					dst2[l][k][j][i] = 0.0;
+				}
+	for (int l = 0; l < 4; l++)
+		for (int k = 0; k < 2; k++)
+			for (int j = 0; j < 3; j++)
+				for (int i = 0; i < 5; i++) {
+					dst[i][l][k][j] = 0.0;
+					ref_dst[i][l][k][j] =
+					    src[2 * l][2 * k][2 * j][2 * i];
+					ref_dst2[2 * l][2 * k][2 * j][2 * i] =
+					    src[2 * l][2 * k][2 * j][2 * i];
+				}
+
+	aml_copy_layout_transpose_generic(&dst_layout, &src_layout);
+	for (int l = 0; l < 4; l++)
+		for (int k = 0; k < 2; k++)
+			for (int j = 0; j < 3; j++)
+				for (int i = 0; i < 5; i++)
+					assert(ref_dst[i][l][k][j] ==
+					       dst[i][l][k][j]);
+
+	aml_copy_layout_reverse_transpose_generic(&dst2_layout, &dst_layout);
+	for (int l = 0; l < 8; l++)
+		for (int k = 0; k < 4; k++)
+			for (int j = 0; j < 6; j++)
+				for (int i = 0; i < 10; i++)
+					assert(ref_dst2[l][k][j][i] ==
+					       dst2[l][k][j][i]);
+
+}
+
 int main(int argc, char *argv[])
 {
 	test_copy_2d();
@@ -991,6 +1119,8 @@ int main(int argc, char *argv[])
 	test_copy_sh4dstr();
 	test_copy_sh4dstr_c();
 	test_copy_layout();
+	test_copy_layout_generic();
 	test_transpose_layout();
+	test_transpose_layout_generic();
 	return 0;
 }

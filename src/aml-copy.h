@@ -177,8 +177,16 @@ int aml_copy_layout_native(struct aml_layout *dst,
 int aml_copy_layout_transform_native(struct aml_layout *dst,
 				     const struct aml_layout *src,
 				     const size_t *target_dims);
+int aml_copy_layout_generic(struct aml_layout *dst,
+			    const struct aml_layout *src);
+int aml_copy_layout_transform_generic(struct aml_layout *dst,
+				      const struct aml_layout *src,
+				      const size_t *target_dims);
 int aml_copy_layout_transpose_native(struct aml_layout *dst, const struct aml_layout *src);
 int aml_copy_layout_reverse_transpose_native(struct aml_layout *dst,
-				 const struct aml_layout *src);
+					     const struct aml_layout *src);
+int aml_copy_layout_transpose_generic(struct aml_layout *dst, const struct aml_layout *src);
+int aml_copy_layout_reverse_transpose_generic(struct aml_layout *dst,
+					      const struct aml_layout *src);
 
 #endif

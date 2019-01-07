@@ -454,10 +454,10 @@ int aml_copy_rtndstr_c(size_t d, void *dst, const size_t * cumul_dst_pitch,
 
 int aml_copy_layout_native(struct aml_layout *dst, const struct aml_layout *src)
 {
-	struct aml_layout_data *ddst;
-	struct aml_layout_data *dsrc;
 	size_t d;
 	size_t elem_size;
+	struct aml_layout_data *ddst;
+	struct aml_layout_data *dsrc;
 	ddst = dst->data;
 	dsrc = src->data;
 	d = dsrc->ndims;
@@ -476,10 +476,10 @@ int aml_copy_layout_transform_native(struct aml_layout *dst,
 				     const struct aml_layout *src,
 				     const size_t * target_dims)
 {
-	struct aml_layout_data *ddst;
-	struct aml_layout_data *dsrc;
 	size_t d;
 	size_t elem_size;
+	struct aml_layout_data *ddst;
+	struct aml_layout_data *dsrc;
 	ddst = dst->data;
 	dsrc = src->data;
 	d = dsrc->ndims;
@@ -518,4 +518,128 @@ int aml_copy_layout_reverse_transpose_native(struct aml_layout *dst,
 	for (size_t i = 1; i < d; i += 1)
 		target_dims[i] = i - 1;
 	return aml_copy_layout_transform_native(dst, src, target_dims);
+}
+
+static inline void aml_copy_layout_generic_helper(size_t d,
+						  struct aml_layout *dst,
+						  const struct aml_layout *src,
+						  const size_t * elem_number,
+						  size_t elem_size,
+						  size_t * coords)
+{
+	if (d == 1)
+		for (size_t i = 0; i < elem_number[0]; i += 1) {
+			coords[0] = i;
+			coords[0] = i;
+			memcpy(aml_layout_aderef(dst, coords),
+			       aml_layout_aderef(src, coords), elem_size);
+	} else
+		for (size_t i = 0; i < elem_number[d - 1]; i += 1) {
+			coords[d - 1] = i;
+			coords[d - 1] = i;
+			aml_copy_layout_generic_helper(d - 1, dst, src,
+						       elem_number, elem_size,
+						       coords);
+		}
+}
+
+static inline void aml_copy_layout_transform_generic_helper(size_t d,
+							    struct aml_layout
+							    *dst,
+							    const struct
+							    aml_layout *src,
+							    const size_t *
+							    elem_number,
+							    size_t elem_size,
+							    size_t * coords,
+							    size_t * coords_out,
+							    const size_t *
+							    target_dims)
+{
+	if (d == 1)
+		for (size_t i = 0; i < elem_number[target_dims[0]]; i += 1) {
+			coords_out[0] = i;
+			coords[target_dims[0]] = i;
+			memcpy(aml_layout_aderef(dst, coords_out),
+			       aml_layout_aderef(src, coords), elem_size);
+	} else
+		for (size_t i = 0; i < elem_number[target_dims[d - 1]]; i += 1) {
+			coords_out[d - 1] = i;
+			coords[target_dims[d - 1]] = i;
+			aml_copy_layout_transform_generic_helper(d - 1, dst,
+								 src,
+								 elem_number,
+								 elem_size,
+								 coords,
+								 coords_out,
+								 target_dims);
+		}
+}
+
+int aml_copy_layout_generic(struct aml_layout *dst,
+			    const struct aml_layout *src)
+{
+	size_t d;
+	size_t elem_size;
+	size_t *coords;
+	size_t *elem_number;
+	assert(aml_layout_ndims(dst) == aml_layout_ndims(src));
+	d = aml_layout_ndims(dst);
+	assert(aml_layout_element_size(dst) == aml_layout_element_size(src));
+	elem_size = aml_layout_element_size(dst);
+	coords = (size_t *) alloca(d * sizeof(size_t));
+	elem_number = (size_t *) alloca(d * sizeof(size_t));
+	aml_layout_adims(src, elem_number);
+	aml_copy_layout_generic_helper(d, dst, src, elem_number, elem_size,
+				       coords);
+	return 0;
+}
+
+int aml_copy_layout_transform_generic(struct aml_layout *dst,
+				      const struct aml_layout *src,
+				      const size_t * target_dims)
+{
+	size_t d;
+	size_t elem_size;
+	size_t *coords;
+	size_t *coords_out;
+	size_t *elem_number;
+	assert(aml_layout_ndims(dst) == aml_layout_ndims(src));
+	d = aml_layout_ndims(dst);
+	assert(aml_layout_element_size(dst) == aml_layout_element_size(src));
+	elem_size = aml_layout_element_size(dst);
+	coords = (size_t *) alloca(d * sizeof(size_t));
+	coords_out = (size_t *) alloca(d * sizeof(size_t));
+	elem_number = (size_t *) alloca(d * sizeof(size_t));
+	aml_layout_adims(src, elem_number);
+	aml_copy_layout_transform_generic_helper(d, dst, src, elem_number,
+						 elem_size, coords, coords_out,
+						 target_dims);
+	return 0;
+}
+
+int aml_copy_layout_transpose_generic(struct aml_layout *dst,
+				      const struct aml_layout *src)
+{
+	size_t d;
+	size_t *target_dims;
+	d = src->data->ndims;
+	target_dims = (size_t *) alloca(d * sizeof(size_t));
+	target_dims[d - 1] = 0;
+	for (size_t i = 0; i < d - 1; i += 1)
+		target_dims[i] = i + 1;
+	return aml_copy_layout_transform_generic(dst, src, target_dims);
+}
+
+int aml_copy_layout_reverse_transpose_generic(struct aml_layout *dst,
+					      const struct aml_layout *src)
+{
+	size_t d;
+	size_t *target_dims;
+	d = src->data->ndims;
+	target_dims = (size_t *) alloca(d * sizeof(size_t));
+	target_dims[0] = d - 1;
+	for (size_t i = 1; i < d; i += 1)
+		target_dims[i] = i - 1;
+	return aml_copy_layout_transform_generic(dst, src, target_dims);
 }
