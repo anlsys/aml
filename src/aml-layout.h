@@ -18,12 +18,14 @@ struct aml_layout_data;
 #define AML_TYPE_LAYOUT_ORDER (1 << 0)
 #define AML_TYPE_MAX (1 << 1)
 
-#define AML_TYPE_LAYOUT_ROW_ORDER 0
-#define AML_TYPE_LAYOUT_COLUMN_ORDER 1
+#define AML_TYPE_LAYOUT_ROW_ORDER 1
+#define AML_TYPE_LAYOUT_COLUMN_ORDER 0
 
 #define AML_TYPE_GET(tags, bit) (tags & bit)
-#define AML_TYPE_CLEAR(tags, bit) (tags & ~bit)
-#define AML_TYPE_SET(tags, bit) (tags | bit)
+#define AML_TYPE_CLEAR(tags, bit) (tags &= ~bit)
+#define AML_TYPE_SET(tags, bit, value) do { \
+	AML_TYPE_CLEAR(tags, bit); \
+	if(value) tags |= bit;} while(0)
 
 
 struct aml_layout_ops {

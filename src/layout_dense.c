@@ -42,7 +42,8 @@ int aml_layout_native_ainit(struct aml_layout *layout, uint64_t tags, void *ptr,
 	int type = AML_TYPE_GET(tags, AML_TYPE_LAYOUT_ORDER);
 	if(type == AML_TYPE_LAYOUT_ROW_ORDER)
 	{
-		AML_TYPE_SET(layout->tags, AML_TYPE_LAYOUT_ROW_ORDER);
+		AML_TYPE_SET(layout->tags, AML_TYPE_LAYOUT_ORDER,
+			     AML_TYPE_LAYOUT_ROW_ORDER);
 		layout->ops = &aml_layout_row_ops;
 		for(size_t i = 0; i < ndims; i++)
 		{
@@ -56,7 +57,8 @@ int aml_layout_native_ainit(struct aml_layout *layout, uint64_t tags, void *ptr,
 	}
 	else if(type == AML_TYPE_LAYOUT_COLUMN_ORDER)
 	{
-		AML_TYPE_SET(layout->tags, AML_TYPE_LAYOUT_COLUMN_ORDER);
+		AML_TYPE_SET(layout->tags, AML_TYPE_LAYOUT_ORDER,
+			     AML_TYPE_LAYOUT_COLUMN_ORDER);
 		layout->ops = &aml_layout_column_ops;
 		memcpy(data->dims, dims, ndims * sizeof(size_t));
 		memcpy(data->stride, stride, ndims * sizeof(size_t));
@@ -232,7 +234,6 @@ struct aml_layout_ops aml_layout_column_ops = {
 	aml_layout_column_ndims,
 	aml_layout_column_element_size
 };
-
 
 /*******************************************************************************
  * ROW OPERATORS:
