@@ -962,6 +962,57 @@ void test_copy_layout_generic(void)
 
 }
 
+void test_copy_layout_pad_generic(void)
+{
+	size_t elem_number[3] = { 5, 3, 2 };
+	size_t src_pitch[3] = { 10, 6, 4 };
+	size_t src_stride[3] = { 1, 1, 1};
+
+	size_t elem_number2[3] = { 7, 3, 4 };
+
+	double src[4][6][10];
+	double dst[4][6][10];
+	double dst_ref[4][6][10];
+
+
+
+	AML_LAYOUT_NATIVE_DECL(src_layout, 3);
+	AML_LAYOUT_NATIVE_DECL(dst_layout, 3);
+	AML_LAYOUT_PAD_DECL(src_pad, 3, sizeof(double));
+
+	aml_layout_native_ainit(&src_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				(void *)src, sizeof(double), 3, elem_number,
+				src_stride, src_pitch);
+	aml_layout_native_ainit(&dst_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				(void *)dst, sizeof(double), 3, elem_number2,
+				src_stride, src_pitch);
+
+	double neutral = 1337.0;
+	aml_layout_pad_ainit(&src_pad, AML_TYPE_LAYOUT_COLUMN_ORDER,
+			     &src_layout, elem_number2, (void*)&neutral);
+
+	for (int k = 0; k < 4; k++)
+		for (int j = 0; j < 6; j++)
+			for (int i = 0; i < 10; i++) {
+				src[k][j][i] =
+				    (double)(i + j * 10 + k * 10 * 6);
+				dst[k][j][i] = 0.0;
+				dst_ref[k][j][i] = 0.0;
+			}
+	for (int k = 0; k < 4; k++)
+		for (int j = 0; j < 3; j++)
+			for (int i = 0; i < 7; i++)
+				dst_ref[k][j][i] = 1337.0;
+	for (int k = 0; k < 2; k++)
+		for (int j = 0; j < 3; j++)
+			for (int i = 0; i < 5; i++)
+				dst_ref[k][j][i] = src[k][j][i];
+	aml_copy_layout_generic(&dst_layout, &src_pad);
+	for (int k = 0; k < 4; k++)
+		for (int j = 0; j < 6; j++)
+			for (int i = 0; i < 10; i++)
+				assert(dst_ref[k][j][i] == dst[k][j][i]);
+}
 void test_transpose_layout(void)
 {
 	size_t elem_number[4] = { 5, 3, 2, 4 };
@@ -1120,6 +1171,7 @@ int main(int argc, char *argv[])
 	test_copy_sh4dstr_c();
 	test_copy_layout();
 	test_copy_layout_generic();
+	test_copy_layout_pad_generic();
 	test_transpose_layout();
 	test_transpose_layout_generic();
 	return 0;
