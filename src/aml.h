@@ -20,6 +20,7 @@
 #endif
 
 #include "aml-layout.h"
+#include "aml-layout-dense.h"
 #include "aml-copy.h"
 /*******************************************************************************
  * Forward Declarations:

@@ -859,19 +859,19 @@ void test_copy_layout(void)
 	double ref_dst2[4][6][10];
 	double ref_dst[2][3][5];
 
-	AML_LAYOUT_DECL(src_layout, 3);
-	AML_LAYOUT_DECL(dst_layout, 3);
-	AML_LAYOUT_DECL(dst2_layout, 3);
+	AML_LAYOUT_NATIVE_DECL(src_layout, 3);
+	AML_LAYOUT_NATIVE_DECL(dst_layout, 3);
+	AML_LAYOUT_NATIVE_DECL(dst2_layout, 3);
 
-	aml_layout_ainit(&src_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
-			 (void *)src, sizeof(double), 3, elem_number,
-			 src_stride, c_src_pitch);
-	aml_layout_ainit(&dst_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
-			 (void *)dst, sizeof(double), 3, elem_number,
-			 dst_stride, c_dst_pitch);
-	aml_layout_ainit(&dst2_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
-			 (void *)dst2, sizeof(double), 3, elem_number,
-			 src_stride, c_src_pitch);
+	aml_layout_native_ainit(&src_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				(void *)src, sizeof(double), 3, elem_number,
+				src_stride, c_src_pitch);
+	aml_layout_native_ainit(&dst_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				(void *)dst, sizeof(double), 3, elem_number,
+				dst_stride, c_dst_pitch);
+	aml_layout_native_ainit(&dst2_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				(void *)dst2, sizeof(double), 3, elem_number,
+				src_stride, c_src_pitch);
 
 	for (int k = 0; k < 4; k++)
 		for (int j = 0; j < 6; j++)
@@ -918,19 +918,19 @@ void test_copy_layout_generic(void)
 	double ref_dst2[4][6][10];
 	double ref_dst[2][3][5];
 
-	AML_LAYOUT_DECL(src_layout, 3);
-	AML_LAYOUT_DECL(dst_layout, 3);
-	AML_LAYOUT_DECL(dst2_layout, 3);
+	AML_LAYOUT_NATIVE_DECL(src_layout, 3);
+	AML_LAYOUT_NATIVE_DECL(dst_layout, 3);
+	AML_LAYOUT_NATIVE_DECL(dst2_layout, 3);
 
-	aml_layout_ainit(&src_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
-			 (void *)src, sizeof(double), 3, elem_number,
-			 src_stride, c_src_pitch);
-	aml_layout_ainit(&dst_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
-			 (void *)dst, sizeof(double), 3, elem_number,
-			 dst_stride, c_dst_pitch);
-	aml_layout_ainit(&dst2_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
-			 (void *)dst2, sizeof(double), 3, elem_number,
-			 src_stride, c_src_pitch);
+	aml_layout_native_ainit(&src_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				(void *)src, sizeof(double), 3, elem_number,
+				src_stride, c_src_pitch);
+	aml_layout_native_ainit(&dst_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				(void *)dst, sizeof(double), 3, elem_number,
+				dst_stride, c_dst_pitch);
+	aml_layout_native_ainit(&dst2_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				(void *)dst2, sizeof(double), 3, elem_number,
+				src_stride, c_src_pitch);
 
 	for (int k = 0; k < 4; k++)
 		for (int j = 0; j < 6; j++)
@@ -978,19 +978,19 @@ void test_transpose_layout(void)
 	double ref_dst[5][4][2][3];
 	double ref_dst2[8][4][6][10];
 
-	AML_LAYOUT_DECL(src_layout, 4);
-	AML_LAYOUT_DECL(dst_layout, 4);
-	AML_LAYOUT_DECL(dst2_layout, 4);
+	AML_LAYOUT_NATIVE_DECL(src_layout, 4);
+	AML_LAYOUT_NATIVE_DECL(dst_layout, 4);
+	AML_LAYOUT_NATIVE_DECL(dst2_layout, 4);
 
-	aml_layout_ainit(&src_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
-			 (void *)src, sizeof(double), 4, elem_number,
-			 src_stride, c_src_pitch);
-	aml_layout_ainit(&dst_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
-			 (void *)dst, sizeof(double), 4, elem_number2,
-			 dst_stride, c_dst_pitch);
-	aml_layout_ainit(&dst2_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
-			 (void *)dst2, sizeof(double), 4, elem_number,
-			 src_stride, c_src_pitch);
+	aml_layout_native_ainit(&src_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				(void *)src, sizeof(double), 4, elem_number,
+				src_stride, c_src_pitch);
+	aml_layout_native_ainit(&dst_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				(void *)dst, sizeof(double), 4, elem_number2,
+				dst_stride, c_dst_pitch);
+	aml_layout_native_ainit(&dst2_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				(void *)dst2, sizeof(double), 4, elem_number,
+				src_stride, c_src_pitch);
 
 	for (int l = 0; l < 8; l++)
 		for (int k = 0; k < 4; k++)
@@ -1047,19 +1047,19 @@ void test_transpose_layout_generic(void)
 	double ref_dst[5][4][2][3];
 	double ref_dst2[8][4][6][10];
 
-	AML_LAYOUT_DECL(src_layout, 4);
-	AML_LAYOUT_DECL(dst_layout, 4);
-	AML_LAYOUT_DECL(dst2_layout, 4);
+	AML_LAYOUT_NATIVE_DECL(src_layout, 4);
+	AML_LAYOUT_NATIVE_DECL(dst_layout, 4);
+	AML_LAYOUT_NATIVE_DECL(dst2_layout, 4);
 
-	aml_layout_ainit(&src_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
-			 (void *)src, sizeof(double), 4, elem_number,
-			 src_stride, c_src_pitch);
-	aml_layout_ainit(&dst_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
-			 (void *)dst, sizeof(double), 4, elem_number2,
-			 dst_stride, c_dst_pitch);
-	aml_layout_ainit(&dst2_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
-			 (void *)dst2, sizeof(double), 4, elem_number,
-			 src_stride, c_src_pitch);
+	aml_layout_native_ainit(&src_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				(void *)src, sizeof(double), 4, elem_number,
+				src_stride, c_src_pitch);
+	aml_layout_native_ainit(&dst_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				(void *)dst, sizeof(double), 4, elem_number2,
+				dst_stride, c_dst_pitch);
+	aml_layout_native_ainit(&dst2_layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				(void *)dst2, sizeof(double), 4, elem_number,
+				src_stride, c_src_pitch);
 
 	for (int l = 0; l < 8; l++)
 		for (int k = 0; k < 4; k++)

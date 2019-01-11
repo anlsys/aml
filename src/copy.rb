@@ -21,6 +21,7 @@ pid1 = Process.fork {
 #include <stddef.h>
 #include <stdint.h>
 #include <aml-layout.h>
+#include <aml-layout-dense.h>
 #include <string.h>
 #include <alloca.h>
 EOF
@@ -416,8 +417,8 @@ def aml_copy_layout(native: true, shuffle: false)
   src = Pointer :src, type: CStruct::new(type_name: :aml_layout, members: {}), dir: :in
   target_dims = Sizet :target_dims, dim: Dim(), dir: :in
 
-  ddst = Pointer :ddst, type: CStruct::new(type_name: :aml_layout_data, members: {})
-  dsrc = Pointer :dsrc, type: CStruct::new(type_name: :aml_layout_data, members: {})
+  ddst = Pointer :ddst, type: CStruct::new(type_name: :aml_layout_data_native, members: {})
+  dsrc = Pointer :dsrc, type: CStruct::new(type_name: :aml_layout_data_native, members: {})
   d = Sizet :d
   elem_size = Sizet :elem_size
   i = Sizet :i
@@ -441,8 +442,8 @@ def aml_copy_layout(native: true, shuffle: false)
     if native
       decl ddst, dsrc
 
-      pr ddst === "#{dst}->data"
-      pr dsrc === "#{src}->data"
+      pr ddst === "(struct aml_layout_data_native *)#{dst}->data"
+      pr dsrc === "(struct aml_layout_data_native *)#{src}->data"
       pr d === "#{dsrc}->ndims"
       pr assert(d > 0);
 
@@ -490,6 +491,7 @@ def aml_copy_layout_transpose(native: true, reverse: false)
   dst = Pointer :dst, type: CStruct::new(type_name: :aml_layout, members: {}), dir: :inout
   src = Pointer :src, type: CStruct::new(type_name: :aml_layout, members: {}), dir: :in
 
+  dsrc = Pointer :dsrc, type: CStruct::new(type_name: :aml_layout_data_native, members: {})
   target_dims = Sizet :target_dims, dim: Dim()
   d = Sizet :d
   i = Sizet :i
@@ -501,8 +503,10 @@ def aml_copy_layout_transpose(native: true, reverse: false)
   p = Procedure( name, [ dst, src ], return_type: Int ) {
     decl d
     decl target_dims
+    decl dsrc
 
-    pr d === "#{src}->data->ndims"
+    pr dsrc === "(struct aml_layout_data_native *)#{src}->data"
+    pr d === "#{dsrc}->ndims"
     pr target_dims === alloca(d * sizeof("size_t")).cast(target_dims)
     if reverse
       pr target_dims[0] === d - 1
