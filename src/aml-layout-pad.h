@@ -20,15 +20,15 @@ struct aml_layout_data_pad {
 	neutral_size )
 
 #define AML_LAYOUT_PAD_DECL(name, ndims, neutral_size) \
-	uint8_t __ ##name## _inner_data[ndims * sizeof(size_t) + \
+	uint8_t __ ##name## _inner_data[2 * ndims * sizeof(size_t) + \
 					neutral_size ]; \
 	struct aml_layout_data_pad __ ##name## _inner_struct = { \
 		NULL, \
 		ndims, \
 		neutral_size, \
 		(size_t *) __ ##name## _inner_data, \
-		(size_t *) __ ##name## _inner_data + ndims * sizeof(size_t), \
-		(void *) __ ##name## _inner_data + 2 * ndims * sizeof(size_t) \
+		(size_t *) (__ ##name## _inner_data + ndims * sizeof(size_t)), \
+		(void *) (__ ##name## _inner_data + 2 * ndims * sizeof(size_t)) \
 	}; \
 	struct aml_layout name = { \
 		0, \
