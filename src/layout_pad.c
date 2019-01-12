@@ -143,8 +143,9 @@ void *aml_layout_pad_column_aderef(const struct aml_layout_data *data,
 	    (const struct aml_layout_data_pad *)data;
 	assert(d !=NULL);
 	size_t ndims = d->ndims;
-	for (int i = 0; i < ndims; i++) {
+	for (int i = 0; i < ndims; i++)
 		assert(coords[i] < d->dims[i]);
+	for (int i = 0; i < ndims; i++) {
 		if(coords[i] >= d->target_dims[i])
 			return d->neutral;
 	}
@@ -237,8 +238,9 @@ void *aml_layout_pad_row_aderef(const struct aml_layout_data *data,
 	    (const struct aml_layout_data_pad *)data;
 	assert(d !=NULL);
 	size_t ndims = d->ndims;
-	for (int i = 0; i < ndims; i++) {
+	for (int i = 0; i < ndims; i++)
 		assert(coords[ndims - i - 1] < d->dims[i]);
+	for (int i = 0; i < ndims; i++) {
 		if(coords[ndims - i - 1] >= d->target_dims[i])
 			return d->neutral;
 	}
