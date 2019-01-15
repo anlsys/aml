@@ -33,7 +33,7 @@ struct aml_layout_data_native {
 					(ndims * 4 + 1) * sizeof(size_t))
 
 #define AML_LAYOUT_NATIVE_DECL(name, ndims) \
-	size_t __ ##name## _inner_data[ndims * 4]; \
+	size_t __ ##name## _inner_data[ndims * 4 + 1]; \
 	struct aml_layout_data_native __ ##name## _inner_struct = { \
 		NULL, \
 		ndims, \
