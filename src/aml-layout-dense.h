@@ -30,7 +30,7 @@ struct aml_layout_data_native {
 
 #define AML_LAYOUT_NATIVE_ALLOCSIZE(ndims) (sizeof(struct aml_layout) +\
 					sizeof(struct aml_layout_data_native) +\
-					ndims * 4 * sizeof(size_t))
+					(ndims * 4 + 1) * sizeof(size_t))
 
 #define AML_LAYOUT_NATIVE_DECL(name, ndims) \
 	size_t __ ##name## _inner_data[ndims * 4]; \
@@ -69,27 +69,7 @@ int aml_layout_native_vcreate(struct aml_layout **l, uint64_t tags, void *ptr,
 int aml_layout_native_create(struct aml_layout **l, uint64_t tags, void *ptr,
 			     const size_t element_size, size_t ndims, ...);
 
-void *aml_layout_column_deref(const struct aml_layout_data *data,
-			      va_list coords);
-void *aml_layout_column_aderef(const struct aml_layout_data *data,
-			       const size_t *coords);
-int aml_layout_column_order(const struct aml_layout_data *data);
-int aml_layout_column_dims(const struct aml_layout_data *data, va_list dims);
-int aml_layout_column_adims(const struct aml_layout_data *data, size_t *dims);
-size_t aml_layout_column_ndims(const struct aml_layout_data *data);
-size_t aml_layout_column_elem_size(const struct aml_layout_data *data);
-
 extern struct aml_layout_ops aml_layout_column_ops;
-
-void *aml_layout_row_deref(const struct aml_layout_data *data, va_list coords);
-void *aml_layout_row_aderef(const struct aml_layout_data *data,
-			    const size_t *coords);
-int aml_layout_row_order(const struct aml_layout_data *data);
-int aml_layout_row_dims(const struct aml_layout_data *data, va_list dims);
-int aml_layout_row_adims(const struct aml_layout_data *data, size_t *dims);
-size_t aml_layout_row_ndims(const struct aml_layout_data *data);
-size_t aml_layout_row_element_size(const struct aml_layout_data *data);
-
 extern struct aml_layout_ops aml_layout_row_ops;
 
 #endif

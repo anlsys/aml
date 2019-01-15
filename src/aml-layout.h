@@ -36,6 +36,10 @@ struct aml_layout_ops {
 	int (*adims)(const struct aml_layout_data *, size_t *dims);
         size_t (*ndims)(const struct aml_layout_data *);
         size_t (*element_size)(const struct aml_layout_data *);
+        struct aml_layout * (*reshape)(const struct aml_layout_data *,
+				       size_t ndims, va_list dims);
+        struct aml_layout * (*areshape)(const struct aml_layout_data *,
+					size_t ndims, const size_t *dims);
 };
 
 struct aml_layout {
@@ -51,5 +55,9 @@ int aml_layout_dims(const struct aml_layout *l, ...);
 int aml_layout_adims(const struct aml_layout *l, size_t *dims);
 size_t aml_layout_ndims(const struct aml_layout *l);
 size_t aml_layout_element_size(const struct aml_layout *l);
+struct aml_layout * aml_layout_areshape(const struct aml_layout *l,
+					size_t ndims, const size_t *dims);
+struct aml_layout * aml_layout_reshape(const struct aml_layout *l,
+				       size_t ndims, ...);
 
 #endif

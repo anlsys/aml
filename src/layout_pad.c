@@ -224,7 +224,9 @@ struct aml_layout_ops aml_layout_pad_column_ops = {
 	aml_layout_pad_column_dims,
 	aml_layout_pad_column_adims,
 	aml_layout_pad_ndims,
-	aml_layout_pad_element_size
+	aml_layout_pad_element_size,
+	NULL,
+	NULL
 };
 
 /*******************************************************************************
@@ -306,6 +308,8 @@ struct aml_layout_ops aml_layout_pad_row_ops = {
 	aml_layout_pad_row_dims,
 	aml_layout_pad_row_adims,
 	aml_layout_pad_ndims,
-	aml_layout_pad_element_size
+	aml_layout_pad_element_size,
+	NULL,
+	NULL
 };
 

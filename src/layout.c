@@ -63,3 +63,27 @@ size_t aml_layout_element_size(const struct aml_layout *layout)
 	return layout->ops->element_size(layout->data);
 }
 
+struct aml_layout * aml_layout_areshape(const struct aml_layout *layout,
+					size_t ndims, const size_t *dims)
+{
+	assert(ndims != 0);
+	assert(layout != NULL);
+	assert(layout->ops != NULL);
+	assert(layout->ops->areshape != NULL);
+	return layout->ops->areshape(layout->data, ndims, dims);
+}
+
+struct aml_layout * aml_layout_reshape(const struct aml_layout *layout,
+				       size_t ndims, ...)
+{
+	assert(ndims != 0);
+	assert(layout != NULL);
+	assert(layout->ops != NULL);
+	assert(layout->ops->reshape != NULL);
+	va_list ap;
+	struct aml_layout *ret;
+	va_start(ap, ndims);
+	ret = layout->ops->reshape(layout->data, ndims, ap);
+	va_end(ap);
+	return ret;
+}
