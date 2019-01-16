@@ -12,7 +12,8 @@ AREA_POSIX_CSOURCES = area_posix.c
 
 LAYOUT_CSOURCES = layout.c \
 		  layout_dense.c \
-		  layout_pad.c
+		  layout_pad.c \
+		  layout_reshape.c
 
 TILING_CSOURCES = tiling.c \
 		  tiling_1d.c \
@@ -44,7 +45,7 @@ LIBCSOURCES = aml.c area.c arena.c \
 	      $(LAYOUT_CSOURCES) \
 	      copy.c
 
-LIBHSOURCES = aml.h aml-layout.h aml-layout-dense.h aml-layout-pad.h aml-copy.h
+LIBHSOURCES = aml.h aml-layout.h aml-layout-dense.h aml-layout-pad.h aml-layout-reshape.h aml-copy.h
 
 libaml_la_SOURCES = $(LIBCSOURCES) $(LIBHSOURCES)
 libaml_la_LIBADD = -L$(top_srcdir)/jemalloc/lib/ -ljemalloc-aml

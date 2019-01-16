@@ -22,6 +22,7 @@
 #include "aml-layout.h"
 #include "aml-layout-dense.h"
 #include "aml-layout-pad.h"
+#include "aml-layout-reshape.h"
 #include "aml-copy.h"
 /*******************************************************************************
  * Forward Declarations:

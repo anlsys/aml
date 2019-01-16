@@ -24,28 +24,41 @@ void test_reshape_contiguous(void)
 				  stride, dims_col);
 	struct aml_layout *b = aml_layout_areshape(a, 2, new_dims_col);
 	assert(AML_TYPE_LAYOUT_COLUMN_ORDER == aml_layout_order(b));
+	struct aml_layout *c;
+	aml_layout_reshape_acreate(&c, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				   a, 2, new_dims_col);
+	assert(AML_TYPE_LAYOUT_COLUMN_ORDER == aml_layout_order(c));
 
 	i = 0;
 	for(size_t j = 0; j < 5; j++)
-		for(size_t k = 0; k < 24; k++, i++)
+		for(size_t k = 0; k < 24; k++, i++) {
 			assert(i == *(int *)aml_layout_deref(b, k, j));
+			assert(i == *(int *)aml_layout_deref(c, k, j));
+		}
 
 	free(a);
 	free(b);
+	free(c);
 
 	aml_layout_native_acreate(&a, AML_TYPE_LAYOUT_ROW_ORDER,
 				  (void *)memory, sizeof(int), 3, dims_row,
 				  stride, dims_row);
 	b = aml_layout_areshape(a, 2, new_dims_row);
 	assert(AML_TYPE_LAYOUT_ROW_ORDER == aml_layout_order(b));
+	aml_layout_reshape_acreate(&c, AML_TYPE_LAYOUT_ROW_ORDER,
+				   a, 2, new_dims_row);
+	assert(AML_TYPE_LAYOUT_ROW_ORDER == aml_layout_order(c));
 
 	i = 0;
 	for(size_t j = 0; j < 5; j++)
-		for(size_t k = 0; k < 24; k++, i++)
+		for(size_t k = 0; k < 24; k++, i++) {
 			assert(i == *(int *)aml_layout_deref(b, j, k));
+			assert(i == *(int *)aml_layout_deref(c, j, k));
+		}
 
 	free(a);
 	free(b);
+	free(c);
 }
 
 void test_reshape_discontiguous(void)
@@ -74,33 +87,45 @@ void test_reshape_discontiguous(void)
 				  (void *)memory, sizeof(int), 3, dims_col,
 				  stride, pitch_col);
 	struct aml_layout *b = aml_layout_areshape(a, 5, new_dims_col);
+	struct aml_layout *c;
+	aml_layout_reshape_acreate(&c, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				   a, 5, new_dims_col);
 
 	i = 0;
 	for(size_t j = 0; j < 3; j++)
 	for(size_t k = 0; k < 2; k++)
 	for(size_t l = 0; l < 5; l++)
 	for(size_t m = 0; m < 2; m++)
-	for(size_t n = 0; n < 2; n++, i++)
+	for(size_t n = 0; n < 2; n++, i++) {
 		assert(i == *(int *)aml_layout_deref(b, n, m, l, k, j));
+		assert(i == *(int *)aml_layout_deref(c, n, m, l, k, j));
+	}
 
 	free(a);
 	free(b);
+	free(c);
 
 	aml_layout_native_acreate(&a, AML_TYPE_LAYOUT_ROW_ORDER,
 				  (void *)memory, sizeof(int), 3, dims_row,
 				  stride, pitch_row);
 	b = aml_layout_areshape(a, 5, new_dims_row);
+	aml_layout_reshape_acreate(&c, AML_TYPE_LAYOUT_ROW_ORDER,
+				   a, 5, new_dims_row);
+
 
 	i = 0;
 	for(size_t j = 0; j < 3; j++)
 	for(size_t k = 0; k < 2; k++)
 	for(size_t l = 0; l < 5; l++)
 	for(size_t m = 0; m < 2; m++)
-	for(size_t n = 0; n < 2; n++, i++)
+	for(size_t n = 0; n < 2; n++, i++) {
 		assert(i == *(int *)aml_layout_deref(b, j, k, l, m, n));
+		assert(i == *(int *)aml_layout_deref(c, j, k, l, m, n));
+	}
 
 	free(a);
 	free(b);
+	free(c);
 }
 
 void test_reshape_strided(void)
@@ -129,31 +154,42 @@ void test_reshape_strided(void)
 				  (void *)memory, sizeof(int), 3, dims_col,
 				  stride, pitch_col);
 	struct aml_layout *b = aml_layout_areshape(a, 4, new_dims_col);
+	struct aml_layout *c;
+	aml_layout_reshape_acreate(&c, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				   a, 4, new_dims_col);
 
 	i = 0;
 	for(size_t j = 0; j < 3; j++)
 	for(size_t k = 0; k < 2; k++)
 	for(size_t l = 0; l < 10; l++)
-	for(size_t m = 0; m < 2; m++, i++)
+	for(size_t m = 0; m < 2; m++, i++) {
 		assert(i == *(int *)aml_layout_deref(b, m, l, k, j));
+		assert(i == *(int *)aml_layout_deref(c, m, l, k, j));
+	}
 
 	free(a);
 	free(b);
+	free(c);
 
 	aml_layout_native_acreate(&a, AML_TYPE_LAYOUT_ROW_ORDER,
 				  (void *)memory, sizeof(int), 3, dims_row,
 				  stride, pitch_row);
 	b = aml_layout_areshape(a, 4, new_dims_row);
+	aml_layout_reshape_acreate(&c, AML_TYPE_LAYOUT_ROW_ORDER,
+				   a, 4, new_dims_row);
 
 	i = 0;
 	for(size_t j = 0; j < 3; j++)
 	for(size_t k = 0; k < 2; k++)
 	for(size_t l = 0; l < 10; l++)
-	for(size_t m = 0; m < 2; m++, i++)
+	for(size_t m = 0; m < 2; m++, i++) {
 		assert(i == *(int *)aml_layout_deref(b, j, k, l, m));
+		assert(i == *(int *)aml_layout_deref(c, j, k, l, m));
+	}
 
 	free(a);
 	free(b);
+	free(c);
 }
 
 void test_base(void)

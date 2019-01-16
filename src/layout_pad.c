@@ -6,8 +6,7 @@ int aml_layout_pad_struct_init(struct aml_layout *layout, size_t ndims,
 	struct aml_layout_data_pad *dataptr;
 
 	assert(layout == (struct aml_layout *)memory);
-	memory = (void *)((uintptr_t)memory +
-		      sizeof(struct aml_layout));
+	memory = (void *)((uintptr_t)memory + sizeof(struct aml_layout));
 	dataptr = memory;
 	layout->data = memory;
 	memory = (void *)((uintptr_t)memory +
@@ -16,7 +15,7 @@ int aml_layout_pad_struct_init(struct aml_layout *layout, size_t ndims,
 	dataptr->ndims = ndims;
 	dataptr->element_size = element_size;
 	dataptr->dims = (size_t *)memory;
-	dataptr->target_dims = (void *)(dataptr->dims + ndims);
+	dataptr->target_dims = dataptr->dims + ndims;
 	dataptr->neutral = (void *)(dataptr->target_dims + ndims);
 	return 0;
 }
@@ -92,6 +91,7 @@ int aml_layout_pad_acreate(struct aml_layout **layout, uint64_t tags,
 			   void *neutral)
 {
 	assert(target != NULL);
+	assert(target->ops != NULL);
 	size_t ndims = aml_layout_ndims(target);
 	size_t element_size = aml_layout_element_size(target);
 	void *baseptr = calloc(1, AML_LAYOUT_PAD_ALLOCSIZE(ndims,
@@ -105,6 +105,7 @@ int aml_layout_pad_vcreate(struct aml_layout **layout, uint64_t tags,
 			   struct aml_layout *target, va_list ap)
 {
 	assert(target != NULL);
+	assert(target->ops != NULL);
 	size_t ndims = aml_layout_ndims(target);
 	size_t element_size = aml_layout_element_size(target);
 	void *baseptr = calloc(1, AML_LAYOUT_PAD_ALLOCSIZE(ndims,
@@ -120,6 +121,7 @@ int aml_layout_pad_create(struct aml_layout **layout, uint64_t tags,
 	int err;
 	va_list ap;
 	assert(target != NULL);
+	assert(target->ops != NULL);
 	size_t ndims = aml_layout_ndims(target);
 	size_t element_size = aml_layout_element_size(target);
 	void *baseptr = calloc(1, AML_LAYOUT_PAD_ALLOCSIZE(ndims,
@@ -137,7 +139,7 @@ int aml_layout_pad_create(struct aml_layout **layout, uint64_t tags,
  ******************************************************************************/
 
 void *aml_layout_pad_column_aderef(const struct aml_layout_data *data,
-				  const size_t *coords)
+				   const size_t *coords)
 {
 	const struct aml_layout_data_pad *d =
 	    (const struct aml_layout_data_pad *)data;
@@ -161,7 +163,7 @@ void *aml_layout_pad_column_aderef(const struct aml_layout_data *data,
 }
 
 void *aml_layout_pad_column_deref(const struct aml_layout_data *data,
-				 va_list coords)
+				  va_list coords)
 {
 	const struct aml_layout_data_pad *d =
 	    (const struct aml_layout_data_pad *)data;
