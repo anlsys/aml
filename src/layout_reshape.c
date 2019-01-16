@@ -190,7 +190,7 @@ void *aml_layout_reshape_column_deref(const struct aml_layout_data *data,
 	size_t target_coords[d->ndims];
 	for (int i = 0; i < d->ndims; i++)
 		target_coords[i] = va_arg(coords, size_t);
-	aml_layout_reshape_column_aderef(data, target_coords);
+	return aml_layout_reshape_column_aderef(data, target_coords);
 }
 
 int aml_layout_reshape_column_order(const struct aml_layout_data *data)
@@ -298,7 +298,7 @@ void *aml_layout_reshape_row_deref(const struct aml_layout_data *data,
 	size_t target_coords[d->ndims];
 	for (int i = 0; i < d->ndims; i++)
 		target_coords[i] = va_arg(coords, size_t);
-	aml_layout_reshape_row_aderef(data, target_coords);
+	return aml_layout_reshape_row_aderef(data, target_coords);
 }
 
 int aml_layout_reshape_row_order(const struct aml_layout_data *data)
