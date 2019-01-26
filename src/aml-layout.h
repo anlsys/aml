@@ -16,7 +16,7 @@ struct aml_layout_data;
 
 /* Layout type tags. Defined as the bit offset to set to one. */
 #define AML_TYPE_LAYOUT_ORDER (1 << 0)
-#define AML_TYPE_MAX (1 << 1)
+#define AML_TYPE_LAYOUT_MAX (1 << 1)
 
 #define AML_TYPE_LAYOUT_ROW_ORDER 1
 #define AML_TYPE_LAYOUT_COLUMN_ORDER 0
@@ -34,6 +34,7 @@ struct aml_layout_ops {
 	int (*order)(const struct aml_layout_data *);
 	int (*dims)(const struct aml_layout_data *, va_list dim_ptrs);
 	int (*adims)(const struct aml_layout_data *, size_t *dims);
+	int (*adims_column)(const struct aml_layout_data *, size_t *dims);
         size_t (*ndims)(const struct aml_layout_data *);
         size_t (*element_size)(const struct aml_layout_data *);
         struct aml_layout * (*reshape)(const struct aml_layout_data *,
