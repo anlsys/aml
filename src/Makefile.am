@@ -19,6 +19,9 @@ TILING_CSOURCES = tiling.c \
 		  tiling_1d.c \
 		  tiling_2d.c
 
+TILING_ND_CSOURCES = tiling_nd.c \
+		     tiling_nd_resize.c
+
 BINDING_CSOURCES = binding.c \
 		   binding_single.c \
 		   binding_interleave.c
@@ -39,13 +42,21 @@ LIBCSOURCES = aml.c area.c arena.c \
 	      $(AREA_LINUX_CSOURCES) \
 	      $(AREA_POSIX_CSOURCES) \
 	      $(TILING_CSOURCES) \
+	      $(TILING_ND_CSOURCES) \
 	      $(BINDING_CSOURCES) \
 	      $(DMA_CSOURCES) \
 	      $(SCRATCH_CSOURCES) \
 	      $(LAYOUT_CSOURCES) \
 	      copy.c
 
-LIBHSOURCES = aml.h aml-layout.h aml-layout-dense.h aml-layout-pad.h aml-layout-reshape.h aml-copy.h
+LIBHSOURCES = aml.h \
+	      aml-layout.h \
+	      aml-layout-dense.h \
+	      aml-layout-pad.h \
+	      aml-layout-reshape.h \
+	      aml-tiling.h \
+	      aml-tiling-resize.h \
+	      aml-copy.h
 
 libaml_la_SOURCES = $(LIBCSOURCES) $(LIBHSOURCES)
 libaml_la_LIBADD = -L$(top_srcdir)/jemalloc/lib/ -ljemalloc-aml @EXCIT_LIBS@

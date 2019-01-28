@@ -27,7 +27,7 @@ int aml_tiling_nd_resize_ainit(struct aml_tiling_nd *t, uint64_t tags,
 	assert(t != NULL);
 	assert(t->data != NULL);
 	struct aml_tiling_nd_data_resize *data =
-	    (struct aml_layout_data_native *)t->data;
+	    (struct aml_tiling_nd_data_resize *)t->data;
 	assert(data->ndims == ndims);
 	assert(data->tile_dims);
 	assert(data->dims);
@@ -49,7 +49,7 @@ int aml_tiling_nd_resize_ainit(struct aml_tiling_nd *t, uint64_t tags,
 	}
 	size_t target_dims[ndims];
 	aml_layout_adims_column(l, target_dims);
-	for (size_t i = 0; i < ndims; i++)
+	for (size_t i = 0; i < ndims; i++) {
 		data->border_tile_dims[i] = target_dims[i] % data->tile_dims[i];
 		data->dims[i] = target_dims[i] / data->tile_dims[i];
 		if (data->border_tile_dims[i] == 0)
@@ -66,7 +66,7 @@ int aml_tiling_nd_resize_vinit(struct aml_tiling_nd *t, uint64_t tags,
 {
 	size_t tile_dims[ndims];
 	for(size_t i = 0; i < ndims; i++)
-		tile_dims[i] = va_arg(ap, size_t);
+		tile_dims[i] = va_arg(data, size_t);
 	return aml_tiling_nd_resize_ainit(t, tags, l, ndims, tile_dims);
 }
 

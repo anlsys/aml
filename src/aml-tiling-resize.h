@@ -9,10 +9,10 @@ struct aml_tiling_nd_data_resize {
 	size_t *tile_dims;
 	size_t *dims;
 	size_t *border_tile_dims;
-}
+};
 
 #define AML_TILING_RESIZE_ALLOCSIZE(ndims) (sizeof(struct aml_tiling_nd) +\
-					    sizeof(struct aml_tiling_nd_resize) +\
+					    sizeof(struct aml_tiling_nd_data_resize) +\
 					    (ndims * 3) * sizeof(size_t))
 
 int aml_tiling_nd_resize_struct_init(struct aml_tiling_nd *t, size_t ndims,

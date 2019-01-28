@@ -33,7 +33,7 @@ int aml_tiling_nd_tile_dims(const struct aml_tiling_nd *t, ...)
 	va_list ap;
 	int ret;
 	va_start(ap, t);
-	ret = t->ops->tile_dims(t->data, ap)
+	ret = t->ops->tile_dims(t->data, ap);
 	va_end(ap);
 	return ret;
 }
@@ -52,7 +52,7 @@ int aml_tiling_nd_dims(const struct aml_tiling_nd *t, ...)
 	va_list ap;
 	int ret;
 	va_start(ap, t);
-	ret = t->ops->dims(t->data, ap)
+	ret = t->ops->dims(t->data, ap);
 	va_end(ap);
 	return ret;
 }

@@ -9,8 +9,8 @@ struct aml_tiling_nd_data;
 #define AML_TYPE_TILING_ORDER (1 << 0)
 #define AML_TYPE_TILING_MAX (1 << 1)
 
-#define AML_TYPE_LILING_ROW_ORDER 1
-#define AML_TYPE_LILING_COLUMN_ORDER 0
+#define AML_TYPE_TILING_ROW_ORDER 1
+#define AML_TYPE_TILING_COLUMN_ORDER 0
 
 struct aml_tiling_nd_ops {
 	struct aml_layout* (*index)(const struct aml_tiling_nd_data *,
