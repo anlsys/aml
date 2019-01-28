@@ -1,6 +1,121 @@
 #include <aml.h>
 #include <assert.h>
 
+void test_slice_contiguous(void)
+{
+	int memory[6][5][4];
+	size_t dims_col[3] = {4, 5, 6};
+	size_t dims_row[3] = {6, 5, 4};
+
+	size_t stride[3] = {1, 1, 1};
+
+	size_t offsets_col[3] = {2, 2, 3};
+	size_t offsets_row[3] = {3, 2, 2};
+
+	size_t new_dims_col[3] = {2, 3, 3};
+	size_t new_dims_row[3] = {3, 3, 2};
+
+
+        int l = 0;
+	for(size_t i = 0; i < 6; i++)
+	for(size_t j = 0; j < 5; j++)
+	for(size_t k = 0; k < 4; k++, l++)
+		memory[i][j][k] = l;
+
+	struct aml_layout *a;
+	aml_layout_native_acreate(&a, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				  (void *)memory, sizeof(int), 3, dims_col,
+				  stride, dims_col);
+	struct aml_layout *b = aml_layout_aslice(a, offsets_col, new_dims_col, stride);
+	assert(AML_TYPE_LAYOUT_COLUMN_ORDER == aml_layout_order(b));
+
+	for(size_t i = 0; i < 3; i++)
+	for(size_t j = 0; j < 3; j++)
+	for(size_t k = 0; k < 2; k++)
+	{
+		assert( memory[i+3][j+2][k+2] == *(int *)aml_layout_deref(b, k, j, i));
+		fprintf(stderr, "%d == %d\n", memory[i+3][j+2][k+2], *(int *)aml_layout_deref(b, k, j, i));
+	}
+	free(a);
+	free(b);
+
+	aml_layout_native_acreate(&a, AML_TYPE_LAYOUT_ROW_ORDER,
+				  (void *)memory, sizeof(int), 3, dims_row,
+				  stride, dims_row);
+	b = aml_layout_aslice(a, offsets_row, new_dims_row, stride);
+	assert(AML_TYPE_LAYOUT_ROW_ORDER == aml_layout_order(b));
+
+	for(size_t i = 0; i < 3; i++)
+	for(size_t j = 0; j < 3; j++)
+	for(size_t k = 0; k < 2; k++)
+	{
+		assert( memory[i+3][j+2][k+2] == *(int *)aml_layout_deref(b, i, j, k));
+		fprintf(stderr, "%d == %d\n", memory[i+3][j+2][k+2], *(int *)aml_layout_deref(b, i, j, k));
+	}
+	free(a);
+	free(b);
+
+}
+
+void test_slice_strided(void)
+{
+	int memory[12][5][8];
+
+	size_t dims_col[3] = {4, 5, 6};
+	size_t dims_row[3] = {6, 5, 4};
+
+	size_t stride[3] = {2, 1, 2};
+
+	size_t pitch_col[3] = {8, 5, 12};
+	size_t pitch_row[3] = {12, 5, 8};
+
+	size_t offsets_col[3] = {1, 2, 0};
+	size_t offsets_row[3] = {0, 2, 1};
+
+	size_t new_dims_col[3] = {2, 3, 3};
+	size_t new_dims_row[3] = {3, 3, 2};
+
+	size_t new_stride_col[3] = {2, 1, 1};
+	size_t new_stride_row[3] = {1, 1, 2};
+
+        int l = 0;
+	for(size_t i = 0; i < 12; i++)
+	for(size_t j = 0; j < 5; j++)
+	for(size_t k = 0; k < 8; k++, l++)
+		memory[i][j][k] = l;
+
+	struct aml_layout *a;
+	aml_layout_native_acreate(&a, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				  (void *)memory, sizeof(int), 3, dims_col,
+				  stride, pitch_col);
+	struct aml_layout *b = aml_layout_aslice(a, offsets_col, new_dims_col, new_stride_col);
+
+	for(size_t i = 0; i < 3; i++)
+	for(size_t j = 0; j < 3; j++)
+	for(size_t k = 0; k < 2; k++)
+		assert( memory[stride[2] * (offsets_col[2] + new_stride_col[2] * i)][
+			       stride[1] * (offsets_col[1] + new_stride_col[1] * j)][
+			       stride[0] * (offsets_col[0] + new_stride_col[0] * k)] == *(int *)aml_layout_deref(b, k, j, i));
+
+	free(a);
+	free(b);
+
+	aml_layout_native_acreate(&a, AML_TYPE_LAYOUT_ROW_ORDER,
+				  (void *)memory, sizeof(int), 3, dims_row,
+				  stride, pitch_row);
+	b = aml_layout_aslice(a, offsets_row, new_dims_row, new_stride_row);
+
+	for(size_t i = 0; i < 3; i++)
+	for(size_t j = 0; j < 3; j++)
+	for(size_t k = 0; k < 2; k++)
+		assert( memory[stride[2] * (offsets_col[2] + new_stride_col[2] * i)][
+			       stride[1] * (offsets_col[1] + new_stride_col[1] * j)][
+			       stride[0] * (offsets_col[0] + new_stride_col[0] * k)] == *(int *)aml_layout_deref(b, i, j, k));
+
+	free(a);
+	free(b);
+
+}
 
 void test_reshape_contiguous(void)
 {
@@ -331,6 +446,9 @@ int main(int argc, char *argv[])
 	test_reshape_contiguous();
 	test_reshape_discontiguous();
 	test_reshape_strided();
+
+	test_slice_contiguous();
+	test_slice_strided();
 
 	aml_finalize();
 	return 0;

@@ -87,3 +87,26 @@ struct aml_layout * aml_layout_reshape(const struct aml_layout *layout,
 	va_end(ap);
 	return ret;
 }
+
+struct aml_layout * aml_layout_slice(const struct aml_layout *layout, ...)
+{
+	assert(layout != NULL);
+	assert(layout->ops != NULL);
+	assert(layout->ops->slice != NULL);
+        va_list ap;
+	struct aml_layout *ret;
+	va_start(ap, layout);
+	ret = layout->ops->slice(layout->data, ap);
+        va_end(ap);
+	return ret;
+}
+
+struct aml_layout * aml_layout_aslice(const struct aml_layout *layout,
+				      const size_t *offsets, const size_t *dims,
+				      const size_t *strides)
+{
+	assert(layout != NULL);
+	assert(layout->ops != NULL);
+	assert(layout->ops->aslice != NULL);
+	return layout->ops->aslice(layout->data, offsets, dims, strides);
+}

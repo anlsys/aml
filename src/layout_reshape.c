@@ -247,6 +247,8 @@ struct aml_layout_ops aml_layout_reshape_column_ops = {
 	aml_layout_reshape_ndims,
 	aml_layout_reshape_element_size,
 	NULL,
+	NULL,
+	NULL,
 	NULL
 };
 
@@ -344,6 +346,8 @@ struct aml_layout_ops aml_layout_reshape_row_ops = {
 	aml_layout_reshape_column_adims,
 	aml_layout_reshape_ndims,
 	aml_layout_reshape_element_size,
+	NULL,
+	NULL,
 	NULL,
 	NULL
 };

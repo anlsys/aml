@@ -337,6 +337,54 @@ aml_layout_column_reshape(const struct aml_layout_data *data, size_t ndims,
 	return aml_layout_column_areshape(data, ndims, n_dims);
 }
 
+struct aml_layout *
+aml_layout_column_aslice(const struct aml_layout_data *data,
+			 const size_t *offsets, const size_t *dims,
+			 const size_t *strides)
+{
+	const struct aml_layout_data_native *d =
+	    (const struct aml_layout_data_native *)data;
+	size_t ndims = d->ndims;
+	for (size_t i = 0; i < ndims; i++)
+		assert(offsets[i] + (dims[i] - 1) * strides[i] < d->dims[i]);
+        void * ptr = aml_layout_column_aderef(data, offsets);
+	size_t cpitch[ndims + 1];
+	size_t new_strides[ndims];
+        cpitch[ndims] = d->cpitch[ndims];
+        for (size_t i = 0; i < ndims; i++) {
+		cpitch[i] = d->cpitch[i];
+		new_strides[i] = strides[i] * d->stride[i];
+		cpitch[ndims] -= cpitch[i] * offsets[i] * d->stride[i];
+	}
+	void *baseptr = calloc(1, AML_LAYOUT_NATIVE_ALLOCSIZE(ndims));
+	struct aml_layout *layout = (struct aml_layout *)baseptr;
+	aml_layout_native_struct_init(layout, ndims, baseptr);
+
+	aml_layout_native_ainit_cpitch(layout, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				       ptr, ndims, dims, new_strides, cpitch);
+	layout->ops = &aml_layout_column_ops;
+
+	return layout;
+}
+
+struct aml_layout *
+aml_layout_column_slice(const struct aml_layout_data *data, va_list args)
+{
+	const struct aml_layout_data_native *d =
+	    (const struct aml_layout_data_native *)data;
+	size_t ndims = d->ndims;
+	size_t offsets[ndims];
+	size_t dims[ndims];
+	size_t strides[ndims];
+	for (int i = 0; i < ndims; i++)
+		offsets[i] = va_arg(args, size_t);
+	for (int i = 0; i < ndims; i++)
+		dims[i] = va_arg(args, size_t);
+	for (int i = 0; i < ndims; i++)
+		strides[i] = va_arg(args, size_t);
+	return aml_layout_column_aslice(data, offsets, dims, strides);
+}
+
 struct aml_layout_ops aml_layout_column_ops = {
 	aml_layout_column_deref,
 	aml_layout_column_aderef,
@@ -347,7 +395,9 @@ struct aml_layout_ops aml_layout_column_ops = {
 	aml_layout_column_ndims,
 	aml_layout_column_element_size,
 	aml_layout_column_reshape,
-	aml_layout_column_areshape
+	aml_layout_column_areshape,
+        aml_layout_column_slice,
+	aml_layout_column_aslice
 };
 
 /*******************************************************************************
@@ -481,6 +531,62 @@ aml_layout_row_reshape(const struct aml_layout_data *data, size_t ndims,
 }
 
 
+struct aml_layout *
+aml_layout_row_aslice(const struct aml_layout_data *data,
+			 const size_t *offsets, const size_t *dims,
+			 const size_t *strides)
+{
+	const struct aml_layout_data_native *d =
+	    (const struct aml_layout_data_native *)data;
+	size_t ndims = d->ndims;
+	size_t n_offsets[ndims];
+	size_t n_dims[ndims];
+	size_t n_strides[ndims];
+	for (size_t i = 0; i < ndims; i++) {
+		n_offsets[i] = offsets[ndims - i - 1];
+		n_dims[i] = dims[ndims - i - 1];
+		n_strides[i] = strides[ndims - i - 1];
+	}
+	for (size_t i = 0; i < ndims; i++)
+		assert(n_offsets[i] + (n_dims[i] - 1) * n_strides[i] <
+			   d->dims[i]);
+        void * ptr = aml_layout_column_aderef(data, n_offsets);
+	size_t cpitch[ndims + 1];
+        cpitch[ndims] = d->cpitch[ndims];
+        for (size_t i = 0; i < ndims; i++) {
+		cpitch[i] = d->cpitch[i];
+		n_strides[i] *= d->stride[i];
+		cpitch[ndims] -= cpitch[i] * n_offsets[i] * d->stride[i];
+	}
+	void *baseptr = calloc(1, AML_LAYOUT_NATIVE_ALLOCSIZE(ndims));
+	struct aml_layout *layout = (struct aml_layout *)baseptr;
+	aml_layout_native_struct_init(layout, ndims, baseptr);
+
+	aml_layout_native_ainit_cpitch(layout, AML_TYPE_LAYOUT_ROW_ORDER,
+				       ptr, ndims, n_dims, n_strides, cpitch);
+	layout->ops = &aml_layout_row_ops;
+
+	return layout;
+}
+
+struct aml_layout *
+aml_layout_row_slice(const struct aml_layout_data *data, va_list args)
+{
+	const struct aml_layout_data_native *d =
+	    (const struct aml_layout_data_native *)data;
+	size_t ndims = d->ndims;
+	size_t offsets[ndims];
+	size_t dims[ndims];
+	size_t strides[ndims];
+	for (int i = 0; i < ndims; i++)
+		offsets[i] = va_arg(args, size_t);
+	for (int i = 0; i < ndims; i++)
+		dims[i] = va_arg(args, size_t);
+	for (int i = 0; i < ndims; i++)
+		strides[i] = va_arg(args, size_t);
+	return aml_layout_row_aslice(data, offsets, dims, strides);
+}
+
 struct aml_layout_ops aml_layout_row_ops = {
 	aml_layout_row_deref,
 	aml_layout_row_aderef,
@@ -491,6 +597,8 @@ struct aml_layout_ops aml_layout_row_ops = {
 	aml_layout_row_ndims,
 	aml_layout_row_element_size,
 	aml_layout_row_reshape,
-	aml_layout_row_areshape
+	aml_layout_row_areshape,
+	aml_layout_row_slice,
+	aml_layout_row_aslice
 };
 
