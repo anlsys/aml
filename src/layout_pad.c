@@ -151,15 +151,7 @@ void *aml_layout_pad_column_aderef(const struct aml_layout_data *data,
 		if(coords[i] >= d->target_dims[i])
 			return d->neutral;
 	}
-	int type = aml_layout_order(d->target);
-	if (type == AML_TYPE_LAYOUT_COLUMN_ORDER)
-		return aml_layout_aderef(d->target, coords);
-	else {
-		size_t target_coords[ndims];
-		for (int i = 0; i < ndims; i++)
-			target_coords[i] = coords[ndims - i - 1];
-		return aml_layout_aderef(d->target, coords);
-	}
+	return d->target->ops->aderef_column(d->target->data, coords);
 }
 
 void *aml_layout_pad_column_deref(const struct aml_layout_data *data,
@@ -222,12 +214,14 @@ size_t aml_layout_pad_element_size(const struct aml_layout_data *data)
 struct aml_layout_ops aml_layout_pad_column_ops = {
 	aml_layout_pad_column_deref,
 	aml_layout_pad_column_aderef,
+	aml_layout_pad_column_aderef,
 	aml_layout_pad_column_order,
 	aml_layout_pad_column_dims,
 	aml_layout_pad_column_adims,
 	aml_layout_pad_column_adims,
 	aml_layout_pad_ndims,
 	aml_layout_pad_element_size,
+	NULL,
 	NULL,
 	NULL,
 	NULL,
@@ -309,12 +303,14 @@ int aml_layout_pad_row_adims(const struct aml_layout_data *data, size_t *dims)
 struct aml_layout_ops aml_layout_pad_row_ops = {
 	aml_layout_pad_row_deref,
 	aml_layout_pad_row_aderef,
+	aml_layout_pad_column_aderef,
 	aml_layout_pad_row_order,
 	aml_layout_pad_row_dims,
 	aml_layout_pad_row_adims,
 	aml_layout_pad_column_adims,
 	aml_layout_pad_ndims,
 	aml_layout_pad_element_size,
+	NULL,
 	NULL,
 	NULL,
 	NULL,

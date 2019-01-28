@@ -31,6 +31,8 @@ struct aml_layout_data;
 struct aml_layout_ops {
 	void *(*deref)(const struct aml_layout_data *, va_list coords);
 	void *(*aderef)(const struct aml_layout_data *, const size_t *coords);
+	void *(*aderef_column)(const struct aml_layout_data *,
+			       const size_t *coords);
 	int (*order)(const struct aml_layout_data *);
 	int (*dims)(const struct aml_layout_data *, va_list dim_ptrs);
 	int (*adims)(const struct aml_layout_data *, size_t *dims);
@@ -46,6 +48,10 @@ struct aml_layout_ops {
 	struct aml_layout * (*aslice)(const struct aml_layout_data *,
 				      const size_t *offsets, const size_t *dims,
 				      const size_t *strides);
+	struct aml_layout * (*aslice_column)(const struct aml_layout_data *,
+					     const size_t *offsets,
+					     const size_t *dims,
+					     const size_t *strides);
 };
 
 struct aml_layout {

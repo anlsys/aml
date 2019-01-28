@@ -165,20 +165,11 @@ void *aml_layout_reshape_column_aderef(const struct aml_layout_data *data,
 	for (int i = 0; i < ndims; i++)
 		offset += coords[i] * d->coffsets[i];
 
-	int type = aml_layout_order(d->target);
-	if (type == AML_TYPE_LAYOUT_COLUMN_ORDER) {
-		for (int i = 0; i < target_ndims; i++) {
-			target_coords[i] = offset % d->target_dims[i];
-			offset /= d->target_dims[i];
-		}
-	} else {
-		for (int i = 0; i < target_ndims; i++) {
-			target_coords[target_ndims - i - 1] =
-			    offset % d->target_dims[i];
-			offset /= d->target_dims[i];
-		}
+	for (int i = 0; i < target_ndims; i++) {
+		target_coords[i] = offset % d->target_dims[i];
+		offset /= d->target_dims[i];
 	}
-	return aml_layout_aderef(d->target, target_coords);
+	return d->target->ops->aderef_column(d->target->data, target_coords);
 }
 
 void *aml_layout_reshape_column_deref(const struct aml_layout_data *data,
@@ -240,12 +231,14 @@ size_t aml_layout_reshape_element_size(const struct aml_layout_data *data)
 struct aml_layout_ops aml_layout_reshape_column_ops = {
 	aml_layout_reshape_column_deref,
 	aml_layout_reshape_column_aderef,
+	aml_layout_reshape_column_aderef,
 	aml_layout_reshape_column_order,
 	aml_layout_reshape_column_dims,
 	aml_layout_reshape_column_adims,
 	aml_layout_reshape_column_adims,
 	aml_layout_reshape_ndims,
 	aml_layout_reshape_element_size,
+	NULL,
 	NULL,
 	NULL,
 	NULL,
@@ -276,20 +269,11 @@ void *aml_layout_reshape_row_aderef(const struct aml_layout_data *data,
 	for (int i = 0; i < ndims; i++)
 		offset += coords[ndims - i - 1] * d->coffsets[i];
 
-	int type = aml_layout_order(d->target);
-	if (type == AML_TYPE_LAYOUT_COLUMN_ORDER) {
-		for (int i = 0; i < target_ndims; i++) {
-			target_coords[i] = offset % d->target_dims[i];
-			offset /= d->target_dims[i];
-		}
-	} else {
-		for (int i = 0; i < target_ndims; i++) {
-			target_coords[target_ndims - i - 1] =
-			    offset % d->target_dims[i];
-			offset /= d->target_dims[i];
-		}
+	for (int i = 0; i < target_ndims; i++) {
+		target_coords[i] = offset % d->target_dims[i];
+		offset /= d->target_dims[i];
 	}
-	return aml_layout_aderef(d->target, target_coords);
+	return d->target->ops->aderef_column(d->target->data, target_coords);
 }
 
 void *aml_layout_reshape_row_deref(const struct aml_layout_data *data,
@@ -340,12 +324,14 @@ int aml_layout_reshape_row_adims(const struct aml_layout_data *data,
 struct aml_layout_ops aml_layout_reshape_row_ops = {
 	aml_layout_reshape_row_deref,
 	aml_layout_reshape_row_aderef,
+	aml_layout_reshape_column_aderef,
 	aml_layout_reshape_row_order,
 	aml_layout_reshape_row_dims,
 	aml_layout_reshape_row_adims,
 	aml_layout_reshape_column_adims,
 	aml_layout_reshape_ndims,
 	aml_layout_reshape_element_size,
+	NULL,
 	NULL,
 	NULL,
 	NULL,
