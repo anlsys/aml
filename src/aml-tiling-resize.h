@@ -4,7 +4,7 @@
 #include <stdarg.h>
 
 struct aml_tiling_nd_data_resize {
-	struct aml_layout *l;
+	const struct aml_layout *l;
 	size_t ndims;
 	size_t *tile_dims;
 	size_t *dims;
