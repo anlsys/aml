@@ -4,9 +4,17 @@ stages:
 make:generic:
   stage: build
   script:
+    - git clone https://xgitlab.cels.anl.gov/argo/excit.git
+    - cd excit
     - ./autogen.sh
     - mkdir build
     - ./configure --prefix=`pwd`/build
+    - make
+    - make install
+    - cd ..
+    - ./autogen.sh
+    - mkdir build
+    - PKG_CONFIG_PATH=excit/build/lib/pkgconfig ./configure --prefix=`pwd`/build
     - make
     - make install
     - make check
