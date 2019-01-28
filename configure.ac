@@ -52,6 +52,9 @@ AM_CONDITIONAL([ADD_BENCHMARKS],[test "x$benchmarks" = xtrue])
 AC_CHECK_HEADERS(numa.h)
 AC_CHECK_LIB(numa, move_pages)
 
+# excit iterators
+PKG_CHECK_MODULES([EXCIT],[libexcit])
+
 # internal jemalloc
 ac_configure_args="$ac_configure_args \
 			'--with-jemalloc-prefix=jemk_aml_' \

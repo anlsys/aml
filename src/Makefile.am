@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_srcdir)/jemalloc/include
+AM_CPPFLAGS = -I$(top_srcdir)/jemalloc/include @EXCIT_CFLAGS@
 lib_LTLIBRARIES = libaml.la
 
 ARENA_JEMALLOC_CSOURCES = arena_jemalloc.c
@@ -48,5 +48,5 @@ LIBCSOURCES = aml.c area.c arena.c \
 LIBHSOURCES = aml.h aml-layout.h aml-layout-dense.h aml-layout-pad.h aml-layout-reshape.h aml-copy.h
 
 libaml_la_SOURCES = $(LIBCSOURCES) $(LIBHSOURCES)
-libaml_la_LIBADD = -L$(top_srcdir)/jemalloc/lib/ -ljemalloc-aml
+libaml_la_LIBADD = -L$(top_srcdir)/jemalloc/lib/ -ljemalloc-aml @EXCIT_LIBS@
 include_HEADERS = $(LIBHSOURCES)
