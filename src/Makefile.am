@@ -28,7 +28,8 @@ BINDING_CSOURCES = binding.c \
 
 DMA_CSOURCES = dma.c \
 	       dma_linux_par.c \
-	       dma_linux_seq.c
+	       dma_linux_seq.c \
+	       dma_layout.c
 
 SCRATCH_CSOURCES = scratch.c \
 		   scratch_seq.c \

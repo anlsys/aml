@@ -1304,6 +1304,7 @@ int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request *req);
  */
 int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request *req);
 
+#include "aml-dma-layout.h"
 /*******************************************************************************
  * Linux Sequential DMA API:
  * DMA logic implemented based on general linux API, with the caller thread
