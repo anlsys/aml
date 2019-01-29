@@ -40,7 +40,7 @@ UNIT_TESTS = $(ARENA_JEMALLOC_TESTS) \
 	     $(AREA_POSIX_TESTS) \
 	     $(DMA_LINUX_TESTS) \
 	     $(SCRATCH_TESTS) \
-	     layout copy tiling_nd
+	     layout copy tiling_nd dma_layout
 
 # all tests
 TST_PROGS = $(UNIT_TESTS)

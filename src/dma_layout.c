@@ -9,14 +9,13 @@
 
 int aml_dma_request_layout_init(struct aml_dma_request_layout *req,
 				struct aml_layout *dl,
-				struct aml_layout *sl, void *arg)
+				struct aml_layout *sl)
 {
 	assert(req != NULL);
 	req->type = AML_DMA_REQUEST_TYPE_COPY;
 	/* figure out pointers */
 	req->dest = dl;
 	req->src = sl;
-	req->arg = arg;
 	return 0;
 }
 
@@ -50,8 +49,7 @@ int aml_dma_layout_create_request(struct aml_dma_data *d,
 	void *arg;
 	dl = va_arg(ap, struct aml_layout *);
 	sl = va_arg(ap, struct aml_layout *);
-	arg = va_arg(ap, void *);
-	aml_dma_request_layout_init(req, dl, sl, arg);
+	aml_dma_request_layout_init(req, dl, sl);
 
 	pthread_mutex_unlock(&dma->lock);
 	*r = (struct aml_dma_request *)req;
@@ -90,7 +88,7 @@ int aml_dma_layout_wait_request(struct aml_dma_data *d,
 
 	/* execute */
 	assert(req->type == AML_DMA_REQUEST_TYPE_COPY);
-	dma->do_work(req->dest, req->src, req->arg);
+	dma->do_work(req->dest, req->src, dma->work_arg);
 
 	/* destroy a completed request */
 	aml_dma_layout_destroy_request(d, r);
@@ -135,6 +133,7 @@ int aml_dma_layout_vinit(struct aml_dma *d, va_list ap)
 	/* request vector */
 	size_t nbreqs = va_arg(ap, size_t);
 	dma->do_work = va_arg(ap, aml_dma_operator);
+	dma->work_arg = va_arg(ap, void *);
 	aml_vector_init(&dma->requests, nbreqs,
 			sizeof(struct aml_dma_request_layout),
 			offsetof(struct aml_dma_request_layout, type),
