@@ -62,9 +62,12 @@ struct aml_layout {
 
 void *aml_layout_deref(const struct aml_layout *l, ...);
 void *aml_layout_aderef(const struct aml_layout *l, const size_t *coords);
+void *aml_layout_aderef_column(const struct aml_layout *l,
+			       const size_t *coords);
 int aml_layout_order(const struct aml_layout *l);
 int aml_layout_dims(const struct aml_layout *l, ...);
 int aml_layout_adims(const struct aml_layout *l, size_t *dims);
+int aml_layout_adims_column(const struct aml_layout *l, size_t *dims);
 size_t aml_layout_ndims(const struct aml_layout *l);
 size_t aml_layout_element_size(const struct aml_layout *l);
 struct aml_layout * aml_layout_areshape(const struct aml_layout *l,
@@ -75,5 +78,9 @@ struct aml_layout * aml_layout_slice(const struct aml_layout *l, ...);
 struct aml_layout * aml_layout_aslice(const struct aml_layout *l,
 				      const size_t *offsets, const size_t *dims,
 				      const size_t *strides);
+struct aml_layout * aml_layout_aslice_column(const struct aml_layout *l,
+					     const size_t *offsets,
+					     const size_t *dims,
+					     const size_t *strides);
 
 #endif

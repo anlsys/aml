@@ -23,6 +23,14 @@ void *aml_layout_aderef(const struct aml_layout *layout, const size_t *coords)
 	return layout->ops->aderef(layout->data, coords);
 }
 
+void *aml_layout_aderef_column(const struct aml_layout *layout,
+			       const size_t *coords)
+{
+	assert(layout != NULL);
+	assert(layout->ops != NULL);
+	return layout->ops->aderef_column(layout->data, coords);
+}
+
 int aml_layout_order(const struct aml_layout *layout)
 {
 	assert(layout != NULL);
@@ -47,6 +55,13 @@ int aml_layout_adims(const struct aml_layout *layout, size_t *dims)
 	assert(layout != NULL);
 	assert(layout->ops != NULL);
 	return layout->ops->adims(layout->data, dims);
+}
+
+int aml_layout_adims_column(const struct aml_layout *layout, size_t *dims)
+{
+	assert(layout != NULL);
+	assert(layout->ops != NULL);
+	return layout->ops->adims_column(layout->data, dims);
 }
 
 size_t aml_layout_ndims(const struct aml_layout *layout)
@@ -109,4 +124,15 @@ struct aml_layout * aml_layout_aslice(const struct aml_layout *layout,
 	assert(layout->ops != NULL);
 	assert(layout->ops->aslice != NULL);
 	return layout->ops->aslice(layout->data, offsets, dims, strides);
+}
+
+struct aml_layout * aml_layout_aslice_column(const struct aml_layout *layout,
+					     const size_t *offsets,
+					     const size_t *dims,
+					     const size_t *strides)
+{
+	assert(layout != NULL);
+	assert(layout->ops != NULL);
+	assert(layout->ops->aslice != NULL);
+	return layout->ops->aslice_column(layout->data, offsets, dims, strides);
 }
