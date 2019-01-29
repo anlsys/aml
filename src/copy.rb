@@ -399,7 +399,7 @@ def aml_copy_layout_generic_helper(shuffle: false)
       pr For( i, 0, elem_number[elem_index[0]], operator: '<', declit: true ) {
         pr coord_dst[dst_index[0]] === i
         pr coord_src[src_index[0]] === i
-        pr memcpy( FuncCall(:aml_layout_aderef, dst, coord_dst), FuncCall(:aml_layout_aderef, src, coord_src), elem_size )
+        pr memcpy( FuncCall(:aml_layout_aderef_column, dst, coord_dst), FuncCall(:aml_layout_aderef_column, src, coord_src), elem_size )
       }
     }, else: lambda {
       pr For( i, 0, elem_number[elem_index[d - 1]], operator: '<', declit: true ) {
@@ -465,9 +465,11 @@ def aml_copy_layout(native: true, shuffle: false)
       coords = Sizet :coords, dim: Dim()
       coords_out = Sizet :coords_out, dim: Dim()
       elem_number = Sizet :elem_number, dim: Dim()
+      elem_number2 = Sizet :elem_number2, dim: Dim()
       decl coords
       decl coords_out if shuffle
       decl elem_number
+      decl elem_number2
 
       pr assert( FuncCall( :aml_layout_ndims, dst ) == FuncCall( :aml_layout_ndims, src ) )
       pr d === FuncCall( :aml_layout_ndims, dst )
@@ -476,7 +478,12 @@ def aml_copy_layout(native: true, shuffle: false)
       pr coords === alloca(d * sizeof("size_t")).cast(coords)
       pr coords_out === alloca(d * sizeof("size_t")).cast(coords_out) if shuffle
       pr elem_number === alloca(d * sizeof("size_t")).cast(elem_number)
-      pr FuncCall( :aml_layout_adims, src, elem_number )
+      pr elem_number2 === alloca(d * sizeof("size_t")).cast(elem_number2)
+      pr FuncCall( :aml_layout_adims_column, src, elem_number )
+      pr FuncCall( :aml_layout_adims_column, dst, elem_number2 )
+      pr For(i, 0, d, operator: '<', declit: true) {
+        pr assert( "#{elem_number}[#{src_index[i]}] == #{elem_number2}[#{dst_index[i]}]" )
+      }
 
       new_args = [d, dst, src, elem_number, elem_size, coords]
       new_args << coords_out << target_dims if shuffle

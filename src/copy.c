@@ -535,8 +535,9 @@ static inline void aml_copy_layout_generic_helper(size_t d,
 		for (size_t i = 0; i < elem_number[0]; i += 1) {
 			coords[0] = i;
 			coords[0] = i;
-			memcpy(aml_layout_aderef(dst, coords),
-			       aml_layout_aderef(src, coords), elem_size);
+			memcpy(aml_layout_aderef_column(dst, coords),
+			       aml_layout_aderef_column(src, coords),
+			       elem_size);
 	} else
 		for (size_t i = 0; i < elem_number[d - 1]; i += 1) {
 			coords[d - 1] = i;
@@ -564,8 +565,9 @@ static inline void aml_copy_layout_transform_generic_helper(size_t d,
 		for (size_t i = 0; i < elem_number[target_dims[0]]; i += 1) {
 			coords_out[0] = i;
 			coords[target_dims[0]] = i;
-			memcpy(aml_layout_aderef(dst, coords_out),
-			       aml_layout_aderef(src, coords), elem_size);
+			memcpy(aml_layout_aderef_column(dst, coords_out),
+			       aml_layout_aderef_column(src, coords),
+			       elem_size);
 	} else
 		for (size_t i = 0; i < elem_number[target_dims[d - 1]]; i += 1) {
 			coords_out[d - 1] = i;
@@ -587,13 +589,18 @@ int aml_copy_layout_generic(struct aml_layout *dst,
 	size_t elem_size;
 	size_t *coords;
 	size_t *elem_number;
+	size_t *elem_number2;
 	assert(aml_layout_ndims(dst) == aml_layout_ndims(src));
 	d = aml_layout_ndims(dst);
 	assert(aml_layout_element_size(dst) == aml_layout_element_size(src));
 	elem_size = aml_layout_element_size(dst);
 	coords = (size_t *) alloca(d * sizeof(size_t));
 	elem_number = (size_t *) alloca(d * sizeof(size_t));
-	aml_layout_adims(src, elem_number);
+	elem_number2 = (size_t *) alloca(d * sizeof(size_t));
+	aml_layout_adims_column(src, elem_number);
+	aml_layout_adims_column(dst, elem_number2);
+	for (size_t i = 0; i < d; i += 1)
+		assert(elem_number[i] == elem_number2[i]);
 	aml_copy_layout_generic_helper(d, dst, src, elem_number, elem_size,
 				       coords);
 	return 0;
@@ -608,6 +615,7 @@ int aml_copy_layout_transform_generic(struct aml_layout *dst,
 	size_t *coords;
 	size_t *coords_out;
 	size_t *elem_number;
+	size_t *elem_number2;
 	assert(aml_layout_ndims(dst) == aml_layout_ndims(src));
 	d = aml_layout_ndims(dst);
 	assert(aml_layout_element_size(dst) == aml_layout_element_size(src));
@@ -615,7 +623,11 @@ int aml_copy_layout_transform_generic(struct aml_layout *dst,
 	coords = (size_t *) alloca(d * sizeof(size_t));
 	coords_out = (size_t *) alloca(d * sizeof(size_t));
 	elem_number = (size_t *) alloca(d * sizeof(size_t));
-	aml_layout_adims(src, elem_number);
+	elem_number2 = (size_t *) alloca(d * sizeof(size_t));
+	aml_layout_adims_column(src, elem_number);
+	aml_layout_adims_column(dst, elem_number2);
+	for (size_t i = 0; i < d; i += 1)
+		assert(elem_number[target_dims[i]] == elem_number2[i]);
 	aml_copy_layout_transform_generic_helper(d, dst, src, elem_number,
 						 elem_size, coords, coords_out,
 						 target_dims);
