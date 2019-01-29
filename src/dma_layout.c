@@ -9,13 +9,14 @@
 
 int aml_dma_request_layout_init(struct aml_dma_request_layout *req,
 				struct aml_layout *dl,
-				struct aml_layout *sl)
+				struct aml_layout *sl, void *arg)
 {
 	assert(req != NULL);
 	req->type = AML_DMA_REQUEST_TYPE_COPY;
 	/* figure out pointers */
 	req->dest = dl;
 	req->src = sl;
+	req->arg = arg;
 	return 0;
 }
 
@@ -24,19 +25,6 @@ int aml_dma_request_layout_destroy(struct aml_dma_request_layout *r)
 	assert(r != NULL);
 	return 0;
 }
-
-/*******************************************************************************
- * Internal functions
- ******************************************************************************/
-int aml_dma_layout_do_work(struct aml_dma_layout *dma,
-			   struct aml_dma_request_layout *req)
-{
-	assert(dma != NULL);
-	assert(req != NULL);
-	//memcpy(req->dest, req->src, req->size);
-	return 0;
-}
-
 
 /*******************************************************************************
  * Public API
@@ -59,9 +47,11 @@ int aml_dma_layout_create_request(struct aml_dma_data *d,
 	/* we don't support move at this time */
 	assert(type == AML_DMA_REQUEST_TYPE_COPY);
 	struct aml_layout *dl, *sl;
+	void *arg;
 	dl = va_arg(ap, struct aml_layout *);
 	sl = va_arg(ap, struct aml_layout *);
-	aml_dma_request_layout_init(req, dl, sl);
+	arg = va_arg(ap, void *);
+	aml_dma_request_layout_init(req, dl, sl, arg);
 
 	pthread_mutex_unlock(&dma->lock);
 	*r = (struct aml_dma_request *)req;
@@ -100,7 +90,7 @@ int aml_dma_layout_wait_request(struct aml_dma_data *d,
 
 	/* execute */
 	assert(req->type == AML_DMA_REQUEST_TYPE_COPY);
-	dma->do_work(dma, req);
+	dma->do_work(req->dest, req->src, req->arg);
 
 	/* destroy a completed request */
 	aml_dma_layout_destroy_request(d, r);
@@ -144,6 +134,7 @@ int aml_dma_layout_vinit(struct aml_dma *d, va_list ap)
 
 	/* request vector */
 	size_t nbreqs = va_arg(ap, size_t);
+	dma->do_work = va_arg(ap, aml_dma_operator);
 	aml_vector_init(&dma->requests, nbreqs,
 			sizeof(struct aml_dma_request_layout),
 			offsetof(struct aml_dma_request_layout, type),

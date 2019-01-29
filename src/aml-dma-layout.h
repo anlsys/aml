@@ -12,12 +12,14 @@ struct aml_dma_request_layout {
 	int type;
 	struct aml_layout *dest;
 	struct aml_layout *src;
+	void *arg;
 };
 
+typedef int (*aml_dma_operator)(struct aml_layout *, struct aml_layout *, void*);
 struct aml_dma_layout {
 	struct aml_vector requests;
 	pthread_mutex_t lock;
-	int (*do_work)(struct aml_layout *dest, struct aml_layout *src);
+	aml_dma_operator do_work;
 };
 
 #define AML_DMA_LAYOUT_DECL(name) \
