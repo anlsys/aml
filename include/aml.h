@@ -1406,6 +1406,8 @@ struct aml_scratch_data;
 #define AML_SCRATCH_REQUEST_TYPE_PUSH 0
 /* Pull from regular memory to the scratchpad.  */
 #define AML_SCRATCH_REQUEST_TYPE_PULL 1
+/* No-op/empty request */
+#define AML_SCRATCH_REQUEST_TYPE_NOOP 2
 
 struct aml_scratch_ops {
 	int (*create_request)(struct aml_scratch_data *scratch,

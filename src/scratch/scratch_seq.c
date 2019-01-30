@@ -100,7 +100,8 @@ int aml_scratch_seq_create_request(struct aml_scratch_data *d,
 		*srcid = *slot;
 
 		/* init request */
-		aml_scratch_request_seq_init(req, type, scratch->data.tiling,
+		aml_scratch_request_seq_init(req, type,
+					     scratch->data.tiling,
 					     srcptr, *srcid,
 					     scratchptr, scratchid);
 	}
@@ -124,20 +125,26 @@ int aml_scratch_seq_create_request(struct aml_scratch_data *d,
 		 */
 		int slot = aml_vector_find(&scratch->data.tilemap, srcid);
 		if(slot == -1)
+		{
 			slot = aml_vector_find(&scratch->data.tilemap, -1);
-		assert(slot != -1);
-		int *tile = aml_vector_get(&scratch->data.tilemap, slot);
-		*tile = srcid;
+			assert(slot != -1);
+			int *tile = aml_vector_get(&scratch->data.tilemap, slot);
+			*tile = srcid;
+		}
+		else
+			type = AML_SCRATCH_REQUEST_TYPE_NOOP;
+
+		/* save the key */
 		*scratchid = slot;
 
 		/* init request */
-		aml_scratch_request_seq_init(req, type,
-					     scratch->data.tiling,
+		aml_scratch_request_seq_init(req, type, scratch->data.tiling,
 					     scratchptr, *scratchid,
 					     srcptr, srcid);
 	}
 	pthread_mutex_unlock(&scratch->data.lock);
-	scratch->ops.doit(&scratch->data, req);
+	if(req->type != AML_SCRATCH_REQUEST_TYPE_NOOP)
+		scratch->ops.doit(&scratch->data, req);
 
 	*r = (struct aml_scratch_request *)req;
 	return 0;
@@ -155,7 +162,8 @@ int aml_scratch_seq_destroy_request(struct aml_scratch_data *d,
 		(struct aml_scratch_request_seq *)r;
 	int *tile;
 
-	aml_dma_cancel(scratch->data.dma, req->dma_req);
+	if(req->type != AML_SCRATCH_REQUEST_TYPE_NOOP)
+		aml_dma_cancel(scratch->data.dma, req->dma_req);
 	aml_scratch_request_seq_destroy(req);
 
 	/* destroy removes the tile from the scratch */
@@ -181,7 +189,8 @@ int aml_scratch_seq_wait_request(struct aml_scratch_data *d,
 	int *tile;
 
 	/* wait for completion of the request */
-	aml_dma_wait(scratch->data.dma, req->dma_req);
+	if(req->type != AML_SCRATCH_REQUEST_TYPE_NOOP)
+		aml_dma_wait(scratch->data.dma, req->dma_req);
 
 	/* cleanup a completed request. In case of push, free up the tile */
 	aml_scratch_request_seq_destroy(req);
