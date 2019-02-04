@@ -338,7 +338,7 @@ aml_tiling_nd_collapse_row_dims(const struct aml_tiling_nd_data *l,
 	    (const struct aml_tiling_nd_data_collapse *)l;
 	assert(d != NULL);
 	for(size_t i = 0; i < d->ndims; i++) {
-		if (d->dims[i] > 1) {
+		if (d->dims[d->ndims - i - 1] > 1) {
 			size_t *dim = va_arg(dims_ptrs, size_t*);
 			assert(dim != NULL);
 			*dim = d->dims[d->ndims - i - 1];
@@ -355,7 +355,7 @@ aml_tiling_nd_collapse_row_adims(const struct aml_tiling_nd_data *l,
 	    (const struct aml_tiling_nd_data_collapse *)l;
 	assert(d != NULL);
 	for(size_t i = 0, j = 0; i < d->ndims; i++)
-		if (d->dims[i] > 1)
+		if (d->dims[d->ndims - i - 1] > 1)
 			dims[j++] = d->dims[d->ndims - i - 1];
 	return 0;	
 }

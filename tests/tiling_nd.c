@@ -37,6 +37,15 @@ void test_tiling_collapse(void)
 	aml_tiling_nd_collapse_acreate(&tres, AML_TYPE_TILING_ROW_ORDER,
 				       ares, 4, dims_tile_row);
 
+	assert(aml_tiling_nd_ndims(t) == 2);
+	assert(aml_tiling_nd_ndims(tres) == 2);
+
+	size_t dims[2] = { 0, 0};
+	aml_tiling_nd_adims(t, dims);
+	assert(memcmp(dims, expected_dims_col, 2 * sizeof(int)) == 0);
+	memset(dims, 0, 2 * sizeof(int));
+	aml_tiling_nd_adims(tres, dims);
+	assert(memcmp(dims, expected_dims_row, 2 * sizeof(int)) == 0);
 
 	for(size_t i = 0; i < expected_dims_col[1]; i++)
 	for(size_t j = 0; j < expected_dims_col[0]; j++) {
