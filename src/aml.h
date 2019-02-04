@@ -26,6 +26,7 @@
 #include "aml-tiling.h"
 #include "aml-tiling-resize.h"
 #include "aml-tiling-pad.h"
+#include "aml-tiling-collapse.h"
 #include "aml-copy.h"
 /*******************************************************************************
  * Forward Declarations:

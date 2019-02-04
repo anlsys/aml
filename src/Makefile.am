@@ -21,7 +21,8 @@ TILING_CSOURCES = tiling.c \
 
 TILING_ND_CSOURCES = tiling_nd.c \
 		     tiling_nd_resize.c \
-		     tiling_nd_pad.c
+		     tiling_nd_pad.c \
+		     tiling_nd_collapse.c
 
 BINDING_CSOURCES = binding.c \
 		   binding_single.c \
@@ -60,6 +61,7 @@ LIBHSOURCES = aml.h \
 	      aml-tiling.h \
 	      aml-tiling-resize.h \
 	      aml-tiling-pad.h \
+	      aml-tiling-collapse.h \
 	      aml-copy.h
 
 libaml_la_SOURCES = $(LIBCSOURCES) $(LIBHSOURCES)

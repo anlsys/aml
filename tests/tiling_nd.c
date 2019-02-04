@@ -1,6 +1,60 @@
 #include <aml.h>
 #include <assert.h>
 
+void test_tiling_collapse(void)
+{
+	int memory[9][8][4][3];
+	int memoryres[9][8][4][3];
+	size_t dims_col[4] = {3, 4, 8, 9};
+	size_t dims_row[4] = {9, 8, 4, 3};
+
+	size_t stride[4] = {1, 1, 1, 1};
+	size_t dims_tile_col[4] = {1, 4, 1, 9};
+	size_t dims_tile_row[4] = {9, 1, 4, 1};
+
+	size_t expected_dims_col[2] = {3, 8};
+	size_t expected_dims_row[2] = {8, 3};
+
+	int n = 0;
+	for(size_t i = 0; i < 9; i++)
+	for(size_t k = 0; k < 8; k++)
+	for(size_t l = 0; l < 4; l++)
+	for(size_t m = 0; m < 3; m++, n++) {
+		memory[i][k][l][m] = n;
+		memoryres[i][k][l][m] = 0;
+	}
+	struct aml_layout *a, *ares;
+	aml_layout_native_acreate(&a, AML_TYPE_LAYOUT_COLUMN_ORDER,
+				  (void *)memory, sizeof(int), 4, dims_col,
+				  stride, dims_col);
+	aml_layout_native_acreate(&ares, AML_TYPE_LAYOUT_ROW_ORDER,
+				  (void *)memoryres, sizeof(int), 4, dims_row,
+				  stride, dims_row);
+
+	struct aml_tiling_nd *t, *tres;
+	aml_tiling_nd_collapse_acreate(&t, AML_TYPE_TILING_COLUMN_ORDER,
+				       a, 4, dims_tile_col);
+	aml_tiling_nd_collapse_acreate(&tres, AML_TYPE_TILING_ROW_ORDER,
+				       ares, 4, dims_tile_row);
+
+
+	for(size_t i = 0; i < expected_dims_col[1]; i++)
+	for(size_t j = 0; j < expected_dims_col[0]; j++) {
+		struct aml_layout *b, *bres;
+		b = aml_tiling_nd_index(t, j, i);
+		bres = aml_tiling_nd_index(tres, i, j);
+		aml_copy_layout_generic(bres, b);
+		free(b);
+		free(bres);
+	}
+	assert(memcmp(memory, memoryres, 8 * 9 * 4 * 3 * sizeof(int)) == 0);
+
+	free(a);
+	free(ares);
+	free(t);
+	free(tres);
+}
+
 void test_tiling_even_mixed(void)
 {
 	int memory[9][10][8];
@@ -21,7 +75,7 @@ void test_tiling_even_mixed(void)
 	for(size_t j = 0; j < 10; j++)
 	for(size_t k = 0; k < 8; k++, l++) {
 		memory[i][j][k] = l;
-		memoryres[i][j][k] = 0.0;
+		memoryres[i][j][k] = 0;
 	}
 
 	struct aml_layout *a, *ares;
@@ -561,6 +615,7 @@ int main(int argc, char *argv[])
 	test_tiling_even_mixed();
 	test_tiling_pad_even();
 	test_tiling_pad_uneven();
+	test_tiling_collapse();
 
 	return 0;
 }
