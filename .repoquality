@@ -1,0 +1,13 @@
+src/*.c
+src/*.h
+tests/*.c
+benchmarks/dgemm_mkl.c
+benchmarks/dgemm_noprefetch.c
+benchmarks/dgemm_prefetch.c
+benchmarks/stencil_pth_mt.c
+benchmarks/stream_add_omp.c
+benchmarks/stream_add_omp_mt.c
+benchmarks/stream_add_omp_st.c
+benchmarks/stream_add_pth_mt.c
+benchmarks/stream_add_pth_st.c
+benchmarks/utils.c

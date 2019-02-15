@@ -3,6 +3,9 @@
 
 # unignore files with extensions
 !*.*
+# unignore special files
+!AUTHORS
+!LICENSE
 
 # unignore all dirs
 !*/
