@@ -11,8 +11,8 @@ make:generic:
     - mkdir build
     - ./configure --prefix=`pwd`/build
     - make
-    - make install
     - make check
+    - make install
   artifacts:
     when: on_failure
     paths:
@@ -29,8 +29,8 @@ make:knl:
     - mkdir build
     - CC=icc CFLAGS="-mkl -xhost" ./configure --prefix=`pwd`/build --enable-benchmarks
     - make -j64
-    - make install
     - make check
+    - make install
   artifacts:
     when: on_failure
     paths:
