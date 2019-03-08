@@ -51,6 +51,14 @@ AM_CONDITIONAL([ADD_BENCHMARKS],[test "x$benchmarks" = xtrue])
 # dependencies
 AC_CHECK_HEADERS(numa.h)
 AC_CHECK_LIB(numa, move_pages)
+AC_CHECK_LIB(dl, dlopen)
+
+# add pthread support
+AX_PTHREAD
+LIBS="$PTHREAD_LIBS $LIBS"
+CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+CC="$PTHREAD_CC"
+
 
 # internal jemalloc
 ac_configure_args="$ac_configure_args \

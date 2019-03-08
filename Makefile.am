@@ -13,7 +13,6 @@ check-recursive:
 	$(MAKE) -C tests check
 
 install-recursive:
-	$(MAKE) -C jemalloc install_lib
 	$(MAKE) -C src install
 	$(MAKE) install-am
 

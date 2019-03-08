@@ -41,5 +41,5 @@ LIBCSOURCES = aml.c area.c arena.c \
 LIBHSOURCES = aml.h
 
 libaml_la_SOURCES = $(LIBCSOURCES) $(LIBHSOURCES)
-libaml_la_LIBADD = -L$(top_srcdir)/jemalloc/lib/ -ljemalloc-aml
+libaml_la_LIBADD = $(top_srcdir)/jemalloc/lib/libjemalloc-aml_pic.a
 include_HEADERS = $(LIBHSOURCES)

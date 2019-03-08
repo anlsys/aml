@@ -6,5 +6,5 @@ includedir=@includedir@
 Name: libaml
 Description: Argonne's Memory Library
 Version: 0.0.1
-Libs: -L${libdir} -laml -ljemalloc-aml
+Libs: -L${libdir} -laml
 Cflags: -I${includedir}
