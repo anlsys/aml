@@ -1,5 +1,5 @@
-AM_CFLAGS = -I$(top_srcdir)/src -I. @OPENMP_FLAG@
-AM_LDFLAGS = ../src/libaml.la @OPENMP_FLAG@
+AM_CFLAGS = -I$(top_srcdir)/include -I. $(OPENMP_CFLAGS)
+AM_LDFLAGS = ../src/libaml.la $(OPENMP_CFLAGS)
 
 noinst_LIBRARIES = libutils.a
 libutils_a_SOURCES = utils.c utils.h

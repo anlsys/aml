@@ -8,14 +8,19 @@
  * SPDX-License-Identifier: BSD-3-Clause
 *******************************************************************************/
 
-#include <aml.h>
+#include "config.h"
+#include "aml.h"
+
+size_t aml_pagesize = 4096;
 
 int aml_init(int *argc, char **argv[])
 {
-	return 0;
+	aml_pagesize = sysconf(_SC_PAGE_SIZE);
+	return 0;	
 }
 
 int aml_finalize(void)
 {
 	return 0;
 }
+

@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
 *******************************************************************************/
 
-#include <aml.h>
+#include "aml.h"
 #include <assert.h>
 #include <errno.h>
 #include <omp.h>
@@ -42,7 +42,6 @@ int main(int argc, char *argv[])
 	AML_ARENA_JEMALLOC_DECL(arns);
 	AML_ARENA_JEMALLOC_DECL(arnf);
 	AML_DMA_LINUX_PAR_DECL(dma);
-	unsigned long nodemask[AML_NODEMASK_SZ];
 	struct bitmask *slowb, *fastb;
 	aml_init(&argc, &argv);
 	assert(argc == 4);

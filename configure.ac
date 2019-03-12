@@ -2,14 +2,14 @@
 AC_INIT([aml],[0.0.1],[swann@anl.gov])
 
 # are we in the right source dir ?
-AC_CONFIG_SRCDIR([src/aml.h])
+AC_CONFIG_SRCDIR([include/aml.h])
 
 # build artefacts in separate dir
 AC_CONFIG_AUX_DIR([m4])
 AC_CONFIG_MACRO_DIR([m4])
 
 # automake should fail on any error
-AM_INIT_AUTOMAKE([-Wall -Werror foreign 1.12])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects 1.12])
 AM_PROG_AR
 
 # check for libtool
@@ -19,6 +19,7 @@ LT_INIT
 AC_LANG([C])
 AC_PROG_CC
 AC_PROG_CC_STDC
+AM_PROG_CC_C_O
 AC_PROG_CPP
 AC_TYPE_SIZE_T
 AC_TYPE_INTPTR_T
@@ -42,7 +43,7 @@ AC_ARG_ENABLE(benchmarks,
 [benchmarks=true],[benchmarks=false])
 
 if [[ "x$benchmarks" = xtrue ]]; then
-	AX_OPENMP([AC_SUBST(OPENMP_FLAG, $OPENMP_CFLAGS)])
+	AC_OPENMP
 	AC_CHECK_LIB(m, sqrt)
 fi
 AM_CONDITIONAL([ADD_BENCHMARKS],[test "x$benchmarks" = xtrue])
@@ -70,6 +71,14 @@ AC_CONFIG_HEADERS([src/config.h])
 
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
+		 src/area/Makefile
+		 src/dma/Makefile
+		 src/tiling/Makefile
+		 src/binding/Makefile
+		 src/scratch/Makefile
+		 src/arena/Makefile
+		 src/utils/Makefile
+		 include/Makefile
 		 tests/Makefile
 		 benchmarks/Makefile
 		 aml.pc])

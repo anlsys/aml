@@ -1,45 +1,32 @@
-AM_CPPFLAGS = -I$(top_srcdir)/jemalloc/include
+AM_CPPFLAGS = @EXCIT_CFLAGS@
 lib_LTLIBRARIES = libaml.la
 
-ARENA_JEMALLOC_CSOURCES = arena_jemalloc.c
+libaml_la_SOURCES = aml.c
 
-AREA_LINUX_CSOURCES = area_linux.c \
-		      area_linux_manager.c \
-		      area_linux_mbind.c \
-		      area_linux_mmap.c
+libaml_la_CFLAGS = -I$(top_srcdir)/include
 
-AREA_POSIX_CSOURCES = area_posix.c
+libaml_la_LDFLAGS=
 
-TILING_CSOURCES = tiling.c \
-		  tiling_1d.c \
-		  tiling_2d.c
+libaml_la_LIBADD = -L$(top_srcdir)/jemalloc/lib/ -ljemalloc-aml @EXCIT_LIBS@
 
-BINDING_CSOURCES = binding.c \
-		   binding_single.c \
-		   binding_interleave.c
+SUBDIRS=utils
+libaml_la_LIBADD+=$(top_srcdir)/src/utils/libamlutils.la
 
-DMA_CSOURCES = dma.c \
-	       dma_linux_par.c \
-	       dma_linux_seq.c
+SUBDIRS+=area
+libaml_la_LIBADD+=$(top_srcdir)/src/area/libamlarea.la
 
-SCRATCH_CSOURCES = scratch.c \
-		   scratch_seq.c \
-		   scratch_par.c
+SUBDIRS+=dma
+libaml_la_LIBADD+=$(top_srcdir)/src/dma/libamldma.la
 
-UTILS_CSOURCES = vector.c
+SUBDIRS+=tiling
+libaml_la_LIBADD+=$(top_srcdir)/src/tiling/libamltiling.la
 
-LIBCSOURCES = aml.c area.c arena.c \
-	      $(UTILS_CSOURCES) \
-	      $(ARENA_JEMALLOC_CSOURCES) \
-	      $(AREA_LINUX_CSOURCES) \
-	      $(AREA_POSIX_CSOURCES) \
-	      $(TILING_CSOURCES) \
-	      $(BINDING_CSOURCES) \
-	      $(DMA_CSOURCES) \
-	      $(SCRATCH_CSOURCES)
+SUBDIRS+=binding
+libaml_la_LIBADD+=$(top_srcdir)/src/binding/libamlbinding.la
 
-LIBHSOURCES = aml.h
+SUBDIRS+=scratch
+libaml_la_LIBADD+=$(top_srcdir)/src/scratch/libamlscratch.la
 
-libaml_la_SOURCES = $(LIBCSOURCES) $(LIBHSOURCES)
-libaml_la_LIBADD = $(top_srcdir)/jemalloc/lib/libjemalloc-aml_pic.a
-include_HEADERS = $(LIBHSOURCES)
+SUBDIRS+=arena
+libaml_la_LIBADD+=$(top_srcdir)/src/arena/libamlarena.la
+
