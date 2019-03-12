@@ -1,5 +1,5 @@
 variables:
-  ARGOPKGS : "https://xgitlab.cels.anl.gov/argo/argopkgs/-/archive/continuous-integration/argopkgs-continuous-integration.tar.gz"
+  ARGOPKGS : "https://xgitlab.cels.anl.gov/argo/argopkgs/-/archive/master/argopkgs-master.tar.gz"
 
 stages:
   - build
