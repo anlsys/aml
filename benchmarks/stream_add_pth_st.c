@@ -8,13 +8,13 @@
  * SPDX-License-Identifier: BSD-3-Clause
 *******************************************************************************/
 
-#include <aml.h>
 #include <assert.h>
 #include <errno.h>
 #include <omp.h>
 #include <pthread.h>
 #include <stdlib.h>
 
+#include "aml.h"
 #include "utils.h"
 
 #define ITER 10
@@ -79,7 +79,6 @@ int main(int argc, char *argv[])
 	AML_BINDING_SINGLE_DECL(binding);
 	AML_ARENA_JEMALLOC_DECL(arena);
 	AML_DMA_LINUX_SEQ_DECL(dma);
-	unsigned long nodemask[AML_NODEMASK_SZ];
 	struct bitmask *slowb, *fastb;
 	aml_init(&argc, &argv);
 	assert(argc == 4);

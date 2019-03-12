@@ -11,7 +11,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <omp.h>
-#include <aml.h>
+#include "aml.h"
 #include <stdlib.h>
 
 #define ITER 10
