@@ -1,5 +1,5 @@
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = jemalloc src tests
+SUBDIRS = jemalloc src include tests
 
 if ADD_BENCHMARKS
 SUBDIRS += benchmarks

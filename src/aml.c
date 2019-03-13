@@ -8,7 +8,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
 *******************************************************************************/
 
-#include <aml.h>
+#include "config.h"
+#include "aml.h"
 
 int aml_init(int *argc, char **argv[])
 {
@@ -19,3 +20,4 @@ int aml_finalize(void)
 {
 	return 0;
 }
+

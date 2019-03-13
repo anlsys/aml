@@ -40,7 +40,7 @@
 /*     program constitutes acceptance of these licensing restrictions.   */
 /*  5. Absolutely no warranty is expressed or implied.                   */
 /*-----------------------------------------------------------------------*/
-# include <aml.h>
+# include "aml.h"
 # include <stdio.h>
 # include <unistd.h>
 # include <math.h>
