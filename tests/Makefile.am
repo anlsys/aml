@@ -69,46 +69,7 @@ check_PROGRAMS+=test_dma_linux_par
 TESTS+=test_dma_linux_par
 
 ####################################################################
-# Binding
-####################################################################
-
-test_binding_SOURCES=binding/test_binding.c
-test_binding_CFLAGS=$(AM_CFLAGS)
-test_binding_LDFLAGS=$(top_srcdir)/src/libaml.la
-check_PROGRAMS+=test_binding
-TESTS+=test_binding
-
-####################################################################
 # Area
 ####################################################################
 
-test_linux_SOURCES=area/test_linux.c
-test_linux_CFLAGS=$(AM_CFLAGS)
-test_linux_LDFLAGS=$(top_srcdir)/src/libaml.la
-check_PROGRAMS+=test_linux
-TESTS+=test_linux
-
-test_posix_SOURCES=area/test_posix.c
-test_posix_CFLAGS=$(AM_CFLAGS)
-test_posix_LDFLAGS=$(top_srcdir)/src/libaml.la
-check_PROGRAMS+=test_posix
-TESTS+=test_posix
-
-test_mmap_SOURCES=area/test_mmap.c
-test_mmap_CFLAGS=$(AM_CFLAGS)
-test_mmap_LDFLAGS=$(top_srcdir)/src/libaml.la
-check_PROGRAMS+=test_mmap
-TESTS+=test_mmap
-
-# test_mbind_SOURCES=area/test_mbind.c
-# test_mbind_CFLAGS=$(AM_CFLAGS)
-# test_mbind_LDFLAGS=$(top_srcdir)/src/libaml.la
-# check_PROGRAMS+=test_mbind
-# TESTS+=test_mbind
-
-test_manager_SOURCES=area/test_manager.c
-test_manager_CFLAGS=$(AM_CFLAGS)
-test_manager_LDFLAGS=$(top_srcdir)/src/libaml.la
-check_PROGRAMS+=test_manager
-TESTS+=test_manager
 
