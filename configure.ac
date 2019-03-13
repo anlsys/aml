@@ -99,9 +99,8 @@ PKG_CHECK_MODULES([EXCIT],[libexcit])
 ac_configure_args="$ac_configure_args \
 			'--with-jemalloc-prefix=jemk_aml_' \
 			'--with-install-suffix=-aml'"
-AC_CONFIG_SUBDIRS([jemalloc])
 
-AC_CONFIG_HEADERS([src/config.h])
+AC_CONFIG_HEADERS([include/config.h])
 
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
