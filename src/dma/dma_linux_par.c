@@ -49,25 +49,6 @@ int aml_dma_request_linux_par_copy_destroy(struct aml_dma_request_linux_par *r)
 	return 0;
 }
 
-int aml_dma_request_linux_par_move_init(struct aml_dma_request_linux_par *req,
-					struct aml_area *darea,
-					struct aml_tiling *tiling,
-					void *startptr, int tileid)
-{
-	assert(req != NULL);
-	struct aml_binding *binding;
-
-	req->type = AML_DMA_REQUEST_TYPE_MOVE;
-	aml_area_binding(darea, &binding);
-	req->count = aml_binding_nbpages(binding, tiling, startptr, tileid);
-	req->pages = calloc(req->count, sizeof(void *));
-	req->nodes = calloc(req->count, sizeof(int));
-	aml_binding_pages(binding, req->pages, tiling, startptr, tileid);
-	aml_binding_nodes(binding, req->nodes, tiling, startptr, tileid);
-	free(binding);
-	return 0;
-}
-
 int aml_dma_request_linux_par_move_destroy(struct aml_dma_request_linux_par *req)
 {
 	assert(req != NULL);
@@ -176,15 +157,6 @@ int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 		stid = va_arg(ap, int);
 		aml_dma_request_linux_par_copy_init(req, dt, dptr, dtid,
 						    st, sptr, stid);
-	}
-	else if(type == AML_DMA_REQUEST_TYPE_MOVE)
-	{
-		struct aml_area *darea = va_arg(ap, struct aml_area *);
-		struct aml_tiling *st = va_arg(ap, struct aml_tiling *);
-		void *sptr = va_arg(ap, void *);
-		int stid = va_arg(ap, int);
-		aml_dma_request_linux_par_move_init(req, darea, st, sptr,
-						    stid);
 	}
 	pthread_mutex_unlock(&dma->data.lock);
 

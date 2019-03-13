@@ -49,8 +49,9 @@ fi
 AM_CONDITIONAL([ADD_BENCHMARKS],[test "x$benchmarks" = xtrue])
 
 
-# dependencies
+# NUMA support
 AC_CHECK_HEADERS(numa.h)
+AC_CHECK_HEADERS(numaif.h)
 AC_CHECK_LIB(numa, move_pages)
 AC_CHECK_LIB(dl, dlopen)
 
@@ -60,6 +61,39 @@ LIBS="$PTHREAD_LIBS $LIBS"
 CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 CC="$PTHREAD_CC"
 
+# Hwloc dependency
+AC_CHECK_HEADER([hwloc.h],\
+                [hwloc_header_happy=yes; \
+		 LIBS="$LIBS -lhwloc"],\
+	        [hwloc_header_happy=no])
+		
+AC_CHECK_LIB([hwloc],\
+             [hwloc_get_api_version],\
+	     [hwloc_lib_happy=yes],\
+	     [hwloc_lib_happy=no])
+
+AC_RUN_IFELSE(
+       [AC_LANG_PROGRAM([#include <hwloc.h>],\
+[#if HWLOC_API_VERSION < 0x00020000
+return -1;
+#else
+if(hwloc_get_api_version() < 0x20000)
+    return -1;
+#endif])],\
+       [hwloc_version_happy=yes],\
+       [hwloc_version_happy=no])
+
+if test x"$hwloc_header_happy"  = x"yes" -a\
+        x"$hwloc_lib_happy"     = x"yes" -a\
+	x"$hwloc_version_happy" = x"yes"; then
+   AC_DEFINE([HAVE_HWLOC], [1], "hwloc library with ABI > 2.0 is installed.")
+fi
+AM_CONDITIONAL([HAVE_HWLOC], [test x"$hwloc_header_happy"  = x"yes" -a\
+                                   x"$hwloc_lib_happy"     = x"yes" -a\
+                                   x"$hwloc_version_happy" = x"yes"])
+
+# excit iterators
+PKG_CHECK_MODULES([EXCIT],[libexcit])
 
 # internal jemalloc
 ac_configure_args="$ac_configure_args \
@@ -74,6 +108,7 @@ AC_CONFIG_FILES([Makefile
 		 src/area/Makefile
 		 src/dma/Makefile
 		 src/tiling/Makefile
+		 src/layout/Makefile
 		 src/binding/Makefile
 		 src/scratch/Makefile
 		 src/arena/Makefile

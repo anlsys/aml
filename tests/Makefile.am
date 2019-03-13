@@ -79,16 +79,6 @@ check_PROGRAMS+=test_binding
 TESTS+=test_binding
 
 ####################################################################
-# Arena
-####################################################################
-
-test_jemalloc_SOURCES=arena/test_jemalloc.c
-test_jemalloc_CFLAGS=$(AM_CFLAGS)
-test_jemalloc_LDFLAGS=$(top_srcdir)/src/libaml.la
-check_PROGRAMS+=test_jemalloc
-TESTS+=test_jemalloc
-
-####################################################################
 # Area
 ####################################################################
 
