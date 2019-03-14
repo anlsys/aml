@@ -1,3 +1,4 @@
+#include "config.h"
 #include "aml.h"
 
 #define AML_BITMAP_EMPTY       (0UL)
@@ -170,13 +171,15 @@ unsigned long aml_bitmap_nset(const aml_bitmap bitmap)
 
 #ifdef HAVE_HWLOC
 
+#include <hwloc.h>
+
 int hwloc_bitmap_copy_aml_bitmap(hwloc_bitmap_t hb, const aml_bitmap ab)
 {
 	if(hb == NULL)
 		return -1;
-	hwloc_bitmap_clear(hb);
+	hwloc_bitmap_zero(hb);
 	
-	if(ab == NULL || hwloc_bitmap_isempty(ab))
+	if(ab == NULL || hwloc_bitmap_iszero(hb))
 		return 0;
 
 	int i, last = 0;
@@ -200,12 +203,12 @@ int aml_bitmap_copy_hwloc_bitmap(aml_bitmap ab, const hwloc_bitmap_t hb)
 	if(ab == NULL)
 		return -1;
 
-	aml_bitmap_clear(ab);
+	aml_bitmap_zero(ab);
 	if(hb == NULL || hwloc_bitmap_iszero(hb))
 		return 0;
 
 	int i = -1;
-	while((i = hwloc_bitmap_next(b, i)) != -1){
+	while((i = hwloc_bitmap_next(hb, i)) != -1){
 		if(i >= AML_BITMAP_LEN)
 			break;
 		aml_bitmap_set(ab, i);
@@ -215,9 +218,11 @@ int aml_bitmap_copy_hwloc_bitmap(aml_bitmap ab, const hwloc_bitmap_t hb)
 
 aml_bitmap aml_bitmap_from_hwloc_bitmap(const hwloc_bitmap_t b)
 {
-        aml_bitmap_t ab = aml_bitmap_alloc();	
+        aml_bitmap ab = aml_bitmap_alloc();	
 	aml_bitmap_copy_hwloc_bitmap(ab, b);
 	return ab;
 }
+#else
+#pragma message("do not HAVE HWLOC")
 
 #endif //HAVE_HWLOC

@@ -3,8 +3,10 @@ lib_LTLIBRARIES = libaml.la
 libaml_la_SOURCES = aml.c
 
 libaml_la_CFLAGS = -I$(top_srcdir)/include
-
 libaml_la_LDFLAGS=
+if HAVE_HWLOC
+libaml_la_LDFLAGS+=-lhwloc
+endif
 libaml_la_LIBADD=
 
 SUBDIRS=utils

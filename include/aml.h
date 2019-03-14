@@ -89,7 +89,7 @@ extern struct aml_area *aml_area_host_shared;
 
 /**
  * Create a specialized area from an existing area.
- * This is not a copy, the hook are copied, the attributes are set to default.
+ * This is not a copy, callbacks are copied, the attributes are set to default.
  *
  * "area": The base area from which to create a new one. 
  * "binding": A bitmap to bind memory on subsequent memory mapping. Cannot be NULL.
@@ -111,11 +111,11 @@ void
 aml_local_area_destroy(struct aml_area* area);
 
 /**
- * Allocate memory for (short life extent) data. Allocation may be aligned
+ * Allocate memory for data. Allocation may be aligned
  * on a specific boundary if supported by area implementation. 
  * Allocations with aml_area_malloc() must be freed with aml_area_free().
  *
- * "area": The area implementation of malloc function.
+ * "area": The area implementation of malloc() function.
  * "ptr": A pointer where to store the allocation start address.
  * "size": The size to allocate.
  * "alignement": The data alignement. If 0, no alignement is performed.
@@ -131,7 +131,7 @@ aml_area_malloc(struct aml_area *area,
 
 /**
  * Release data allocated with aml_area_malloc() and the same area.
- * "area": The area implementation of free function used for allocation.
+ * "area": The area implementation of free() function used for allocation.
  * "ptr": A pointer where to store the allocation start address.
  *
  * Returns AML_AREA_* error code.
