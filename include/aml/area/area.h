@@ -16,12 +16,14 @@ struct aml_area_ops {
 	 * "area": Cannot be NULL.
 	 * Returns AML_AREA_* error code.
 	 **/
-        int (*create)(struct aml_area*);
+        int (*create)(struct aml_area *area);
+	
 	/**
 	 * Destruction of userdata inside area. 
 	 * "area": Cannot be NULL.
 	 **/
-	void (*destroy)(struct aml_area*);
+	void (*destroy)(struct aml_area *area);
+	
 	/**
 	 * Bind area to a specific set of memories.
 	 * "area": Cannot be NULL.
@@ -32,9 +34,10 @@ struct aml_area_ops {
 	 *          Special values may be included in area header.
 	 * Returns AML_AREA_* error code.
 	 **/
-	int (*bind)(struct aml_area *,
-		    const aml_bitmap binding,
+	int (*bind)(struct aml_area    *area,
+		    const aml_bitmap    binding,
 		    const unsigned long flags);
+	
 	/**
 	 * Optional function to check a binding has effectively been applied.
 	 * The binding to enforce is the one defining area.
@@ -44,7 +47,10 @@ struct aml_area_ops {
 	 * Returns 0 if ptr binding does not match area settings, 
 	 * else a positive value or an error code on error. 
 	 **/
-	int (*check_binding)(struct aml_area *, void * ptr, const size_t size);
+	int (*check_binding)(struct aml_area *area,
+			     void            *ptr,
+			     const size_t     size);
+	
 	/**
 	 * Coarse grain allocator of virtual memory.
 	 *
@@ -54,7 +60,10 @@ struct aml_area_ops {
 	 *
 	 * Returns AML_AREA_* error code.
 	 **/
-        int (*map)(const struct aml_area*, void **ptr, size_t size);
+        int (*map)(const struct aml_area *area,
+		   void                 **ptr,
+		   size_t                 size);
+	
 	/**
 	 * Unmapping of virtual memory mapped with map().
 	 *
@@ -64,10 +73,15 @@ struct aml_area_ops {
 	 *
 	 * Returns AML_AREA_* error code.
 	 **/
-        int (*unmap)(const struct aml_area *, void *ptr, size_t size);
+        int (*unmap)(const struct aml_area *area,
+		     void                  *ptr,
+		     size_t                 size);
+	
 	/**
 	 * Fine grain allocator of virtual memory.
 	 * Memory allocated with malloc() is released with free().
+	 * (Optional) Fallback on map() is done if not implemented.
+	 * If not implemented, free must be unimplemented.
 	 *
 	 * "area": The area operations to use. Cannot be NULL.
 	 * "ptr": Pointer to data mapped in physical memory. Cannot be NULL.
@@ -78,16 +92,23 @@ struct aml_area_ops {
 	 *
 	 * Returns AML_AREA_* error code.
 	 **/
-	int (*malloc)(struct aml_area *, void **ptr, size_t size, size_t alignement);
+	int (*malloc)(struct aml_area *area,
+		      void           **ptr,
+		      size_t           size,
+		      size_t           alignement);
+	
 	/**
 	 * Free memory allocated with malloc().
+	 * (Optional) Fallback on unmap() is done if not implemented.
+	 * If not implemented, malloc() must be unimplemented.
 	 *
 	 * "area": The area operations to use. Cannot be NULL.
 	 * "ptr": Pointer to data mapped in physical memory. Cannot be NULL.
 	 *
 	 * Returns AML_AREA_* error code.
 	 **/
-	int (*free)(struct aml_area * area, void *ptr);
+	int (*free)(struct aml_area *area,
+		    void            *ptr);
 };
 
 struct aml_area {
