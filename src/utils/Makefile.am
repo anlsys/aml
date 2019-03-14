@@ -9,4 +9,7 @@ libamlutils_la_SOURCES=\
 
 libamlutils_la_CFLAGS=$(AM_CFLAGS)
 libamlutils_la_LDFLAGS=
+if HAVE_HWLOC
+libamlutils_la_LDFLAGS+=-lhwloc
+endif
 

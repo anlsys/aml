@@ -11,6 +11,9 @@ TESTS=
 test_bitmap_SOURCES=utils/test_bitmap.c
 test_bitmap_CFLAGS=$(AM_CFLAGS)
 test_bitmap_LDFLAGS=$(top_srcdir)/src/utils/libamlutils.la
+if HAVE_HWLOC
+test_bitmap_LDFLAGS+=-lhwloc
+endif
 check_PROGRAMS+=test_bitmap
 TESTS+=test_bitmap
 
