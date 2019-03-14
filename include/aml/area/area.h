@@ -11,18 +11,18 @@ struct aml_area;
 
 /** Implementation specific operations. **/
 struct aml_area_ops {
-	/** 
+	/**
 	 * Initialisation of userdata inside area. 
 	 * "area": Cannot be NULL.
 	 * Returns AML_AREA_* error code.
 	 **/
         int (*create)(struct aml_area*);
-	/** 
+	/**
 	 * Destruction of userdata inside area. 
 	 * "area": Cannot be NULL.
 	 **/
 	void (*destroy)(struct aml_area*);
-	/** 
+	/**
 	 * Bind area to a specific set of memories.
 	 * "area": Cannot be NULL.
 	 * "binding": May be NULL which means "do not bind".
@@ -35,7 +35,7 @@ struct aml_area_ops {
 	int (*bind)(struct aml_area *,
 		    const aml_bitmap binding,
 		    const unsigned long flags);
-	/** 
+	/**
 	 * Optional function to check a binding has effectively been applied.
 	 * The binding to enforce is the one defining area.
 	 * "area": Cannot be NULL.
