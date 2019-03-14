@@ -271,12 +271,14 @@ int aml_scratch_seq_vinit(struct aml_scratch *d, va_list ap)
 
 	/* scratch init */
 	aml_vector_init(&scratch->data.tilemap, nbtiles, sizeof(int), 0, -1);
-	size_t tilesize = aml_tiling_tilesize(scratch->data.tiling, 0);
-	scratch->data.sch_ptr = aml_area_calloc(scratch->data.sch_area,
-						nbtiles, tilesize);
 	pthread_mutex_init(&scratch->data.lock, NULL);
-	return 0;
+	size_t tilesize = aml_tiling_tilesize(scratch->data.tiling, 0);
+	int err = aml_area_malloc(scratch->data.sch_area,
+				  &(scratch->data.sch_ptr),
+				  nbtiles * tilesize, 0);
+	return err;
 }
+
 int aml_scratch_seq_init(struct aml_scratch *d, ...)
 {
 	int err;
