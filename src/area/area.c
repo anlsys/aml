@@ -53,7 +53,7 @@ aml_local_area_destroy(struct aml_area* area)
 	free(area);
 }
 
-int
+static int
 aml_area_mmap(struct aml_area *area,
 	      void           **ptr,
 	      size_t           size)
@@ -75,7 +75,7 @@ aml_area_mmap(struct aml_area *area,
 	return area->ops->map(area, ptr, size);
 }
 
-int
+static int
 aml_area_munmap(struct aml_area *area,
 		void            *ptr,
 		size_t           size)
@@ -100,9 +100,7 @@ aml_area_malloc(struct aml_area *area,
 {
 	if(area == NULL)
 		return AML_AREA_EINVAL;
-	
-	if(area->ops->malloc == NULL)
-		return AML_AREA_ENOTSUP;
+		
 
 	if(ptr == NULL)
 		return AML_AREA_EINVAL;
@@ -111,8 +109,22 @@ aml_area_malloc(struct aml_area *area,
 		*ptr = NULL;
 		return AML_AREA_SUCCESS;
 	}
-	
-	return area->ops->malloc(area, ptr, size, alignement);
+
+	if(area->ops->malloc != NULL)	
+		return area->ops->malloc(area, ptr, size, alignement);
+	else if(alignement != 0)
+		return AML_AREA_ENOTSUP;
+	else{
+		int err = area->ops->map(area, ptr, size + sizeof(size_t));
+		
+		/* Store size before ptr */
+		if(err == AML_AREA_SUCCESS){
+			*(size_t*)(*ptr) = size;
+			*ptr  += sizeof(size_t);
+		}
+		
+		return err; 
+	}
 }
 
 int
@@ -122,12 +134,17 @@ aml_area_free(struct aml_area *area,
 	if(area == NULL)
 		return AML_AREA_EINVAL;
 	
-	if(area->ops->free == NULL)
-		return AML_AREA_ENOTSUP;
-
 	if(ptr == NULL)
 		return AML_AREA_SUCCESS;
-	
-	return area->ops->free(area, ptr);
+
+	if(area->ops->free != NULL)
+		return area->ops->free(area, ptr);
+	else{
+		/* Read size */
+		size_t * size = (size_t*)(ptr - sizeof(size_t));
+		if(size == NULL)
+			return AML_AREA_EINVAL;
+		return area->ops->unmap(area, ptr, *size);
+	}
 }
 
