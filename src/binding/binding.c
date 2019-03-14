@@ -96,10 +96,10 @@ int aml_binding_vinit(struct aml_binding *b, int type, va_list ap)
 		struct aml_binding_interleave_data *data =
 			(struct aml_binding_interleave_data *)b->data;
 		/* receive a nodemask, transform into a list of nodes */
-		unsigned long *mask = va_arg(ap, unsigned long*);
+	        struct aml_bitmap *mask = va_arg(ap, struct aml_bitmap *);
 		data->count = 0;
-		for(int i = 0; i < AML_MAX_NUMA_NODES; i++)
-			if(AML_NODEMASK_ISSET(mask, i))
+		for(int i = 0; i < AML_BITMAP_MAX; i++)
+			if(aml_bitmap_isset(mask, i))
 			{
 				data->nodes[data->count] = i;
 				data->count++;

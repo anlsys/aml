@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 	AML_AREA_LINUX_DECL(area);
 	AML_DMA_LINUX_SEQ_DECL(dma);
 	AML_SCRATCH_PAR_DECL(scratch);
-	unsigned long nodemask[AML_NODEMASK_SZ];
+	struct aml_bitmap nodemask;
 	void *dst, *src;
 
 	/* library initialization */
@@ -32,15 +32,15 @@ int main(int argc, char *argv[])
 	assert(!aml_binding_init(&binding, AML_BINDING_TYPE_SINGLE, 0));
 	assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_1D, TILESIZE*PAGE_SIZE,
 				TILESIZE*PAGE_SIZE*NBTILES));
-	AML_NODEMASK_ZERO(nodemask);
-	AML_NODEMASK_SET(nodemask, 0);
+	aml_bitmap_zero(&nodemask);
+	aml_bitmap_set(&nodemask, 0);
 	assert(!aml_arena_jemalloc_init(&arena, AML_ARENA_JEMALLOC_TYPE_REGULAR));
 
 	assert(!aml_area_linux_init(&area,
 				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
 				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arena, MPOL_BIND, nodemask));
+				    &arena, MPOL_BIND, &nodemask));
 
 	size_t maxrequests = NBTILES;
 	assert(!aml_dma_linux_seq_init(&dma, maxrequests));
