@@ -98,6 +98,9 @@ void test_bitmap_clear_range(){
 }
 
 #ifdef HAVE_HWLOC
+
+#include "aml/utils/hwloc.h"
+
 void test_hwloc_conversion(){
 	aml_bitmap_decl(b);
 	unsigned long i, ii, j;
@@ -105,8 +108,8 @@ void test_hwloc_conversion(){
 		aml_bitmap_zero(b);
 		for(ii = i+1; ii < AML_BITMAP_LEN; ii++){
 			assert(aml_bitmap_set_range(b, i, ii) == 0);
-			hwloc_bitmap_t hb = aml_bitmap_to_hwloc_bitmap(b);
-			aml_bitmap ab = hwloc_bitmap_to_aml_bitmap(hb);
+			hwloc_bitmap_t hb = hwloc_bitmap_from_aml_bitmap(b);
+			aml_bitmap ab = aml_bitmap_from_hwloc_bitmap(hb);
 			assert(aml_bitmap_isequal(ab, b));
 			hwloc_bitmap_free(hb);
 			aml_bitmap_free(ab);
