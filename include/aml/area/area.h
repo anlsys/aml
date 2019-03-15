@@ -34,9 +34,9 @@ struct aml_area_ops {
 	 *          Special values may be included in area header.
 	 * Returns AML_AREA_* error code.
 	 **/
-	int (*bind)(struct aml_area    *area,
-		    const aml_bitmap    binding,
-		    const unsigned long flags);
+	int (*bind)(struct aml_area         *area,
+		    const struct aml_bitmap *binding,
+		    const unsigned long      flags);
 	
 	/**
 	 * Optional function to check a binding has effectively been applied.

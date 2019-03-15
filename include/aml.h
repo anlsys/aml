@@ -86,9 +86,9 @@ extern struct aml_area *aml_area_host_shared;
  * Returns NULL if area is NULL or does not support binding.
  **/
 struct aml_area*
-aml_local_area_create(struct aml_area    *area,
-		      const aml_bitmap    binding,
-		      const unsigned long flags);
+aml_local_area_create(struct aml_area         *area,
+		      const struct aml_bitmap *binding,
+		      const unsigned long      flags);
 
 /**
  * Destroy specialized area.

@@ -17,7 +17,7 @@ extern hwloc_topology_t aml_topology;
 #endif
 
 struct host_binding{
-	aml_bitmap_decl(bitmap);
+	struct aml_bitmap bitmap;
 	int flags;
 };
 
@@ -27,7 +27,7 @@ host_create(struct aml_area* area)
 	struct host_binding *binding = malloc(sizeof(struct host_binding));
 	if(binding == NULL)
 		return AML_AREA_ENOMEM;
-	aml_bitmap_zero(binding->bitmap);
+	aml_bitmap_zero(&(binding->bitmap));
 	binding->flags = 0;
 	area->data = binding;
 	return AML_AREA_SUCCESS;
@@ -40,12 +40,12 @@ host_destroy(struct aml_area* area){
 
 static int
 host_bind(__hwloc_unused__ struct aml_area *area,
-	  __hwloc_unused__ const aml_bitmap binding,
+	  __hwloc_unused__ const struct aml_bitmap *binding,
 	  __hwloc_unused__ const unsigned long flags)	  
 {
 #ifdef HAVE_HWLOC
 	struct host_binding *bind = area->data;
-	aml_bitmap_copy(bind->bitmap, binding);
+	aml_bitmap_copy(&(bind->bitmap), binding);
 	bind->flags = flags;
 	return AML_AREA_SUCCESS;
 #else
@@ -60,7 +60,7 @@ host_mbind(__hwloc_unused__ struct host_binding *bind,
 {
 	int err = AML_AREA_ENOTSUP;	
 #ifdef HAVE_HWLOC
-	hwloc_bitmap_t bitmap = hwloc_bitmap_from_aml_bitmap(bind->bitmap);
+	hwloc_bitmap_t bitmap = hwloc_bitmap_from_aml_bitmap(&bind->bitmap);
 
 	if(bitmap == NULL)
 		return AML_AREA_ENOMEM;
@@ -99,7 +99,7 @@ host_check_binding(__hwloc_unused__ struct aml_area *area,
 {
 	int err = AML_AREA_ENOTSUP;
 #ifdef HAVE_HWLOC	
-	aml_bitmap_decl(nodemask);	
+	struct aml_bitmap nodemask;	
 	hwloc_membind_policy_t policy;
 	hwloc_bitmap_t hwloc_bitmap;
 	struct host_binding *bind = area->data;
@@ -120,15 +120,15 @@ host_check_binding(__hwloc_unused__ struct aml_area *area,
 		goto out;
 	}
 
-	err = aml_bitmap_copy_hwloc_bitmap(nodemask, hwloc_bitmap);
-	if(err > (int)AML_BITMAP_LEN){
+	err = aml_bitmap_copy_hwloc_bitmap(&nodemask, hwloc_bitmap);
+	if(err > (int)AML_BITMAP_MAX){
 		err = AML_AREA_EDOM;
 		goto out;
 	}
 	
 	if(policy != bind->flags)
 	        err = 0;
-	else if(!aml_bitmap_isequal(nodemask, bind->bitmap))
+	else if(!aml_bitmap_isequal(&nodemask, &bind->bitmap))
 		err = 0;
 	else
 		err = 1;
@@ -164,7 +164,7 @@ host_mmap_generic(__attribute__ ((unused)) const struct aml_area* area,
 		}
 	}
 
-	if(!aml_bitmap_iszero((((struct host_binding *)area->data)->bitmap)))
+	if(!aml_bitmap_iszero(&(((struct host_binding *)area->data)->bitmap)))
 	        host_mbind(area->data, *ptr, size);
 	return AML_AREA_SUCCESS;
 }
@@ -222,7 +222,7 @@ host_malloc(struct aml_area *area,
 		return AML_AREA_ENOMEM;
 	*ptr = data;
 	
-	if(!aml_bitmap_iszero((((struct host_binding *)area->data)->bitmap)))
+	if(!aml_bitmap_iszero(&(((struct host_binding *)area->data)->bitmap)))
 	        host_mbind(area->data, *ptr, size);
 	return AML_AREA_SUCCESS;
 }

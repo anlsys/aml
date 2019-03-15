@@ -104,15 +104,15 @@ void test_bitmap_clear_range(){
 void test_hwloc_conversion(){
 	unsigned long i, ii, j;
 	struct aml_bitmap b;
-	for(i = 0; i < AML_BITMAP_LEN; i++){
-		aml_bitmap_zero(b);
-		for(ii = i+1; ii < AML_BITMAP_LEN; ii++){
-			assert(aml_bitmap_set_range(b, i, ii) == 0);
-			hwloc_bitmap_t hb = hwloc_bitmap_from_aml_bitmap(b);
-			aml_bitmap ab = aml_bitmap_from_hwloc_bitmap(hb);
-			assert(aml_bitmap_isequal(ab, b));
+	for(i = 0; i < AML_BITMAP_MAX; i++){
+		aml_bitmap_zero(&b);
+		for(ii = i+1; ii < AML_BITMAP_MAX; ii++){
+			assert(aml_bitmap_set_range(&b, i, ii) == 0);
+			hwloc_bitmap_t hb = hwloc_bitmap_from_aml_bitmap(&b);
+			struct aml_bitmap *ab = aml_bitmap_from_hwloc_bitmap(hb);
+			assert(aml_bitmap_isequal(ab, &b));
 			hwloc_bitmap_free(hb);
-			aml_bitmap_free(ab);
+			aml_bitmap_destroy(ab);
 		}
 	}
 }

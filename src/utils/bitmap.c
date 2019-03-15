@@ -3,11 +3,11 @@
 
 #define AML_BITMAP_EMPTY       (0UL)
 #define AML_BITMAP_FULL        (~0UL)
-#define AML_BITMAP_NBITS     (8 * sizeof(AML_BITMAP_TYPE))
+#define AML_BITMAP_NBITS       (8 * sizeof(AML_BITMAP_TYPE))
 #define AML_BITMAP_NTH(i)      ((i) / AML_BITMAP_NBITS)
 #define AML_BITMAP_ITH(i)      (((i) % AML_BITMAP_NBITS))
 
-struct aml_bitmap *aml_bitmap_alloc(void)
+struct aml_bitmap * aml_bitmap_create(void)
 {
 	struct aml_bitmap *b = malloc(sizeof(struct aml_bitmap));
 	if(b == NULL)
@@ -38,14 +38,14 @@ void aml_bitmap_copy_ulong(struct aml_bitmap *dst, unsigned long *src,
 
 struct aml_bitmap *aml_bitmap_dup(const struct aml_bitmap *a)
 {
-	struct aml_bitmap *b = aml_bitmap_alloc();
+	struct aml_bitmap *b = aml_bitmap_create();
 	if(b == NULL)
 		return NULL;
 	aml_bitmap_copy(b, a);
 	return b;
 }
 
-void aml_bitmap_free(struct aml_bitmap *bitmap)
+void aml_bitmap_destroy(struct aml_bitmap *bitmap)
 {
 	free(bitmap);
 }
@@ -193,7 +193,7 @@ int hwloc_bitmap_copy_aml_bitmap(hwloc_bitmap_t hb, const struct aml_bitmap *ab)
 		return 0;
 
 	int i, last = 0;
-	for(i = 0; i<AML_BITMAP_LEN; i++)
+	for(i = 0; i<AML_BITMAP_MAX; i++)
 		if(aml_bitmap_isset(ab, i)){
 			hwloc_bitmap_set(hb, i);
 			last = i;
@@ -219,20 +219,19 @@ int aml_bitmap_copy_hwloc_bitmap(struct aml_bitmap *ab, const hwloc_bitmap_t hb)
 
 	int i = -1;
 	while((i = hwloc_bitmap_next(hb, i)) != -1){
-		if(i >= AML_BITMAP_LEN)
+		if(i >= AML_BITMAP_MAX)
 			break;
 		aml_bitmap_set(ab, i);
 	}
-	return i >= AML_BITMAP_LEN ? i : 0;
+	return i >= AML_BITMAP_MAX ? i : 0;
 }
 
 struct aml_bitmap * aml_bitmap_from_hwloc_bitmap(const hwloc_bitmap_t b)
 {
-        aml_bitmap ab = aml_bitmap_alloc();	
+        struct aml_bitmap *ab = aml_bitmap_create();	
 	aml_bitmap_copy_hwloc_bitmap(ab, b);
 	return ab;
 }
-#else
-#pragma message("do not HAVE HWLOC")
 
 #endif //HAVE_HWLOC
+

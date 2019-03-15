@@ -18,7 +18,7 @@ extern struct aml_area_ops aml_area_host_shared_ops;
 
 struct aml_area*
 aml_local_area_create(struct aml_area    *a,
-		      const aml_bitmap    binding,
+		      const struct aml_bitmap *binding,
 		      const unsigned long flags)
 {
 	struct aml_area* area;
