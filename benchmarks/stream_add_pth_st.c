@@ -100,7 +100,6 @@ int main(int argc, char *argv[])
 	}
 
 	/* initialize all the supporting struct */
-	assert(!aml_binding_init(&binding, AML_BINDING_TYPE_SINGLE, 0));
 	assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_1D, tilesz, memsize));
 	assert(!aml_dma_linux_seq_init(&dma, (size_t)numthreads*4));
 	assert(!aml_scratch_par_init(&sa, &fast, &slow, &dma, &tiling,
@@ -109,9 +108,9 @@ int main(int argc, char *argv[])
 				     (size_t)2*numthreads, (size_t)numthreads));
 
 	/* allocation */
-	assert(aml_area_malloc(slow, &a, memsize, 0) == AML_AREA_SUCCESS);
-	assert(aml_area_malloc(slow, &b, memsize, 0) == AML_AREA_SUCCESS);
-	assert(aml_area_malloc(fast, &c, memsize, 0) == AML_AREA_SUCCESS);
+	assert(aml_area_malloc(slow, (void**)(&a), memsize, 0) == AML_AREA_SUCCESS);
+	assert(aml_area_malloc(slow, (void**)(&b), memsize, 0) == AML_AREA_SUCCESS);
+	assert(aml_area_malloc(fast, (void**)(&c), memsize, 0) == AML_AREA_SUCCESS);
 	assert(a != NULL && b != NULL && c != NULL);
 
 	unsigned long esize = memsize/sizeof(unsigned long);

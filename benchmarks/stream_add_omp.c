@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 	/* we want to back our array on the slow node and use the fast node as
 	 * a faster buffer.
 	 */
-	struct aml_bitmap slow_b, fast_B;
+	struct aml_bitmap slow_b, fast_b;
 	aml_bitmap_zero(&slow_b);
 	aml_bitmap_zero(&fast_b);
 	aml_bitmap_set(&slow_b, 0);
@@ -58,9 +58,9 @@ int main(int argc, char *argv[])
 		chunk_msz = MEMSIZE/(numthreads*CHUNKING);
 		esz = chunk_msz/sizeof(unsigned long);
 	}
-	assert(aml_area_malloc(slow, &a, MEMSIZE, 0) == AML_AREA_SUCCESS);
-	assert(aml_area_malloc(slow, &b, MEMSIZE, 0) == AML_AREA_SUCCESS);
-	assert(aml_area_malloc(fast, &c, MEMSIZE, 0) == AML_AREA_SUCCESS);
+	assert(aml_area_malloc(slow, (void**)(&a), MEMSIZE, 0) == AML_AREA_SUCCESS);
+	assert(aml_area_malloc(slow, (void**)(&b), MEMSIZE, 0) == AML_AREA_SUCCESS);
+	assert(aml_area_malloc(fast, (void**)(&c), MEMSIZE, 0) == AML_AREA_SUCCESS);
 	assert(a != NULL && b != NULL && c != NULL);
 
 	/* create virtually accessible address range, backed by slow memory */

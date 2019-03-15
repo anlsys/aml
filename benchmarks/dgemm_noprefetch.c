@@ -57,7 +57,7 @@ void do_work()
 
 int main(int argc, char* argv[])
 {
-	struct aml_bitmap slow_b, fast_B;
+	struct aml_bitmap slow_b, fast_b;
 	aml_bitmap_zero(&slow_b);
 	aml_bitmap_zero(&fast_b);
 	aml_bitmap_set(&slow_b, 0);
@@ -83,9 +83,9 @@ int main(int argc, char* argv[])
 
 	
 	/* allocation */
-	assert(aml_area_malloc(slow, &a, memsize, 0) == AML_AREA_SUCCESS);
-	assert(aml_area_malloc(slow, &b, memsize, 0) == AML_AREA_SUCCESS);
-	assert(aml_area_malloc(fast, &c, memsize, 0) == AML_AREA_SUCCESS);
+	assert(aml_area_malloc(slow, (void**)(&a), memsize, 0) == AML_AREA_SUCCESS);
+	assert(aml_area_malloc(slow, (void**)(&b), memsize, 0) == AML_AREA_SUCCESS);
+	assert(aml_area_malloc(fast, (void**)(&c), memsize, 0) == AML_AREA_SUCCESS);
 	assert(a != NULL && b != NULL && c != NULL);
 
 	size_t ntilerows, ntilecols, tilerowsize, tilecolsize, rowsize, colsize;
