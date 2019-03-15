@@ -175,7 +175,7 @@ int aml_dma_linux_seq_vinit(struct aml_dma *d, va_list ap)
 	size_t nbreqs = va_arg(ap, size_t);
 	aml_vector_init(&dma->data.requests, nbreqs,
 			sizeof(struct aml_dma_request_linux_seq),
-			sizeof(int), 0);
+			sizeof(int), -1);
 	pthread_mutex_init(&dma->data.lock, NULL);
 	return 0;
 }

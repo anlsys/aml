@@ -217,7 +217,7 @@ int aml_dma_linux_par_vinit(struct aml_dma *d, va_list ap)
 
 	aml_vector_init(&dma->data.requests, nbreqs,
 			sizeof(struct aml_dma_request_linux_par),
-			sizeof(int), 0);
+			sizeof(int), -1);
 	for(int i = 0; i < nbreqs; i++)
 		{
 			struct aml_dma_request_linux_par *req =

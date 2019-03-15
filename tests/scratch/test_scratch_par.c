@@ -26,12 +26,15 @@ int main(int argc, char *argv[])
 
 	size_t maxrequests = NBTILES;
 	assert(!aml_dma_linux_seq_init(&dma, maxrequests));
-
+	
 	/* allocate some memory */
 	assert(aml_area_malloc(aml_area_host_private, &src, TILESIZE*PAGE_SIZE*NBTILES, 0) == AML_AREA_SUCCESS);
 	assert(src != NULL);
-
 	memset(src, 42, TILESIZE*PAGE_SIZE*NBTILES);
+
+	/* initialize all the supporting struct */
+	assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_1D, TILESIZE*PAGE_SIZE,
+				TILESIZE*PAGE_SIZE*NBTILES));
 
 	/* create scratchpad */
 	assert(!aml_scratch_seq_init(&scratch, aml_area_host_private, aml_area_host_private, &dma, &tiling,
@@ -62,7 +65,6 @@ int main(int argc, char *argv[])
 	/* delete everything */
 	aml_scratch_par_destroy(&scratch);
 	aml_dma_linux_seq_destroy(&dma);
-	aml_area_free(aml_area_host_private, dst);
 	aml_area_free(aml_area_host_private, src);
 	aml_tiling_destroy(&tiling, AML_TILING_TYPE_1D);
 

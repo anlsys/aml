@@ -67,7 +67,6 @@ int main(int argc, char *argv[])
 	/* delete everything */
 	aml_scratch_seq_destroy(&scratch);
 	aml_dma_linux_par_destroy(&dma);
-	aml_area_free(aml_area_host_private, dst);
 	aml_area_free(aml_area_host_private, src);
 	aml_tiling_destroy(&tiling, AML_TILING_TYPE_1D);
 
