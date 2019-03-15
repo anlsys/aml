@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
 
 	/* run kernel */
 	struct winfo *wis;
-	assert(aml_area_malloc(slow, (void**)(&wis), numthreads * sizeof(struct winfo)) == AML_AREA_SUCCESS);
+	assert(aml_area_malloc(slow, (void**)(&wis), numthreads * sizeof(struct winfo), 0) == AML_AREA_SUCCESS);
 	for(unsigned long i = 0; i < numthreads; i++) {
 		wis[i].tid = i;
 		pthread_create(&wis[i].th, NULL, &th_work, (void*)&wis[i]);
