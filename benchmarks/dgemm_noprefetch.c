@@ -21,8 +21,6 @@
 
 AML_TILING_2D_ROWMAJOR_DECL(tiling_row);
 AML_TILING_2D_COLMAJOR_DECL(tiling_col);
-AML_AREA_LINUX_DECL(slow);
-AML_AREA_LINUX_DECL(fast);
 
 size_t memsize, tilesize, N, T;
 double *a, *b, *c;

@@ -263,11 +263,9 @@ main(int argc, char *argv[])
 
     /* aml specific code */
     aml_init(&argc, &argv);
-    struct aml_area area;
-    aml_area_init(&area, AML_AREA_TYPE_REGULAR);
-    a = aml_area_malloc(&area, sizeof(STREAM_TYPE)*(STREAM_ARRAY_SIZE+OFFSET));
-    b = aml_area_malloc(&area, sizeof(STREAM_TYPE)*(STREAM_ARRAY_SIZE+OFFSET));
-    c = aml_area_malloc(&area, sizeof(STREAM_TYPE)*(STREAM_ARRAY_SIZE+OFFSET));
+    assert(aml_area_malloc(aml_area_host_private, &a, memsize, 0) == AML_AREA_SUCCESS);
+    assert(aml_area_malloc(aml_area_host_private, &b, memsize, 0) == AML_AREA_SUCCESS);
+    assert(aml_area_malloc(aml_area_host_private, &c, memsize, 0) == AML_AREA_SUCCESS);
     
     /* Get initial value for system clock. */
 #pragma omp parallel for
@@ -381,10 +379,9 @@ main(int argc, char *argv[])
     checkSTREAMresults();
     printf(HLINE);
 
-    aml_area_free(&area, a);
-    aml_area_free(&area, b);
-    aml_area_free(&area, c);
-    aml_area_destroy(&area);
+    aml_area_free(aml_area_host_private, a);
+    aml_area_free(aml_area_host_private, b);
+    aml_area_free(aml_area_host_private, c);
     aml_finalize();
     return 0;
 }
