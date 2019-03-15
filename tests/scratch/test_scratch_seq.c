@@ -11,6 +11,7 @@
 #include "aml.h"
 #include <assert.h>
 
+#define PAGE_SIZE 4096
 #define TILESIZE (2)
 #define NBTILES (4)
 
