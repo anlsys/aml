@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 	log_init(argv[0]);
 	unsigned long memsize = 1UL << atoi(argv[3]);
 
-	struct aml_bitmap slow_b, fast_B;
+	struct aml_bitmap slow_b, fast_b;
 	aml_bitmap_zero(&slow_b);
 	aml_bitmap_zero(&fast_b);
 	aml_bitmap_set(&slow_b, 0);
@@ -121,7 +121,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* run kernel */
-	struct winfo *wis = aml_area_calloc(&slow, numthreads, sizeof(struct winfo));
+	struct winfo *wis;
+	assert(aml_area_malloc(slow, (void**)(&wis), numthreads * sizeof(struct winfo));
 	for(unsigned long i = 0; i < numthreads; i++) {
 		wis[i].tid = i;
 		pthread_create(&wis[i].th, NULL, &th_work, (void*)&wis[i]);
