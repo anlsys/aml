@@ -25,10 +25,6 @@
 
 #include <aml/utils/bitmap.h>
 #include <aml/utils/vector.h>
-#include <aml/layout/layout.h>
-#include <aml/layout/dense.h>
-#include <aml/layout/pad.h>
-#include <aml/layout/reshape.h>
 #include <aml/tiling/tiling.h>
 #include <aml/tiling/resize.h>
 #include <aml/tiling/pad.h>
