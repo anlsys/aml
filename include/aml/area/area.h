@@ -27,12 +27,12 @@ struct aml_area_ops {
 	/**
 	 * Bind area to a specific set of memories.
 	 * "area": Cannot be NULL.
-	 * "binding": May be NULL which means "do not bind".
+	 * "binding": May be NULL which means "do change binding".
 	 *            Special function may be included in area header for populating 
 	 *            the bitmap.
 	 * "flags": Can be any value. 
 	 *          Special values may be included in area header.
-	 * Returns AML_AREA_* error code.
+	 * Returns AML_AREA_* error code. AML_AREA_EDOM in particular if binding is not a valid binding.
 	 **/
 	int (*bind)(struct aml_area         *area,
 		    const struct aml_bitmap *binding,

@@ -9,6 +9,8 @@ void test_bitmap_fill(){
 	for(i = 0; i < AML_BITMAP_MAX; i++)
 		assert(aml_bitmap_isset(&b, i));
 	assert(aml_bitmap_nset(&b) == AML_BITMAP_MAX);
+	assert(aml_bitmap_first(&b) == 0);
+	assert(aml_bitmap_last(&b) == (AML_BITMAP_MAX-1));
 }
 
 void test_bitmap_zero(){
@@ -18,6 +20,9 @@ void test_bitmap_zero(){
 	for(i = 0; i < AML_BITMAP_MAX; i++)
 		assert(!aml_bitmap_isset(&b, i));
 	assert(aml_bitmap_nset(&b) == 0);
+	assert(aml_bitmap_first(&b) == -1);
+	assert(aml_bitmap_last(&b) == -1);
+
 }
 
 void test_bitmap_set(){
@@ -28,7 +33,8 @@ void test_bitmap_set(){
 	for(i = 0; i < AML_BITMAP_MAX; i++){
 		aml_bitmap_set(&b, i);
 		assert(aml_bitmap_isset(&b, i));
-
+		assert(aml_bitmap_first(&b) == i);
+	        assert(aml_bitmap_last(&b) == i);
 		for(j = 0; j < i; j++)
 			assert(!aml_bitmap_isset(&b, j));
 		for(j = i+1; j < AML_BITMAP_MAX; j++)
@@ -67,6 +73,9 @@ void test_bitmap_set_range(){
 		for(ii = i+1; ii < AML_BITMAP_MAX; ii++){
 			assert(aml_bitmap_set_range(&b, i, ii) == 0);
 			assert(aml_bitmap_nset(&b) == (1 + ii - i));
+			assert(aml_bitmap_first(&b) == i);
+			assert(aml_bitmap_last(&b) == ii);
+
 			for(j = 0; j < i; j++)
 				assert(!aml_bitmap_isset(&b, j));
 			for(j = i; j <= ii; j++)

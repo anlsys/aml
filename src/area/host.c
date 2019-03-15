@@ -44,6 +44,9 @@ host_bind(__hwloc_unused__ struct aml_area *area,
 	  __hwloc_unused__ const unsigned long flags)	  
 {
 #ifdef HAVE_HWLOC
+	int nnodes = hwloc_get_nbobjs_by_depth(aml_topology, HWLOC_TYPE_DEPTH_NUMANODE);
+        if(aml_bitmap_last(binding) >= nnodes)
+		return AML_AREA_EDOM;
 	struct host_binding *bind = area->data;
 	aml_bitmap_copy(&(bind->bitmap), binding);
 	bind->flags = flags;
