@@ -1,150 +1,78 @@
-#include <stdlib.h>
+/*******************************************************************************
+ * Copyright 2019 UChicago Argonne, LLC.
+ * (c.f. AUTHORS, LICENSE)
+ *
+ * This file is part of the AML project.
+ * For more info, see https://xgitlab.cels.anl.gov/argo/aml
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+*******************************************************************************/
+
 #include "aml.h"
-#include "aml/area/area.h"
-#include "aml/utils/bitmap.h"
+#include <assert.h>
 
-extern struct aml_area_ops aml_area_host_private_ops;
-extern struct aml_area_ops aml_area_host_shared_ops;
+/*******************************************************************************
+ * Area Generic functions
+ * Most of the stuff is dispatched to a different layer, using type-specific
+ * functions.
+ ******************************************************************************/
 
-struct aml_area*
-aml_local_area_create(struct aml_area    *a,
-		      const aml_bitmap    binding,
-		      const unsigned long flags)
+void *aml_area_malloc(struct aml_area *area, size_t size)
 {
-	struct aml_area* area;
-		
-	if(a == NULL || binding == NULL || a->ops==NULL || a->ops->bind == NULL)
-		return NULL;
-	
-	area = malloc(sizeof(*area));
-	
-	if(area == NULL)
-		return NULL;
-
-	area->data = NULL;
-	
-	area->ops  = a->ops;
-	
-	if(a->ops->create && a->ops->create(area) != AML_AREA_SUCCESS)
-		goto err_with_area;
-	
-        if(area->ops->bind(area, binding, flags) != AML_AREA_SUCCESS)
-		goto err_with_area_data;
-	
-	return area;
-
- err_with_area_data:
-	if(a->ops->create && a->ops->destroy)
-		a->ops->destroy(area);
- err_with_area:
-	free(area);
-	return NULL;
+	assert(area != NULL);
+	return area->ops->malloc(area->data, size);
 }
 
-void
-aml_local_area_destroy(struct aml_area* area)
+void aml_area_free(struct aml_area *area, void *ptr)
 {
-	if(area == NULL)
-		return;
-
-	if(area->ops && area->ops->destroy)
-		area->ops->destroy(area);
-
-	free(area);
+	assert(area != NULL);
+	area->ops->free(area->data, ptr);
 }
 
-static int
-aml_area_mmap(struct aml_area *area,
-	      void           **ptr,
-	      size_t           size)
+void *aml_area_calloc(struct aml_area *area, size_t num, size_t size)
 {
-	if(ptr == NULL)
-		return AML_AREA_EINVAL;
-	
-	if(size == 0){
-		*ptr = NULL;
-		return AML_AREA_SUCCESS;
-	}
-	
-	if(area == NULL)
-		return AML_AREA_EINVAL;
-	
-	if(area->ops->map == NULL)
-		return AML_AREA_ENOTSUP;
-
-	return area->ops->map(area, ptr, size);
+	assert(area != NULL);
+	return area->ops->calloc(area->data, num, size);
 }
 
-static int
-aml_area_munmap(struct aml_area *area,
-		void            *ptr,
-		size_t           size)
+void *aml_area_memalign(struct aml_area *area, size_t align, size_t size)
 {
-	if(ptr == NULL || size == 0)
-		return AML_AREA_SUCCESS;
-	
-	if(area == NULL)
-		return AML_AREA_EINVAL;
-	
-	if(area->ops->unmap == NULL)
-		return AML_AREA_ENOTSUP;
-	
-	return area->ops->unmap(area, ptr, size);
+	assert(area != NULL);
+	return area->ops->memalign(area->data, align, size);
 }
 
-int
-aml_area_malloc(struct aml_area *area,
-		void           **ptr,
-		size_t           size,
-		size_t           alignement)
+void *aml_area_realloc(struct aml_area *area, void *ptr, size_t size)
 {
-	if(area == NULL)
-		return AML_AREA_EINVAL;
-		
-
-	if(ptr == NULL)
-		return AML_AREA_EINVAL;
-	
-	if(size == 0){
-		*ptr = NULL;
-		return AML_AREA_SUCCESS;
-	}
-
-	if(area->ops->malloc != NULL)	
-		return area->ops->malloc(area, ptr, size, alignement);
-	else if(alignement != 0)
-		return AML_AREA_ENOTSUP;
-	else{
-		int err = area->ops->map(area, ptr, size + sizeof(size_t));
-		
-		/* Store size before ptr */
-		if(err == AML_AREA_SUCCESS){
-			*(size_t*)(*ptr) = size;
-			*ptr  += sizeof(size_t);
-		}
-		
-		return err; 
-	}
+	assert(area != NULL);
+	return area->ops->realloc(area->data, ptr, size);
 }
 
-int
-aml_area_free(struct aml_area *area,
-	      void            *ptr)
+void *aml_area_acquire(struct aml_area *area, size_t size)
 {
-	if(area == NULL)
-		return AML_AREA_EINVAL;
-	
-	if(ptr == NULL)
-		return AML_AREA_SUCCESS;
-
-	if(area->ops->free != NULL)
-		return area->ops->free(area, ptr);
-	else{
-		/* Read size */
-		size_t * size = (size_t*)(ptr - sizeof(size_t));
-		if(size == NULL)
-			return AML_AREA_EINVAL;
-		return area->ops->unmap(area, ptr, *size);
-	}
+	assert(area != NULL);
+	return area->ops->acquire(area->data, size);
 }
 
+void aml_area_release(struct aml_area *area, void *ptr)
+{
+	assert(area != NULL);
+	area->ops->release(area->data, ptr);
+}
+
+void *aml_area_mmap(struct aml_area *area, void *ptr, size_t size)
+{
+	assert(area != NULL);
+	return area->ops->mmap(area->data, ptr, size);
+}
+
+int aml_area_available(const struct aml_area *area)
+{
+	assert(area != NULL);
+	return area->ops->available(area->data);
+}
+
+int aml_area_binding(const struct aml_area *area, struct aml_binding **binding)
+{
+	assert(area != NULL);
+	return area->ops->binding(area->data, binding);
+}

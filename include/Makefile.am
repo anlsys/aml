@@ -7,4 +7,3 @@ include_amlutils_HEADERS = \
 if HAVE_HWLOC
 include_amlutils_HEADERS+=aml/utils/hwloc.h
 endif
-

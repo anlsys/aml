@@ -12,4 +12,3 @@ libamlutils_la_LDFLAGS=
 if HAVE_HWLOC
 libamlutils_la_LDFLAGS+=-lhwloc
 endif
-

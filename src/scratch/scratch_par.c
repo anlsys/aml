@@ -12,7 +12,7 @@
 #include <assert.h>
 
 /*******************************************************************************
- * Sequential scratchpad
+ * Parallel scratchpad
  * The scratch itself is organized into several different components
  * - request types: push and pull
  * - implementation of the request
@@ -25,11 +25,13 @@
  ******************************************************************************/
 
 int aml_scratch_request_par_init(struct aml_scratch_request_par *req, int type,
+				 struct aml_scratch_par *scratch,
 				 void *dstptr, int dstid, void *srcptr, int srcid)
 
 {
 	assert(req != NULL);
 	req->type = type;
+	req->scratch = scratch;
 	req->srcptr = srcptr;
 	req->srcid = srcid;
 	req->dstptr = dstptr;
@@ -98,7 +100,7 @@ int aml_scratch_par_create_request(struct aml_scratch_data *d,
 		*srcid = *slot;
 
 		/* init request */
-		aml_scratch_request_par_init(req, type, srcptr, *srcid,
+		aml_scratch_request_par_init(req, type, scratch, srcptr, *srcid,
 					     scratchptr, scratchid);
 	}
 	else if(type == AML_SCRATCH_REQUEST_TYPE_PULL)
@@ -116,25 +118,29 @@ int aml_scratch_par_create_request(struct aml_scratch_data *d,
 		/* find destination tile
 		 * We don't use add here because adding a tile means allocating
 		 * new tiles on the sch_area too. */
-		/* TODO: this is kind of a bug: we reuse a tile, instead of
-		 * creating a no-op request
-		 */
 		int slot = aml_vector_find(&scratch->data.tilemap, srcid);
 		if(slot == -1)
+		{
 			slot = aml_vector_find(&scratch->data.tilemap, -1);
-		assert(slot != -1);
-		int *tile = aml_vector_get(&scratch->data.tilemap, slot);
-		*tile = srcid;
+			assert(slot != -1);
+			int *tile = aml_vector_get(&scratch->data.tilemap, slot);
+			*tile = srcid;
+		}
+		else
+			type = AML_SCRATCH_REQUEST_TYPE_NOOP;
+
+		/* save the key */
 		*scratchid = slot;
 
 		/* init request */
-		aml_scratch_request_par_init(req, type, scratchptr, *scratchid,
+		aml_scratch_request_par_init(req, type, scratch,
+					     scratchptr, *scratchid,
 					     srcptr, srcid);
 	}
 	pthread_mutex_unlock(&scratch->data.lock);
 	/* thread creation */
-	req->scratch = scratch;
-	pthread_create(&req->thread, NULL, scratch->ops.do_thread, req);
+	if(req->type != AML_SCRATCH_REQUEST_TYPE_NOOP)
+		pthread_create(&req->thread, NULL, scratch->ops.do_thread, req);
 	*r = (struct aml_scratch_request *)req;
 	return 0;
 }
@@ -151,8 +157,11 @@ int aml_scratch_par_destroy_request(struct aml_scratch_data *d,
 		(struct aml_scratch_request_par *)r;
 	int *tile;
 
-	pthread_cancel(req->thread);
-	pthread_join(req->thread, NULL);
+	if(req->type != AML_SCRATCH_REQUEST_TYPE_NOOP)
+	{
+		pthread_cancel(req->thread);
+		pthread_join(req->thread, NULL);
+	}
 
 	aml_scratch_request_par_destroy(req);
 
@@ -179,7 +188,8 @@ int aml_scratch_par_wait_request(struct aml_scratch_data *d,
 	int *tile;
 
 	/* wait for completion of the request */
-	pthread_join(req->thread, NULL);
+	if(req->type != AML_SCRATCH_REQUEST_TYPE_NOOP)
+		pthread_join(req->thread, NULL);
 
 	/* cleanup a completed request. In case of push, free up the tile */
 	aml_scratch_request_par_destroy(req);

@@ -23,4 +23,3 @@ libaml_la_LIBADD+=$(top_srcdir)/src/tiling/libamltiling.la
 
 SUBDIRS+=scratch
 libaml_la_LIBADD+=$(top_srcdir)/src/scratch/libamlscratch.la
-

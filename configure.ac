@@ -107,9 +107,7 @@ AC_CONFIG_FILES([Makefile
 		 src/dma/Makefile
 		 src/tiling/Makefile
 		 src/layout/Makefile
-		 src/binding/Makefile
 		 src/scratch/Makefile
-		 src/arena/Makefile
 		 src/utils/Makefile
 		 include/Makefile
 		 tests/Makefile

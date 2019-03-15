@@ -9,4 +9,3 @@ libamlarea_la_SOURCES=\
 	host.c
 
 libamlarea_la_CFLAGS=$(AM_CFLAGS)
-

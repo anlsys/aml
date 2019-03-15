@@ -10,7 +10,6 @@
 
 #include "config.h"
 #include "aml.h"
-
 #ifdef HAVE_HWLOC
 #include <hwloc.h>
 

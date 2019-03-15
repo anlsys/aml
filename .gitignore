@@ -29,6 +29,7 @@
 # automake
 Makefile.in
 Makefile
+**/.dirstamp
 
 # autoconf
 /autom4te.cache
@@ -51,8 +52,8 @@ stamp-h1
 /stamp-h1
 
 # autotest
-tests/*.trs
-tests/*.log
+tests/**/*.trs
+tests/**/*.log
 *.test.*
 
 # libtool

@@ -1,4 +1,4 @@
-AM_CFLAGS=-I$(top_srcdir)/include
+AM_CFLAGS = -I$(top_srcdir)/include
 AM_CPPFLAGS=$(AM_CFLAGS)
 check_PROGRAMS=
 TESTS=
@@ -61,9 +61,4 @@ test_dma_linux_par_SOURCES=dma/test_dma_linux_par.c
 test_dma_linux_par_LDFLAGS=$(top_srcdir)/src/libaml.la
 check_PROGRAMS+=test_dma_linux_par
 TESTS+=test_dma_linux_par
-
-####################################################################
-# Area
-####################################################################
-
 
