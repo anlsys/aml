@@ -67,6 +67,7 @@ void do_work(unsigned long tid)
 
 int main(int argc, char *argv[])
 {
+	AML_DMA_LINUX_SEQ_DECL(dma);
 	aml_init(&argc, &argv);
 	assert(argc == 4);
 
