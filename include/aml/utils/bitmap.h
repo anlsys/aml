@@ -5,10 +5,11 @@
  * bitmap API:
  ******************************************************************************/
 
-#define AML_BITMAP_MAX 2048
-#define AML_BITMAP_BYTES (AML_BITMAP_MAX/8)
-#define AML_BITMAP_TYPE unsigned long
-#define AML_BITMAP_SIZE (AML_BITMAP_BYTES/sizeof(AML_BITMAP_TYPE))
+#define AML_BITMAP_MAX 2048                                        /* Number of bits in bitmap */
+#define AML_BITMAP_BYTES (AML_BITMAP_MAX/8)                        /* Total size of bitmap in memory */
+#define AML_BITMAP_TYPE unsigned long                              /* Type used to store bits */
+#define AML_BITMAP_SIZE (AML_BITMAP_BYTES/sizeof(AML_BITMAP_TYPE)) /* Number of AML_BITMAP_TYPE */
+#define AML_BITMAP_NUM  (8 * sizeof(AML_BITMAP_TYPE))              /* Number of bits in AML_BITMAP_TYPE */
 
 
 struct aml_bitmap {
@@ -57,12 +58,24 @@ int aml_bitmap_isset(const struct aml_bitmap *bitmap, const unsigned i);
  * Returns 1 if yes, else 0.
  **/
 int aml_bitmap_iszero(const struct aml_bitmap *bitmap);
-
+	
 /**
  * Check whether a bit in bitmap is full.
  * Returns 1 if yes, else 0.
  **/
 int aml_bitmap_isfull(const struct aml_bitmap *bitmap);
+
+/**
+ * Get the index of first bit set.
+ * If bitmap is NULL or no bit is set -1 is returned.
+ **/
+int aml_bitmap_first(const struct aml_bitmap *bitmap);
+
+/**
+ * Get the index of last bit set.
+ * If bitmap is NULL or no bit is set -1 is returned.
+ **/
+int aml_bitmap_last(const struct aml_bitmap *bitmap);
 
 /**
  * Check whether two bitmaps have identical value.

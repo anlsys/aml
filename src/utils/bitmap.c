@@ -179,6 +179,47 @@ unsigned long aml_bitmap_nset(const struct aml_bitmap *bitmap)
 	return nset;
 }
 
+int aml_bitmap_last(const struct aml_bitmap *bitmap)
+{
+	if(bitmap == NULL)
+		return -1;
+	int n , i = 0;
+
+	for(n = AML_BITMAP_SIZE-1; n>=0 && bitmap->mask[n]==0; n--);
+
+	if(n < 0)
+		return -1;
+	
+	AML_BITMAP_TYPE mask = bitmap->mask[n];
+	
+	for(i=0; i<AML_BITMAP_NUM && mask; i++)
+		mask = mask >> 1;
+	
+	return (AML_BITMAP_NUM * n) + i - 1;
+}
+
+int aml_bitmap_first(const struct aml_bitmap *bitmap)
+{
+	if(bitmap == NULL)
+		return -1;
+	
+        int n , i = 0;
+
+	for(n = 0; n<AML_BITMAP_SIZE && bitmap->mask[n]==0; n++);
+
+	if(n == AML_BITMAP_SIZE)
+		return -1;
+	
+	AML_BITMAP_TYPE mask = bitmap->mask[n];
+		
+	for(i=0; i<AML_BITMAP_NUM && mask; i++)
+		mask = mask << 1;
+
+	int res = (AML_BITMAP_NUM * n) + AML_BITMAP_NUM - i;
+	return res;
+
+}
+
 #ifdef HAVE_HWLOC
 
 #include <hwloc.h>
