@@ -179,7 +179,7 @@ int hwloc_bitmap_copy_aml_bitmap(hwloc_bitmap_t hb, const aml_bitmap ab)
 		return -1;
 	hwloc_bitmap_zero(hb);
 	
-	if(ab == NULL || hwloc_bitmap_iszero(hb))
+	if(ab == NULL)
 		return 0;
 
 	int i, last = 0;
