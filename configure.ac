@@ -91,14 +91,6 @@ AM_CONDITIONAL([HAVE_HWLOC], [test x"$hwloc_header_happy"  = x"yes" -a\
                                    x"$hwloc_lib_happy"     = x"yes" -a\
                                    x"$hwloc_version_happy" = x"yes"])
 
-# excit iterators
-PKG_CHECK_MODULES([EXCIT],[libexcit])
-
-# internal jemalloc
-ac_configure_args="$ac_configure_args \
-			'--with-jemalloc-prefix=jemk_aml_' \
-			'--with-install-suffix=-aml'"
-
 AC_CONFIG_HEADERS([include/config.h])
 
 AC_CONFIG_FILES([Makefile
