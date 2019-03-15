@@ -106,7 +106,6 @@ AC_CONFIG_FILES([Makefile
 		 src/area/Makefile
 		 src/dma/Makefile
 		 src/tiling/Makefile
-		 src/layout/Makefile
 		 src/scratch/Makefile
 		 src/utils/Makefile
 		 include/Makefile
