@@ -22,35 +22,24 @@
 
 int main(int argc, char *argv[])
 {
-	AML_ARENA_JEMALLOC_DECL(arns);
-	AML_ARENA_JEMALLOC_DECL(arnf);
-	AML_AREA_LINUX_DECL(slow);
-	AML_AREA_LINUX_DECL(fast);
-	struct bitmask *slowb, *fastb;
+	struct aml_bitmap slow_b, fast_B;
+	aml_bitmap_zero(&slow_b);
+	aml_bitmap_zero(&fast_b);
+	aml_bitmap_set(&slow_b, 0);
+	aml_bitmap_set(&fast_b, 1);
+	struct aml_area * slow = aml_local_area_create(aml_area_host_private, &slow_b, 0);
+	struct aml_area * fast = aml_local_area_create(aml_area_host_private, &fast_b, 0);
+
 	struct timespec start, stop;
 	double *a, *b, *c;
 	aml_init(&argc, &argv);
 	assert(argc == 4);
-	fastb = numa_parse_nodestring_all(argv[1]);
-	slowb = numa_parse_nodestring_all(argv[2]);
 	long int N = atol(argv[3]);
 	unsigned long memsize = sizeof(double)*N*N;
 
-	assert(!aml_arena_jemalloc_init(&arns, AML_ARENA_JEMALLOC_TYPE_REGULAR));
-	assert(!aml_area_linux_init(&slow,
-				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
-				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
-				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arns, MPOL_BIND, slowb->maskp));
-	assert(!aml_arena_jemalloc_init(&arnf, AML_ARENA_JEMALLOC_TYPE_REGULAR));
-	assert(!aml_area_linux_init(&fast,
-				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
-				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
-				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arnf, MPOL_BIND, fastb->maskp));
-	a = aml_area_malloc(&slow, memsize);
-	b = aml_area_malloc(&slow, memsize);
-	c = aml_area_malloc(&fast, memsize);
+	assert(aml_area_malloc(slow, &a, memsize, 0) == AML_AREA_SUCCESS);
+	assert(aml_area_malloc(slow, &b, memsize, 0) == AML_AREA_SUCCESS);
+	assert(aml_area_malloc(fast, &c, memsize, 0) == AML_AREA_SUCCESS);
 	assert(a != NULL && b != NULL && c != NULL);
 
 	double alpha = 1.0, beta = 1.0;
@@ -69,11 +58,11 @@ int main(int argc, char *argv[])
 	double flops = (2.0*N*N*N)/(time/1e9);
 	/* print the flops in GFLOPS */
 	printf("dgemm-mkl: %llu %lld %lld %f\n", N, memsize, time, flops/1e9);
-	aml_area_free(&slow, a);
-	aml_area_free(&slow, b);
-	aml_area_free(&fast, c);
-	aml_area_linux_destroy(&slow);
-	aml_area_linux_destroy(&fast);
+	aml_area_free(slow, a);
+	aml_area_free(slow, b);
+	aml_area_free(fast, c);
+	aml_local_area_destroy(slow);
+	aml_local_area_destroy(fast);
 	aml_finalize();
 	return 0;
 }

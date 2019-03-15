@@ -35,10 +35,13 @@ int main(int argc, char *argv[])
 	/* we want to back our array on the slow node and use the fast node as
 	 * a faster buffer.
 	 */
-	struct aml_area slow, fast;
-	int type = AML_AREA_TYPE_REGULAR;
-	assert(!aml_area_from_nodestring(&slow, type, "all"));
-	assert(!aml_area_from_nodestring(&fast, type, "all"));
+	struct aml_bitmap slow_b, fast_B;
+	aml_bitmap_zero(&slow_b);
+	aml_bitmap_zero(&fast_b);
+	aml_bitmap_set(&slow_b, 0);
+	aml_bitmap_set(&fast_b, 1);
+	struct aml_area * slow = aml_local_area_create(aml_area_host_private, &slow_b, 0);
+	struct aml_area * fast = aml_local_area_create(aml_area_host_private, &fast_b, 0);
 
 	struct aml_dma dma;
 	assert(!aml_dma_init(&dma, 0));
@@ -55,9 +58,9 @@ int main(int argc, char *argv[])
 		chunk_msz = MEMSIZE/(numthreads*CHUNKING);
 		esz = chunk_msz/sizeof(unsigned long);
 	}
-	a = aml_area_malloc(&slow, MEMSIZE);
-	b = aml_area_malloc(&slow, MEMSIZE);
-	c = aml_area_malloc(&slow, MEMSIZE);
+	assert(aml_area_malloc(slow, &a, MEMSIZE, 0) == AML_AREA_SUCCESS);
+	assert(aml_area_malloc(slow, &b, MEMSIZE, 0) == AML_AREA_SUCCESS);
+	assert(aml_area_malloc(fast, &c, MEMSIZE, 0) == AML_AREA_SUCCESS);
 	assert(a != NULL && b != NULL && c != NULL);
 
 	/* create virtually accessible address range, backed by slow memory */
@@ -98,11 +101,11 @@ int main(int argc, char *argv[])
 		assert(wc[i] == esize);
 	}
 
-	aml_area_free(&slow, a);
-	aml_area_free(&slow, b);
-	aml_area_free(&slow, c);
-	aml_area_destroy(&slow);
-	aml_area_destroy(&fast);
+	aml_area_free(slow, a);
+	aml_area_free(slow, b);
+	aml_area_free(fast, c);
+	aml_area_local_destroy(slow);
+	aml_area_local_destroy(fast);
 	aml_dma_destroy(&dma);
 	aml_finalize();
 	return 0;
