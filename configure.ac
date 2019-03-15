@@ -55,10 +55,9 @@ AC_CHECK_HEADERS(numaif.h)
 AC_CHECK_LIB(numa, move_pages)
 AC_CHECK_LIB(dl, dlopen)
 
-# add pthread support
+# add pthread support.
+# doc in m4/ax_pthread.m4. Defines automake PTHREAD_CFLAGS and PTHREAD_LIBS
 AX_PTHREAD
-LIBS="$PTHREAD_LIBS $LIBS"
-CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 CC="$PTHREAD_CC"
 
 # Hwloc dependency
