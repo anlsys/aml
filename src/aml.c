@@ -10,11 +10,13 @@
 
 #include "config.h"
 #include "aml.h"
+
+size_t aml_pagesize = 4096;
+
 #ifdef HAVE_HWLOC
 #include <hwloc.h>
 
 hwloc_topology_t aml_topology = NULL;
-size_t aml_pagesize = 4096;
 
 int aml_topology_init(){
         if(hwloc_topology_init(&aml_topology) == -1)
