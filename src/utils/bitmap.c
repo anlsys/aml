@@ -3,111 +3,116 @@
 
 #define AML_BITMAP_EMPTY       (0UL)
 #define AML_BITMAP_FULL        (~0UL)
-#define AML_BITMAP_TYPELEN     (8 * sizeof(aml_bitmap))
-#define AML_BITMAP_NTH(i)      ((i) / AML_BITMAP_TYPELEN)
-#define AML_BITMAP_ITH(i)      (((i) % AML_BITMAP_TYPELEN))
+#define AML_BITMAP_NBITS     (8 * sizeof(AML_BITMAP_TYPE))
+#define AML_BITMAP_NTH(i)      ((i) / AML_BITMAP_NBITS)
+#define AML_BITMAP_ITH(i)      (((i) % AML_BITMAP_NBITS))
 
-aml_bitmap aml_bitmap_alloc()
+struct aml_bitmap *aml_bitmap_alloc(void)
 {
-	aml_bitmap b = malloc(sizeof(*b) * AML_BITMAP_NUM);
+	struct aml_bitmap *b = malloc(sizeof(struct aml_bitmap));
 	if(b == NULL)
 		return NULL;
 	aml_bitmap_zero(b);
 	return b;
 }
 
-void aml_bitmap_copy(aml_bitmap dst, const aml_bitmap src)
+void aml_bitmap_copy(struct aml_bitmap *dst, const struct aml_bitmap *src)
 {
-	int i;
 	if(dst == NULL || src == NULL)
 		return;
-	for(i=0; i<AML_BITMAP_NUM; i++)
-		dst[i] = src[i];
+	memcpy(dst, src, sizeof(struct aml_bitmap));
 }
 
-aml_bitmap aml_bitmap_dup(const aml_bitmap a)
+void aml_bitmap_copy_ulong(struct aml_bitmap *dst, unsigned long *src,
+			   size_t maxbit)
 {
-	aml_bitmap b = malloc(sizeof(*b) * AML_BITMAP_NUM);
-	int i;
+	if(dst == NULL || src == NULL)
+		return;
+	if(maxbit > AML_BITMAP_MAX)
+		maxbit = AML_BITMAP_MAX;
+	for(size_t i = 0; i < maxbit; i++)
+		if(src[AML_BITMAP_NTH(i)] & (1UL << AML_BITMAP_ITH(i)) != 0)
+			aml_bitmap_set(dst, i);
+}
+
+
+struct aml_bitmap *aml_bitmap_dup(const struct aml_bitmap *a)
+{
+	struct aml_bitmap *b = aml_bitmap_alloc();
 	if(b == NULL)
 		return NULL;
-	for(i=0; i<AML_BITMAP_NUM; i++)
-		b[i] = a[i];
+	aml_bitmap_copy(b, a);
 	return b;
 }
 
-void aml_bitmap_free(aml_bitmap bitmap)
+void aml_bitmap_free(struct aml_bitmap *bitmap)
 {
 	free(bitmap);
 }
 
-void aml_bitmap_zero(aml_bitmap bitmap)
+void aml_bitmap_zero(struct aml_bitmap *bitmap)
 {
-	int i;
-	for(i=0; i<AML_BITMAP_NUM; i++)
-		bitmap[i] = AML_BITMAP_EMPTY;
+	memset(bitmap, 0, sizeof(struct aml_bitmap));
 }
 
-int aml_bitmap_iszero(const aml_bitmap bitmap){
+int aml_bitmap_iszero(const struct aml_bitmap *bitmap){
 	int i;
-	for(i=0; i<AML_BITMAP_NUM; i++)
-		if(bitmap[i] != AML_BITMAP_EMPTY)
+	for(i=0; i<AML_BITMAP_SIZE; i++)
+		if(bitmap->mask[i] != AML_BITMAP_EMPTY)
 			return 0;
 	return 1;
 }
 
-int aml_bitmap_isfull(const aml_bitmap bitmap)
+int aml_bitmap_isfull(const struct aml_bitmap *bitmap)
 {
 	int i;
-	for(i=0; i<AML_BITMAP_NUM; i++)
-		if(bitmap[i] != AML_BITMAP_FULL)
+	for(i=0; i<AML_BITMAP_SIZE; i++)
+		if(bitmap->mask[i] != AML_BITMAP_FULL)
 			return 0;
 	return 1;
 }
 
-void aml_bitmap_fill(aml_bitmap bitmap){
-	int i;
-	for(i=0; i<AML_BITMAP_NUM; i++)
-		bitmap[i] = AML_BITMAP_FULL;
+void aml_bitmap_fill(struct aml_bitmap *bitmap){
+	memset(bitmap, AML_BITMAP_FULL, sizeof(struct aml_bitmap));
 }
 
-int aml_bitmap_isset(const aml_bitmap bitmap, const unsigned i)
+int aml_bitmap_isset(const struct aml_bitmap *bitmap, const unsigned i)
 {
-	if(i >= AML_BITMAP_LEN)
+	if(i >= AML_BITMAP_MAX)
 		return -1;
-	unsigned n = AML_BITMAP_NTH(i);
-	unsigned b = AML_BITMAP_ITH(i);
-	return (bitmap[AML_BITMAP_NTH(i)] & (1UL << AML_BITMAP_ITH(i))) > 0UL;
+	return (bitmap->mask[AML_BITMAP_NTH(i)] &
+		(1UL << AML_BITMAP_ITH(i))) > 0UL;
 }
 
-int aml_bitmap_set(aml_bitmap bitmap, const unsigned i)
+int aml_bitmap_set(struct aml_bitmap *bitmap, const unsigned i)
 {
-	if(i >= AML_BITMAP_LEN)
+	if(i >= AML_BITMAP_MAX)
 		return -1;
-	bitmap[AML_BITMAP_NTH(i)] |= (1UL << AML_BITMAP_ITH(i));
+	bitmap->mask[AML_BITMAP_NTH(i)] |= (1UL << AML_BITMAP_ITH(i));
 	return 0;
 }
 
-int aml_bitmap_isequal(const aml_bitmap a, const aml_bitmap b)
+int aml_bitmap_isequal(const struct aml_bitmap *a, const struct aml_bitmap *b)
 {
 	int i;
-	for(i=0; i<AML_BITMAP_NUM; i++)
-		if(a[i] != b[i])
+	for(i = 0; i < AML_BITMAP_SIZE; i++)
+		if(a->mask[i] != b->mask[i])
 			return 0;
 	return 1;
 }
 
-int aml_bitmap_clear(aml_bitmap bitmap, const unsigned i)
+int aml_bitmap_clear(struct aml_bitmap *bitmap, const unsigned i)
 {
-	if(i >= AML_BITMAP_LEN)
+	if(i >= AML_BITMAP_MAX)
 		return -1;
-	bitmap[AML_BITMAP_NTH(i)] &= ~(1UL << AML_BITMAP_ITH(i));
+	bitmap->mask[AML_BITMAP_NTH(i)] &= ~(1UL << AML_BITMAP_ITH(i));
 	return 0;
 }
 
-int aml_bitmap_set_range(aml_bitmap bitmap, const unsigned i, const unsigned ii)
+int aml_bitmap_set_range(struct aml_bitmap *bitmap,
+			 const unsigned i, const unsigned ii)
 {
-	if(i >= AML_BITMAP_LEN || ii >= AML_BITMAP_LEN || i > ii)
+	if(i >= AML_BITMAP_MAX || ii >= AML_BITMAP_MAX || i > ii)
 		return -1;
 	if(i == ii)
 		return aml_bitmap_set(bitmap, i);
@@ -117,21 +122,24 @@ int aml_bitmap_set_range(aml_bitmap bitmap, const unsigned i, const unsigned ii)
 	unsigned long n    =  AML_BITMAP_NTH(i);
 	unsigned long nn   =  AML_BITMAP_NTH(ii);
 	unsigned long high =  k == 0 ? AML_BITMAP_FULL : ~(AML_BITMAP_FULL << k);
-	
-	if(nn>n){
+
+	if(nn>n)
+	{
 		for(k=n+1; k<=nn-1; k++)
-			bitmap[k] = AML_BITMAP_FULL;
-		bitmap[n]  |= low;
-		bitmap[nn] |= high;
-	} else 
-		bitmap[n]  |= (low & high);
-	
+			bitmap->mask[k] = AML_BITMAP_FULL;
+		bitmap->mask[n]  |= low;
+		bitmap->mask[nn] |= high;
+	}
+	else
+		bitmap->mask[n]  |= (low & high);
+
 	return 0;
 }
 
-int aml_bitmap_clear_range(aml_bitmap bitmap, const unsigned i, const unsigned ii)
+int aml_bitmap_clear_range(struct aml_bitmap *bitmap,
+			   const unsigned i, const unsigned ii)
 {
-	if(i >= AML_BITMAP_LEN || ii >= AML_BITMAP_LEN || i > ii)
+	if(i >= AML_BITMAP_MAX || ii >= AML_BITMAP_MAX || i > ii)
 		return -1;
 	if(i == ii)
 		return aml_bitmap_set(bitmap, i);
@@ -141,27 +149,29 @@ int aml_bitmap_clear_range(aml_bitmap bitmap, const unsigned i, const unsigned i
 	unsigned long n    =  AML_BITMAP_NTH(i);
 	unsigned long nn   =  AML_BITMAP_NTH(ii);
 	unsigned long high =  k == 0 ? AML_BITMAP_EMPTY : (AML_BITMAP_FULL << k);
-	
-	if(nn>n){
+
+	if(nn>n)
+	{
 		for(k=n+1; k<=nn-1; k++)
-			bitmap[k] = AML_BITMAP_EMPTY;
-		bitmap[n]  &= low;
-		bitmap[nn] &= high;
-	} else 
-		bitmap[n]  &= (low | high);
-	
+			bitmap->mask[k] = AML_BITMAP_EMPTY;
+		bitmap->mask[n]  &= low;
+		bitmap->mask[nn] &= high;
+	}
+	else
+		bitmap->mask[n]  &= (low | high);
+
 	return 0;
 }
 
-unsigned long aml_bitmap_nset(const aml_bitmap bitmap)
+unsigned long aml_bitmap_nset(const struct aml_bitmap *bitmap)
 {
 	unsigned long i, b, n;
 	unsigned long test = 1UL;
 	unsigned long nset = 0;
 		;
-	for(n = 0; n < AML_BITMAP_NUM; n++){
-		b = bitmap[n];
-		for(i = 0; i < AML_BITMAP_TYPELEN; i++){
+	for(n = 0; n < AML_BITMAP_SIZE; n++){
+		b = bitmap->mask[n];
+		for(i = 0; i < AML_BITMAP_NBITS; i++){
 			nset += b & test ? 1 : 0;
 			b = b >> 1;
 		}
@@ -173,7 +183,7 @@ unsigned long aml_bitmap_nset(const aml_bitmap bitmap)
 
 #include <hwloc.h>
 
-int hwloc_bitmap_copy_aml_bitmap(hwloc_bitmap_t hb, const aml_bitmap ab)
+int hwloc_bitmap_copy_aml_bitmap(hwloc_bitmap_t hb, const struct aml_bitmap *ab)
 {
 	if(hb == NULL)
 		return -1;
@@ -191,14 +201,14 @@ int hwloc_bitmap_copy_aml_bitmap(hwloc_bitmap_t hb, const aml_bitmap ab)
 	return last;
 }
 
-hwloc_bitmap_t hwloc_bitmap_from_aml_bitmap(const aml_bitmap b)
+hwloc_bitmap_t hwloc_bitmap_from_aml_bitmap(const struct aml_bitmap *b)
 {
 	hwloc_bitmap_t hb = hwloc_bitmap_alloc();
 	hwloc_bitmap_copy_aml_bitmap(hb, b);
 	return hb;
 }
 
-int aml_bitmap_copy_hwloc_bitmap(aml_bitmap ab, const hwloc_bitmap_t hb)
+int aml_bitmap_copy_hwloc_bitmap(struct aml_bitmap *ab, const hwloc_bitmap_t hb)
 {
 	if(ab == NULL)
 		return -1;
@@ -216,7 +226,7 @@ int aml_bitmap_copy_hwloc_bitmap(aml_bitmap ab, const hwloc_bitmap_t hb)
 	return i >= AML_BITMAP_LEN ? i : 0;
 }
 
-aml_bitmap aml_bitmap_from_hwloc_bitmap(const hwloc_bitmap_t b)
+struct aml_bitmap * aml_bitmap_from_hwloc_bitmap(const hwloc_bitmap_t b)
 {
         aml_bitmap ab = aml_bitmap_alloc();	
 	aml_bitmap_copy_hwloc_bitmap(ab, b);

@@ -4,8 +4,8 @@ AM_CPPFLAGS=$(AM_CFLAGS)
 noinst_LTLIBRARIES=libamlutils.la
 
 libamlutils_la_SOURCES=\
-	vector.c\
-	bitmap.c
+		       vector.c \
+		       bitmap.c
 
 libamlutils_la_CFLAGS=$(AM_CFLAGS)
 libamlutils_la_LDFLAGS=

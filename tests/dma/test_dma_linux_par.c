@@ -28,7 +28,6 @@ int main(int argc, char *argv[])
 	assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_1D, TILESIZE*PAGE_SIZE,
 				TILESIZE*PAGE_SIZE*NBTILES));
 
-
 	size_t maxrequests = NBTILES;
 	size_t maxthreads = 4;
 	assert(!aml_dma_linux_par_init(&dma, maxrequests, maxthreads));
