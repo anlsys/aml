@@ -26,10 +26,6 @@
 #include <aml/utils/bitmap.h>
 #include <aml/utils/vector.h>
 #include <aml/tiling/tiling.h>
-#include <aml/tiling/resize.h>
-#include <aml/tiling/pad.h>
-#include <aml/dma/copy.h>
-
 
 /*******************************************************************************
  * Areas:
