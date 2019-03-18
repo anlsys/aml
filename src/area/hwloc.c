@@ -9,6 +9,11 @@
 
 extern hwloc_topology_t aml_topology;
 
+const unsigned long aml_area_hwloc_flag_bind = HWLOC_MEMBIND_BIND;
+const unsigned long aml_area_hwloc_flag_interleave = HWLOC_MEMBIND_INTERLEAVE;
+const unsigned long aml_area_hwloc_flag_firsttouch = HWLOC_MEMBIND_FIRSTTOUCH;
+const unsigned long aml_area_hwloc_flag_nexttouch = HWLOC_MEMBIND_NEXTTOUCH;
+
 struct hwloc_binding{
 	struct aml_area_ops    ops;    //Used for malloc/free and mmap/munmap
 	hwloc_bitmap_t         nodeset; //Nodeset where to bind. Can be NULL.
@@ -73,6 +78,10 @@ aml_area_hwloc_bind(struct aml_area             *area,
 	if(!sup->membind->set_area_membind || !sup->membind->alloc_membind)
 		return AML_AREA_ENOTSUP;
 
+	if(hwloc_policy == HWLOC_MEMBIND_BIND &&
+	   !sup->membind->bind_membind)
+		return AML_AREA_ENOTSUP;
+
 	if(hwloc_policy == HWLOC_MEMBIND_FIRSTTOUCH &&
 	   !sup->membind->firsttouch_membind)
 		return AML_AREA_ENOTSUP;
@@ -91,12 +100,10 @@ aml_area_hwloc_bind(struct aml_area             *area,
 	if(nodeset && !hwloc_bitmap_isincluded(nodeset, allowed_nodeset))
 		return AML_AREA_EDOM;
 
-	if(hwloc_policy != HWLOC_MEMBIND_DEFAULT    &&
-	   hwloc_policy != HWLOC_MEMBIND_FIRSTTOUCH &&
+	if(hwloc_policy != HWLOC_MEMBIND_FIRSTTOUCH &&
 	   hwloc_policy != HWLOC_MEMBIND_BIND       &&
 	   hwloc_policy != HWLOC_MEMBIND_INTERLEAVE &&
-	   hwloc_policy != HWLOC_MEMBIND_NEXTTOUCH  &&
-	   hwloc_policy != HWLOC_MEMBIND_MIXED)
+	   hwloc_policy != HWLOC_MEMBIND_NEXTTOUCH)
 		return AML_AREA_EINVAL;
 
 	struct hwloc_binding *binding = area->data;

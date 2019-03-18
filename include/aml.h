@@ -53,8 +53,9 @@ struct aml_area;
 /*******************
  * Linux area:
  *
- * "aml_bitmap" is translated bitwise to linux struct bitmask. See <numa.h>
- * "flags" is translated to mode in mbind function. See <numaif.h>
+ * "aml_bitmap": is a bitwise translation of linux struct bitmask. See <numa.h>
+ * "flags": use one of aml_area_linux_flag_*. 
+ *          See <numaif.h> for further explanations.
  *******************/
 
 /* Implementation of process wide memory operations on host processor. */
@@ -62,12 +63,19 @@ extern struct aml_area *aml_area_linux_private;
 /* Implementation of cross process memory operations on host processor. */
 extern struct aml_area *aml_area_linux_shared;
 
+/* Bind memory on given nodeset with MPOL_BIND policy */
+const extern unsigned long aml_area_linux_flag_bind;
+/* Bind memory on given nodeset with MPOL_INTERLEAVE policy */
+const extern unsigned long aml_area_linux_flag_interleave;
+/* Bind memory on given nodeset with MPOL_PREFFERED policy */
+const extern unsigned long aml_area_linux_flag_preferred;
+
 /*******************
  * hwloc area
  *
- * aml_bitmap is translated bitwise to hwloc_nodeset_t. 
- * See <aml/utils/hwloc.h>, <hwloc/bitmap.h>
- * "flags" is translated to hwloc_membind_policy_t. See <hwloc.h>
+ * aml_bitmap is translated bitwise to hwloc_nodeset_t or hwloc_bitmap_t. 
+ * See <aml/utils/hwloc.h> for conversion, <hwloc/bitmap.h>.
+ * "flags" use flags in <aml/area/hwloc.h>. See <hwloc.h> for further explanations.
  *******************/
 
 // Additional areas and area features in <aml/area/hwloc.h> if supported

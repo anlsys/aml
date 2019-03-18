@@ -19,6 +19,10 @@ struct linux_binding{
 
 struct linux_binding linux_binding_default = {NULL, MPOL_DEFAULT};
 
+const unsigned long aml_area_linux_flag_bind = MPOL_BIND;
+const unsigned long aml_area_linux_flag_interleave = MPOL_INTERLEAVE;
+const unsigned long aml_area_linux_flag_preferred = MPOL_PREFERRED;
+
 static int
 linux_create(struct aml_area* area)
 {
@@ -50,6 +54,11 @@ linux_bind(struct aml_area         *area,
 	int first = aml_bitmap_first(binding);
 	int i, allowed_bit, set_bit;
 
+	if(flags != aml_area_linux_flag_bind ||
+	   flags != aml_area_linux_flag_interleave ||
+	   flags != aml_area_linux_flag_preferred)
+		return AML_AREA_EINVAL;
+	
 	if(last > numa_max_node())
 		return AML_AREA_EDOM;
 
@@ -88,7 +97,7 @@ linux_mbind(struct linux_binding *bind,
 	if(bind == NULL)
 		return AML_AREA_EINVAL;
 
-	if(bind->nodeset == NULL && (bind->flags & MPOL_DEFAULT))
+	if(bind->nodeset == NULL || (bind->flags & MPOL_DEFAULT))
 		return AML_AREA_SUCCESS;
 
 	if(bind->nodeset != NULL)
@@ -159,6 +168,10 @@ linux_check_binding(struct aml_area *area,
 	numa_free_nodemask(nodeset);
 	return err;
 }
+#else
+const unsigned long aml_area_linux_flag_bind = 0;
+const unsigned long aml_area_linux_flag_interleave = 0;
+const unsigned long aml_area_linux_flag_preferred = 0;
 #endif //HAVE_LINUX_NUMA
 
 static int
@@ -186,11 +199,24 @@ linux_mmap_generic(__attribute__ ((unused)) const struct aml_area* area,
 			return AML_AREA_EINVAL;
 		}
 	}
+	return AML_AREA_SUCCESS;
+}
+
+static int
+linux_mmap_mbind(const struct aml_area* area,
+		 void **ptr,
+		 size_t size,
+		 int    flags)
+{
+	int err = linux_mmap_generic(area, ptr, size, flags);
+	if(err != AML_AREA_SUCCESS)
+		return err;
 
 #ifdef HAVE_LINUX_NUMA
-	linux_mbind(area->data, *ptr, size);
-#endif	
+	return linux_mbind(area->data, *ptr, size);
+#else
 	return AML_AREA_SUCCESS;
+#endif		
 }
 
 int
@@ -209,6 +235,22 @@ linux_mmap_shared(const struct aml_area* area,
 	return linux_mmap_generic(area, ptr, size, MAP_SHARED);
 }
 
+static int
+linux_mmap_private_mbind(const struct aml_area* area,
+			 void **ptr,
+			 size_t size)
+{
+	return linux_mmap_mbind(area, ptr, size, MAP_PRIVATE);
+}
+
+static int
+linux_mmap_shared_mbind(const struct aml_area* area,
+			void **ptr,
+			size_t size)
+{
+	return linux_mmap_mbind(area, ptr, size, MAP_SHARED);
+}
+
 	
 int
 linux_munmap(__attribute__ ((unused)) const struct aml_area* area,
@@ -223,9 +265,9 @@ linux_munmap(__attribute__ ((unused)) const struct aml_area* area,
 
 int
 linux_malloc(struct aml_area *area,
-	     void           **ptr,
-	     size_t           size,
-	     size_t           alignement)
+		     void           **ptr,
+		     size_t           size,
+		     size_t           alignement)
 {
 	void *data;
 	
@@ -246,10 +288,23 @@ linux_malloc(struct aml_area *area,
 		return AML_AREA_ENOMEM;
 	*ptr = data;
 	
-#ifdef HAVE_LINUX_NUMA
-	linux_mbind(area->data, *ptr, size);
-#endif
 	return AML_AREA_SUCCESS;
+}
+
+static int
+linux_malloc_mbind(struct aml_area *area,
+		     void           **ptr,
+		     size_t           size,
+		     size_t           alignement)
+{
+	int err = linux_malloc(area, ptr, size, alignement);
+	if(err != AML_AREA_SUCCESS)
+		return err;
+#ifdef HAVE_LINUX_NUMA
+	return linux_mbind(area->data, *ptr, size);
+#else
+	return AML_AREA_SUCCESS;
+#endif
 }
 
 int
@@ -266,9 +321,9 @@ linux_free(__attribute__ ((unused)) struct aml_area *area,
  *********************************************************************************/
 
 static struct aml_area_ops aml_area_linux_private_ops_s = {
-	.map = linux_mmap_private,
+	.map = linux_mmap_private_mbind,
 	.unmap = linux_munmap,
-	.malloc = linux_malloc,
+	.malloc = linux_malloc_mbind,
 	.free = linux_free,
 #ifdef HAVE_LINUX_NUMA
 	.create = linux_create,
@@ -284,7 +339,7 @@ static struct aml_area_ops aml_area_linux_private_ops_s = {
 };
 
 static struct aml_area_ops aml_area_linux_shared_ops_s = {
-	.map = linux_mmap_shared,
+	.map = linux_mmap_shared_mbind,
 	.unmap = linux_munmap,
 	.malloc = NULL,
 	.free = NULL,

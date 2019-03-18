@@ -16,4 +16,13 @@ extern struct aml_area *aml_area_hwloc_private;
  **/
 extern struct aml_area *aml_area_hwloc_shared;
 
+/* Bind memory on given nodeset with HWLOC_MEMBIND_BIND policy */
+const extern unsigned long aml_area_hwloc_flag_bind;
+/* Bind memory on given nodeset with HWLOC_MEMBIND_INTERLEAVE policy */
+const extern unsigned long aml_area_hwloc_flag_interleave;
+/* Bind memory on given nodeset with HWLOC_MEMBIND_FIRSTTOUCH policy */
+const extern unsigned long aml_area_hwloc_flag_firsttouch;
+/* Bind memory on given nodeset with HWLOC_MEMBIND_NEXTTTOUCH policy */
+const extern unsigned long aml_area_hwloc_flag_nexttouch;
+
 #endif
