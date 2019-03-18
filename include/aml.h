@@ -13,8 +13,6 @@
 
 #include <assert.h>
 #include <inttypes.h>
-#include <numa.h>
-#include <numaif.h>
 #include <pthread.h>
 #include <stdarg.h>
 #include <stddef.h>
