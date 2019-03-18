@@ -57,9 +57,11 @@ struct aml_area;
  *******************/
 
 /* Implementation of process wide memory operations on host processor. */
-extern struct aml_area *aml_area_host_private;
+extern struct aml_area *aml_area_linux_private;
 /* Implementation of cross process memory operations on host processor. */
-extern struct aml_area *aml_area_host_shared;
+extern struct aml_area *aml_area_linux_shared;
+
+/* Additional areas in <aml/area/hwloc.h> if supported */
 
 /*******************
  * Area functions

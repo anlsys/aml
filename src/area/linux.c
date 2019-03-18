@@ -1,151 +1,169 @@
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <errno.h>
 #include "config.h"
 #include "aml.h"
 #include "aml/area/area.h"
-#ifdef HAVE_HWLOC
-#include "aml/utils/hwloc.h"
 
-#define aml_binding_flags (HWLOC_MEMBIND_PROCESS|HWLOC_MEMBIND_MIGRATE|HWLOC_MEMBIND_NOCPUBIND|HWLOC_MEMBIND_BYNODESET)
-#define __hwloc_unused__
+#ifdef HAVE_LINUX_NUMA
+#include "aml/area/linux.h"
 
-extern hwloc_topology_t aml_topology;
-#else
-#define __hwloc_unused__ __attribute__ ((unused))
-#endif
+#define linux_mbind_flags MPOL_MF_MOVE
 
-struct host_binding{
-	struct aml_bitmap bitmap;
+struct linux_binding{
+	struct bitmask *nodeset;
 	int flags;
 };
 
+struct linux_binding linux_binding_default = {NULL, MPOL_DEFAULT};
+
 static int
-host_create(struct aml_area* area)
+linux_create(struct aml_area* area)
 {
-	struct host_binding *binding = malloc(sizeof(struct host_binding));
+	struct linux_binding *binding = malloc(sizeof(struct linux_binding));
 	if(binding == NULL)
 		return AML_AREA_ENOMEM;
-	aml_bitmap_zero(&(binding->bitmap));
-	binding->flags = 0;
+	binding->nodeset = NULL;
+	binding->flags = MPOL_DEFAULT;
 	area->data = binding;
 	return AML_AREA_SUCCESS;
 }
 
 static void
-host_destroy(struct aml_area* area){
+linux_destroy(struct aml_area* area){
+	struct linux_binding *binding = area->data;
+	if(binding->nodeset != NULL)
+		numa_free_nodemask(binding->nodeset);
         free(area->data);
 }
 
 static int
-host_bind(__hwloc_unused__ struct aml_area *area,
-	  __hwloc_unused__ const struct aml_bitmap *binding,
-	  __hwloc_unused__ const unsigned long flags)	  
+linux_bind(struct aml_area         *area,
+	   const struct aml_bitmap *binding,
+	   const unsigned long      flags)
 {
-#ifdef HAVE_HWLOC
-	int nnodes = hwloc_get_nbobjs_by_depth(aml_topology, HWLOC_TYPE_DEPTH_NUMANODE);
-        if(aml_bitmap_last(binding) >= nnodes)
+	struct linux_binding *bind = area->data;
+	struct bitmask *allowed = numa_get_mems_allowed();
+	int last  = aml_bitmap_last(binding);
+	int first = aml_bitmap_first(binding);
+	int i, allowed_bit, set_bit;
+
+	if(last > numa_max_node())
 		return AML_AREA_EDOM;
-	struct host_binding *bind = area->data;
-	aml_bitmap_copy(&(bind->bitmap), binding);
+
+	if(allowed == NULL)
+		return AML_AREA_ENOMEM;
+		
+	if(binding == NULL)
+		goto set_flags;
+
+	for(i=first; i<= last; i++){
+		allowed_bit = numa_bitmask_isbitset(allowed, i);
+		set_bit = aml_bitmap_isset(binding, i);
+		if(!allowed_bit && set_bit)
+			return AML_AREA_EDOM;
+		if(allowed_bit && !set_bit)
+			numa_bitmask_clearbit(allowed, i);
+	}
+	
+	if(bind->nodeset != NULL)
+		numa_free_nodemask(bind->nodeset);
+	bind->nodeset = allowed;
+
+ set_flags:
 	bind->flags = flags;
 	return AML_AREA_SUCCESS;
-#else
-	return AML_AREA_ENOTSUP;
-#endif	
 }
 
 static int
-host_mbind(__hwloc_unused__ struct host_binding *bind,
-	   __hwloc_unused__ void                *ptr,
-	   __hwloc_unused__ size_t               size)
+linux_mbind(struct linux_binding *bind,
+	    void                 *ptr,
+	    size_t                size)
 {
-	int err = AML_AREA_ENOTSUP;	
-#ifdef HAVE_HWLOC
-	hwloc_bitmap_t bitmap = hwloc_bitmap_from_aml_bitmap(&bind->bitmap);
-
-	if(bitmap == NULL)
-		return AML_AREA_ENOMEM;
 	
-	err = hwloc_set_area_membind(aml_topology,
-				     ptr, size,
-				     bitmap,
-				     bind->flags,
-				     aml_binding_flags);
-
-	hwloc_bitmap_free(bitmap);
-	
-	if(err >= 0)
-		err = AML_AREA_SUCCESS;
-	else {
-		switch(errno){
-		case ENOSYS:
-			err = AML_AREA_ENOTSUP;
-			break;
-		case EXDEV:
-			err = AML_AREA_ENOTSUP;
-			break;
-		default:
-			err = AML_AREA_ENOTSUP;
-			break;
-		}
-	}
-#endif
-	return err;
-}
-
-static int
-host_check_binding(__hwloc_unused__ struct aml_area *area,
-		   __hwloc_unused__ void            *ptr,
-		   __hwloc_unused__ size_t           size)
-{
-	int err = AML_AREA_ENOTSUP;
-#ifdef HAVE_HWLOC	
-	struct aml_bitmap nodemask;	
-	hwloc_membind_policy_t policy;
-	hwloc_bitmap_t hwloc_bitmap;
-	struct host_binding *bind = area->data;
+	struct bitmask *nodeset;
 
 	if(bind == NULL)
 		return AML_AREA_EINVAL;
 
-	hwloc_bitmap = hwloc_bitmap_alloc();
-	if(hwloc_bitmap == NULL)
+	if(bind->nodeset == NULL && (bind->flags & MPOL_DEFAULT))
+		return AML_AREA_SUCCESS;
+
+	if(bind->nodeset != NULL)
+		nodeset = bind->nodeset;
+	else
+		nodeset = numa_get_mems_allowed();			
+	
+	long err = mbind(ptr,
+			 size,
+			 bind->flags,
+			 nodeset,
+			 numa_max_node(),
+			 linux_mbind_flags);
+
+	if(err == 0)
+		return AML_AREA_SUCCESS;
+
+	switch(errno){
+	case EFAULT:
+		return AML_AREA_EDOM;
+	case EINVAL:
+		return AML_AREA_EINVAL;
+	case EIO:
+		return AML_AREA_EINVAL;
+	case ENOMEM:
+		return AML_AREA_ENOMEM;
+	case EPERM:
+		return AML_AREA_ENOTSUP;
+	}
+}
+
+static int
+linux_check_binding(struct aml_area *area,
+		    void            *ptr,
+		    size_t           size)
+{
+	int err, mode, i;
+	struct bitmask *nodeset;
+	struct linux_binding *bind = area->data;
+
+	nodeset = numa_allocate_nodemask();
+	if(nodeset == NULL)
 		return AML_AREA_ENOMEM;
 	
-	err = hwloc_get_area_membind(aml_topology,
-				     ptr, size,
-				     hwloc_bitmap,
-				     &policy, aml_binding_flags);
+	err = get_mempolicy(&mode,
+			    nodeset,
+			    numa_max_node(),
+			    ptr,
+			    linux_mbind_flags);
+	
 	if(err < 0){
 		err = AML_AREA_EINVAL;
 		goto out;
 	}
 
-	err = aml_bitmap_copy_hwloc_bitmap(&nodemask, hwloc_bitmap);
-	if(err > (int)AML_BITMAP_MAX){
-		err = AML_AREA_EDOM;
-		goto out;
-	}
 	
-	if(policy != bind->flags)
+	err = 1;	
+	if(mode != bind->flags)
 	        err = 0;
-	else if(!aml_bitmap_isequal(&nodemask, &bind->bitmap))
-		err = 0;
-	else
-		err = 1;
+	for(i=0; i<numa_max_possible_node(); i++){
+		if(numa_bitmask_isbitset(nodeset, i) !=
+		   numa_bitmask_isbitset(bind->nodeset, i)){
+			err = 0;
+			break;
+		}
+	}	
  out:
-	hwloc_bitmap_free(hwloc_bitmap);
-#endif	
+	numa_free_nodemask(nodeset);
 	return err;
 }
+#endif //HAVE_LINUX_NUMA
 
 static int
-host_mmap_generic(__attribute__ ((unused)) const struct aml_area* area,
-		  void **ptr,
-		  size_t size,
-		  int    flags)
+linux_mmap_generic(__attribute__ ((unused)) const struct aml_area* area,
+		   void **ptr,
+		   size_t size,
+		   int    flags)
 {
 	*ptr = mmap(*ptr,
 		    size,
@@ -167,32 +185,33 @@ host_mmap_generic(__attribute__ ((unused)) const struct aml_area* area,
 		}
 	}
 
-	if(!aml_bitmap_iszero(&(((struct host_binding *)area->data)->bitmap)))
-	        host_mbind(area->data, *ptr, size);
+#ifdef HAVE_LINUX_NUMA
+	linux_mbind(area->data, *ptr, size);
+#endif	
 	return AML_AREA_SUCCESS;
 }
 
-static int
-host_mmap_private(const struct aml_area* area,
+int
+linux_mmap_private(const struct aml_area* area,
+		   void **ptr,
+		   size_t size)
+{
+	return linux_mmap_generic(area, ptr, size, MAP_PRIVATE);
+}
+
+int
+linux_mmap_shared(const struct aml_area* area,
 		  void **ptr,
 		  size_t size)
 {
-	return host_mmap_generic(area, ptr, size, MAP_PRIVATE);
-}
-
-static int
-host_mmap_shared(const struct aml_area* area,
-		 void **ptr,
-		 size_t size)
-{
-	return host_mmap_generic(area, ptr, size, MAP_SHARED);
+	return linux_mmap_generic(area, ptr, size, MAP_SHARED);
 }
 
 	
-static int
-host_munmap(__attribute__ ((unused)) const struct aml_area* area,
-	    void *ptr,
-	    const size_t size)
+int
+linux_munmap(__attribute__ ((unused)) const struct aml_area* area,
+	     void *ptr,
+	     const size_t size)
 {
 	int err = munmap(ptr, size);
 	if(err == -1)
@@ -200,11 +219,11 @@ host_munmap(__attribute__ ((unused)) const struct aml_area* area,
 	return AML_AREA_SUCCESS;
 }
 
-static int
-host_malloc(struct aml_area *area,
-		void           **ptr,
-		size_t           size,
-		size_t           alignement)
+int
+linux_malloc(struct aml_area *area,
+	     void           **ptr,
+	     size_t           size,
+	     size_t           alignement)
 {
 	void *data;
 	
@@ -225,14 +244,15 @@ host_malloc(struct aml_area *area,
 		return AML_AREA_ENOMEM;
 	*ptr = data;
 	
-	if(!aml_bitmap_iszero(&(((struct host_binding *)area->data)->bitmap)))
-	        host_mbind(area->data, *ptr, size);
+#ifdef HAVE_LINUX_NUMA
+	linux_mbind(area->data, *ptr, size);
+#endif
 	return AML_AREA_SUCCESS;
 }
 
-static int
-host_free(__attribute__ ((unused)) struct aml_area *area,
-	      void *ptr)	
+int
+linux_free(__attribute__ ((unused)) struct aml_area *area,
+	   void *ptr)	
 {
 	free(ptr);
 	return AML_AREA_SUCCESS;
@@ -243,41 +263,61 @@ host_free(__attribute__ ((unused)) struct aml_area *area,
  * Areas declaration
  *********************************************************************************/
 
-static struct host_binding host_binding_default = {{0,0,0,0,0,0,0,0}, 0};
-
-static struct aml_area_ops aml_area_host_private_ops = {
-	.create = host_create,
-	.destroy = host_destroy,
-	.map = host_mmap_private,
-	.unmap = host_munmap,
-	.malloc = host_malloc,
-	.free = host_free,
-	.bind = host_bind,
-	.check_binding = host_check_binding
+static struct aml_area_ops aml_area_linux_private_ops_s = {
+	.map = linux_mmap_private,
+	.unmap = linux_munmap,
+	.malloc = linux_malloc,
+	.free = linux_free,
+#ifdef HAVE_LINUX_NUMA
+	.create = linux_create,
+	.destroy = linux_destroy,	
+	.bind = linux_bind,
+	.check_binding = linux_check_binding
+#else
+	.create = NULL,
+	.destroy = NULL,
+	.bind = NULL,
+	.check_binding = NULL
+#endif
 };
 
-static struct aml_area aml_area_host_private_s = {
-	.ops = &aml_area_host_private_ops,
-	.data = &host_binding_default
-};
-
-struct aml_area *aml_area_host_private = &aml_area_host_private_s;
-
-static struct aml_area_ops aml_area_host_shared_ops = {
-	.create = host_create,
-	.destroy = host_destroy,
-	.map = host_mmap_shared,
-	.unmap = host_munmap,
+static struct aml_area_ops aml_area_linux_shared_ops_s = {
+	.map = linux_mmap_shared,
+	.unmap = linux_munmap,
 	.malloc = NULL,
-	.free = NULL,	
-	.bind = host_bind,
-	.check_binding = host_check_binding
+	.free = NULL,
+#ifdef HAVE_LINUX_NUMA
+	.create = linux_create,
+	.destroy = linux_destroy,
+	.bind = linux_bind,
+	.check_binding = linux_check_binding
+#else
+	.create = NULL,
+	.destroy = NULL,
+	.bind = NULL,
+	.check_binding = NULL
+#endif
+};
+	
+static struct aml_area aml_area_linux_private_s = {
+	.ops = &aml_area_linux_private_ops_s,
+#ifdef HAVE_LINUX_NUMA	
+	.data = &linux_binding_default
+#else
+	.data = NULL
+#endif
 };
 
-static struct aml_area aml_area_host_shared_s = {
-	.ops = &aml_area_host_shared_ops,
-	.data = &host_binding_default
+
+static struct aml_area aml_area_linux_shared_s = {
+	.ops = &aml_area_linux_shared_ops_s,
+#ifdef HAVE_LINUX_NUMA	
+	.data = &linux_binding_default
+#else
+	.data = NULL
+#endif
 };
 
-struct aml_area *aml_area_host_shared = &aml_area_host_shared_s;
+struct aml_area *aml_area_linux_shared = &aml_area_linux_shared_s;
+struct aml_area *aml_area_linux_private = &aml_area_linux_private_s;
 

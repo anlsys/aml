@@ -32,9 +32,9 @@ int main(int argc, char *argv[])
 	assert(!aml_dma_linux_seq_init(&dma, maxrequests));
 
 	/* allocate some memory */
-	assert(aml_area_malloc(aml_area_host_private, &src, TILESIZE*PAGE_SIZE*NBTILES, 0) == AML_AREA_SUCCESS);
+	assert(aml_area_malloc(aml_area_linux_private, &src, TILESIZE*PAGE_SIZE*NBTILES, 0) == AML_AREA_SUCCESS);
 	assert(src != NULL);
-	assert(aml_area_malloc(aml_area_host_private, &dst, TILESIZE*PAGE_SIZE*NBTILES, 0) == AML_AREA_SUCCESS);
+	assert(aml_area_malloc(aml_area_linux_private, &dst, TILESIZE*PAGE_SIZE*NBTILES, 0) == AML_AREA_SUCCESS);
 	assert(dst != NULL);
 
 	memset(src, 42, TILESIZE*PAGE_SIZE*NBTILES);
@@ -48,8 +48,8 @@ int main(int argc, char *argv[])
 
 	/* delete everything */
 	aml_dma_linux_seq_destroy(&dma);
-	aml_area_free(aml_area_host_private, dst);
-	aml_area_free(aml_area_host_private, src);
+	aml_area_free(aml_area_linux_private, dst);
+	aml_area_free(aml_area_linux_private, src);
 	aml_tiling_destroy(&tiling, AML_TILING_TYPE_1D);
 
 	aml_finalize();

@@ -7,7 +7,7 @@ libamlutils_la_SOURCES=\
 		       vector.c \
 		       bitmap.c
 
-libamlutils_la_CFLAGS=$(AM_CFLAGS)
+libamlutils_la_CFLAGS=$(AM_CFLAGS) -Wno-overflow
 libamlutils_la_LDFLAGS=
 if HAVE_HWLOC
 libamlutils_la_LDFLAGS+=-lhwloc

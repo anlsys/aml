@@ -48,11 +48,6 @@ if [[ "x$benchmarks" = xtrue ]]; then
 fi
 AM_CONDITIONAL([ADD_BENCHMARKS],[test "x$benchmarks" = xtrue])
 
-
-# NUMA support
-AC_CHECK_HEADERS(numa.h)
-AC_CHECK_HEADERS(numaif.h)
-AC_CHECK_LIB(numa, move_pages)
 AC_CHECK_LIB(dl, dlopen)
 
 # add pthread support.
@@ -60,7 +55,20 @@ AC_CHECK_LIB(dl, dlopen)
 AX_PTHREAD
 CC="$PTHREAD_CC"
 
-# Hwloc dependency
+# NUMA support
+AC_CHECK_HEADERS([numa.h], [numa_header_happy=yes], [numa_header_happy=no])
+AC_CHECK_HEADERS([numaif.h], [numaif_header_happy=yes], [numaif_header_happy=no])
+AC_CHECK_LIB(numa, mbind, [numa_lib_happy=yes], [numa_lib_happy=no])
+if test x"$numa_header_happy"   = x"yes" -a\
+        x"$numa_lib_happy"      = x"yes" -a\
+	x"$numaif_header_happy" = x"yes"; then
+   AC_DEFINE([HAVE_LINUX_NUMA], [1], "Linux supports numa memory binding.")
+fi
+AM_CONDITIONAL([HAVE_LINUX_NUMA], [test x"$numa_header_happy"   = x"yes" -a\
+                                        x"$numa_lib_happy"      = x"yes" -a\
+                                	x"$numaif_header_happy" = x"yes"])
+
+# Hwloc support
 AC_CHECK_HEADER([hwloc.h],\
                 [hwloc_header_happy=yes; \
 		 LIBS="$LIBS -lhwloc"],\

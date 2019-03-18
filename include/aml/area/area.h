@@ -118,4 +118,33 @@ struct aml_area {
 	void *data;
 };
 
+/*
+ * Implementation specific functions used in several areas
+ */
+
+int
+linux_mmap_private(const struct aml_area* area,
+		   void **ptr,
+		   size_t size);
+
+int
+linux_mmap_shared(const struct aml_area* area,
+		  void **ptr,
+		  size_t size);
+
+int
+linux_munmap(const struct aml_area* area,
+	     void *ptr,
+	     const size_t size);
+
+int
+linux_malloc(struct aml_area *area,
+	     void           **ptr,
+	     size_t           size,
+	     size_t           alignement);
+	
+int
+linux_free(struct aml_area *area,
+	   void *ptr);
+
 #endif //AML_AREA_H
