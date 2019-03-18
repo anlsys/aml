@@ -175,8 +175,7 @@ const unsigned long aml_area_linux_flag_preferred = 0;
 #endif //HAVE_LINUX_NUMA
 
 static int
-linux_mmap_generic(__attribute__ ((unused)) const struct aml_area* area,
-		   void **ptr,
+linux_mmap_generic(void **ptr,
 		   size_t size,
 		   int    flags)
 {
@@ -208,7 +207,7 @@ linux_mmap_mbind(const struct aml_area* area,
 		 size_t size,
 		 int    flags)
 {
-	int err = linux_mmap_generic(area, ptr, size, flags);
+	int err = linux_mmap_generic(ptr, size, flags);
 	if(err != AML_AREA_SUCCESS)
 		return err;
 
@@ -220,19 +219,19 @@ linux_mmap_mbind(const struct aml_area* area,
 }
 
 int
-linux_mmap_private(const struct aml_area* area,
+linux_mmap_private(__attribute__ ((unused)) const struct aml_area* area,
 		   void **ptr,
 		   size_t size)
 {
-	return linux_mmap_generic(area, ptr, size, MAP_PRIVATE);
+	return linux_mmap_generic(ptr, size, MAP_PRIVATE);
 }
 
 int
-linux_mmap_shared(const struct aml_area* area,
+linux_mmap_shared(__attribute__ ((unused)) const struct aml_area* area,
 		  void **ptr,
 		  size_t size)
 {
-	return linux_mmap_generic(area, ptr, size, MAP_SHARED);
+	return linux_mmap_generic(ptr, size, MAP_SHARED);
 }
 
 static int

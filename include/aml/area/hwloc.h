@@ -1,6 +1,8 @@
 #ifndef AML_AREA_HWLOC_H
 #define AML_AREA_HWLOC_H
 
+#include <hwloc.h>
+
 /** 
  * Use linux areas allocation with hwloc binding capabilities for process wide
  * memory operations.

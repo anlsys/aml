@@ -1,5 +1,6 @@
 #include "aml.h"
 #include "aml/area/area.h"
+#include "aml/utils/hwloc.h"
 #include "aml/area/hwloc.h"
 
 #define hwloc_binding_flags (HWLOC_MEMBIND_PROCESS|	\
