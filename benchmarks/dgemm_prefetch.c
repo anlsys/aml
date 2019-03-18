@@ -82,8 +82,8 @@ int main(int argc, char* argv[])
 	aml_bitmap_zero(&fast_b);
 	aml_bitmap_set(&slow_b, 0);
 	aml_bitmap_set(&fast_b, 1);
-	struct aml_area * slow = aml_local_area_create(aml_area_host_private, &slow_b, 0);
-	struct aml_area * fast = aml_local_area_create(aml_area_host_private, &fast_b, 0);
+	struct aml_area * slow = aml_local_area_create(aml_area_linux_private, &slow_b, 0);
+	struct aml_area * fast = aml_local_area_create(aml_area_linux_private, &fast_b, 0);
 
 	AML_DMA_LINUX_SEQ_DECL(dma);
 	aml_init(&argc, &argv);
