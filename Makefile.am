@@ -10,6 +10,7 @@ pkgconfig_DATA = aml.pc
 
 install-recursive:
 	$(MAKE) -C src install
+	$(MAKE) -C include install
 	$(MAKE) install-am
 
 EXTRA_DIST = autogen.sh aml.pc README.markdown
