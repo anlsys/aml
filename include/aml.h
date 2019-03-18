@@ -51,7 +51,10 @@
 struct aml_area;
 
 /*******************
- * Area implementations
+ * Linux area:
+ *
+ * "aml_bitmap" is translated bitwise to linux struct bitmask. See <numa.h>
+ * "flags" is translated to mode in mbind function. See <numaif.h>
  *******************/
 
 /* Implementation of process wide memory operations on host processor. */
@@ -59,10 +62,18 @@ extern struct aml_area *aml_area_linux_private;
 /* Implementation of cross process memory operations on host processor. */
 extern struct aml_area *aml_area_linux_shared;
 
-/* Additional areas in <aml/area/hwloc.h> if supported */
+/*******************
+ * hwloc area
+ *
+ * aml_bitmap is translated bitwise to hwloc_nodeset_t. 
+ * See <aml/utils/hwloc.h>, <hwloc/bitmap.h>
+ * "flags" is translated to hwloc_membind_policy_t. See <hwloc.h>
+ *******************/
+
+// Additional areas and area features in <aml/area/hwloc.h> if supported
 
 /*******************
- * Area functions
+ * Global area features
  *******************/
 
 /**
@@ -71,10 +82,9 @@ extern struct aml_area *aml_area_linux_shared;
  *
  * "area": The base area from which to create a new one. 
  * "binding": A bitmap to bind memory on subsequent memory mapping. Cannot be NULL.
- *            AML_AREA_HOST_*: The set of numanode where allocations can be done.
- *                             Numanodes are numbered by their relative index.
+ *            See specific areas doc in this header for setting bitmap.
  * "flags": flags associated with binding. (implementation dependent)
- *          AML_AREA_HOST_*: a hwloc_membind_policy_t.
+ *            See specific areas doc in this header for setting flags.
  * Returns NULL if area is NULL or does not support binding.
  **/
 struct aml_area*
