@@ -6,7 +6,6 @@
 #include "aml/area/area.h"
 
 #ifdef HAVE_LINUX_NUMA
-#include "aml/area/linux.h"
 
 #define linux_mbind_flags MPOL_MF_MOVE
 
