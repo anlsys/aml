@@ -7,6 +7,9 @@
 
 #ifdef HAVE_LINUX_NUMA
 
+#include <numa.h>
+#include <numaif.h>
+
 #define linux_mbind_flags MPOL_MF_MOVE
 
 struct linux_binding{
