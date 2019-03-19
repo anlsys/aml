@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 {
 	AML_ARENA_JEMALLOC_DECL(arena);
 	AML_AREA_LINUX_DECL(area);
-	unsigned long nodemask[AML_NODEMASK_SZ];
+	struct aml_bitmap nodemask;
 	struct bitmask *allowed;
 
 	/* library initialization */
@@ -79,14 +79,14 @@ int main(int argc, char *argv[])
 
 	/* init arguments */
 	allowed = numa_get_mems_allowed();
-	memcpy(nodemask, allowed->maskp, AML_NODEMASK_BYTES);
+	aml_bitmap_copy_ulong(&nodemask, allowed->maskp, numa_max_node());
 	assert(!aml_arena_jemalloc_init(&arena, AML_ARENA_JEMALLOC_TYPE_REGULAR));
 
 	assert(!aml_area_linux_init(&area,
 				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
 				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
 				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arena, MPOL_BIND, nodemask));
+				    &arena, MPOL_BIND, &nodemask));
 
 	doit(&area);
 

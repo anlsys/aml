@@ -29,6 +29,7 @@
 #define PAGE_SIZE 4096
 #endif
 
+#include <aml/utils/bitmap.h>
 #include <aml/utils/vector.h>
 
 
@@ -291,44 +292,8 @@ int aml_area_linux_manager_single_init(struct aml_area_linux_manager_data *data,
  */
 int aml_area_linux_manager_single_destroy(struct aml_area_linux_manager_data *data);
 
-/* Size of the bitmask (in bits) passed to aml_area_linux_mbind_init().  */
-#define AML_MAX_NUMA_NODES 128
-/* Size of the bitmask (in bytes) passed to aml_area_linux_mbind_init().  */
-#define AML_NODEMASK_BYTES (AML_MAX_NUMA_NODES/8)
-/* Size of the bitmask (in array elements) passed to
-   aml_area_linux_mbind_init().  */
-#define AML_NODEMASK_SZ (AML_NODEMASK_BYTES/sizeof(unsigned long))
-
-#define AML_NODEMASK_NBITS (8*sizeof(unsigned long))
-#define AML_NODEMASK_ELT(i) ((i) / AML_NODEMASK_NBITS)
-#define AML_NODEMASK_BITMASK(i) ((unsigned long)1 << ((i) % AML_NODEMASK_NBITS))
-#define AML_NODEMASK_ISSET(mask, i) \
-	((mask[AML_NODEMASK_ELT(i)] & AML_NODEMASK_BITMASK(i)) != 0)
-/*
- * Sets a bit in a nodemask.
- * "mask": an array of type "unsigned long", at least AML_NODEMASK_SZ long.
- * "i": bit to set, indicating a NUMA node.
- */
-#define AML_NODEMASK_SET(mask, i) (mask[AML_NODEMASK_ELT(i)] |= AML_NODEMASK_BITMASK(i))
-/*
- * Clears a bit in a nodemask.
- * "mask": an array of type "unsigned long", at least AML_NODEMASK_SZ long.
- * "i": bit to clear, indicating a NUMA node.
- */
-#define AML_NODEMASK_CLR(mask, i) (mask[AML_NODEMASK_ELT(i)] &= ~AML_NODEMASK_BITMASK(i))
-/*
- * Zero-initializes a nodemask.
- * "mask": an array of type "unsigned long", at least AML_NODEMASK_SZ long.
- */
-#define AML_NODEMASK_ZERO(mask) \
-	do {								\
-		for(unsigned int __i = 0; __i < AML_NODEMASK_SZ; __i++)	\
-			mask[__i] = 0;					\
-	} while(0)
-
-
 struct aml_area_linux_mbind_data {
-	unsigned long nodemask[AML_NODEMASK_SZ];
+	struct aml_bitmap nodemask;
 	int policy;
 };
 
@@ -347,7 +312,7 @@ struct aml_area_linux_mbind_ops {
  * Returns 0 if successful; an error code otherwise.
  */
 int aml_area_linux_mbind_setdata(struct aml_area_linux_mbind_data *data,
-				 int policy, const unsigned long *nodemask);
+				 int policy, const struct aml_bitmap *nodemask);
 /*
  * Creates a new binding structure based on an existing Linux memory policy
  * structure.
@@ -410,7 +375,7 @@ int aml_area_linux_mbind_mempolicy_post_bind(struct aml_area_linux_mbind_data *d
  * Returns 0 if successful; an error code otherwise.
  */
 int aml_area_linux_mbind_init(struct aml_area_linux_mbind_data *data,
-			      int policy, const unsigned long *nodemask);
+			      int policy, const struct aml_bitmap *nodemask);
 /*
  * Tears down an initialized Linx memory policy.
  * "data": an initialized Linux memory policy structure.
@@ -1046,10 +1011,9 @@ int aml_binding_nodes(const struct aml_binding *binding, int *nodes,
  *             will be allocated from.
  * - if "type" equals AML_BINDING_TYPE_INTERLEAVE, one additional argument is
  *   needed:
- *   - "mask": an argument of type const unsigned long*; provides an array
- *             at least AML_NODEMASK_SZ elements long, storing a bitmask of
+ *   - "mask": an argument of type const struct aml_bitmap*; storing a bitmask of
  *             NUMA node ids where pages will be allocated from.  See
- *             AML_NODEMASK_* macros for more information.
+ *             aml_bitmap for more information.
  * Returns 0 if successful; an error code otherwise.
  */
 int aml_binding_create(struct aml_binding **binding, int type, ...);
@@ -1103,6 +1067,8 @@ struct aml_binding_single_data {
  * Interleave Binding:
  * each page, of each tile, interleaved across nodes.
  ******************************************************************************/
+
+#define AML_MAX_NUMA_NODES AML_BITMAP_MAX
 
 extern struct aml_binding_ops aml_binding_interleave_ops;
 
