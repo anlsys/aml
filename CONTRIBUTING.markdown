@@ -2,9 +2,25 @@ Contributing to The Project
 ===========================
 
 The following is a set of guidelines for contributing to this project. These
-are guidelines, not rules, so use your best judgement and feel free to propose
-changes.
+are guidelines, not rules, so use your best judgment and feel free to propose
+changes. For information about the overall design of the library and general
+coding guidelines, see the `DESIGN.markdown` file.
 
+## Contribution Workflow
+
+We basically follow the [Gitlab Flow](https://docs.gitlab.com/ee/workflow/gitlab_flow.html)
+model:
+ - `master` is the primary branch for up-to-date development
+ - any new feature/development should go into a `feature-branch` based of
+   `master` and merge into `master` after.
+ - we follow a `semi-linear history with merge commits` strategy: each merge
+   request should include clean commits, but only the HEAD and merge commit
+   need to pass CI.
+ - if the feature branch is not too complex, a single commit, even from a
+   squash is okay. If the feature branch includes too many changes, each major
+   change should appear in its own commit.
+ - to help with in-development work, CI will not activate on branches with
+   names started with wip/
 ## Commit Messages Styleguide
 
 - use present tense, imperative mood
