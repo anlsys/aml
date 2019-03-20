@@ -9,6 +9,8 @@
 *******************************************************************************/
 
 #include "aml.h"
+#include "aml/dma/linux-par.h"
+#include "aml/scratch/seq.h"
 #include <assert.h>
 
 #define TILESIZE (2)
