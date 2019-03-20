@@ -61,7 +61,6 @@ int main(int argc, char* argv[])
 {
 	AML_ARENA_JEMALLOC_DECL(arns);
 	AML_ARENA_JEMALLOC_DECL(arnf);
-	AML_DMA_LINUX_SEQ_DECL(dma);
 	struct bitmask *slowb, *fastb;
 	aml_init(&argc, &argv);
 	assert(argc == 5);

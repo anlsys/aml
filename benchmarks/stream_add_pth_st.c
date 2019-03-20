@@ -15,6 +15,7 @@
 #include <stdlib.h>
 
 #include "aml.h"
+#include "aml/dma/linux-seq.h"
 #include "utils.h"
 
 #define ITER 10

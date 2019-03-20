@@ -9,6 +9,7 @@
 *******************************************************************************/
 
 #include "aml.h"
+#include "aml/dma/linux-seq.h"
 #include <assert.h>
 #include <errno.h>
 #include <mkl.h>
