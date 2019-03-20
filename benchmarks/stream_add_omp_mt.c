@@ -10,6 +10,7 @@
 
 #include "aml.h"
 #include "aml/dma/linux-par.h"
+#include "aml/scratch/seq.h"
 #include <assert.h>
 #include <errno.h>
 #include <omp.h>
