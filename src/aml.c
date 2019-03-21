@@ -10,8 +10,42 @@
 
 #include "config.h"
 #include "aml.h"
+#include <string.h>
 
-size_t aml_pagesize = 4096;
+const char* aml_version_string = VERSION;
+int         aml_major_version = -1;
+int         aml_minor_version = -1;
+int         aml_patch_version = -1;
+
+int aml_get_major_version(){
+	if(aml_major_version < 0){
+		char version[strlen(VERSION)+1];
+		strcpy(version, VERSION);
+		return atoi(strtok(version, "."));
+	}
+	return aml_major_version;
+}
+
+int aml_get_minor_version(){
+	if(aml_major_version < 0){
+		char version[strlen(VERSION)+1];
+		strcpy(version, VERSION);
+		strtok(version, ".");
+		return atoi(strtok(version, "."));
+	}
+	return aml_minor_version;
+}
+
+int aml_get_patch_version(){		
+	if(aml_major_version < 0){
+		char version[strlen(VERSION)+1];
+		strcpy(version, VERSION);
+		strtok(version, ".");
+		strtok(version, ".");
+		return atoi(strtok(version, "."));
+	}
+	return aml_minor_version;
+}
 
 #ifdef HAVE_HWLOC
 #include <hwloc.h>
@@ -38,7 +72,13 @@ int aml_init(int *argc, char **argv[])
 	if(err < 0)
 		return err;
 #endif
-	aml_pagesize = sysconf(_SC_PAGE_SIZE);
+	char version[strlen(VERSION)+1];
+	strcpy(version, VERSION);
+	aml_major_version = atoi(strtok(version, "."));
+	if(aml_major_version != AML_ABI_VERSION)
+		return -1;
+	aml_minor_version = atoi(strtok(NULL, "."));
+	aml_patch_version = atoi(strtok(NULL, "."));
 	return 0;
 	
 }

@@ -1,5 +1,5 @@
 # see semver.org for version info
-AC_INIT([aml],[0.0.1],[swann@anl.gov])
+AC_INIT([aml],[0.0.2],[swann@anl.gov])
 
 # are we in the right source dir ?
 AC_CONFIG_SRCDIR([include/aml.h])
