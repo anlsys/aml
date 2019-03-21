@@ -120,10 +120,10 @@ aml_local_area_destroy(struct aml_area* area);
  * Returns AML_AREA_* error code.
  **/
 int
-aml_area_malloc(struct aml_area *area,
-		void           **ptr,
-		size_t           size,
-		size_t           alignement);
+aml_area_malloc(const struct aml_area *area,
+		void                 **ptr,
+		size_t                 size,
+		size_t                 alignement);
 
 /**
  * Release data allocated with aml_area_malloc() and the same area.
@@ -133,8 +133,8 @@ aml_area_malloc(struct aml_area *area,
  * Returns AML_AREA_* error code.
  **/
 int
-aml_area_free(struct aml_area *area,
-	      void            *ptr);
+aml_area_free(const struct aml_area *area,
+	      void                  *ptr);
 
 /*******************************************************************************
  * Tiling:

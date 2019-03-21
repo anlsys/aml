@@ -64,9 +64,9 @@ aml_local_area_destroy(struct aml_area* area)
 }
 
 static int
-aml_area_mmap(struct aml_area *area,
-	      void           **ptr,
-	      size_t           size)
+aml_area_mmap(const struct aml_area *area,
+	      void                 **ptr,
+	      size_t                 size)
 {
 	if(ptr == NULL)
 		return AML_AREA_EINVAL;
@@ -86,9 +86,9 @@ aml_area_mmap(struct aml_area *area,
 }
 
 static int
-aml_area_munmap(struct aml_area *area,
-		void            *ptr,
-		size_t           size)
+aml_area_munmap(const struct aml_area *area,
+		void                  *ptr,
+		size_t                 size)
 {
 	if(ptr == NULL || size == 0)
 		return AML_AREA_SUCCESS;
@@ -103,10 +103,10 @@ aml_area_munmap(struct aml_area *area,
 }
 
 int
-aml_area_malloc(struct aml_area *area,
-		void           **ptr,
-		size_t           size,
-		size_t           alignement)
+aml_area_malloc(const struct aml_area *area,
+		void                 **ptr,
+		size_t                 size,
+		size_t                 alignement)
 {
 	if(area == NULL)
 		return AML_AREA_EINVAL;
@@ -138,8 +138,8 @@ aml_area_malloc(struct aml_area *area,
 }
 
 int
-aml_area_free(struct aml_area *area,
-	      void            *ptr)
+aml_area_free(const struct aml_area *area,
+	      void                  *ptr)
 {
 	if(area == NULL)
 		return AML_AREA_EINVAL;

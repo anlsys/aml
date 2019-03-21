@@ -47,9 +47,9 @@ struct aml_area_ops {
 	 * Returns 0 if ptr binding does not match area settings, 
 	 * else a positive value or an error code on error. 
 	 **/
-	int (*check_binding)(struct aml_area *area,
-			     void            *ptr,
-			     const size_t     size);
+	int (*check_binding)(const struct aml_area *area,
+			     void                  *ptr,
+			     const size_t           size);
 	
 	/**
 	 * Coarse grain allocator of virtual memory.
@@ -92,10 +92,10 @@ struct aml_area_ops {
 	 *
 	 * Returns AML_AREA_* error code.
 	 **/
-	int (*malloc)(struct aml_area *area,
-		      void           **ptr,
-		      size_t           size,
-		      size_t           alignement);
+	int (*malloc)(const struct aml_area *area,
+		      void                 **ptr,
+		      size_t                 size,
+		      size_t                 alignement);
 	
 	/**
 	 * Free memory allocated with malloc().
@@ -107,8 +107,8 @@ struct aml_area_ops {
 	 *
 	 * Returns AML_AREA_* error code.
 	 **/
-	int (*free)(struct aml_area *area,
-		    void            *ptr);
+	int (*free)(const struct aml_area *area,
+		    void                  *ptr);
 };
 
 struct aml_area {
@@ -123,28 +123,28 @@ struct aml_area {
  */
 
 int
-linux_mmap_private(const struct aml_area* area,
+aml_linux_mmap_private(const struct aml_area* area,
 		   void **ptr,
 		   size_t size);
 
 int
-linux_mmap_shared(const struct aml_area* area,
+aml_linux_mmap_shared(const struct aml_area* area,
 		  void **ptr,
 		  size_t size);
 
 int
-linux_munmap(const struct aml_area* area,
+aml_linux_munmap(const struct aml_area* area,
 	     void *ptr,
 	     const size_t size);
 
 int
-linux_malloc(struct aml_area *area,
+aml_linux_malloc(struct aml_area *area,
 	     void           **ptr,
 	     size_t           size,
 	     size_t           alignement);
 	
 int
-linux_free(struct aml_area *area,
+aml_linux_free(struct aml_area *area,
 	   void *ptr);
 
 #endif //AML_AREA_H

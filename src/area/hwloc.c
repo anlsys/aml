@@ -3,7 +3,7 @@
 #include "aml/utils/hwloc.h"
 #include "aml/area/hwloc.h"
 
-#define hwloc_binding_flags (HWLOC_MEMBIND_PROCESS|	\
+#define HWLOC_BINDING_FLAGS (HWLOC_MEMBIND_PROCESS|	\
 			     HWLOC_MEMBIND_MIGRATE|	\
 			     HWLOC_MEMBIND_NOCPUBIND|	\
 			     HWLOC_MEMBIND_BYNODESET)
@@ -15,14 +15,8 @@ const unsigned long aml_area_hwloc_flag_interleave = HWLOC_MEMBIND_INTERLEAVE;
 const unsigned long aml_area_hwloc_flag_firsttouch = HWLOC_MEMBIND_FIRSTTOUCH;
 const unsigned long aml_area_hwloc_flag_nexttouch = HWLOC_MEMBIND_NEXTTOUCH;
 
-struct hwloc_binding{
-	struct aml_area_ops    ops;    //Used for malloc/free and mmap/munmap
-	hwloc_bitmap_t         nodeset; //Nodeset where to bind. Can be NULL.
-        hwloc_membind_policy_t policy; 
-};
-
-static int
-aml_hwloc_create(struct aml_area* area)
+int
+aml_area_hwloc_create(struct aml_area* area)
 {
 	int err = AML_AREA_SUCCESS;
 	struct hwloc_binding *binding;
@@ -58,17 +52,18 @@ aml_hwloc_create(struct aml_area* area)
 	return err;
 }
 
-static void
-aml_hwloc_destroy(struct aml_area* area){
+void
+aml_area_hwloc_destroy(struct aml_area* area)
+{
 	struct hwloc_binding *binding = area->data;
 	hwloc_bitmap_free(binding->nodeset);	
         free(binding);	
 }
 
 static int
-aml_area_hwloc_bind(struct aml_area             *area,
-		    const hwloc_bitmap_t        *nodeset,
-		    const hwloc_membind_policy_t hwloc_policy)
+aml_hwloc_bind(struct aml_area             *area,
+	       const hwloc_bitmap_t        *nodeset,
+	       const hwloc_membind_policy_t hwloc_policy)
 {
 	const struct hwloc_topology_support * sup =
 		hwloc_topology_get_support(aml_topology);
@@ -119,14 +114,14 @@ aml_area_hwloc_bind(struct aml_area             *area,
 	return AML_AREA_SUCCESS;
 }
 
-static int
-aml_hwloc_bind(struct aml_area *area,
-	       const struct aml_bitmap *bitmap,
-	       const unsigned long hwloc_policy)	  
+int
+aml_area_hwloc_bind(struct aml_area         *area,
+		    const struct aml_bitmap *bitmap,
+		    const unsigned long      policy)
 {
 	hwloc_bitmap_t hwloc_bitmap = hwloc_bitmap_from_aml_bitmap(bitmap);
 
-	int err = aml_area_hwloc_bind(area, hwloc_bitmap, hwloc_policy);
+	int err = aml_hwloc_bind(area, hwloc_bitmap, policy);
 	
 	hwloc_bitmap_free(hwloc_bitmap);
 
@@ -134,9 +129,9 @@ aml_hwloc_bind(struct aml_area *area,
 }
 
 static int
-aml_hwloc_apply_binding(struct hwloc_binding *binding,
-			void                 *ptr,
-			size_t                size)
+aml_area_hwloc_apply_binding(struct hwloc_binding *binding,
+			     void                 *ptr,
+			     size_t                size)
 {
 	int err = AML_AREA_SUCCESS;
 	hwloc_bitmap_t nodeset = binding->nodeset;
@@ -148,7 +143,7 @@ aml_hwloc_apply_binding(struct hwloc_binding *binding,
 				     ptr, size,
 				     nodeset,
 				     binding->policy,
-				     hwloc_binding_flags);
+				     HWLOC_BINDING_FLAGS);
 	
 	if(err >= 0)
 		err = AML_AREA_SUCCESS;
@@ -168,10 +163,10 @@ aml_hwloc_apply_binding(struct hwloc_binding *binding,
 	return err;
 }
 
-static int
-hwloc_check_binding(struct aml_area *area,
-		    void            *ptr,
-		    size_t           size)
+int
+aml_area_hwloc_check_binding(struct aml_area *area,
+			     void            *ptr,
+			     size_t           size)
 {
 	int err;
 	hwloc_membind_policy_t policy;
@@ -187,7 +182,7 @@ hwloc_check_binding(struct aml_area *area,
 				     ptr, size,
 				     nodeset,
 				     &policy,
-				     hwloc_binding_flags);
+				     HWLOC_BINDING_FLAGS);
 	
 	if(err < 0){
 		err = AML_AREA_EINVAL;
@@ -207,10 +202,10 @@ hwloc_check_binding(struct aml_area *area,
 	return err;
 }
 
-static int
-aml_hwloc_mmap(const struct aml_area* area,
-	       void **ptr,
-	       size_t size)
+int
+aml_area_hwloc_mmap(const struct aml_area *area,
+		    void                      **ptr,
+		    size_t                      size)
 {
 	struct hwloc_binding *binding = area->data;
         int err = binding->ops.map(area, ptr, size);
@@ -218,36 +213,36 @@ aml_hwloc_mmap(const struct aml_area* area,
 	if(err != AML_AREA_SUCCESS)
 		return err;
 
-	return aml_hwloc_apply_binding(binding, *ptr, size);
+	return aml_area_hwloc_apply_binding(binding, *ptr, size);
 }
 
-static int
-aml_hwloc_munmap(const struct aml_area* area,
-		 void *ptr,
-		 const size_t size)
+int
+aml_area_hwloc_munmap(const struct aml_area *area,
+		      void                  *ptr,
+		      const size_t           size)
 {
 	struct hwloc_binding *binding = area->data;
         return binding->ops.unmap(area, ptr, size);
 }
 
-static int
-aml_hwloc_malloc(const struct aml_area* area,
-		 void **ptr,
-		 size_t size,
-		 size_t alignement)
+int
+aml_area_hwloc_malloc(const struct aml_area *area,
+		      void                 **ptr,
+		      size_t                 size,
+		      size_t                 alignement)
 {
 	struct hwloc_binding *binding = area->data;	
         int err = binding->ops.malloc(area, ptr, size, alignement);
-
+	
 	if(err != AML_AREA_SUCCESS)
 		return err;
 
-	return aml_hwloc_apply_binding(binding, *ptr, size);
+	return aml_area_hwloc_apply_binding(binding, *ptr, size);
 }
 
-static int
-aml_hwloc_free(struct aml_area *area,
-	       void *ptr)	
+int
+aml_area_hwloc_free(const struct aml_area *area,
+		    void                  *ptr)	
 {
 	struct hwloc_binding *binding = area->data;
 	return binding->ops.free(area, ptr);
@@ -257,29 +252,29 @@ aml_hwloc_free(struct aml_area *area,
  * Areas declaration
  *********************************************************************************/
 
-static struct hwloc_binding hwloc_binding_private = {
+struct hwloc_binding hwloc_binding_private = {
 	.ops     = {
 		.create = NULL,
 		.destroy = NULL,
 		.bind = NULL,
 		.check_binding = NULL,
-		.map = linux_mmap_private,
-		.unmap = linux_munmap,
-		.malloc = linux_malloc,
-		.free = linux_free,
+		.map = aml_linux_mmap_private,
+		.unmap = aml_linux_munmap,
+		.malloc = aml_linux_malloc,
+		.free = aml_linux_free,
 	},
 	.nodeset = NULL,
 	.policy  = HWLOC_MEMBIND_DEFAULT
 };
 
-static struct hwloc_binding hwloc_binding_shared = {
+struct hwloc_binding hwloc_binding_shared = {
 	.ops     = {
 		.create = NULL,
 		.destroy = NULL,
 		.bind = NULL,
 		.check_binding = NULL,
-		.map = linux_mmap_shared,
-		.unmap = linux_munmap,
+		.map = aml_linux_mmap_shared,
+		.unmap = aml_linux_munmap,
 		.malloc = NULL,
 		.free = NULL
 	},
@@ -287,23 +282,23 @@ static struct hwloc_binding hwloc_binding_shared = {
 	.policy  = HWLOC_MEMBIND_DEFAULT
 };
 
-static struct aml_area_ops aml_area_hwloc_ops = {
-	.create = aml_hwloc_create,
-	.destroy = aml_hwloc_destroy,
-	.map = aml_hwloc_mmap,
-	.unmap = aml_hwloc_munmap,
-	.malloc = aml_hwloc_malloc,
-	.free = aml_hwloc_free,
-	.bind = aml_hwloc_bind,
-	.check_binding = hwloc_check_binding
+struct aml_area_ops aml_area_hwloc_ops = {
+	.create = aml_area_hwloc_create,
+	.destroy = aml_area_hwloc_destroy,
+	.map = aml_area_hwloc_mmap,
+	.unmap = aml_area_hwloc_munmap,
+	.malloc = aml_area_hwloc_malloc,
+	.free = aml_area_hwloc_free,
+	.bind = aml_area_hwloc_bind,
+	.check_binding = aml_area_hwloc_check_binding
 };
 
-static struct aml_area aml_area_hwloc_private_s = {
+struct aml_area aml_area_hwloc_private_s = {
 	.ops = &aml_area_hwloc_ops,
 	.data = &hwloc_binding_private
 };
 
-static struct aml_area aml_area_hwloc_shared_s = {
+struct aml_area aml_area_hwloc_shared_s = {
 	.ops = &aml_area_hwloc_ops,
 	.data = &hwloc_binding_shared
 };

@@ -10,10 +10,15 @@ include_amlutils_HEADERS+=\
 endif
 
 include_amlareadir=$(includedir)/aml/area
-include_amlarea_HEADERS =
+include_amlarea_HEADERS = \
+	aml/area/linux.h
 if HAVE_HWLOC
 include_amlarea_HEADERS+=\
 	aml/area/hwloc.h
+endif
+if HAVE_LINUX_NUMA
+include_amlarea_HEADERS+=\
+	aml/area/linux_numa.h
 endif
 
 include_amlscratchdir=$(includedir)/aml/scratch
