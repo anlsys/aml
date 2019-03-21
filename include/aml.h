@@ -33,14 +33,14 @@
 #include <aml/utils/vector.h>
 
 /* 
- * If AML_ABI_VERSION != aml_major_version, 
+ * If AML_ABI_VERSION != aml_get_major_version(), 
  * the header is not the same version as linked library.  
  */
 #define            AML_ABI_VERSION (0)
 extern const char* aml_version_string;
-extern       int   aml_major_version;
-extern       int   aml_minor_version;
-extern       int   aml_patch_version;
+int aml_get_major_version();
+int aml_get_minor_version();
+int aml_get_patch_version();
 
 /*******************************************************************************
  * General functions:
