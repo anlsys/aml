@@ -47,6 +47,8 @@ int aml_init(int *argc, char **argv[])
 {
 	char * version = VERSION;
 	aml_major_version = atoi(strtok(version, "."));
+	if(aml_major_version != AML_ABI_VERSION)
+		return -1;
 	aml_minor_version = atoi(strtok(NULL, "."));
 	aml_patch_version = atoi(strtok(NULL, "."));
 	return 0;
