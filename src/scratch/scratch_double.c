@@ -1,4 +1,5 @@
 #include "aml.h"
+#include "aml/scratch/double.h"
 #include <assert.h>
 
 /*******************************************************************************

@@ -1,5 +1,6 @@
 #include "aml.h"
 #include "aml/area/area.h"
+#include "aml/area/linux.h"
 #include "aml/utils/hwloc.h"
 #include "aml/area/hwloc.h"
 
@@ -258,10 +259,10 @@ struct hwloc_binding hwloc_binding_private = {
 		.destroy = NULL,
 		.bind = NULL,
 		.check_binding = NULL,
-		.map = aml_linux_mmap_private,
-		.unmap = aml_linux_munmap,
-		.malloc = aml_linux_malloc,
-		.free = aml_linux_free,
+		.map = aml_area_linux_mmap_private,
+		.unmap = aml_area_linux_munmap,
+		.malloc = aml_area_linux_malloc,
+		.free = aml_area_linux_free,
 	},
 	.nodeset = NULL,
 	.policy  = HWLOC_MEMBIND_DEFAULT
@@ -273,8 +274,8 @@ struct hwloc_binding hwloc_binding_shared = {
 		.destroy = NULL,
 		.bind = NULL,
 		.check_binding = NULL,
-		.map = aml_linux_mmap_shared,
-		.unmap = aml_linux_munmap,
+		.map = aml_area_linux_mmap_shared,
+		.unmap = aml_area_linux_munmap,
 		.malloc = NULL,
 		.free = NULL
 	},
