@@ -9,6 +9,8 @@
  *******************************************************************************/
 
 #include "aml.h"
+#include "aml/dma/linux-par.h"
+
 #include <assert.h>
 #include <errno.h>
 #include <sys/mman.h>

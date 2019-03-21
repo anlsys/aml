@@ -9,6 +9,8 @@
 *******************************************************************************/
 
 #include "aml.h"
+#include "aml/dma/linux-seq.h"
+#include "aml/scratch/par.h"
 #include <string.h>
 #include <assert.h>
 
