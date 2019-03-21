@@ -48,56 +48,24 @@ if [[ "x$benchmarks" = xtrue ]]; then
 fi
 AM_CONDITIONAL([ADD_BENCHMARKS],[test "x$benchmarks" = xtrue])
 
+
+# dependencies
+AC_CHECK_HEADERS(numa.h)
+AC_CHECK_LIB(numa, move_pages)
 AC_CHECK_LIB(dl, dlopen)
 
-# add pthread support.
-# doc in m4/ax_pthread.m4. Defines automake PTHREAD_CFLAGS and PTHREAD_LIBS
+# add pthread support
 AX_PTHREAD
+LIBS="$PTHREAD_LIBS $LIBS"
+CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 CC="$PTHREAD_CC"
 
-# NUMA support
-AC_CHECK_HEADERS([numa.h], [numa_header_happy=yes], [numa_header_happy=no])
-AC_CHECK_HEADERS([numaif.h], [numaif_header_happy=yes], [numaif_header_happy=no])
-AC_CHECK_LIB(numa, mbind, [numa_lib_happy=yes], [numa_lib_happy=no])
-if test x"$numa_header_happy"   = x"yes" -a\
-        x"$numa_lib_happy"      = x"yes" -a\
-	x"$numaif_header_happy" = x"yes"; then
-   AC_DEFINE([HAVE_LINUX_NUMA], [1], "Linux supports numa memory binding.")
-fi
-AM_CONDITIONAL([HAVE_LINUX_NUMA], [test x"$numa_header_happy"   = x"yes" -a\
-                                        x"$numa_lib_happy"      = x"yes" -a\
-                                	x"$numaif_header_happy" = x"yes"])
 
-# Hwloc support
-AC_CHECK_HEADER([hwloc.h],\
-                [hwloc_header_happy=yes; \
-		 LIBS="$LIBS -lhwloc"],\
-	        [hwloc_header_happy=no])
-		
-AC_CHECK_LIB([hwloc],\
-             [hwloc_get_api_version],\
-	     [hwloc_lib_happy=yes],\
-	     [hwloc_lib_happy=no])
-
-AC_RUN_IFELSE(
-       [AC_LANG_PROGRAM([#include <hwloc.h>],\
-[#if HWLOC_API_VERSION < 0x00020000
-return -1;
-#else
-if(hwloc_get_api_version() < 0x20000)
-    return -1;
-#endif])],\
-       [hwloc_version_happy=yes],\
-       [hwloc_version_happy=no])
-
-if test x"$hwloc_header_happy"  = x"yes" -a\
-        x"$hwloc_lib_happy"     = x"yes" -a\
-	x"$hwloc_version_happy" = x"yes"; then
-   AC_DEFINE([HAVE_HWLOC], [1], "hwloc library with ABI > 2.0 is installed.")
-fi
-AM_CONDITIONAL([HAVE_HWLOC], [test x"$hwloc_header_happy"  = x"yes" -a\
-                                   x"$hwloc_lib_happy"     = x"yes" -a\
-                                   x"$hwloc_version_happy" = x"yes"])
+# internal jemalloc
+ac_configure_args="$ac_configure_args \
+			'--with-jemalloc-prefix=jemk_aml_' \
+			'--with-install-suffix=-aml'"
+AC_CONFIG_SUBDIRS([jemalloc])
 
 AC_CONFIG_HEADERS([include/config.h])
 
@@ -106,7 +74,9 @@ AC_CONFIG_FILES([Makefile
 		 src/area/Makefile
 		 src/dma/Makefile
 		 src/tiling/Makefile
+		 src/binding/Makefile
 		 src/scratch/Makefile
+		 src/arena/Makefile
 		 src/utils/Makefile
 		 include/Makefile
 		 tests/Makefile
