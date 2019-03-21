@@ -19,14 +19,17 @@ int         aml_patch_version = -1;
 
 int aml_get_major_version(){
 	if(aml_major_version < 0){
-		return atoi(strtok(VERSION, "."));
+		char version[strlen(VERSION)+1];
+		strcpy(version, VERSION);
+		return atoi(strtok(version, "."));
 	}
 	return aml_major_version;
 }
 
 int aml_get_minor_version(){
 	if(aml_major_version < 0){
-		char * version = VERSION;
+		char version[strlen(VERSION)+1];
+		strcpy(version, VERSION);
 		strtok(version, ".");
 		return atoi(strtok(version, "."));
 	}
@@ -35,7 +38,8 @@ int aml_get_minor_version(){
 
 int aml_get_patch_version(){		
 	if(aml_major_version < 0){
-		char * version = VERSION;
+		char version[strlen(VERSION)+1];
+		strcpy(version, VERSION);
 		strtok(version, ".");
 		strtok(version, ".");
 		return atoi(strtok(version, "."));
@@ -45,7 +49,8 @@ int aml_get_patch_version(){
 
 int aml_init(int *argc, char **argv[])
 {
-	char * version = VERSION;
+	char version[strlen(VERSION)+1];
+	strcpy(version, VERSION);
 	aml_major_version = atoi(strtok(version, "."));
 	if(aml_major_version != AML_ABI_VERSION)
 		return -1;
