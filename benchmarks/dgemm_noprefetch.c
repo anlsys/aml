@@ -9,7 +9,12 @@
 *******************************************************************************/
 
 #include "aml.h"
+#include "aml/utils/bitmap.h"
+#include "aml/dma/linux-seq.h"
+#include "aml/tiling/tiling.h"
+
 #include <assert.h>
+#include <string.h>
 #include <errno.h>
 #include <mkl.h>
 #include <omp.h>
