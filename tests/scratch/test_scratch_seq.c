@@ -9,9 +9,9 @@
 *******************************************************************************/
 
 #include "aml.h"
-#include <string.h>
 #include "aml/dma/linux-par.h"
 #include "aml/scratch/seq.h"
+#include <string.h>
 #include <assert.h>
 
 #define PAGE_SIZE 4096
