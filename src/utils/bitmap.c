@@ -1,3 +1,4 @@
+#include <string.h>
 #include "config.h"
 #include "aml.h"
 
