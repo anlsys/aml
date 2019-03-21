@@ -32,6 +32,33 @@
 #include <aml/utils/bitmap.h>
 #include <aml/utils/vector.h>
 
+/* 
+ * If AML_ABI_VERSION != aml_major_version, 
+ * the header is not the same version as linked library.  
+ */
+#define            AML_ABI_VERSION (0)
+extern const char* aml_version_string;
+extern       int   aml_major_version;
+extern       int   aml_minor_version;
+extern       int   aml_patch_version;
+
+/*******************************************************************************
+ * General functions:
+ * Initialize internal structures, cleanup everything at the end.
+ ******************************************************************************/
+
+/*
+ * Initializes the library.
+ * "argc": pointer to the main()'s argc argument; contents can get modified.
+ * "argv": pointer to the main()'s argv argument; contents can get modified.
+ * Returns 0 if successful; an error code otherwise.
+ */
+int aml_init(int *argc, char **argv[]);
+/*
+ * Terminates the library.
+ * Returns 0 if successful; an error code otherwise.
+ */
+int aml_finalize(void);
 
 /*******************************************************************************
  * Forward Declarations:
@@ -1304,23 +1331,5 @@ void* aml_scratch_baseptr(const struct aml_scratch *scratch);
  * Returns 0 if successful; an error code otherwise.
  */
 int aml_scratch_release(struct aml_scratch *scratch, int scratchid);
-
-/*******************************************************************************
- * General functions:
- * Initialize internal structures, cleanup everything at the end.
- ******************************************************************************/
-
-/*
- * Initializes the library.
- * "argc": pointer to the main()'s argc argument; contents can get modified.
- * "argv": pointer to the main()'s argv argument; contents can get modified.
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_init(int *argc, char **argv[]);
-/*
- * Terminates the library.
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_finalize(void);
 
 #endif

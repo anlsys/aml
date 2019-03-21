@@ -34,3 +34,11 @@ High-level building blocks use the low-level ones to provide fancier memory
 management facilities, including:
   - *dmas:* moving data across areas
   - *scratchpads:* using an area as an explicitly managed cache of another one
+
+# Version Management
+AML versionning is similar to [semantic versionning](https://semver.org/).
+AML version is a string composed of 3 integers separated by a dot: "0.1.0"
+The first integer is the major version and all versions with the same
+major version are supposed ABI compatible except for major version 0 which is
+considered unstable.
+

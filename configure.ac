@@ -1,5 +1,5 @@
 # see semver.org for version info
-AC_INIT([aml],[0.0.1],[swann@anl.gov])
+AC_INIT([aml],[0.0.2],[swann@anl.gov])
 
 # are we in the right source dir ?
 AC_CONFIG_SRCDIR([include/aml.h])
@@ -67,7 +67,7 @@ ac_configure_args="$ac_configure_args \
 			'--with-install-suffix=-aml'"
 AC_CONFIG_SUBDIRS([jemalloc])
 
-AC_CONFIG_HEADERS([src/config.h])
+AC_CONFIG_HEADERS([include/config.h])
 
 AC_CONFIG_FILES([Makefile
 		 src/Makefile

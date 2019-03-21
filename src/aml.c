@@ -10,9 +10,19 @@
 
 #include "config.h"
 #include "aml.h"
+#include <string.h>
+
+const char* aml_version_string = VERSION;
+int         aml_major_version = -1;
+int         aml_minor_version = -1;
+int         aml_patch_version = -1;
 
 int aml_init(int *argc, char **argv[])
 {
+	char * version = VERSION;
+	aml_major_version = atoi(strtok(version, "."));
+	aml_minor_version = atoi(strtok(NULL, "."));
+	aml_patch_version = atoi(strtok(NULL, "."));
 	return 0;
 }
 
