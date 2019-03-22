@@ -9,21 +9,14 @@
 *******************************************************************************/
 
 #include "aml.h"
-#include "config.h"
-#include <string.h>
+#include <assert.h>
 
-const int aml_version_major = AML_VERSION_MAJOR;
-const int aml_version_minor = AML_VERSION_MINOR;
-const int aml_version_patch = AML_VERSION_PATCH;
-const char* aml_version_string = AML_VERSION_STRING;
-
-int aml_init(int *argc, char **argv[])
+int main(int argc, char *argv[])
 {
-	return 0;
-}
-
-int aml_finalize(void)
-{
+	assert(aml_version_major == AML_VERSION_MAJOR);
+	assert(aml_version_minor == AML_VERSION_MINOR);
+	assert(aml_version_patch == AML_VERSION_PATCH);
+	assert(!strcmp(aml_version_string, AML_VERSION_STRING));
 	return 0;
 }
 

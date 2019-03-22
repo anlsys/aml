@@ -50,6 +50,7 @@ stamp-h1
 /install-sh
 /missing
 /stamp-h1
+version.h
 
 # autotest
 tests/**/*.trs
