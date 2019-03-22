@@ -48,3 +48,8 @@ repoquality:
     - nix run -f "$ARGOPKGS" repoquality --command repoquality
   tags:
     - integration
+
+checkpatch:
+  stage: style
+  script:
+    - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl src/aml.c include/aml.h

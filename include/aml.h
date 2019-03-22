@@ -58,8 +58,8 @@ int aml_finalize(void);
  ******************************************************************************/
 
 /**
- * An AML area is an implementation of memory operations for several type of devices
- * through a consistent abstraction.
+ * An AML area is an implementation of memory operations for several type of
+ * devices through a consistent abstraction.
  * This abstraction is meant to be implemented for several kind of devices,
  * i.e the same function calls allocate different kinds of devices depending
  * on the area implementation provided.
@@ -87,7 +87,7 @@ struct aml_area_ops {
 	 *
 	 * Returns a pointer to allocated memory object.
 	 **/
-        void* (*mmap)(const struct aml_area_data  *area_data,
+	void* (*mmap)(const struct aml_area_data  *area_data,
 		      void                        *ptr,
 		      size_t                       size);
 
@@ -100,7 +100,7 @@ struct aml_area_ops {
 	 *
 	 * Returns AML_AREA_* error code.
 	 **/
-        int (*munmap)(const struct aml_area_data *area_data,
+	int (*munmap)(const struct aml_area_data *area_data,
 		      void                       *ptr,
 		      size_t                      size);
 };
@@ -156,11 +156,11 @@ struct aml_tiling_ops {
 			     struct aml_tiling_iterator *iterator, int flags);
 	int (*destroy_iterator)(struct aml_tiling_data *tiling,
 				struct aml_tiling_iterator *iterator);
-	int (*tileid)(const struct aml_tiling_data *tiling, va_list);
+	int (*tileid)(const struct aml_tiling_data *tiling, va_list coords);
 	size_t (*tilesize)(const struct aml_tiling_data *tiling, int tileid);
 	void* (*tilestart)(const struct aml_tiling_data *tiling,
 			   const void *ptr, int tileid);
-	int (*ndims)(const struct aml_tiling_data *tiling, va_list);
+	int (*ndims)(const struct aml_tiling_data *tiling, va_list results);
 };
 
 struct aml_tiling {
@@ -198,7 +198,7 @@ size_t aml_tiling_tilesize(const struct aml_tiling *tiling, int tileid);
  * Returns the address of the start of the tile identified by "tileid", within
  * the provided user data structure.
  */
-void* aml_tiling_tilestart(const struct aml_tiling *tiling, const void *ptr,
+void *aml_tiling_tilestart(const struct aml_tiling *tiling, const void *ptr,
 			   int tileid);
 
 /*
@@ -512,7 +512,7 @@ int aml_scratch_cancel(struct aml_scratch *scratch,
  * "scratch": an initialized scratchpad structure.
  * Returns a base pointer to the scratchpad memory buffer.
  */
-void* aml_scratch_baseptr(const struct aml_scratch *scratch);
+void *aml_scratch_baseptr(const struct aml_scratch *scratch);
 
 /*
  * Release a scratch tile for immediate reuse.
