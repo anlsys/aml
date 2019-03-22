@@ -10,7 +10,8 @@ TESTS_ENVIRONMENT= @LIBTOOL@ --mode=execute @VALGRIND@ --tool=memcheck -q --leak
 endif
 
 UTILS_TESTS = utils/test_vector \
-	      utils/test_bitmap
+	      utils/test_bitmap \
+	      utils/test_version
 
 ARENA_JEMALLOC_TESTS = arena/test_jemalloc
 

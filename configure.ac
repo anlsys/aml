@@ -1,5 +1,14 @@
 # see semver.org for version info
-AC_INIT([aml],[0.0.2],[swann@anl.gov])
+m4_define([VERSION_MAJOR], [0])
+m4_define([VERSION_MINOR], [1])
+m4_define([VERSION_PATCH], [0])
+m4_define([VERSION_STRING], VERSION_MAJOR.VERSION_MINOR.VERSION_PATCH)
+
+AC_INIT([aml],[VERSION_STRING],[swann@anl.gov])
+
+AC_SUBST([PACKAGE_VERSION_MAJOR],[VERSION_MAJOR])
+AC_SUBST([PACKAGE_VERSION_MINOR],[VERSION_MINOR])
+AC_SUBST([PACKAGE_VERSION_PATCH],[VERSION_PATCH])
 
 # are we in the right source dir ?
 AC_CONFIG_SRCDIR([include/aml.h])
@@ -81,5 +90,6 @@ AC_CONFIG_FILES([Makefile
 		 include/Makefile
 		 tests/Makefile
 		 benchmarks/Makefile
-		 aml.pc])
+		 aml.pc
+		 include/aml/utils/version.h])
 AC_OUTPUT

@@ -29,18 +29,9 @@
 #define PAGE_SIZE 4096
 #endif
 
+#include <aml/utils/version.h>
 #include <aml/utils/bitmap.h>
 #include <aml/utils/vector.h>
-
-/* 
- * If AML_ABI_VERSION != aml_get_major_version(), 
- * the header is not the same version as linked library.  
- */
-#define            AML_ABI_VERSION (0)
-extern const char* aml_version_string;
-int aml_get_major_version();
-int aml_get_minor_version();
-int aml_get_patch_version();
 
 /*******************************************************************************
  * General functions:
