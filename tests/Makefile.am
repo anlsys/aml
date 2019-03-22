@@ -21,6 +21,15 @@ check_PROGRAMS+=test_vector
 TESTS+=test_vector
 
 ####################################################################
+# area
+####################################################################
+
+test_area_SOURCES=area/test_area.c
+test_area_LDFLAGS=$(top_srcdir)/src/libaml.la
+check_PROGRAMS+=test_area
+TESTS+=test_area
+
+####################################################################
 # Tiling
 ####################################################################
 

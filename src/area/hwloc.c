@@ -3,6 +3,7 @@
 #include "aml/area/linux.h"
 #include "aml/utils/hwloc.h"
 #include "aml/area/hwloc.h"
+#include "aml/area/linux.h"
 
 #define HWLOC_BINDING_FLAGS (HWLOC_MEMBIND_PROCESS|	\
 			     HWLOC_MEMBIND_MIGRATE|	\
@@ -33,17 +34,23 @@ aml_area_hwloc_create(struct aml_area* area)
 	}
 		
 	binding->policy = HWLOC_MEMBIND_DEFAULT;
-
+	
 	struct hwloc_binding * area_binding = area->data;
 	binding->ops.create = NULL;
 	binding->ops.destroy = NULL;
 	binding->ops.bind = NULL;
 	binding->ops.check_binding = NULL;
-	binding->ops.map = area_binding->ops.map;
-	binding->ops.unmap = area_binding->ops.unmap;
-	binding->ops.malloc = area_binding->ops.malloc;
-	binding->ops.free = area_binding->ops.free;
-	
+	if(area_binding != NULL){
+		binding->ops.map = area_binding->ops.map;
+		binding->ops.unmap = area_binding->ops.unmap;
+		binding->ops.malloc = area_binding->ops.malloc;
+		binding->ops.free = area_binding->ops.free;
+	} else {
+		binding->ops.map = aml_area_linux_mmap_private;
+		binding->ops.unmap = aml_area_linux_munmap;
+		binding->ops.malloc = aml_area_linux_malloc;
+		binding->ops.free = aml_area_linux_free;
+	}
 	area->data = binding;
 
 	return AML_AREA_SUCCESS;
@@ -104,6 +111,11 @@ aml_hwloc_bind(struct aml_area             *area,
 		return AML_AREA_EINVAL;
 
 	struct hwloc_binding *binding = area->data;
+
+	if(binding->nodeset == NULL)
+		binding->nodeset = hwloc_bitmap_alloc();
+	if(binding->nodeset == NULL)
+		return AML_AREA_ENOMEM;
 	
 	if(nodeset == NULL)
 		hwloc_bitmap_copy(binding->nodeset, allowed_nodeset);
@@ -232,7 +244,10 @@ aml_area_hwloc_malloc(const struct aml_area *area,
 		      size_t                 size,
 		      size_t                 alignement)
 {
-	struct hwloc_binding *binding = area->data;	
+	struct hwloc_binding *binding = area->data;
+	if(binding->ops.malloc == NULL)
+		return AML_AREA_ENOTSUP;
+	
         int err = binding->ops.malloc(area, ptr, size, alignement);
 	
 	if(err != AML_AREA_SUCCESS)
@@ -246,6 +261,8 @@ aml_area_hwloc_free(const struct aml_area *area,
 		    void                  *ptr)	
 {
 	struct hwloc_binding *binding = area->data;
+	if(binding->ops.free == NULL)
+		return AML_AREA_ENOTSUP;
 	return binding->ops.free(area, ptr);
 }
 

@@ -1,11 +1,20 @@
+/*******************************************************************************
+ * Copyright 2019 UChicago Argonne, LLC.
+ * (c.f. AUTHORS, LICENSE)
+ *
+ * This file is part of the AML project.
+ * For more info, see https://xgitlab.cels.anl.gov/argo/aml
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+*******************************************************************************/
 #ifndef AML_AREA_H
 #define AML_AREA_H
 
 #include <aml/utils/bitmap.h>
 
-/*********************************************************************************
+/******************************************************************************
  * Lower level area management.
- *********************************************************************************/
+ ******************************************************************************/
 
 struct aml_area;
 
@@ -56,7 +65,8 @@ struct aml_area_ops {
 	 *
 	 * "area": The area operations to use. Cannot be NULL.
 	 * "ptr": Pointer to data mapped in physical memory. Cannot be NULL.
-	 * "size": The size of data. Is greater than 0.
+	 * "size": The size of data. Is greater than 0. Must not fail unless not enough 
+	 *         memory is available, or ptr argument does not point to a suitable address.
 	 *
 	 * Returns AML_AREA_* error code.
 	 **/
@@ -117,34 +127,5 @@ struct aml_area {
 	/* Implmentation specific data. Set to NULL at creation. */
 	void *data;
 };
-
-/*
- * Implementation specific functions used in several areas
- */
-
-int
-aml_linux_mmap_private(const struct aml_area* area,
-		   void **ptr,
-		   size_t size);
-
-int
-aml_linux_mmap_shared(const struct aml_area* area,
-		  void **ptr,
-		  size_t size);
-
-int
-aml_linux_munmap(const struct aml_area* area,
-	     void *ptr,
-	     const size_t size);
-
-int
-aml_linux_malloc(struct aml_area *area,
-	     void           **ptr,
-	     size_t           size,
-	     size_t           alignement);
-	
-int
-aml_linux_free(struct aml_area *area,
-	   void *ptr);
 
 #endif //AML_AREA_H

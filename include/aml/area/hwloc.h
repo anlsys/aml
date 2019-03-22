@@ -1,3 +1,13 @@
+/*******************************************************************************
+ * Copyright 2019 UChicago Argonne, LLC.
+ * (c.f. AUTHORS, LICENSE)
+ *
+ * This file is part of the AML project.
+ * For more info, see https://xgitlab.cels.anl.gov/argo/aml
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+*******************************************************************************/
+
 #ifndef AML_AREA_HWLOC_H
 #define AML_AREA_HWLOC_H
 
@@ -77,4 +87,5 @@ aml_area_hwloc_malloc(const struct aml_area* area,
 int
 aml_area_hwloc_free(const struct aml_area *area,
 		    void                  *ptr);
-#endif
+
+#endif //AML_AREA_HWLOC_H

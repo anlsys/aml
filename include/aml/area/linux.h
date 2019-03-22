@@ -1,3 +1,15 @@
+/*******************************************************************************
+ * Copyright 2019 UChicago Argonne, LLC.
+ * (c.f. AUTHORS, LICENSE)
+ *
+ * This file is part of the AML project.
+ * For more info, see https://xgitlab.cels.anl.gov/argo/aml
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+*******************************************************************************/
+#ifndef AML_AREA_LINUX_H
+#define AML_AREA_LINUX_H
+
 /**
  * AML area linux building blocks
  * Additional linux building blocks in <aml/area/linux_numa.h> if supported.
@@ -10,46 +22,48 @@
  **/
 int
 aml_area_linux_mmap_generic(void **ptr,
-		       size_t size,
-		       int    flags);
+			    size_t size,
+			    int    flags);
 
 /**
  * Call to aml_area_linux_mmap_generic() with flag MAP_PRIVATE.
  **/
 int
 aml_area_linux_mmap_private(const struct aml_area* area,
-		       void **ptr,
-		       size_t size);
+			    void **ptr,
+			    size_t size);
 
 /**
  * Call to aml_area_linux_mmap_generic() with flag MAP_SHARED.
  **/
 int
 aml_area_linux_mmap_shared(const struct aml_area* area,
-		      void **ptr,
-		      size_t size);
+			   void **ptr,
+			   size_t size);
 
 /**
  * Call to linux munmap()
  **/
 int
 aml_area_linux_munmap(const struct aml_area* area,
-		 void *ptr,
-		 const size_t size);
+		      void *ptr,
+		      const size_t size);
 
 /**
  * Call to linux malloc() or posix_memalign() depending on alignement argument.
  **/
 int
 aml_area_linux_malloc(const struct aml_area *area,
-		 void                 **ptr,
-		 size_t                 size,
-		 size_t                 alignement);
+		      void                 **ptr,
+		      size_t                 size,
+		      size_t                 alignement);
 
 /**
  * Call to linux free().
  **/
 int
 aml_area_linux_free(const struct aml_area *area,
-	       void                  *ptr);
+		    void                  *ptr);
 
+
+#endif // AML_AREA_LINUX_H

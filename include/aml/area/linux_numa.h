@@ -1,3 +1,16 @@
+/*******************************************************************************
+ * Copyright 2019 UChicago Argonne, LLC.
+ * (c.f. AUTHORS, LICENSE)
+ *
+ * This file is part of the AML project.
+ * For more info, see https://xgitlab.cels.anl.gov/argo/aml
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+*******************************************************************************/
+
+#ifndef AML_AREA_LINUX_NUMA_H
+#define AML_AREA_LINUX_NUMA_H
+
 #include <numa.h>
 
 /* User data stored inside area */
@@ -62,3 +75,5 @@ aml_area_linux_malloc_mbind(const struct aml_area *area,
 		       void                 **ptr,
 		       size_t                 size,
 		       size_t                 alignement);
+
+#endif //AML_AREA_LINUX_NUMA_H
