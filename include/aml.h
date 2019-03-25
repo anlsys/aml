@@ -29,9 +29,9 @@
 #define PAGE_SIZE 4096
 #endif
 
-#include <aml/utils/version.h>
-#include <aml/utils/bitmap.h>
-#include <aml/utils/vector.h>
+#include "aml/utils/version.h"
+#include "aml/utils/bitmap.h"
+#include "aml/utils/vector.h"
 
 /*******************************************************************************
  * General functions:
