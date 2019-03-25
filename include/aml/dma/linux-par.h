@@ -31,9 +31,6 @@ struct aml_dma_request_linux_par {
 	void *dest;
 	void *src;
 	size_t size;
-	int count;
-	void **pages;
-	int *nodes;
 	struct aml_dma_linux_par_thread_data *thread_data;
 };
 
@@ -46,8 +43,6 @@ struct aml_dma_linux_par_data {
 struct aml_dma_linux_par_ops {
 	void *(*do_thread)(void *);
 	int (*do_copy)(struct aml_dma_linux_par_data *,
-		       struct aml_dma_request_linux_par *, int tid);
-	int (*do_move)(struct aml_dma_linux_par_data *,
 		       struct aml_dma_request_linux_par *, int tid);
 };
 

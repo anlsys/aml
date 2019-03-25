@@ -24,9 +24,6 @@ struct aml_dma_request_linux_seq {
 	void *dest;
 	void *src;
 	size_t size;
-	int count;
-	void **pages;
-	int *nodes;
 };
 
 struct aml_dma_linux_seq_data {
@@ -36,8 +33,6 @@ struct aml_dma_linux_seq_data {
 
 struct aml_dma_linux_seq_ops {
 	int (*do_copy)(struct aml_dma_linux_seq_data *dma,
-		       struct aml_dma_request_linux_seq *req);
-	int (*do_move)(struct aml_dma_linux_seq_data *dma,
 		       struct aml_dma_request_linux_seq *req);
 };
 
@@ -96,14 +91,6 @@ int aml_dma_linux_seq_destroy(struct aml_dma *dma);
  * Returns 0 if successful; an error code otherwise.
  */
 int aml_dma_linux_seq_do_copy(struct aml_dma_linux_seq_data *dma,
-			      struct aml_dma_request_linux_seq *req);
-
-/* Performs a move request.
- * "dma" the dma_linux_seq_data associated with a linux_seq dma.
- * "req" a valid linux_seq request.
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_dma_linux_seq_do_move(struct aml_dma_linux_seq_data *dma,
 			      struct aml_dma_request_linux_seq *req);
 
 #endif // AML_DMA_LINUX_SEQ_H

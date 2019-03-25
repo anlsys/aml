@@ -60,10 +60,6 @@ int main(int argc, char *argv[])
 
 	assert(!memcmp(src, dst, TILESIZE*PAGE_SIZE*NBTILES));
 
-	/* now move it by pages */
-	for(int i = 0; i < NBTILES; i++)
-		aml_dma_move(&dma, &area, &tiling, src, i);
-
 	/* delete everything */
 	aml_dma_linux_seq_destroy(&dma);
 	aml_area_free(&area, dst);

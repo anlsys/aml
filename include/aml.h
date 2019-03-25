@@ -1116,8 +1116,6 @@ struct aml_binding_interleave_data {
 #define AML_DMA_REQUEST_TYPE_INVALID -1
 /* Copy request type.  Uses memcpy() for data migration.  */
 #define AML_DMA_REQUEST_TYPE_COPY 0
-/* Move request type.  Uses move_pages() for data migration.  */
-#define AML_DMA_REQUEST_TYPE_MOVE 1
 
 struct aml_dma_request;
 struct aml_dma_data;
@@ -1164,31 +1162,6 @@ int aml_dma_copy(struct aml_dma *dma, ...);
  * Returns 0 if successful; an error code otherwise.
  */
 int aml_dma_async_copy(struct aml_dma *dma, struct aml_dma_request **req, ...);
-/*
- * Requests a synchronous data move of a tile to a new memory area, using
- * move_pages() or equivalent.
- * "dma": an initialized DMA structure.
- * Variadic arguments:
- * - "darea": an argument of type struct aml_area*; the destination memory area
- *         structure.
- * - "st": an argument of type struct aml_tiling*; the tiling structure.
- * - "sptr": an argument of type void*; the start address of the complete
- *           user data structure.
- * - "stid": an argument of type int; the tile identifier.
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_dma_move(struct aml_dma *dma, ...);
-/*
- * Requests a data move of a tile to a new memory area.  This is an asynchronous
- * version of aml_dma_move().
- * "dma": an initialized DMA structure.
- * "req": an address where the pointer to the newly assigned DMA request will be
- *        stored.
- * Variadic arguments: see aml_dma_move().
- * Returns 0 if successful; an error code otherwise.
- *
- */
-int aml_dma_async_move(struct aml_dma *dma, struct aml_dma_request **req, ...);
 /*
  * Waits for an asynchronous DMA request to complete.
  * "dma": an initialized DMA structure.
