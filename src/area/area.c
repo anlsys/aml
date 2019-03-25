@@ -70,9 +70,3 @@ int aml_area_available(const struct aml_area *area)
 	assert(area != NULL);
 	return area->ops->available(area->data);
 }
-
-int aml_area_binding(const struct aml_area *area, struct aml_binding **binding)
-{
-	assert(area != NULL);
-	return area->ops->binding(area->data, binding);
-}

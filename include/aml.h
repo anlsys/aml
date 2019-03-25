@@ -23,8 +23,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-/* Used by bindings, specifically in aml_binding_nbpages() and
- * aml_binding_pages().  */
+/* Used by mbind */
 #ifndef PAGE_SIZE
 #define PAGE_SIZE 4096
 #endif
@@ -56,7 +55,6 @@ int aml_finalize(void);
  ******************************************************************************/
 
 struct aml_area;
-struct aml_binding;
 
 /*******************************************************************************
  * Arenas:
@@ -221,8 +219,6 @@ struct aml_area_ops {
 	void (*release)(struct aml_area_data *area, void *ptr);
 	void *(*mmap)(struct aml_area_data *area, void *ptr, size_t size);
 	int (*available)(const struct aml_area_data *area);
-	int (*binding)(const struct aml_area_data *area,
-		       struct aml_binding **binding);
 };
 
 struct aml_area {
@@ -319,8 +315,6 @@ struct aml_area_linux_mbind_ops {
 	int (*pre_bind)(struct aml_area_linux_mbind_data *data);
 	int (*post_bind)(struct aml_area_linux_mbind_data *data, void *ptr,
 			 size_t size);
-	int (*binding)(const struct aml_area_linux_mbind_data *data,
-		       struct aml_binding **binding);
 };
 
 /*
@@ -331,16 +325,6 @@ struct aml_area_linux_mbind_ops {
  */
 int aml_area_linux_mbind_setdata(struct aml_area_linux_mbind_data *data,
 				 int policy, const struct aml_bitmap *nodemask);
-/*
- * Creates a new binding structure based on an existing Linux memory policy
- * structure.
- * "data": an initialized Linux memory policy structure.
- * "binding": an address where the pointer to the newly allocated binding
- *            structure will be stored.
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_area_linux_mbind_generic_binding(const struct aml_area_linux_mbind_data *data,
-					 struct aml_binding **binding);
 /*
  * Sets current memory policy before memory allocation using the Linux memory
  * area.
@@ -655,14 +639,6 @@ void aml_area_release(struct aml_area *area, void *ptr);
 void *aml_area_mmap(struct aml_area *area, void *ptr, size_t size);
 /* FIXME! */
 int aml_area_available(const struct aml_area *area);
-/*
- * Creates a new binding structure based on an existing Linux memory area.
- * "area": an initialized memory area structure.
- * "binding": an address where the pointer to the newly allocated binding
- *            structure will be stored.
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_area_binding(const struct aml_area *area, struct aml_binding **binding);
 
 /*******************************************************************************
  * Tiling:
@@ -947,164 +923,6 @@ struct aml_tiling_iterator_2d_data {
 #define AML_TILING_ITERATOR_2D_ALLOCSIZE \
 	(sizeof(struct aml_tiling_iterator_2d_data) + \
 	 sizeof(struct aml_tiling_iterator))
-
-/*******************************************************************************
- * Binding:
- * Representation of page bindings in an area
- ******************************************************************************/
-
-/* opaque handle to all bindings */
-struct aml_binding_data;
-
-struct aml_binding_ops {
-	int (*nbpages)(const struct aml_binding_data *binding,
-		       const struct aml_tiling *tiling, const void *ptr,
-		       int tileid);
-	int (*pages)(const struct aml_binding_data *binding, void **pages,
-		     const struct aml_tiling *tiling, const void *ptr,
-		     int tileid);
-	int (*nodes)(const struct aml_binding_data *binding, int *nodes,
-		     const struct aml_tiling *tiling, const void *ptr,
-		     int tileid);
-};
-
-struct aml_binding {
-	struct aml_binding_ops *ops;
-	struct aml_binding_data *data;
-};
-
-/*
- * Provides the size of a tile in memory, in pages.
- * "binding": an initialized binding structure.
- * "tiling": an initialized tiling structure.
- * "ptr", "tileid": see aml_tiling_tilestart().
- * Returns the total number of pages that a tile occupies, including partial
- * pages.
- */
-int aml_binding_nbpages(const struct aml_binding *binding,
-			const struct aml_tiling *tiling,
-			const void *ptr, int tileid);
-/*
- * Provides the addresses of pages that a tile occupies.
- * "binding": an initialized binding structure.
- * "pages": an array that will be filled with start addresses of all pages
- *          that a tile occupies.  The array must be at least
- *          aml_binding_nbpages() elements long.
- * "tiling": an initialized tiling structure.
- * "ptr", "tileid": see aml_tiling_tilestart().
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_binding_pages(const struct aml_binding *binding, void **pages,
-		      const struct aml_tiling *tiling, const void *ptr,
-		      int tileid);
-/*
- * Provides the NUMA node information of pages that a tile occupies.
- * "binding": an initialized binding structure.
- * "nodes": an array that will be filled with NUMA node id's of all pages
- *          that a tile occupies.  The array must be at least
- *          aml_binding_nbpages() elements long.
- * "tiling": an initialized tiling structure.
- * "ptr", "tileid": see aml_tiling_tilestart().
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_binding_nodes(const struct aml_binding *binding, int *nodes,
-		      const struct aml_tiling *tiling, const void *ptr,
-		      int tileid);
-
-/* Binding types passed to the binding create()/init()/vinit() routines.  */
-/* Binding where all pages are bound to the same NUMA node.  */
-#define AML_BINDING_TYPE_SINGLE 0
-/* Binding where pages are interleaved among multiple NUMA nodes.  */
-#define AML_BINDING_TYPE_INTERLEAVE 1
-
-/*
- * Allocates and initializes a new binding.
- * "binding": an address where the pointer to the newly allocated binding
- *            structure will be stored.
- * "type": see AML_BINDING_TYPE_*.
- * Variadic arguments:
- * - if "type" equals AML_BINDING_TYPE_SINGLE, one additional argument is
- *   needed:
- *   - "node": an argument of type int; provides a NUMA node id where pages
- *             will be allocated from.
- * - if "type" equals AML_BINDING_TYPE_INTERLEAVE, one additional argument is
- *   needed:
- *   - "mask": an argument of type const struct aml_bitmap*; storing a bitmask of
- *             NUMA node ids where pages will be allocated from.  See
- *             aml_bitmap for more information.
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_binding_create(struct aml_binding **binding, int type, ...);
-/*
- * Initializes a new binding.  This is a varags-variant of the
- * aml_binding_vinit() routine.
- * "binding": an allocated binding structure.
- * "type": see aml_binding_create().
- * Variadic arguments: see aml_binding_create().
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_binding_init(struct aml_binding *binding, int type, ...);
-/*
- * Initializes a new binding.
- * "binding": an allocated binding structure.
- * "type": see aml_binding_create().
- * "args": see the variadic arguments of aml_binding_create().
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_binding_vinit(struct aml_binding *binding, int type, va_list args);
-/*
- * Tears down an initialized binding.
- * "binding": an initialized binding structure.
- * "type": see aml_binding_create().
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_binding_destroy(struct aml_binding *binding, int type);
-
-/*******************************************************************************
- * Single Binding:
- * All pages on the same node
- ******************************************************************************/
-
-extern struct aml_binding_ops aml_binding_single_ops;
-
-struct aml_binding_single_data {
-	int node;
-};
-
-#define AML_BINDING_SINGLE_DECL(name) \
-	struct aml_binding_single_data __ ##name## _inner_data; \
-	struct aml_binding name = { \
-		&aml_binding_single_ops, \
-		(struct aml_binding_data *)&__ ## name ## _inner_data, \
-	};
-
-#define AML_BINDING_SINGLE_ALLOCSIZE (sizeof(struct aml_binding_single_data) + \
-				      sizeof(struct aml_binding))
-
-/*******************************************************************************
- * Interleave Binding:
- * each page, of each tile, interleaved across nodes.
- ******************************************************************************/
-
-#define AML_MAX_NUMA_NODES AML_BITMAP_MAX
-
-extern struct aml_binding_ops aml_binding_interleave_ops;
-
-struct aml_binding_interleave_data {
-	int nodes[AML_MAX_NUMA_NODES];
-	int count;
-};
-
-#define AML_BINDING_INTERLEAVE_DECL(name) \
-	struct aml_binding_interleave_data __ ##name## _inner_data; \
-	struct aml_binding name = { \
-		&aml_binding_interleave_ops, \
-		(struct aml_binding_data *)&__ ## name ## _inner_data, \
-	};
-
-#define AML_BINDING_INTERLEAVE_ALLOCSIZE \
-	(sizeof(struct aml_binding_interleave_data) + \
-	 sizeof(struct aml_binding))
 
 /*******************************************************************************
  * DMA:

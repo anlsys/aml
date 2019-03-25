@@ -20,9 +20,6 @@ libaml_la_LIBADD+=$(top_srcdir)/src/dma/libamldma.la
 SUBDIRS+=tiling
 libaml_la_LIBADD+=$(top_srcdir)/src/tiling/libamltiling.la
 
-SUBDIRS+=binding
-libaml_la_LIBADD+=$(top_srcdir)/src/binding/libamlbinding.la
-
 SUBDIRS+=scratch
 libaml_la_LIBADD+=$(top_srcdir)/src/scratch/libamlscratch.la
 

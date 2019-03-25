@@ -18,7 +18,6 @@
 
 int main(int argc, char *argv[])
 {
-	AML_BINDING_SINGLE_DECL(binding);
 	AML_TILING_1D_DECL(tiling);
 	AML_ARENA_JEMALLOC_DECL(arena);
 	AML_AREA_LINUX_DECL(area);
@@ -31,7 +30,6 @@ int main(int argc, char *argv[])
 	aml_init(&argc, &argv);
 
 	/* initialize all the supporting struct */
-	assert(!aml_binding_init(&binding, AML_BINDING_TYPE_SINGLE, 0));
 	assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_1D, TILESIZE*PAGE_SIZE,
 				TILESIZE*PAGE_SIZE*NBTILES));
 	aml_bitmap_zero(&nodemask);
@@ -87,7 +85,6 @@ int main(int argc, char *argv[])
 	aml_area_free(&area, src);
 	aml_area_linux_destroy(&area);
 	aml_tiling_destroy(&tiling, AML_TILING_TYPE_1D);
-	aml_binding_destroy(&binding, AML_BINDING_TYPE_SINGLE);
 
 	aml_finalize();
 	return 0;

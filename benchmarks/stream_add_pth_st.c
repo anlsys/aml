@@ -78,7 +78,6 @@ void *th_work(void *arg)
 }
 int main(int argc, char *argv[])
 {
-	AML_BINDING_SINGLE_DECL(binding);
 	AML_ARENA_JEMALLOC_DECL(arena);
 	AML_DMA_LINUX_SEQ_DECL(dma);
 	struct bitmask *slowb, *fastb;
@@ -101,7 +100,6 @@ int main(int argc, char *argv[])
 	}
 
 	/* initialize all the supporting struct */
-	assert(!aml_binding_init(&binding, AML_BINDING_TYPE_SINGLE, 0));
 	assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_1D, tilesz, memsize));
 	assert(!aml_arena_jemalloc_init(&arena, AML_ARENA_JEMALLOC_TYPE_REGULAR));
 
@@ -159,7 +157,6 @@ int main(int argc, char *argv[])
 	aml_area_linux_destroy(&slow);
 	aml_area_linux_destroy(&fast);
 	aml_tiling_destroy(&tiling, AML_TILING_TYPE_1D);
-	aml_binding_destroy(&binding, AML_BINDING_TYPE_SINGLE);
 	aml_finalize();
 	return 0;
 }
