@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include <aml/utils/version.h>
+#include <aml/utils/error.h>
 #include <aml/utils/bitmap.h>
 #include <aml/utils/vector.h>
 #include <aml/tiling/tiling.h>
@@ -68,13 +69,6 @@ int aml_finalize(void);
  * as binding policies over it.
  ******************************************************************************/
 
-/* Error codes */
-#define AML_AREA_SUCCESS  0 /* Function call succeeded */
-#define AML_AREA_EINVAL  -1 /* Invalid argument provided */
-#define AML_AREA_ENOTSUP -2 /* Function not implemented for this type of area */
-#define AML_AREA_ENOMEM  -3 /* Allocation failed */
-#define AML_AREA_EDOM    -4 /* One arguent is out of allowed bounds */
-
 /**
  * An AML area is an implementation of memory operations for several type of devices
  * through a consistent abstraction and specialization of allocators 
@@ -93,6 +87,7 @@ struct aml_area;
  * "aml_bitmap": is a bitwise translation of linux struct bitmask. See <numa.h>
  * "flags": use one of aml_area_linux_flag_*. 
  *          See <numaif.h> for further explanations.
+ * low level building blocks in <aml/area/linux.h>, <aml/area/linux_numa.h>
  *******************/
 
 /* Implementation of process wide memory operations on host processor. */
@@ -109,13 +104,11 @@ const extern unsigned long aml_area_linux_flag_preferred;
 
 /*******************
  * hwloc area
- *
+ * See <aml/area/hwloc.h> if supported.
  * aml_bitmap is translated bitwise to hwloc_nodeset_t or hwloc_bitmap_t. 
  * See <aml/utils/hwloc.h> for conversion, <hwloc/bitmap.h>.
- * "flags" use flags in <aml/area/hwloc.h>. See <hwloc.h> for further explanations.
+ * 
  *******************/
-
-// Additional areas and area features in <aml/area/hwloc.h> if supported
 
 /*******************
  * Global area features
