@@ -20,6 +20,11 @@ test_vector_LDFLAGS=$(top_srcdir)/src/utils/libamlutils.la
 check_PROGRAMS+=test_vector
 TESTS+=test_vector
 
+test_version_SOURCES=utils/test_version.c
+test_version_LDFLAGS=$(top_srcdir)/src/libaml.la
+check_PROGRAMS+=test_version
+TESTS+=test_version
+
 ####################################################################
 # area
 ####################################################################

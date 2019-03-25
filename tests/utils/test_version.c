@@ -9,7 +9,9 @@
 *******************************************************************************/
 
 #include "aml.h"
+#include "aml/utils/version.h"
 #include <assert.h>
+#include <string.h>
 
 int main(int argc, char *argv[])
 {

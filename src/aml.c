@@ -9,6 +9,7 @@
 *******************************************************************************/
 
 #include "aml.h"
+#include "aml/utils/version.h"
 #include "config.h"
 #include <string.h>
 #ifdef HAVE_HWLOC
