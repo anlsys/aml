@@ -15,15 +15,12 @@
 #include <hwloc.h>
 #endif
 
-
 const int aml_version_major = AML_VERSION_MAJOR;
 const int aml_version_minor = AML_VERSION_MINOR;
 const int aml_version_patch = AML_VERSION_PATCH;
 const char* aml_version_string = AML_VERSION_STRING;
 
 #ifdef HAVE_HWLOC
-#include <hwloc.h>
-
 hwloc_topology_t aml_topology = NULL;
 
 int aml_topology_init(){
@@ -37,8 +34,6 @@ int aml_topology_init(){
 }
 #endif
 
->>>>>>> master
-
 int aml_init(int *argc, char **argv[])
 {
 #ifdef HAVE_HWLOC
@@ -48,15 +43,7 @@ int aml_init(int *argc, char **argv[])
 	if(err < 0)
 		return err;
 #endif
-	char version[strlen(VERSION)+1];
-	strcpy(version, VERSION);
-	aml_major_version = atoi(strtok(version, "."));
-	if(aml_major_version != AML_ABI_VERSION)
-		return -1;
-	aml_minor_version = atoi(strtok(NULL, "."));
-	aml_patch_version = atoi(strtok(NULL, "."));
-	return 0;
-	
+	return 0;	
 }
 
 int aml_finalize(void)
