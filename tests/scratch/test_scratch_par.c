@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 	assert(!aml_dma_linux_seq_init(&dma, maxrequests));
 	
 	/* allocate some memory */
-	assert(aml_area_malloc(aml_area_linux_private, &src, TILESIZE*PAGE_SIZE*NBTILES, 0) == AML_AREA_SUCCESS);
+	assert(aml_area_malloc(aml_area_linux_private, &src, TILESIZE*PAGE_SIZE*NBTILES, 0) == AML_SUCCESS);
 	assert(src != NULL);
 	memset(src, 42, TILESIZE*PAGE_SIZE*NBTILES);
 
