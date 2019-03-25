@@ -27,11 +27,11 @@ void test_binding(struct aml_area *area){
 			continue;
 		if(err == AML_AREA_EINVAL)
 			continue;
-		if(err == AML_AREA_SUCCESS){
+		if(err == AML_SUCCESS){
 			memset(ptr, 0, sizes[s]);
 			if(area->ops->check_binding)
 				assert(area->ops->check_binding(area, ptr, sizes[s]) > 0);
-			assert(area->ops->unmap(area, ptr, sizes[s]) == AML_AREA_SUCCESS);
+			assert(area->ops->unmap(area, ptr, sizes[s]) == AML_SUCCESS);
 		} else
 			assert(0);
 	}
@@ -48,7 +48,7 @@ void test_bind(struct aml_area *area){
 	struct aml_bitmap bitmap;
 	
 	err = area->ops->bind(area, NULL, 0);
-	if(err == AML_AREA_SUCCESS)
+	if(err == AML_SUCCESS)
 		test_binding(area);
 
 	for(i = 0; i < sizeof(flags)*8 + 1; i++){
@@ -56,7 +56,7 @@ void test_bind(struct aml_area *area){
 			aml_bitmap_zero(&bitmap);
 			aml_bitmap_set(&bitmap, j);
 			err = area->ops->bind(area, &bitmap, flags);			
-			if(err == AML_AREA_SUCCESS)
+			if(err == AML_SUCCESS)
 				test_binding(area);
 		}
 		flags = flags << 1;
@@ -84,9 +84,9 @@ void test_malloc(struct aml_area *area){
 				continue;
 			if(err == AML_AREA_EINVAL)
 				continue;
-			if(err == AML_AREA_SUCCESS){
+			if(err == AML_SUCCESS){
 				memset(ptr, 0, sizes[s]);
-				assert(area->ops->free(area, ptr) == AML_AREA_SUCCESS);
+				assert(area->ops->free(area, ptr) == AML_SUCCESS);
 			} else
 				assert(0);
 		}
@@ -109,9 +109,9 @@ void test_map(struct aml_area *area){
 			continue;
 		if(err == AML_AREA_EINVAL)
 			continue;
-		if(err == AML_AREA_SUCCESS){
+		if(err == AML_SUCCESS){
 			memset(ptr, 0, sizes[s]);
-			assert(area->ops->unmap(area, ptr, sizes[s]) == AML_AREA_SUCCESS);
+			assert(area->ops->unmap(area, ptr, sizes[s]) == AML_SUCCESS);
 		} else
 			assert(0);
 	}
@@ -128,7 +128,7 @@ void test_create(struct aml_area *area){
 
 	new.ops = area->ops;
 	new.data = NULL;
-	assert(area->ops->create(&new) == AML_AREA_SUCCESS);
+	assert(area->ops->create(&new) == AML_SUCCESS);
 	area->ops->destroy(&new);
 }
 
