@@ -21,19 +21,28 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include <aml/utils/version.h>
 #include <aml/utils/bitmap.h>
 #include <aml/utils/vector.h>
 #include <aml/tiling/tiling.h>
 
-/* 
- * If AML_ABI_VERSION != aml_get_major_version(), 
- * the header is not the same version as linked library.  
+/*******************************************************************************
+ * General functions:
+ * Initialize internal structures, cleanup everything at the end.
+ ******************************************************************************/
+
+/*
+ * Initializes the library.
+ * "argc": pointer to the main()'s argc argument; contents can get modified.
+ * "argv": pointer to the main()'s argv argument; contents can get modified.
+ * Returns 0 if successful; an error code otherwise.
  */
-#define            AML_ABI_VERSION (0)
-extern const char* aml_version_string;
-int aml_get_major_version();
-int aml_get_minor_version();
-int aml_get_patch_version();
+int aml_init(int *argc, char **argv[]);
+/*
+ * Terminates the library.
+ * Returns 0 if successful; an error code otherwise.
+ */
+int aml_finalize(void);
 
 /*******************************************************************************
  * General functions:

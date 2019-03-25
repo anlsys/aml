@@ -8,44 +8,18 @@
  * SPDX-License-Identifier: BSD-3-Clause
 *******************************************************************************/
 
-#include "config.h"
 #include "aml.h"
+#include "config.h"
 #include <string.h>
+#ifdef HAVE_HWLOC
+#include <hwloc.h>
+#endif
 
-const char* aml_version_string = VERSION;
-int         aml_major_version = -1;
-int         aml_minor_version = -1;
-int         aml_patch_version = -1;
 
-int aml_get_major_version(){
-	if(aml_major_version < 0){
-		char version[strlen(VERSION)+1];
-		strcpy(version, VERSION);
-		return atoi(strtok(version, "."));
-	}
-	return aml_major_version;
-}
-
-int aml_get_minor_version(){
-	if(aml_major_version < 0){
-		char version[strlen(VERSION)+1];
-		strcpy(version, VERSION);
-		strtok(version, ".");
-		return atoi(strtok(version, "."));
-	}
-	return aml_minor_version;
-}
-
-int aml_get_patch_version(){		
-	if(aml_major_version < 0){
-		char version[strlen(VERSION)+1];
-		strcpy(version, VERSION);
-		strtok(version, ".");
-		strtok(version, ".");
-		return atoi(strtok(version, "."));
-	}
-	return aml_minor_version;
-}
+const int aml_version_major = AML_VERSION_MAJOR;
+const int aml_version_minor = AML_VERSION_MINOR;
+const int aml_version_patch = AML_VERSION_PATCH;
+const char* aml_version_string = AML_VERSION_STRING;
 
 #ifdef HAVE_HWLOC
 #include <hwloc.h>
@@ -62,6 +36,8 @@ int aml_topology_init(){
 	return 0;
 }
 #endif
+
+>>>>>>> master
 
 int aml_init(int *argc, char **argv[])
 {

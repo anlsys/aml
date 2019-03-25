@@ -14,7 +14,9 @@ include_aml_scratch_HEADERS = \
 include_amlutilsdir=$(includedir)/aml/utils
 include_amlutils_HEADERS = \
 	aml/utils/vector.h \
-	aml/utils/bitmap.h
+	aml/utils/bitmap.h \
+	aml/utils/version.h
+
 if HAVE_HWLOC
 include_amlutils_HEADERS+=\
 	aml/utils/hwloc.h
