@@ -20,7 +20,7 @@ const unsigned long aml_area_hwloc_flag_nexttouch = HWLOC_MEMBIND_NEXTTOUCH;
 int
 aml_area_hwloc_create(struct aml_area* area)
 {
-	int err = AML_AREA_SUCCESS;
+	int err = AML_SUCCESS;
 	struct hwloc_binding *binding;
 	   
 	binding = malloc(sizeof(struct hwloc_binding));
@@ -53,7 +53,7 @@ aml_area_hwloc_create(struct aml_area* area)
 	}
 	area->data = binding;
 
-	return AML_AREA_SUCCESS;
+	return AML_SUCCESS;
 	
  err_with_binding:
 	free(binding);
@@ -124,7 +124,7 @@ aml_hwloc_bind(struct aml_area             *area,
 	
 	binding->policy = hwloc_policy;
 	
-	return AML_AREA_SUCCESS;
+	return AML_SUCCESS;
 }
 
 int
@@ -146,7 +146,7 @@ aml_area_hwloc_apply_binding(struct hwloc_binding *binding,
 			     void                 *ptr,
 			     size_t                size)
 {
-	int err = AML_AREA_SUCCESS;
+	int err = AML_SUCCESS;
 	hwloc_bitmap_t nodeset = binding->nodeset;
 	
 	if(nodeset == NULL)
@@ -159,7 +159,7 @@ aml_area_hwloc_apply_binding(struct hwloc_binding *binding,
 				     HWLOC_BINDING_FLAGS);
 	
 	if(err >= 0)
-		err = AML_AREA_SUCCESS;
+		err = AML_SUCCESS;
 	else {
 		switch(errno){
 		case ENOSYS:
@@ -223,7 +223,7 @@ aml_area_hwloc_mmap(const struct aml_area *area,
 	struct hwloc_binding *binding = area->data;
         int err = binding->ops.map(area, ptr, size);
 
-	if(err != AML_AREA_SUCCESS)
+	if(err != AML_SUCCESS)
 		return err;
 
 	return aml_area_hwloc_apply_binding(binding, *ptr, size);
@@ -250,7 +250,7 @@ aml_area_hwloc_malloc(const struct aml_area *area,
 	
         int err = binding->ops.malloc(area, ptr, size, alignement);
 	
-	if(err != AML_AREA_SUCCESS)
+	if(err != AML_SUCCESS)
 		return err;
 
 	return aml_area_hwloc_apply_binding(binding, *ptr, size);

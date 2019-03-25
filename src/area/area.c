@@ -35,10 +35,10 @@ aml_local_area_create(struct aml_area    *a,
 	
 	area->ops  = a->ops;
 	
-	if(a->ops->create && a->ops->create(area) != AML_AREA_SUCCESS)
+	if(a->ops->create && a->ops->create(area) != AML_SUCCESS)
 		goto err_with_area;
 	
-        if(area->ops->bind(area, binding, flags) != AML_AREA_SUCCESS)
+        if(area->ops->bind(area, binding, flags) != AML_SUCCESS)
 		goto err_with_area_data;
 	
 	return area;
@@ -73,7 +73,7 @@ aml_area_mmap(const struct aml_area *area,
 	
 	if(size == 0){
 		*ptr = NULL;
-		return AML_AREA_SUCCESS;
+		return AML_SUCCESS;
 	}
 	
 	if(area == NULL)
@@ -91,7 +91,7 @@ aml_area_munmap(const struct aml_area *area,
 		size_t                 size)
 {
 	if(ptr == NULL || size == 0)
-		return AML_AREA_SUCCESS;
+		return AML_SUCCESS;
 	
 	if(area == NULL)
 		return AML_AREA_EINVAL;
@@ -117,7 +117,7 @@ aml_area_malloc(const struct aml_area *area,
 	
 	if(size == 0){
 		*ptr = NULL;
-		return AML_AREA_SUCCESS;
+		return AML_SUCCESS;
 	}
 
 	if(area->ops->malloc != NULL)	
@@ -128,7 +128,7 @@ aml_area_malloc(const struct aml_area *area,
 		int err = area->ops->map(area, ptr, size + sizeof(size_t));
 		
 		/* Store size before ptr */
-		if(err == AML_AREA_SUCCESS){
+		if(err == AML_SUCCESS){
 			*(size_t*)(*ptr) = size;
 			*ptr  += sizeof(size_t);
 		}
@@ -145,7 +145,7 @@ aml_area_free(const struct aml_area *area,
 		return AML_AREA_EINVAL;
 	
 	if(ptr == NULL)
-		return AML_AREA_SUCCESS;
+		return AML_SUCCESS;
 
 	if(area->ops->free != NULL)
 		return area->ops->free(area, ptr);

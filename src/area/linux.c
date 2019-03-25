@@ -37,7 +37,7 @@ aml_area_linux_create(struct aml_area* area)
 	binding->nodeset = NULL;
 	binding->flags = MPOL_DEFAULT;
 	area->data = binding;
-	return AML_AREA_SUCCESS;
+	return AML_SUCCESS;
 }
 
 void
@@ -88,7 +88,7 @@ aml_area_linux_bind(struct aml_area         *area,
 
  set_flags:
 	bind->flags = flags;
-	return AML_AREA_SUCCESS;
+	return AML_SUCCESS;
 }
 
 static int
@@ -103,7 +103,7 @@ aml_area_linux_mbind(struct aml_area_linux_binding *bind,
 		return AML_AREA_EINVAL;
 
 	if(bind->nodeset == NULL || (bind->flags & MPOL_DEFAULT))
-		return AML_AREA_SUCCESS;
+		return AML_SUCCESS;
 
 	if(bind->nodeset != NULL)
 		nodeset = bind->nodeset;
@@ -118,7 +118,7 @@ aml_area_linux_mbind(struct aml_area_linux_binding *bind,
 			 AML_AREA_LINUX_MBIND_FLAGS);
 
 	if(err == 0)
-		return AML_AREA_SUCCESS;
+		return AML_SUCCESS;
 
 	switch(errno){
 	case EFAULT:
@@ -203,7 +203,7 @@ aml_area_linux_mmap_generic(void **ptr,
 			return AML_AREA_EINVAL;
 		}
 	}
-	return AML_AREA_SUCCESS;
+	return AML_SUCCESS;
 }
 
 int
@@ -213,13 +213,13 @@ aml_area_linux_mmap_mbind(const struct aml_area* area,
 		     int    flags)
 {
 	int err = aml_area_linux_mmap_generic(ptr, size, flags);
-	if(err != AML_AREA_SUCCESS)
+	if(err != AML_SUCCESS)
 		return err;
 
 #ifdef HAVE_LINUX_NUMA
 	return aml_area_linux_mbind(area->data, *ptr, size);
 #else
-	return AML_AREA_SUCCESS;
+	return AML_SUCCESS;
 #endif		
 }
 
@@ -264,7 +264,7 @@ aml_area_linux_munmap(__attribute__ ((unused)) const struct aml_area* area,
 	int err = munmap(ptr, size);
 	if(err == -1)
 		return AML_AREA_EINVAL;
-	return AML_AREA_SUCCESS;
+	return AML_SUCCESS;
 }
 
 int
@@ -292,7 +292,7 @@ aml_area_linux_malloc(const struct aml_area *area,
 		return AML_AREA_ENOMEM;
 	*ptr = data;
 	
-	return AML_AREA_SUCCESS;
+	return AML_SUCCESS;
 }
 
 int
@@ -302,12 +302,12 @@ aml_area_linux_malloc_mbind(const struct aml_area *area,
 		       size_t                 alignement)
 {
 	int err = aml_area_linux_malloc(area, ptr, size, alignement);
-	if(err != AML_AREA_SUCCESS)
+	if(err != AML_SUCCESS)
 		return err;
 #ifdef HAVE_LINUX_NUMA
 	return aml_area_linux_mbind(area->data, *ptr, size);
 #else
-	return AML_AREA_SUCCESS;
+	return AML_SUCCESS;
 #endif
 }
 
@@ -316,7 +316,7 @@ aml_area_linux_free(__attribute__ ((unused)) const struct aml_area *area,
 	       void *ptr)	
 {
 	free(ptr);
-	return AML_AREA_SUCCESS;
+	return AML_SUCCESS;
 }
 
 
