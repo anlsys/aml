@@ -83,7 +83,6 @@ AC_CONFIG_FILES([Makefile
 		 src/area/Makefile
 		 src/dma/Makefile
 		 src/tiling/Makefile
-		 src/binding/Makefile
 		 src/scratch/Makefile
 		 src/arena/Makefile
 		 src/utils/Makefile

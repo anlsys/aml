@@ -18,7 +18,7 @@
 /*******************************************************************************
  * Linux-backed, paruential dma
  * The dma itself is organized into several different components
- * - request types: copy or move
+ * - request types: copy
  * - implementation of the request
  * - user API (i.e. generic request creation and call)
  * - how to init the dma
@@ -51,33 +51,6 @@ int aml_dma_request_linux_par_copy_destroy(struct aml_dma_request_linux_par *r)
 	return 0;
 }
 
-int aml_dma_request_linux_par_move_init(struct aml_dma_request_linux_par *req,
-					struct aml_area *darea,
-					struct aml_tiling *tiling,
-					void *startptr, int tileid)
-{
-	assert(req != NULL);
-	struct aml_binding *binding;
-
-	req->type = AML_DMA_REQUEST_TYPE_MOVE;
-	aml_area_binding(darea, &binding);
-	req->count = aml_binding_nbpages(binding, tiling, startptr, tileid);
-	req->pages = calloc(req->count, sizeof(void *));
-	req->nodes = calloc(req->count, sizeof(int));
-	aml_binding_pages(binding, req->pages, tiling, startptr, tileid);
-	aml_binding_nodes(binding, req->nodes, tiling, startptr, tileid);
-	free(binding);
-	return 0;
-}
-
-int aml_dma_request_linux_par_move_destroy(struct aml_dma_request_linux_par *req)
-{
-	assert(req != NULL);
-	free(req->pages);
-	free(req->nodes);
-	return 0;
-}
-
 /*******************************************************************************
  * Internal functions
  ******************************************************************************/
@@ -89,8 +62,6 @@ void *aml_dma_linux_par_do_thread(void *arg)
 
 	if(data->req->type == AML_DMA_REQUEST_TYPE_COPY)
 		data->dma->ops.do_copy(&data->dma->data, data->req, data->tid);
-	else if(data->req->type == AML_DMA_REQUEST_TYPE_MOVE)
-		data->dma->ops.do_move(&data->dma->data, data->req, data->tid);
 	return NULL;
 }
 
@@ -114,36 +85,9 @@ int aml_dma_linux_par_do_copy(struct aml_dma_linux_par_data *dma,
 	return 0;
 }
 
-int aml_dma_linux_par_do_move(struct aml_dma_linux_par_data *dma,
-			      struct aml_dma_request_linux_par *req, int tid)
-{
-	assert(dma != NULL);
-	assert(req != NULL);
-
-	size_t nbthreads = dma->nbthreads;
-	size_t chunksize = req->count / nbthreads;
-
-	size_t idx = tid * chunksize;
-
-	if(tid == nbthreads - 1 && req->count > chunksize * nbthreads)
-		chunksize += req->count % nbthreads;
-
-	int status[chunksize];
-	int err;
-	err = move_pages(0, chunksize, &req->pages[idx], &req->nodes[idx],
-			 status, MPOL_MF_MOVE);
-	if(err)
-	{
-		perror("move_pages:");
-		return errno;
-	}
-	return 0;
-}
-
 struct aml_dma_linux_par_ops aml_dma_linux_par_inner_ops = {
 	aml_dma_linux_par_do_thread,
 	aml_dma_linux_par_do_copy,
-	aml_dma_linux_par_do_move,
 };
 
 /*******************************************************************************
@@ -179,15 +123,6 @@ int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 		aml_dma_request_linux_par_copy_init(req, dt, dptr, dtid,
 						    st, sptr, stid);
 	}
-	else if(type == AML_DMA_REQUEST_TYPE_MOVE)
-	{
-		struct aml_area *darea = va_arg(ap, struct aml_area *);
-		struct aml_tiling *st = va_arg(ap, struct aml_tiling *);
-		void *sptr = va_arg(ap, void *);
-		int stid = va_arg(ap, int);
-		aml_dma_request_linux_par_move_init(req, darea, st, sptr,
-						    stid);
-	}
 	pthread_mutex_unlock(&dma->data.lock);
 
 	for(int i = 0; i < dma->data.nbthreads; i++)
@@ -222,8 +157,6 @@ int aml_dma_linux_par_destroy_request(struct aml_dma_data *d,
 
 	if(req->type == AML_DMA_REQUEST_TYPE_COPY)
 		aml_dma_request_linux_par_copy_destroy(req);
-	else if(req->type == AML_DMA_REQUEST_TYPE_MOVE)
-		aml_dma_request_linux_par_move_destroy(req);
 
 	pthread_mutex_lock(&dma->data.lock);
 	aml_vector_remove(&dma->data.requests, req);
@@ -246,8 +179,6 @@ int aml_dma_linux_par_wait_request(struct aml_dma_data *d,
 	/* destroy a completed request */
 	if(req->type == AML_DMA_REQUEST_TYPE_COPY)
 		aml_dma_request_linux_par_copy_destroy(req);
-	else if(req->type == AML_DMA_REQUEST_TYPE_MOVE)
-		aml_dma_request_linux_par_move_destroy(req);
 
 	pthread_mutex_lock(&dma->data.lock);
 	aml_vector_remove(&dma->data.requests, req);

@@ -25,8 +25,6 @@ AREA_POSIX_TESTS = area/test_posix
 TILING_TESTS = tiling/test_tiling \
 	       tiling/test_tiling_2d
 
-BINDING_TESTS = binding/test_binding
-
 DMA_LINUX_TESTS = dma/test_dma_linux_seq \
 		  dma/test_dma_linux_par
 

@@ -34,13 +34,6 @@ int aml_area_linux_available(const struct aml_area_data *a)
 	return 1;
 }
 
-int aml_area_linux_binding(const struct aml_area_data *a, struct aml_binding **b)
-{
-	assert(a != NULL);
-	const struct aml_area_linux *area = (const struct aml_area_linux *)a;
-	return area->ops.mbind.binding(&area->data.mbind, b);
-}
-
 /*******************************************************************************
  * Public API:
  * The actual functions that will be called on the area from users
@@ -156,7 +149,6 @@ struct aml_area_ops aml_area_linux_ops = {
 	aml_area_linux_release,
 	aml_area_linux_mmap,
 	aml_area_linux_available,
-	aml_area_linux_binding,
 };
 
 /*******************************************************************************
