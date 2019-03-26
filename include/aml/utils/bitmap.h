@@ -5,11 +5,11 @@
  * bitmap API:
  ******************************************************************************/
 
-#define AML_BITMAP_MAX 2048
+#define AML_BITMAP_MAX   2048
 #define AML_BITMAP_BYTES (AML_BITMAP_MAX/8)
-#define AML_BITMAP_TYPE unsigned long
-#define AML_BITMAP_SIZE (AML_BITMAP_BYTES/sizeof(AML_BITMAP_TYPE))
-
+#define AML_BITMAP_TYPE  unsigned long
+#define AML_BITMAP_SIZE  (AML_BITMAP_BYTES/sizeof(AML_BITMAP_TYPE))
+#define AML_BITMAP_NBITS (8 * sizeof(AML_BITMAP_TYPE))
 
 struct aml_bitmap {
 	unsigned long mask[AML_BITMAP_SIZE];

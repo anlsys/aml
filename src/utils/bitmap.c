@@ -1,12 +1,12 @@
 #include "aml.h"
+#include <string.h>
 
 #define AML_BITMAP_EMPTY       (0UL)
 #define AML_BITMAP_FULL        (~0UL)
-#define AML_BITMAP_NBITS     (8 * sizeof(AML_BITMAP_TYPE))
 #define AML_BITMAP_NTH(i)      ((i) / AML_BITMAP_NBITS)
 #define AML_BITMAP_ITH(i)      (((i) % AML_BITMAP_NBITS))
 
-struct aml_bitmap *aml_bitmap_alloc(void)
+struct aml_bitmap * aml_bitmap_create(void)
 {
 	struct aml_bitmap *b = malloc(sizeof(struct aml_bitmap));
 	if(b == NULL)
@@ -37,14 +37,14 @@ void aml_bitmap_copy_ulong(struct aml_bitmap *dst, unsigned long *src,
 
 struct aml_bitmap *aml_bitmap_dup(const struct aml_bitmap *a)
 {
-	struct aml_bitmap *b = aml_bitmap_alloc();
+	struct aml_bitmap *b = aml_bitmap_create();
 	if(b == NULL)
 		return NULL;
 	aml_bitmap_copy(b, a);
 	return b;
 }
 
-void aml_bitmap_free(struct aml_bitmap *bitmap)
+void aml_bitmap_destroy(struct aml_bitmap *bitmap)
 {
 	free(bitmap);
 }
@@ -141,7 +141,7 @@ int aml_bitmap_clear_range(struct aml_bitmap *bitmap,
 	if(i >= AML_BITMAP_MAX || ii >= AML_BITMAP_MAX || i > ii)
 		return -1;
 	if(i == ii)
-		return aml_bitmap_set(bitmap, i);
+		return aml_bitmap_clear(bitmap, i);
 
 	unsigned long k    =  AML_BITMAP_ITH(ii+1);
 	unsigned long low  =  ~(AML_BITMAP_FULL << AML_BITMAP_ITH(i));
@@ -176,4 +176,45 @@ unsigned long aml_bitmap_nset(const struct aml_bitmap *bitmap)
 		}
 	}
 	return nset;
+}
+
+int aml_bitmap_last(const struct aml_bitmap *bitmap)
+{
+	if(bitmap == NULL)
+		return -1;
+	int n , i = 0;
+
+	for(n = AML_BITMAP_SIZE-1; n>=0 && bitmap->mask[n]==0; n--);
+
+	if(n < 0)
+		return -1;
+	
+	AML_BITMAP_TYPE mask = bitmap->mask[n];
+	
+	for(i=0; i<AML_BITMAP_NBITS && mask; i++)
+		mask = mask >> 1;
+	
+	return (AML_BITMAP_NBITS * n) + i - 1;
+}
+
+int aml_bitmap_first(const struct aml_bitmap *bitmap)
+{
+	if(bitmap == NULL)
+		return -1;
+	
+        int n , i = 0;
+
+	for(n = 0; n<AML_BITMAP_SIZE && bitmap->mask[n]==0; n++);
+
+	if(n == AML_BITMAP_SIZE)
+		return -1;
+	
+	AML_BITMAP_TYPE mask = bitmap->mask[n];
+		
+	for(i=0; i<AML_BITMAP_NBITS && mask; i++)
+		mask = mask << 1;
+
+	int res = (AML_BITMAP_NBITS * n) + AML_BITMAP_NBITS - i;
+	return res;
+
 }
