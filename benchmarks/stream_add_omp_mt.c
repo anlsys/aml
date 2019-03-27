@@ -12,6 +12,7 @@
 #include "aml/area/linux.h"
 #include "aml/dma/linux-par.h"
 #include "aml/scratch/seq.h"
+#include "aml/tiling/1d.h"
 #include <assert.h>
 #include <errno.h>
 #include <omp.h>

@@ -14,6 +14,11 @@ include_aml_scratch_HEADERS = \
 			      aml/scratch/seq.h \
 			      aml/scratch/par.h
 
+include_aml_tilingdir=$(includedir)/aml/tiling
+include_aml_tiling_HEADERS = \
+			      aml/tiling/1d.h \
+			      aml/tiling/2d.h
+
 
 include_amlutilsdir=$(includedir)/aml/utils
 include_amlutils_HEADERS = \

@@ -10,6 +10,7 @@
 
 #include "aml.h"
 #include "aml/area/linux.h"
+#include "aml/tiling/2d.h"
 #include <assert.h>
 #include <errno.h>
 #include <mkl.h>
