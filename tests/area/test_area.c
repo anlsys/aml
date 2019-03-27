@@ -8,7 +8,6 @@
  * SPDX-License-Identifier: BSD-3-Clause
 *******************************************************************************/
 #include "aml.h"
-#include "aml/area/area.h"
 #include "aml/area/linux.h"
 #include <assert.h>
 
