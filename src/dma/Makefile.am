@@ -10,4 +10,5 @@ libamldma_la_SOURCES=\
 	       dma_linux_seq.c
 
 libamldma_la_CFLAGS=$(AM_CFLAGS)
+libamldma_la_LDFLAGS=$(AM_CFLAGS)
 

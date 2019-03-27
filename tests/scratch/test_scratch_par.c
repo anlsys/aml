@@ -9,6 +9,7 @@
 *******************************************************************************/
 
 #include "aml.h"
+#include "aml/area/linux.h"
 #include "aml/dma/linux-seq.h"
 #include "aml/scratch/par.h"
 #include <assert.h>
@@ -19,8 +20,6 @@
 int main(int argc, char *argv[])
 {
 	AML_TILING_1D_DECL(tiling);
-	AML_ARENA_JEMALLOC_DECL(arena);
-	AML_AREA_LINUX_DECL(area);
 	AML_DMA_LINUX_SEQ_DECL(dma);
 	AML_SCRATCH_PAR_DECL(scratch);
 	struct aml_bitmap nodemask;
@@ -34,25 +33,18 @@ int main(int argc, char *argv[])
 				TILESIZE*PAGE_SIZE*NBTILES));
 	aml_bitmap_zero(&nodemask);
 	aml_bitmap_set(&nodemask, 0);
-	assert(!aml_arena_jemalloc_init(&arena, AML_ARENA_JEMALLOC_TYPE_REGULAR));
-
-	assert(!aml_area_linux_init(&area,
-				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
-				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
-				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arena, MPOL_BIND, &nodemask));
 
 	size_t maxrequests = NBTILES;
 	assert(!aml_dma_linux_seq_init(&dma, maxrequests));
 
 	/* allocate some memory */
-	src = aml_area_malloc(&area, TILESIZE*PAGE_SIZE*NBTILES);
+	src = aml_area_mmap(&aml_area_linux, NULL, TILESIZE*PAGE_SIZE*NBTILES);
 	assert(src != NULL);
 
 	memset(src, 42, TILESIZE*PAGE_SIZE*NBTILES);
 
 	/* create scratchpad */
-	assert(!aml_scratch_par_init(&scratch, &area, &area, &dma, &tiling,
+	assert(!aml_scratch_par_init(&scratch, &aml_area_linux, &aml_area_linux, &dma, &tiling,
 				     (size_t)NBTILES, (size_t)NBTILES));
 	dst = aml_scratch_baseptr(&scratch);
 	/* move some stuff */
@@ -80,9 +72,8 @@ int main(int argc, char *argv[])
 	/* delete everything */
 	aml_scratch_par_destroy(&scratch);
 	aml_dma_linux_seq_destroy(&dma);
-	aml_area_free(&area, dst);
-	aml_area_free(&area, src);
-	aml_area_linux_destroy(&area);
+	aml_area_munmap(&aml_area_linux, dst, TILESIZE*PAGE_SIZE*NBTILES);
+	aml_area_munmap(&aml_area_linux, src, TILESIZE*PAGE_SIZE*NBTILES);
 	aml_tiling_destroy(&tiling, AML_TILING_TYPE_1D);
 
 	aml_finalize();

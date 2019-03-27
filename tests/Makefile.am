@@ -13,14 +13,8 @@ UTILS_TESTS = utils/test_vector \
 	      utils/test_bitmap \
 	      utils/test_version
 
-ARENA_JEMALLOC_TESTS = arena/test_jemalloc
-
-AREA_LINUX_TESTS = \
-		   area/test_mmap \
-		   area/test_manager \
-		   area/test_linux
-
-AREA_POSIX_TESTS = area/test_posix
+AREA_TESTS = \
+	   area/test_area
 
 TILING_TESTS = tiling/test_tiling \
 	       tiling/test_tiling_2d
@@ -32,12 +26,10 @@ SCRATCH_TESTS = scratch/test_scratch_seq \
 		scratch/test_scratch_par
 
 # unit tests
-UNIT_TESTS = $(ARENA_JEMALLOC_TESTS) \
-	     $(UTILS_TESTS) \
+UNIT_TESTS = $(UTILS_TESTS) \
 	     $(TILING_TESTS) \
 	     $(BINDING_TESTS) \
 	     $(AREA_LINUX_TESTS) \
-	     $(AREA_POSIX_TESTS) \
 	     $(DMA_LINUX_TESTS) \
 	     $(SCRATCH_TESTS)
 

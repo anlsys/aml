@@ -1,5 +1,10 @@
 include_HEADERS=aml.h
 
+include_aml_areadir=$(includedir)/aml/area
+include_aml_area_HEADERS = \
+			      aml/area/area.h \
+			      aml/area/linux.h
+
 include_aml_dmadir=$(includedir)/aml/dma
 include_aml_dma_HEADERS = \
 			      aml/dma/linux-seq.h \

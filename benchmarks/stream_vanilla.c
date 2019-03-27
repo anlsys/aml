@@ -41,6 +41,7 @@
 /*  5. Absolutely no warranty is expressed or implied.                   */
 /*-----------------------------------------------------------------------*/
 # include "aml.h"
+# include "aml/area/linux.h"
 # include <stdio.h>
 # include <unistd.h>
 # include <math.h>
@@ -263,11 +264,11 @@ main(int argc, char *argv[])
 
     /* aml specific code */
     aml_init(&argc, &argv);
-    struct aml_area area;
-    aml_area_init(&area, AML_AREA_TYPE_REGULAR);
-    a = aml_area_malloc(&area, sizeof(STREAM_TYPE)*(STREAM_ARRAY_SIZE+OFFSET));
-    b = aml_area_malloc(&area, sizeof(STREAM_TYPE)*(STREAM_ARRAY_SIZE+OFFSET));
-    c = aml_area_malloc(&area, sizeof(STREAM_TYPE)*(STREAM_ARRAY_SIZE+OFFSET));
+    size_t size = sizeof(STREAM_TYPE)*(STREAM_ARRAY_SIZE+OFFSET);
+    struct aml_area *area = aml_area_linux;
+    a = aml_area_mmap(area, NULL, size);
+    b = aml_area_mmap(area, NULL, size);
+    c = aml_area_mmap(area, NULL, size);
     
     /* Get initial value for system clock. */
 #pragma omp parallel for
@@ -381,10 +382,9 @@ main(int argc, char *argv[])
     checkSTREAMresults();
     printf(HLINE);
 
-    aml_area_free(&area, a);
-    aml_area_free(&area, b);
-    aml_area_free(&area, c);
-    aml_area_destroy(&area);
+    aml_area_munmap(area, a, size);
+    aml_area_munmap(area, b. size);
+    aml_area_munmap(area, c, size);
     aml_finalize();
     return 0;
 }

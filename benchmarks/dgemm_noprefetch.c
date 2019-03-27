@@ -9,6 +9,7 @@
 *******************************************************************************/
 
 #include "aml.h"
+#include "aml/area/linux.h"
 #include <assert.h>
 #include <errno.h>
 #include <mkl.h>
@@ -21,9 +22,7 @@
 
 AML_TILING_2D_ROWMAJOR_DECL(tiling_row);
 AML_TILING_2D_COLMAJOR_DECL(tiling_col);
-AML_AREA_LINUX_DECL(slow);
-AML_AREA_LINUX_DECL(fast);
-
+struct aml_area *slow, *fast;
 size_t memsize, tilesize, N, T;
 double *a, *b, *c;
 struct timespec start, stop;
@@ -59,13 +58,11 @@ void do_work()
 
 int main(int argc, char* argv[])
 {
-	AML_ARENA_JEMALLOC_DECL(arns);
-	AML_ARENA_JEMALLOC_DECL(arnf);
-	struct bitmask *slowb, *fastb;
+	struct aml_bitmap slowb, fastb;
 	aml_init(&argc, &argv);
 	assert(argc == 5);
-	fastb = numa_parse_nodestring_all(argv[1]);
-	slowb = numa_parse_nodestring_all(argv[2]);
+	assert(aml_bitmap_from_string(&fastb, argv[1]) == 0);
+	assert(aml_bitmap_from_string(&slowb, argv[2]) == 0);
 	N = atol(argv[3]);
 	T = atol(argv[4]);
 	/* let's not handle messy tile sizes */
@@ -79,22 +76,17 @@ int main(int argc, char* argv[])
 	assert(!aml_tiling_init(&tiling_col, AML_TILING_TYPE_2D_COLMAJOR,
 				tilesize, memsize, N/T , N/T));
 
-	assert(!aml_arena_jemalloc_init(&arns, AML_ARENA_JEMALLOC_TYPE_REGULAR));
-	assert(!aml_area_linux_init(&slow,
-				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
-				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
-				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arns, MPOL_BIND, slowb->maskp));
-	assert(!aml_arena_jemalloc_init(&arnf, AML_ARENA_JEMALLOC_TYPE_REGULAR));
-	assert(!aml_area_linux_init(&fast,
-				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
-				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
-				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arnf, MPOL_BIND, fastb->maskp));
+	slow = aml_area_linux_create(AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
+				     &slowb, AML_AREA_LINUX_BINDING_FLAG_BIND);
+	assert(slow != NULL);
+	fast = aml_area_linux_create(AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
+				     &fastb, AML_AREA_LINUX_BINDING_FLAG_BIND);
+	assert(fast != NULL);
+
 	/* allocation */
-	a = aml_area_malloc(&slow, memsize);
-	b = aml_area_malloc(&slow, memsize);
-	c = aml_area_malloc(&fast, memsize);
+	a = aml_area_mmap(slow, NULL, memsize);
+	b = aml_area_mmap(slow, NULL, memsize);
+	c = aml_area_mmap(fast, NULL, memsize);
 	assert(a != NULL && b != NULL && c != NULL);
 
 	size_t ntilerows, ntilecols, tilerowsize, tilecolsize, rowsize, colsize;
@@ -158,11 +150,11 @@ int main(int argc, char* argv[])
 	/* print the flops in GFLOPS */
 	printf("dgemm-noprefetch: %llu %lld %lld %f\n", N, memsize, time,
 	       flops/1e9);
-	aml_area_free(&slow, a);
-	aml_area_free(&slow, b);
-	aml_area_free(&fast, c);
-	aml_area_linux_destroy(&slow);
-	aml_area_linux_destroy(&fast);
+	aml_area_munmap(slow, a, memsize);
+	aml_area_munmap(slow, b, memsize);
+	aml_area_munmap(fast, c, memsize);
+	aml_area_linux_destroy(slow);
+	aml_area_linux_destroy(fast);
 	aml_tiling_destroy(&tiling_row, AML_TILING_TYPE_2D_ROWMAJOR);
 	aml_tiling_destroy(&tiling_col, AML_TILING_TYPE_2D_ROWMAJOR);
 	aml_finalize();

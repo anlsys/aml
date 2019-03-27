@@ -98,11 +98,45 @@ int aml_bitmap_clear_range(struct aml_bitmap *bitmap, const unsigned i, const un
  **/
 unsigned long aml_bitmap_nset(const struct aml_bitmap *bitmap);
 
-/*
+/**
  * Copy a unsigned long array used as a bitmap into an actual bitmap.
  * Takes the array and its max set bit as input.
- */
-void aml_bitmap_copy_ulong(struct aml_bitmap *bitmap, unsigned long *, size_t);
+ **/
+void aml_bitmap_copy_from_ulong(struct aml_bitmap *bitmap, const unsigned long *, size_t);
+
+/**
+ * Copy a bitmap into an unsigned long array.
+ * Takes the array and its max set bit as input.
+ **/
+void aml_bitmap_copy_to_ulong(const struct aml_bitmap *bitmap, unsigned long *, size_t);
+
+/**
+ * Get index of the first bit set in bitmap.
+ * Return -1 if no bit is set.
+ **/
+int aml_bitmap_last(const struct aml_bitmap *bitmap);
+	
+/**
+ * Get index of the last bit set in bitmap.
+ * Return -1 if no bit is set.
+ **/
+int aml_bitmap_first(const struct aml_bitmap *bitmap);
+
+/**
+ * String conversion to bitmap.
+ * Input accepts string output from aml_bitmap_to_string() or special values:
+ * - "all", "fill", "full" to set all bits,
+ * - NULL, "none", "zero", "empty" to clear all bits,
+ * - an integer string to set one bit,
+ * - a comma separated list of integers string of bits to set.
+ **/
+int aml_bitmap_from_string(struct aml_bitmap *bitmap, const char * bitmap_str);
+
+/**
+ * Bitmap conversion to string. Output strings are 1,0 wrapped in brackets [].
+ * Returns 0 if conversion went right, else -1.
+ **/
+char * aml_bitmap_to_string(const struct aml_bitmap *bitmap);
 
 #endif //AML_BITMAP_H
 

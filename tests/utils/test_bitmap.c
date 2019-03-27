@@ -52,6 +52,76 @@ void test_bitmap_set(){
 	}
 }
 
+void test_bitmap_string_conversion(const char * bitmap_str){
+	struct aml_bitmap b, c;
+	char * cstr;
+	
+	assert(aml_bitmap_from_string(&b, bitmap_str) == 0);
+
+	if(bitmap_str == NULL              ||
+	   !strcasecmp(bitmap_str, "none") ||
+	   !strcasecmp(bitmap_str, "zero") ||
+	   !strcasecmp(bitmap_str, "empty")){
+		assert(aml_bitmap_iszero(&b));
+	}
+	else if(!strcasecmp(bitmap_str, "all")  ||
+		!strcasecmp(bitmap_str, "full") ||
+		!strcasecmp(bitmap_str, "fill")){
+		assert(aml_bitmap_isfull(&b));
+	}
+		
+	cstr = aml_bitmap_to_string(&b);
+	assert(cstr != NULL);
+	assert(aml_bitmap_from_string(&c, cstr) == 0);
+	assert(aml_bitmap_isequal(&b,&c));	
+	free(cstr);
+}
+
+void test_bitmap_string(){
+	const size_t int_len = 16;
+	char *bstr, *next;
+	int i;
+	const size_t max_len = int_len * (1+nis);
+	size_t len = 0;
+	struct aml_bitmap b;
+		
+	assert(aml_bitmap_from_string(&b, "unapropriate string") == -1);
+
+	test_bitmap_string_conversion("all");
+	test_bitmap_string_conversion("full");
+	test_bitmap_string_conversion("fill");
+	test_bitmap_string_conversion("zero");
+	test_bitmap_string_conversion("empty");
+	test_bitmap_string_conversion("none");
+	test_bitmap_string_conversion(NULL);
+	
+	bstr = malloc(int_len);
+	for(i = 0; i<nis; i++){
+		memset(bstr, 0 , int_len);
+		snprintf(bstr, int_len, "%lu", is[i]);
+		test_bitmap_string_conversion(bstr);
+		assert(aml_bitmap_from_string(&b, bstr) == 0);
+		assert(aml_bitmap_isset(&b, is[i]));
+	}
+	free(bstr);
+	
+	bstr = malloc(max_len);
+        next = bstr;	
+	memset(bstr, 0 , max_len);
+	for(i = 0; i<nis; i++){
+		len += snprintf(bstr+len, max_len-len, "%lu", is[i]);
+		if(i+1 < nis){
+			bstr[len] = ',';
+			len++;
+		}
+	}
+	test_bitmap_string_conversion(bstr);
+	assert(aml_bitmap_from_string(&b, bstr) == 0);
+	for(i = 0; i<nis; i++)
+		assert(aml_bitmap_isset(&b, is[i]));
+	free(bstr);
+}
+
 void test_bitmap_clear(){
 	unsigned long i,j;
 	struct aml_bitmap b;
@@ -119,6 +189,7 @@ int main(){
 	test_bitmap_clear();
 	test_bitmap_set_range();
 	test_bitmap_clear_range();
+	test_bitmap_string();
 	return 0;
 }
 
