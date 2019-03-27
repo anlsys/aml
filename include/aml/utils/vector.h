@@ -22,8 +22,8 @@ struct aml_vector {
 };
 
 /* not needed, here for consistency */
-#define AML_VECTOR_DECL(name) struct vector ##name;
-#define AML_VECTOR_ALLOCSIZE (sizeof(struct vector))
+#define AML_VECTOR_DECL(name) struct aml_vector name
+#define AML_VECTOR_ALLOCSIZE (sizeof(struct aml_vector))
 
 /*
  * Provides the total number of elements in the vector, including currently

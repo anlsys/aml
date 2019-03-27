@@ -56,7 +56,7 @@ struct aml_dma_linux_par {
 	struct aml_dma name = { \
 		&aml_dma_linux_par_ops, \
 		(struct aml_dma_data *)&__ ## name ## _inner_data, \
-	};
+	}
 
 #define AML_DMA_LINUX_PAR_ALLOCSIZE \
 	(sizeof(struct aml_dma_linux_par) + \

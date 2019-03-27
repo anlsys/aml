@@ -36,21 +36,21 @@ struct aml_tiling_iterator_2d_data {
 	struct aml_tiling name = { \
 		&aml_tiling_2d_rowmajor_ops, \
 		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
-	};
+	}
 
 #define AML_TILING_2D_COLMAJOR_DECL(name) \
 	struct aml_tiling_2d_data __ ##name## _inner_data; \
 	struct aml_tiling name = { \
 		&aml_tiling_2d_colmajor_ops, \
 		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
-	};
+	}
 
 #define AML_TILING_ITERATOR_2D_DECL(name) \
 	struct aml_tiling_iterator_2d_data __ ##name## _inner_data; \
 	struct aml_tiling_iterator name = { \
 		&aml_tiling_iterator_2d_ops, \
 		(struct aml_tiling_iterator_data *)&__ ## name ## _inner_data, \
-	};
+	}
 
 #define AML_TILING_2D_ALLOCSIZE (sizeof(struct aml_tiling_2d_data) + \
 				 sizeof(struct aml_tiling))

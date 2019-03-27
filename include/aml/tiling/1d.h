@@ -32,14 +32,14 @@ struct aml_tiling_iterator_1d_data {
 	struct aml_tiling name = { \
 		&aml_tiling_1d_ops, \
 		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
-	};
+	}
 
 #define AML_TILING_ITERATOR_1D_DECL(name) \
 	struct aml_tiling_iterator_1d_data __ ##name## _inner_data; \
 	struct aml_tiling_iterator name = { \
 		&aml_tiling_iterator_1d_ops, \
 		(struct aml_tiling_iterator_data *)&__ ## name ## _inner_data, \
-	};
+	}
 
 #define AML_TILING_1D_ALLOCSIZE (sizeof(struct aml_tiling_1d_data) + \
 				 sizeof(struct aml_tiling))

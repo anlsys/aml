@@ -54,7 +54,7 @@ struct aml_scratch_seq {
 	struct aml_scratch name = { \
 		&aml_scratch_seq_ops, \
 		(struct aml_scratch_data *)&__ ## name ## _inner_data, \
-	};
+	}
 
 #define AML_SCRATCH_SEQ_ALLOCSIZE \
 	(sizeof(struct aml_scratch_seq) + \
