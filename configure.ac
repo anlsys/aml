@@ -57,24 +57,17 @@ if [[ "x$benchmarks" = xtrue ]]; then
 fi
 AM_CONDITIONAL([ADD_BENCHMARKS],[test "x$benchmarks" = xtrue])
 
-
-# dependencies
-AC_CHECK_HEADERS(numa.h)
-AC_CHECK_LIB(numa, move_pages)
 AC_CHECK_LIB(dl, dlopen)
 
-# add pthread support
+# add pthread support.
+# doc in m4/ax_pthread.m4. Defines automake PTHREAD_CFLAGS and PTHREAD_LIBS
 AX_PTHREAD
-LIBS="$PTHREAD_LIBS $LIBS"
-CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 CC="$PTHREAD_CC"
 
-
-# internal jemalloc
-ac_configure_args="$ac_configure_args \
-			'--with-jemalloc-prefix=jemk_aml_' \
-			'--with-install-suffix=-aml'"
-AC_CONFIG_SUBDIRS([jemalloc])
+# NUMA support
+AC_CHECK_HEADERS([numa.h],,[AC_MSG_ERROR([AML requires libnuma headers.])])
+AC_CHECK_HEADERS([numaif.h],,[AC_MSG_ERROR([AML requires libnuma headers.])])
+AC_CHECK_LIB(numa, mbind,,[AC_MSG_ERROR([AML requires libnuma.])])
 
 AC_CONFIG_HEADERS([include/config.h])
 
@@ -84,7 +77,6 @@ AC_CONFIG_FILES([Makefile
 		 src/dma/Makefile
 		 src/tiling/Makefile
 		 src/scratch/Makefile
-		 src/arena/Makefile
 		 src/utils/Makefile
 		 include/Makefile
 		 tests/Makefile

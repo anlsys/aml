@@ -31,6 +31,7 @@ struct aml_scratch_request_par {
 struct aml_scratch_par_data {
 	struct aml_area *src_area, *sch_area;
 	struct aml_tiling *tiling;
+	size_t scratch_size;	
 	struct aml_dma *dma;
 	void * sch_ptr;
 	struct aml_vector tilemap;

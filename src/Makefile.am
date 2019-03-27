@@ -4,9 +4,8 @@ libaml_la_SOURCES = aml.c
 
 libaml_la_CFLAGS = -I$(top_srcdir)/include
 
-libaml_la_LDFLAGS=
-
-libaml_la_LIBADD = $(top_srcdir)/jemalloc/lib/libjemalloc-aml_pic.a
+libaml_la_LDFLAGS=$(PTHREAD_CFLAGS)
+libaml_la_LIBADD=
 
 SUBDIRS=utils
 libaml_la_LIBADD+=$(top_srcdir)/src/utils/libamlutils.la
@@ -22,7 +21,4 @@ libaml_la_LIBADD+=$(top_srcdir)/src/tiling/libamltiling.la
 
 SUBDIRS+=scratch
 libaml_la_LIBADD+=$(top_srcdir)/src/scratch/libamlscratch.la
-
-SUBDIRS+=arena
-libaml_la_LIBADD+=$(top_srcdir)/src/arena/libamlarena.la
 

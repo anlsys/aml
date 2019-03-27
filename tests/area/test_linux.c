@@ -9,90 +9,70 @@
 *******************************************************************************/
 
 #include "aml.h"
-#include <assert.h>
-#include <numa.h>
-#include <numaif.h>
+#include "aml/area/area.h"
+#include "aml/area/linux.h"
 
-void doit(struct aml_area *area)
-{
+void test_binding(struct aml_area *area){
 	void *ptr;
-	unsigned long *a, *b, *c;
-	intptr_t iptr;
+	int err;
+	size_t s;
+	const size_t sizes[2] = {1, 1<<20};
 
-	/* try to allocate something */
-	ptr = aml_area_malloc(area, sizeof(unsigned long) * 10);
-	assert(ptr != NULL);
-	a = (unsigned long *)ptr;
-	memset(a, 0, sizeof(unsigned long)*10);
-	assert(a[0] == 0);
-	assert(a[0] == a[9]);
-	aml_area_free(area, ptr);
+	for(s = 0; s<sizeof(sizes)/sizeof(*sizes); s++){
+		ptr = NULL;
+		err = area->ops->map(area, &ptr, sizes[s]);
+		if(err == AML_AREA_ENOMEM)
+			continue;
+		if(err == AML_AREA_EINVAL)
+			continue;
+		if(err == AML_SUCCESS){
+			memset(ptr, 0, sizes[s]);
+			if(area->ops->check_binding)
+				assert(area->ops->check_binding(area, ptr, sizes[s]) > 0);
+			assert(area->ops->unmap(area, ptr, sizes[s]) == AML_SUCCESS);
+		} else
+			assert(0);
+	}
 
-	/* libc API compatibility: malloc(0):
-	 * returns either null or unique valid for free. */
-	ptr = aml_area_malloc(area, 0);
-	aml_area_free(area, ptr);
-
-	/* calloc */
-	ptr = aml_area_calloc(area, 10, sizeof(unsigned long));
-	assert(ptr != NULL);
-	a = (unsigned long *)ptr;
-	assert(a[0] == 0);
-	assert(a[0] == a[9]);
-	aml_area_free(area, ptr);
-
-	/* memalign */
-	ptr = aml_area_memalign(area, 16, sizeof(unsigned long));
-	assert(ptr != NULL);
-	iptr = (intptr_t)ptr;
-	assert(iptr % 16 == 0);
-	aml_area_free(area, ptr);
-
-
-	/* libc API compatibility: calloc(0): same as malloc(0) */
-	ptr = aml_area_calloc(area, 0, sizeof(unsigned long));
-	aml_area_free(area, ptr);
-	ptr = aml_area_calloc(area, 10, 0);
-	aml_area_free(area, ptr);
-
-	/* realloc */
-	ptr = aml_area_realloc(area, NULL, sizeof(unsigned long) * 10);
-	assert(ptr != NULL);
-	ptr = aml_area_realloc(area, ptr, sizeof(unsigned long) * 2);
-	assert(ptr != NULL);
-	ptr = aml_area_realloc(area, ptr, sizeof(unsigned long) * 20);
-	assert(ptr != NULL);
-	ptr = aml_area_realloc(area, ptr, 0);
 }
 
-#define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
+void test_bind(struct aml_area *area){
+	if(area->ops->bind == NULL)
+		return;
 
-int main(int argc, char *argv[])
-{
-	AML_ARENA_JEMALLOC_DECL(arena);
-	AML_AREA_LINUX_DECL(area);
-	struct aml_bitmap nodemask;
-	struct bitmask *allowed;
+	int err;
+	size_t i,j;
+	unsigned long flags = 1;
+	struct aml_bitmap bitmap;
+	
+	err = area->ops->bind(area, NULL, 0);
+	if(err == AML_SUCCESS)
+		test_binding(area);
 
-	/* library initialization */
-	aml_init(&argc, &argv);
-
-	/* init arguments */
-	allowed = numa_get_mems_allowed();
-	aml_bitmap_copy_ulong(&nodemask, allowed->maskp, numa_max_node());
-	assert(!aml_arena_jemalloc_init(&arena, AML_ARENA_JEMALLOC_TYPE_REGULAR));
-
-	assert(!aml_area_linux_init(&area,
-				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
-				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
-				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arena, MPOL_BIND, &nodemask));
-
-	doit(&area);
-
-	/* same here, order matters. */
-	assert(!aml_area_linux_destroy(&area));
-
-	aml_finalize();
-	return 0;
+	for(i = 0; i < sizeof(flags)*8 + 1; i++){
+		for(j = 0; j<AML_BITMAP_MAX; j++){
+			aml_bitmap_zero(&bitmap);
+			aml_bitmap_set(&bitmap, j);
+			err = area->ops->bind(area, &bitmap, flags);			
+			if(err == AML_SUCCESS)
+				test_binding(area);
+		}
+		flags = flags << 1;
+	}
 }
+
+void test_create(struct aml_area *area){
+	if(area->ops->create == NULL)
+		return;
+
+	assert(area->ops->destroy != NULL);
+	
+	struct aml_area new;
+	int err;
+
+	new.ops = area->ops;
+	new.data = NULL;
+	assert(area->ops->create(&new) == AML_SUCCESS);
+	area->ops->destroy(&new);
+}
+

@@ -22,8 +22,9 @@ void aml_bitmap_copy(struct aml_bitmap *dst, const struct aml_bitmap *src)
 	memcpy(dst, src, sizeof(struct aml_bitmap));
 }
 
-void aml_bitmap_copy_ulong(struct aml_bitmap *dst, unsigned long *src,
-			   size_t maxbit)
+void aml_bitmap_copy_from_ulong(struct aml_bitmap *dst,
+				const unsigned long *src,
+			        size_t maxbit)
 {
 	if(dst == NULL || src == NULL)
 		return;
@@ -34,6 +35,18 @@ void aml_bitmap_copy_ulong(struct aml_bitmap *dst, unsigned long *src,
 			aml_bitmap_set(dst, i);
 }
 
+void aml_bitmap_copy_to_ulong(const struct aml_bitmap *dst,
+			      unsigned long *src,
+			      size_t maxbit)
+{
+	if(dst == NULL || src == NULL)
+		return;
+	if(maxbit > AML_BITMAP_MAX)
+		maxbit = AML_BITMAP_MAX;
+	for(size_t i = 0; i < maxbit; i++)
+		if(aml_bitmap_isset(dst, i))
+			src[AML_BITMAP_NTH(i)] |= (1UL << AML_BITMAP_ITH(i));
+}
 
 struct aml_bitmap *aml_bitmap_dup(const struct aml_bitmap *a)
 {
@@ -72,7 +85,7 @@ int aml_bitmap_isfull(const struct aml_bitmap *bitmap)
 }
 
 void aml_bitmap_fill(struct aml_bitmap *bitmap){
-	memset(bitmap, AML_BITMAP_FULL, sizeof(struct aml_bitmap));
+	memset(bitmap, ~0, sizeof(struct aml_bitmap));
 }
 
 int aml_bitmap_isset(const struct aml_bitmap *bitmap, const unsigned i)
@@ -218,3 +231,81 @@ int aml_bitmap_first(const struct aml_bitmap *bitmap)
 	return res;
 
 }
+
+char *
+aml_bitmap_to_string(const struct aml_bitmap *bitmap)
+{
+	size_t i, len = AML_BITMAP_MAX+3;
+	char * output = malloc(len);
+	if(output == NULL)
+		return NULL;
+	memset(output, 0, len);
+	for(i = 1; i<=AML_BITMAP_MAX; i++)
+		output[i] = aml_bitmap_isset(bitmap, (int)(i-1)) ? '1' : '0';
+	output[0] = '[';
+	output[AML_BITMAP_MAX+1] = ']';
+	return output;
+}
+
+int
+aml_bitmap_from_string(struct aml_bitmap *bitmap, const char * bitmap_str){
+	if(bitmap_str == NULL              ||
+	   !strcasecmp(bitmap_str, "none") ||
+	   !strcasecmp(bitmap_str, "zero") ||
+	   !strcasecmp(bitmap_str, "empty")){
+		aml_bitmap_zero(bitmap);
+		return 0;
+	}
+	if(!strcasecmp(bitmap_str, "all") ||
+	   !strcasecmp(bitmap_str, "fill") ||
+	   !strcasecmp(bitmap_str, "full")){
+		aml_bitmap_fill(bitmap);
+		return 0;
+	}
+
+	struct aml_bitmap b;	
+	size_t i;
+
+	aml_bitmap_zero(&b);
+	if(bitmap_str[0] == '['){
+		if( strlen(bitmap_str) <  AML_BITMAP_MAX+2 ||
+		    bitmap_str[AML_BITMAP_MAX+1] != ']')
+			return -1;
+	
+		for(i = 1; i<= AML_BITMAP_MAX; i++){
+			if(bitmap_str[i] == '1')
+				aml_bitmap_set(&b, i-1);
+			else if(bitmap_str[i] != '0')
+				return -1;
+		}
+	} else if (bitmap_str[0] == '0' ||
+		   bitmap_str[0] == '1' ||
+		   bitmap_str[0] == '2' ||
+		   bitmap_str[0] == '3' ||
+		   bitmap_str[0] == '4' ||
+		   bitmap_str[0] == '5' ||
+		   bitmap_str[0] == '6' ||
+		   bitmap_str[0] == '7' ||
+		   bitmap_str[0] == '8' ||
+		   bitmap_str[0] == '9') {
+		char * saveptr, *tok, *str =  strdup(bitmap_str);
+		int bit;
+		tok = strtok_r(str, ",", &saveptr);
+		while(tok != NULL){
+			bit = atoi(tok);
+			if(bit < 0 || bit >= AML_BITMAP_MAX){
+				free(str);
+				return -1;
+			}
+			aml_bitmap_set(&b, bit);
+			tok = strtok_r(NULL, ",", &saveptr);
+		}
+		free(str);
+	} else {
+		return -1;
+	}
+
+	aml_bitmap_copy(bitmap, &b);
+	return 0;
+}
+

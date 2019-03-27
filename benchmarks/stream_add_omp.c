@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <omp.h>
 #include "aml.h"
+#include "aml/area/linux.h"
 #include <stdlib.h>
 
 #define ITER 10
@@ -35,10 +36,7 @@ int main(int argc, char *argv[])
 	/* we want to back our array on the slow node and use the fast node as
 	 * a faster buffer.
 	 */
-	struct aml_area slow, fast;
-	int type = AML_AREA_TYPE_REGULAR;
-	assert(!aml_area_from_nodestring(&slow, type, "all"));
-	assert(!aml_area_from_nodestring(&fast, type, "all"));
+	struct aml_area *slow = &aml_area_linux, *fast = aml_area_linux;
 
 	struct aml_dma dma;
 	assert(!aml_dma_init(&dma, 0));
@@ -55,9 +53,9 @@ int main(int argc, char *argv[])
 		chunk_msz = MEMSIZE/(numthreads*CHUNKING);
 		esz = chunk_msz/sizeof(unsigned long);
 	}
-	a = aml_area_malloc(&slow, MEMSIZE);
-	b = aml_area_malloc(&slow, MEMSIZE);
-	c = aml_area_malloc(&slow, MEMSIZE);
+	a = aml_area_mmap(slow, NULL, MEMSIZE);
+	b = aml_area_mmap(slow, NULL, MEMSIZE);
+	c = aml_area_mmap(fast, NULL, MEMSIZE);
 	assert(a != NULL && b != NULL && c != NULL);
 
 	/* create virtually accessible address range, backed by slow memory */
@@ -98,11 +96,9 @@ int main(int argc, char *argv[])
 		assert(wc[i] == esize);
 	}
 
-	aml_area_free(&slow, a);
-	aml_area_free(&slow, b);
-	aml_area_free(&slow, c);
-	aml_area_destroy(&slow);
-	aml_area_destroy(&fast);
+	aml_area_munmap(slow, a, MEMSIZE);
+	aml_area_munmap(slow, b, MEMSIZE);
+	aml_area_munmap(fast, c, MEMSIZE);
 	aml_dma_destroy(&dma);
 	aml_finalize();
 	return 0;

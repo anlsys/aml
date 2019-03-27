@@ -9,6 +9,7 @@
 *******************************************************************************/
 
 #include "aml.h"
+#include "aml/area/linux.h"
 #include "aml/dma/linux-par.h"
 #include "aml/scratch/seq.h"
 #include <assert.h>
@@ -26,8 +27,7 @@
 size_t numthreads, tilesz, esz;
 unsigned long *a, *b, *c;
 AML_TILING_1D_DECL(tiling);
-AML_AREA_LINUX_DECL(slow);
-AML_AREA_LINUX_DECL(fast);
+struct aml_area *slow, *fast;
 AML_SCRATCH_SEQ_DECL(sa);
 AML_SCRATCH_SEQ_DECL(sb);
 
@@ -41,16 +41,14 @@ int kernel(unsigned long *a, unsigned long *b, unsigned long *c, size_t n)
 
 int main(int argc, char *argv[])
 {
-	AML_ARENA_JEMALLOC_DECL(arns);
-	AML_ARENA_JEMALLOC_DECL(arnf);
 	AML_DMA_LINUX_PAR_DECL(dma);
-	struct bitmask *slowb, *fastb;
+	struct aml_bitmap slowb, fastb;
 	aml_init(&argc, &argv);
 	assert(argc == 4);
 
 	log_init(argv[0]);
-	fastb = numa_parse_nodestring_all(argv[1]);
-	slowb = numa_parse_nodestring_all(argv[2]);
+	assert(aml_bitmap_from_string(&fastb, argv[1]) == 0);
+	assert(aml_bitmap_from_string(&slowb, argv[2]) == 0);
 	unsigned long memsize = 1UL << atoi(argv[3]);
 
 	/* use openmp env to figure out how many threads we want
@@ -65,19 +63,12 @@ int main(int argc, char *argv[])
 
 	/* initialize all the supporting struct */
 	assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_1D, tilesz, memsize));
-
-	assert(!aml_arena_jemalloc_init(&arns, AML_ARENA_JEMALLOC_TYPE_REGULAR));
-	assert(!aml_area_linux_init(&slow,
-				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
-				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
-				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arns, MPOL_BIND, slowb->maskp));
-	assert(!aml_arena_jemalloc_init(&arnf, AML_ARENA_JEMALLOC_TYPE_REGULAR));
-	assert(!aml_area_linux_init(&fast,
-				    AML_AREA_LINUX_MANAGER_TYPE_SINGLE,
-				    AML_AREA_LINUX_MBIND_TYPE_REGULAR,
-				    AML_AREA_LINUX_MMAP_TYPE_ANONYMOUS,
-				    &arnf, MPOL_BIND, fastb->maskp));
+	slow = aml_area_linux_create(AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
+				     &slowb, AML_AREA_LINUX_BINDING_FLAG_BIND);
+	assert(slow != NULL);
+	fast = aml_area_linux_create(AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
+				     &fastb, AML_AREA_LINUX_BINDING_FLAG_BIND);
+	assert(fast != NULL);
 	assert(!aml_dma_linux_par_init(&dma, numthreads*2, numthreads));
 	assert(!aml_scratch_seq_init(&sa, &fast, &slow, &dma, &tiling,
 				     (size_t)2*numthreads, (size_t)1));
@@ -85,9 +76,9 @@ int main(int argc, char *argv[])
 				     (size_t)2*numthreads, (size_t)1));
 
 	/* allocation */
-	a = aml_area_malloc(&slow, memsize);
-	b = aml_area_malloc(&slow, memsize);
-	c = aml_area_malloc(&fast, memsize);
+	a = aml_area_mmap(slow, NULL, memsize);
+	b = aml_area_mmap(slow, NULL, memsize);
+	c = aml_area_mmap(fast, NULL, memsize);
 	assert(a != NULL && b != NULL && c != NULL);
 
 	unsigned long esize = memsize/sizeof(unsigned long);
@@ -129,11 +120,11 @@ int main(int argc, char *argv[])
 	aml_scratch_seq_destroy(&sa);
 	aml_scratch_seq_destroy(&sb);
 	aml_dma_linux_par_destroy(&dma);
-	aml_area_free(&slow, a);
-	aml_area_free(&slow, b);
-	aml_area_free(&slow, c);
-	aml_area_linux_destroy(&slow);
-	aml_area_linux_destroy(&fast);
+	aml_area_munmap(slow, a, memsize);
+	aml_area_munmap(slow, b, memsize);
+	aml_area_munmap(fast, c, memsize);
+	aml_area_linux_destroy(slow);
+	aml_area_linux_destroy(fast);
 	aml_tiling_destroy(&tiling, AML_TILING_TYPE_1D);
 	aml_finalize();
 	return 0;
