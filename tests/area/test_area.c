@@ -10,11 +10,12 @@
 #include "aml.h"
 #include "aml/area/area.h"
 #include "aml/area/linux.h"
+#include <assert.h>
 
-void test_map(struct aml_area *area){
-	assert(area != NULL)
-	assert(area->ops->map != NULL);
-	assert(area->ops->unmap != NULL);
+void test_map(const struct aml_area *area){
+	assert(area != NULL);
+	assert(area->ops->mmap != NULL);
+	assert(area->ops->munmap != NULL);
 
 	void *ptr;
 	int err;
@@ -35,7 +36,7 @@ void test_aml_area(struct aml_area *area){
 
 int main(int argc, char** argv){
 	aml_init(&argc, &argv);
-	test_aml_area(aml_area_linux);
+	test_map(&aml_area_linux);
 	aml_finalize();
 	return 0;
 }

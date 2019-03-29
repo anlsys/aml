@@ -14,7 +14,8 @@ UTILS_TESTS = utils/test_vector \
 	      utils/test_version
 
 AREA_TESTS = \
-	   area/test_area
+	area/test_area \
+	area/test_linux
 
 TILING_TESTS = tiling/test_tiling \
 	       tiling/test_tiling_2d
@@ -29,7 +30,7 @@ SCRATCH_TESTS = scratch/test_scratch_seq \
 UNIT_TESTS = $(UTILS_TESTS) \
 	     $(TILING_TESTS) \
 	     $(BINDING_TESTS) \
-	     $(AREA_LINUX_TESTS) \
+	     $(AREA_TESTS) \
 	     $(DMA_LINUX_TESTS) \
 	     $(SCRATCH_TESTS)
 

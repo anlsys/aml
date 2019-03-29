@@ -20,22 +20,29 @@ const char* aml_strerror(const int errno);
  **/
 void aml_perror(const char * msg);
 
-#define AML_SUCCESS       0 /* Generic value for success */
-#define AML_FAILURE      -1 /* Generic value for failure */
+/* Generic value for success */
+#define AML_SUCCESS       0
+/* Generic value for failure */
+#define AML_FAILURE      -1
 
 /************************************ 
  * Area error codes  -2 .. -32 
  ************************************/
 
-#define AML_AREA_EINVAL  -2 /* Invalid argument provided */
-#define AML_AREA_ENOTSUP -3 /* Function not implemented for this type of area */
-#define AML_AREA_ENOMEM  -4 /* Allocation failed */
-#define AML_AREA_EDOM    -5 /* One arguent is out of allowed bounds */
+/* Invalid argument provided */
+#define AML_AREA_EINVAL       -2
+/* Function not implemented for this type of area */
+#define AML_AREA_ENOTSUP      -3
+/* Allocation failed */
+#define AML_AREA_ENOMEM       -4 
+/* One arguent is out of allowed bounds */
+#define AML_AREA_EDOM         -5
 
 /************************************ 
  * error bound
  ************************************/
 
-#define AML_ERROR_MAX    -6 /* Last error */
+/* Last error */
+#define AML_ERROR_MAX         -7
 
 #endif
