@@ -12,6 +12,7 @@
 #include "aml/area/linux.h"
 #include "aml/dma/linux-seq.h"
 #include "aml/scratch/par.h"
+#include "aml/tiling/1d.h"
 #include <assert.h>
 
 #define TILESIZE (2)

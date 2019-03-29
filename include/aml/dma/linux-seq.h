@@ -46,7 +46,7 @@ struct aml_dma_linux_seq {
 	struct aml_dma name = { \
 		&aml_dma_linux_seq_ops, \
 		(struct aml_dma_data *)&__ ## name ## _inner_data, \
-	};
+	}
 
 #define AML_DMA_LINUX_SEQ_ALLOCSIZE \
 	(sizeof(struct aml_dma_linux_seq) + \

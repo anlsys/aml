@@ -15,6 +15,9 @@ struct aml_bitmap {
 	unsigned long mask[AML_BITMAP_SIZE];
 };
 
+/* Not needed, here for consistency */
+#define AML_BITMAP_DECL(name) struct aml_bitmap name
+#define AML_BITMAP_ALLOCSIZE (sizeof(struct aml_bitmap))
 /**
  * On heap allocation of new empty bitmap.
  **/

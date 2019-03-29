@@ -24,7 +24,9 @@
 #define AML_AREA_LINUX_MMAP_FLAG_PRIVATE (MAP_PRIVATE | MAP_ANONYMOUS)
 #define AML_AREA_LINUX_MMAP_FLAG_SHARED  (MAP_SHARED | MAP_ANONYMOUS)
 
-/** User data stored inside area **/
+extern struct aml_area_ops aml_area_linux_ops;
+
+/* User data stored inside area */
 struct aml_area_linux_data {
 	/** numanodes to use **/
 	struct bitmask *nodeset;
@@ -33,6 +35,21 @@ struct aml_area_linux_data {
 	/** mmap flags **/
 	int             mmap_flags;
 };
+
+/* Default linux area with private mapping and no binding. */
+extern const struct aml_area aml_area_linux;
+
+#define AML_AREA_LINUX_DECL(name) \
+	struct aml_area_linux_data __ ##name## _inner_data; \
+	struct aml_area name = { \
+		&aml_area_linux_ops, \
+		(struct aml_area_data *)&__ ## name ## _inner_data, \
+	}
+
+#define AML_AREA_LINUX_ALLOCSIZE \
+	(sizeof(struct aml_area_linux_data) + \
+	 sizeof(struct aml_area))
+
 
 /** 
  * Initialize area data with struct aml_area_linux_binding. Subsequent calls to
@@ -90,14 +107,8 @@ aml_area_linux_mmap(const struct aml_area_data  *area_data,
  * error investigations.
  **/
 int
-aml_area_linux_munmap(const struct aml_area_data *area_data,
-		      void                       *ptr,
-		      const size_t                size);
+aml_area_linux_munmap(const struct aml_area_data* area_data,
+		      void *ptr,
+		      const size_t size);
 
-/** linux area hooks. mmap hook will also bind data unlike header mmap hook. **/
-extern struct aml_area_ops aml_area_linux_ops;
-
-/** Default linux area with private mapping and no binding. **/
-extern const struct aml_area aml_area_linux;
-
-#endif //AML_AREA_LINUX_NUMA_H	
+#endif //AML_AREA_LINUX_NUMA_H

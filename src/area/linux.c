@@ -11,7 +11,6 @@
 #include <errno.h>
 
 #include "aml.h"
-#include "aml/area/area.h"
 #include "aml/area/linux.h"
 
 #define AML_AREA_LINUX_MBIND_FLAGS MPOL_MF_MOVE

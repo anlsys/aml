@@ -9,6 +9,8 @@
 *******************************************************************************/
 
 #include "aml.h"
+#include "aml/tiling/1d.h"
+#include "aml/tiling/2d.h"
 #include <assert.h>
 
 #define TILESIZE 8192

@@ -63,12 +63,54 @@ int aml_finalize(void);
  * This abstraction is meant to be implemented for several kind of devices,
  * i.e the same function calls allocate different kinds of devices depending
  * on the area implementation provided.
- * List of aml area implementations each may provide additional functionnalities:
+ * List of aml area implementations each may provide additional functionalities:
  * - <aml/area/linux.h>
  **/
 
-/* Implementation details of area building block */
-#include "aml/area/area.h"
+/* Opaque handle to areas data. Defined by implementations */
+struct aml_area_data;
+
+/** Implementation specific operations. **/
+struct aml_area_ops {
+	/**
+	 * Coarse grain allocator of virtual memory.
+	 *
+	 * "area_data": Opaque handle to implementation specific data.
+	 * "ptr": A virtual address to be used by underlying implementation.
+	 *        Can be NULL.
+	 * "size": The minimum size of allocation.
+	 *         Is greater than 0. Must not fail unless not enough
+	 *         memory is available, or ptr argument does not point to a
+	 *         suitable address.
+	 *         In case of failure, aml_errno must be set to an appropriate
+	 *         value.
+	 *
+	 * Returns a pointer to allocated memory object.
+	 **/
+        void* (*mmap)(const struct aml_area_data  *area_data,
+		      void                        *ptr,
+		      size_t                       size);
+
+	/**
+	 * Unmapping of virtual memory mapped with map().
+	 *
+	 * "area_data": An opaque handle to implementation specific data.
+	 * "ptr": Pointer to data mapped in physical memory. Cannot be NULL.
+	 * "size": The size of data. Cannot be 0.
+	 *
+	 * Returns AML_AREA_* error code.
+	 **/
+        int (*munmap)(const struct aml_area_data *area_data,
+		      void                       *ptr,
+		      size_t                      size);
+};
+
+struct aml_area {
+	/* Basic memory operations implementation */
+	struct aml_area_ops *ops;
+	/* Implementation specific data. Set to NULL at creation. */
+	struct aml_area_data *data;
+};
 
 /**
  * Returns virtual memory from this area with at least queried size bytes.
@@ -84,7 +126,7 @@ aml_area_mmap(const struct aml_area *area,
 /**
  * Release data provided with aml_area_mmap() and the same area.
  * "area": A valid area implementing access to target memory.
- * "ptr": A pointer to memory address provided with aml_area_mmap() 
+ * "ptr": A pointer to memory address provided with aml_area_mmap()
  *        by same area and size.
  **/
 int
@@ -289,92 +331,6 @@ int aml_tiling_vinit(struct aml_tiling *tiling, int type, va_list args);
  * Returns 0 if successful; an error code otherwise.
  */
 int aml_tiling_destroy(struct aml_tiling *tiling, int type);
-
-/*******************************************************************************
- * Tiling 1D:
- ******************************************************************************/
-
-extern struct aml_tiling_ops aml_tiling_1d_ops;
-extern struct aml_tiling_iterator_ops aml_tiling_iterator_1d_ops;
-
-struct aml_tiling_1d_data {
-	size_t blocksize;
-	size_t totalsize;
-};
-
-struct aml_tiling_iterator_1d_data {
-	size_t i;
-	struct aml_tiling_1d_data *tiling;
-};
-
-#define AML_TILING_1D_DECL(name) \
-	struct aml_tiling_1d_data __ ##name## _inner_data; \
-	struct aml_tiling name = { \
-		&aml_tiling_1d_ops, \
-		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
-	};
-
-#define AML_TILING_ITERATOR_1D_DECL(name) \
-	struct aml_tiling_iterator_1d_data __ ##name## _inner_data; \
-	struct aml_tiling_iterator name = { \
-		&aml_tiling_iterator_1d_ops, \
-		(struct aml_tiling_iterator_data *)&__ ## name ## _inner_data, \
-	};
-
-#define AML_TILING_1D_ALLOCSIZE (sizeof(struct aml_tiling_1d_data) + \
-				 sizeof(struct aml_tiling))
-
-#define AML_TILING_ITERATOR_1D_ALLOCSIZE \
-	(sizeof(struct aml_tiling_iterator_1d_data) + \
-	 sizeof(struct aml_tiling_iterator))
-
-/*******************************************************************************
- * Tiling 2D:
- * a contiguous memory area composed of contiguous tiles arranged in 2D grid.
- ******************************************************************************/
-
-extern struct aml_tiling_ops aml_tiling_2d_rowmajor_ops;
-extern struct aml_tiling_ops aml_tiling_2d_colmajor_ops;
-extern struct aml_tiling_iterator_ops aml_tiling_iterator_2d_ops;
-
-struct aml_tiling_2d_data {
-	size_t blocksize;
-	size_t totalsize;
-	size_t ndims[2]; /* # number of rows, # number of cols (in tiles) */
-};
-
-struct aml_tiling_iterator_2d_data {
-	size_t i;
-	struct aml_tiling_2d_data *tiling;
-};
-
-#define AML_TILING_2D_ROWMAJOR_DECL(name) \
-	struct aml_tiling_2d_data __ ##name## _inner_data; \
-	struct aml_tiling name = { \
-		&aml_tiling_2d_rowmajor_ops, \
-		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
-	};
-
-#define AML_TILING_2D_COLMAJOR_DECL(name) \
-	struct aml_tiling_2d_data __ ##name## _inner_data; \
-	struct aml_tiling name = { \
-		&aml_tiling_2d_colmajor_ops, \
-		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
-	};
-
-#define AML_TILING_ITERATOR_2D_DECL(name) \
-	struct aml_tiling_iterator_2d_data __ ##name## _inner_data; \
-	struct aml_tiling_iterator name = { \
-		&aml_tiling_iterator_2d_ops, \
-		(struct aml_tiling_iterator_data *)&__ ## name ## _inner_data, \
-	};
-
-#define AML_TILING_2D_ALLOCSIZE (sizeof(struct aml_tiling_2d_data) + \
-				 sizeof(struct aml_tiling))
-
-#define AML_TILING_ITERATOR_2D_ALLOCSIZE \
-	(sizeof(struct aml_tiling_iterator_2d_data) + \
-	 sizeof(struct aml_tiling_iterator))
 
 /*******************************************************************************
  * DMA:
