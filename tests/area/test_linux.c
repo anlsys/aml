@@ -7,72 +7,78 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
 *******************************************************************************/
-
 #include "aml.h"
-#include "aml/area/area.h"
 #include "aml/area/linux.h"
+#include <assert.h>
+#include <string.h>
 
-void test_binding(struct aml_area *area){
+const size_t sizes[3] = {1, 1<<12, 1<<20};
+const int binding_flags[3] = {
+	AML_AREA_LINUX_BINDING_FLAG_BIND,
+	AML_AREA_LINUX_BINDING_FLAG_INTERLEAVE,
+	AML_AREA_LINUX_BINDING_FLAG_PREFERRED
+};
+const int mmap_flags[2] = {
+	AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
+	AML_AREA_LINUX_MMAP_FLAG_SHARED
+};
+
+void test_binding(struct aml_bitmap *bitmap){
 	void *ptr;
 	int err;
 	size_t s;
-	const size_t sizes[2] = {1, 1<<20};
-
-	for(s = 0; s<sizeof(sizes)/sizeof(*sizes); s++){
-		ptr = NULL;
-		err = area->ops->map(area, &ptr, sizes[s]);
-		if(err == AML_AREA_ENOMEM)
-			continue;
-		if(err == AML_AREA_EINVAL)
-			continue;
-		if(err == AML_SUCCESS){
-			memset(ptr, 0, sizes[s]);
-			if(area->ops->check_binding)
-				assert(area->ops->check_binding(area, ptr, sizes[s]) > 0);
-			assert(area->ops->unmap(area, ptr, sizes[s]) == AML_SUCCESS);
-		} else
-			assert(0);
-	}
-
-}
-
-void test_bind(struct aml_area *area){
-	if(area->ops->bind == NULL)
-		return;
-
-	int err;
-	size_t i,j;
-	unsigned long flags = 1;
-	struct aml_bitmap bitmap;
+	int bf, mf, i, nnodes, binding_flag, mmap_flag;
+	struct aml_area *area;
 	
-	err = area->ops->bind(area, NULL, 0);
-	if(err == AML_SUCCESS)
-		test_binding(area);
-
-	for(i = 0; i < sizeof(flags)*8 + 1; i++){
-		for(j = 0; j<AML_BITMAP_MAX; j++){
-			aml_bitmap_zero(&bitmap);
-			aml_bitmap_set(&bitmap, j);
-			err = area->ops->bind(area, &bitmap, flags);			
-			if(err == AML_SUCCESS)
-				test_binding(area);
+	
+	for(bf=0; bf<sizeof(binding_flags)/sizeof(*binding_flags); bf++){
+		binding_flag = binding_flags[bf];
+		for(mf=0; mf<sizeof(mmap_flags)/sizeof(*mmap_flags); mf++){
+			mmap_flag = mmap_flags[mf];
+			for(s = 0; s<sizeof(sizes)/sizeof(*sizes); s++){
+				area = aml_area_linux_create(mmap_flag, bitmap, binding_flag);
+				assert(area != NULL);
+				ptr = area->ops->mmap((struct aml_area_data*)area->data,
+						      NULL,
+						      sizes[s]);
+				assert(ptr != NULL);
+				memset(ptr, 0, sizes[s]);
+				assert(aml_area_linux_check_binding((struct aml_area_linux_data*)area->data, ptr, sizes[s]) > 0);
+				assert(area->ops->munmap((struct aml_area_data*)area->data, ptr, sizes[s]) == AML_SUCCESS);
+			}
 		}
-		flags = flags << 1;
+		
+	}
+	
+}
+
+void test_bind(){
+	struct bitmask *nodeset;
+	int i, num_nodes;        
+	struct aml_bitmap bitmap;
+
+	nodeset = numa_get_mems_allowed();
+	num_nodes = numa_bitmask_weight(nodeset);
+
+	aml_bitmap_fill(&bitmap);
+	if(aml_bitmap_last(&bitmap) > num_nodes){
+		assert(aml_area_linux_create(AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
+					     &bitmap,
+					     AML_AREA_LINUX_BINDING_FLAG_PREFERRED) == NULL);
+		assert(aml_errno == AML_AREA_EDOM);
+	}
+
+	test_binding(NULL);
+
+	aml_bitmap_zero(&bitmap);
+	for(i = 0; i<num_nodes; i++){
+		aml_bitmap_set(&bitmap, i);
+		test_binding(&bitmap);
+		aml_bitmap_clear(&bitmap, i);
 	}
 }
 
-void test_create(struct aml_area *area){
-	if(area->ops->create == NULL)
-		return;
-
-	assert(area->ops->destroy != NULL);
-	
-	struct aml_area new;
-	int err;
-
-	new.ops = area->ops;
-	new.data = NULL;
-	assert(area->ops->create(&new) == AML_SUCCESS);
-	area->ops->destroy(&new);
+int main(int argc, char** argv){
+	test_bind();
+	return 0;
 }
-
