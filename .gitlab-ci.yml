@@ -2,6 +2,7 @@ variables:
   ARGOPKGS : "https://xgitlab.cels.anl.gov/argo/argopkgs/-/archive/master/argopkgs-master.tar.gz"
 
 stages:
+  - style
   - build
 
 make:generic:
@@ -42,8 +43,13 @@ make:knl:
     - knl
 
 repoquality:
-  stage: build
+  stage: style
   script:
     - nix run -f "$ARGOPKGS" repoquality --command repoquality
   tags:
     - integration
+
+checkpatch:
+  stage: style
+  script:
+    - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl src/aml.c include/aml.h
