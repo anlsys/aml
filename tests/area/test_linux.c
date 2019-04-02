@@ -29,14 +29,13 @@ void test_binding(struct aml_bitmap *bitmap){
 	size_t s;
 	int bf, mf, i, nnodes, binding_flag, mmap_flag;
 	struct aml_area *area;
-	
-	
+
 	for(bf=0; bf<sizeof(binding_flags)/sizeof(*binding_flags); bf++){
 		binding_flag = binding_flags[bf];
 		for(mf=0; mf<sizeof(mmap_flags)/sizeof(*mmap_flags); mf++){
 			mmap_flag = mmap_flags[mf];
 			for(s = 0; s<sizeof(sizes)/sizeof(*sizes); s++){
-				area = aml_area_linux_create(mmap_flag, bitmap, binding_flag);
+				aml_area_linux_create(&area, mmap_flag, bitmap, binding_flag);
 				assert(area != NULL);
 				ptr = area->ops->mmap((struct aml_area_data*)area->data,
 						      NULL,
@@ -45,6 +44,7 @@ void test_binding(struct aml_bitmap *bitmap){
 				memset(ptr, 0, sizes[s]);
 				assert(aml_area_linux_check_binding((struct aml_area_linux_data*)area->data, ptr, sizes[s]) > 0);
 				assert(area->ops->munmap((struct aml_area_data*)area->data, ptr, sizes[s]) == AML_SUCCESS);
+				aml_area_linux_destroy(&area);
 			}
 		}
 		
@@ -56,16 +56,17 @@ void test_bind(){
 	struct bitmask *nodeset;
 	int i, num_nodes;        
 	struct aml_bitmap bitmap;
+	struct aml_area *area;
 
 	nodeset = numa_get_mems_allowed();
 	num_nodes = numa_bitmask_weight(nodeset);
 
 	aml_bitmap_fill(&bitmap);
 	if(aml_bitmap_last(&bitmap) > num_nodes){
-		assert(aml_area_linux_create(AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
+		assert(aml_area_linux_create(&area, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
 					     &bitmap,
-					     AML_AREA_LINUX_BINDING_FLAG_PREFERRED) == NULL);
-		assert(aml_errno == AML_AREA_EDOM);
+					     AML_AREA_LINUX_BINDING_FLAG_PREFERRED) == -AML_EDOM);
+		assert(area == NULL);
 	}
 
 	test_binding(NULL);
