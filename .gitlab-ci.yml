@@ -52,4 +52,4 @@ repoquality:
 checkpatch:
   stage: style
   script:
-    - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl src/aml.c include/aml.h
+    - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl
