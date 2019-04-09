@@ -26,6 +26,7 @@ int aml_dma_copy(struct aml_dma *dma, ...)
 	va_list ap;
 	int ret;
 	struct aml_dma_request *req;
+
 	va_start(ap, dma);
 	ret = dma->ops->create_request(dma->data, &req,
 				       AML_DMA_REQUEST_TYPE_COPY, ap);
@@ -40,6 +41,7 @@ int aml_dma_async_copy(struct aml_dma *dma, struct aml_dma_request **req, ...)
 	assert(req != NULL);
 	va_list ap;
 	int ret;
+
 	va_start(ap, req);
 	ret = dma->ops->create_request(dma->data, req,
 				       AML_DMA_REQUEST_TYPE_COPY, ap);

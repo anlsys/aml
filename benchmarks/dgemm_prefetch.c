@@ -184,7 +184,7 @@ int main(int argc, char* argv[])
 	       flops/1e9);
 	aml_scratch_par_destroy(&sa);
 	aml_scratch_par_destroy(&sb);
-	aml_dma_linux_seq_destroy(&dma);
+	aml_dma_linux_seq_fini(&dma);
 	aml_area_munmap(slow, a, memsize);
 	aml_area_munmap(slow, b, memsize);
 	aml_area_munmap(fast, c, memsize);

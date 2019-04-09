@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 
 	/* delete everything */
 	aml_scratch_par_destroy(&scratch);
-	aml_dma_linux_seq_destroy(&dma);
+	aml_dma_linux_seq_fini(&dma);
 	aml_area_munmap(&aml_area_linux, dst, TILESIZE*PAGE_SIZE*NBTILES);
 	aml_area_munmap(&aml_area_linux, src, TILESIZE*PAGE_SIZE*NBTILES);
 	aml_tiling_destroy(&tiling, AML_TILING_TYPE_1D);

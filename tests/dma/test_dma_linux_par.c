@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 	assert(!memcmp(src, dst, TILESIZE*PAGE_SIZE*NBTILES));
 
 	/* delete everything */
-	aml_dma_linux_par_destroy(&dma);
+	aml_dma_linux_par_fini(&dma);
 	aml_area_munmap(&aml_area_linux, dst, TILESIZE*PAGE_SIZE*NBTILES);
 	aml_area_munmap(&aml_area_linux, src, TILESIZE*PAGE_SIZE*NBTILES);
 	aml_tiling_destroy(&tiling, AML_TILING_TYPE_1D);
