@@ -182,8 +182,8 @@ int main(int argc, char* argv[])
 	/* print the flops in GFLOPS */
 	printf("dgemm-prefetch: %llu %lld %lld %f\n", N, memsize, time,
 	       flops/1e9);
-	aml_scratch_par_destroy(&sa);
-	aml_scratch_par_destroy(&sb);
+	aml_scratch_par_fini(&sa);
+	aml_scratch_par_fini(&sb);
 	aml_dma_linux_seq_fini(&dma);
 	aml_area_munmap(slow, a, memsize);
 	aml_area_munmap(slow, b, memsize);

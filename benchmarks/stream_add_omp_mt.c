@@ -118,8 +118,8 @@ int main(int argc, char *argv[])
 		assert(c[i] == esize);
 	}
 
-	aml_scratch_seq_destroy(&sa);
-	aml_scratch_seq_destroy(&sb);
+	aml_scratch_seq_fini(&sa);
+	aml_scratch_seq_fini(&sb);
 	aml_dma_linux_par_fini(&dma);
 	aml_area_munmap(slow, a, memsize);
 	aml_area_munmap(slow, b, memsize);
