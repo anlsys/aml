@@ -153,16 +153,23 @@ int aml_tiling_2d_create_iterator(struct aml_tiling_data *t,
 	return 0;
 }
 
-int aml_tiling_2d_destroy_iterator(struct aml_tiling_data *t,
-				   struct aml_tiling_iterator *it)
+int aml_tiling_2d_fini_iterator(struct aml_tiling_data *t,
+				struct aml_tiling_iterator *it)
 {
 	return 0;
 }
 
+int aml_tiling_2d_destroy_iterator(struct aml_tiling_data *t,
+				   struct aml_tiling_iterator **it)
+{
+	free(*it);
+	return 0;
+}
 
 struct aml_tiling_ops aml_tiling_2d_rowmajor_ops = {
 	aml_tiling_2d_create_iterator,
 	aml_tiling_2d_init_iterator,
+	aml_tiling_2d_fini_iterator,
 	aml_tiling_2d_destroy_iterator,
 	aml_tiling_2d_rowmajor_tileid,
 	aml_tiling_2d_tilesize,
@@ -173,6 +180,7 @@ struct aml_tiling_ops aml_tiling_2d_rowmajor_ops = {
 struct aml_tiling_ops aml_tiling_2d_colmajor_ops = {
 	aml_tiling_2d_create_iterator,
 	aml_tiling_2d_init_iterator,
+	aml_tiling_2d_fini_iterator,
 	aml_tiling_2d_destroy_iterator,
 	aml_tiling_2d_colmajor_tileid,
 	aml_tiling_2d_tilesize,

@@ -133,15 +133,23 @@ int aml_tiling_1d_create_iterator(struct aml_tiling_data *t,
 	return 0;
 }
 
-int aml_tiling_1d_destroy_iterator(struct aml_tiling_data *t,
+int aml_tiling_1d_fini_iterator(struct aml_tiling_data *t,
 				   struct aml_tiling_iterator *it)
 {
+	return 0;
+}
+
+int aml_tiling_1d_destroy_iterator(struct aml_tiling_data *t,
+				   struct aml_tiling_iterator **it)
+{
+	free(*it);
 	return 0;
 }
 
 struct aml_tiling_ops aml_tiling_1d_ops = {
 	aml_tiling_1d_create_iterator,
 	aml_tiling_1d_init_iterator,
+	aml_tiling_1d_fini_iterator,
 	aml_tiling_1d_destroy_iterator,
 	aml_tiling_1d_tileid,
 	aml_tiling_1d_tilesize,

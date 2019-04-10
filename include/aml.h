@@ -160,8 +160,10 @@ struct aml_tiling_ops {
 			       int flags);
 	int (*init_iterator)(struct aml_tiling_data *tiling,
 			     struct aml_tiling_iterator *iterator, int flags);
-	int (*destroy_iterator)(struct aml_tiling_data *tiling,
+	int (*fini_iterator)(struct aml_tiling_data *tiling,
 				struct aml_tiling_iterator *iterator);
+	int (*destroy_iterator)(struct aml_tiling_data *tiling,
+				struct aml_tiling_iterator **iterator);
 	int (*tileid)(const struct aml_tiling_data *tiling, va_list coords);
 	size_t (*tilesize)(const struct aml_tiling_data *tiling, int tileid);
 	void* (*tilestart)(const struct aml_tiling_data *tiling,
@@ -237,14 +239,22 @@ int aml_tiling_create_iterator(struct aml_tiling *tiling,
  */
 int aml_tiling_init_iterator(struct aml_tiling *tiling,
 			     struct aml_tiling_iterator *iterator, int flags);
+
+/*
+ * Finalize an initialized tiling iterator.
+ * "tiling": an initialized tiling structure.
+ * "iterator": an initialized tiling iterator structure.
+ */
+void aml_tiling_fini_iterator(struct aml_tiling *tiling,
+			      struct aml_tiling_iterator *iterator);
 /*
  * Tears down an initialized tiling iterator.
  * "tiling": an initialized tiling structure.
  * "iterator": an initialized tiling iterator structure.
  * Returns 0 if successful; an error code otherwise.
  */
-int aml_tiling_destroy_iterator(struct aml_tiling *tiling,
-				struct aml_tiling_iterator *iterator);
+void aml_tiling_destroy_iterator(struct aml_tiling *tiling,
+				struct aml_tiling_iterator **iterator);
 
 struct aml_tiling_iterator_ops {
 	int (*reset)(struct aml_tiling_iterator_data *iterator);

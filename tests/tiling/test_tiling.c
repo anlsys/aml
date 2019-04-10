@@ -63,9 +63,8 @@ int main(int argc, char *argv[])
 	doit(&b, &itb);
 
 	/* delete the iterators */
-	aml_tiling_destroy_iterator(a, ita);
-	aml_tiling_destroy_iterator(&b, &itb);
-	free(ita);
+	aml_tiling_destroy_iterator(a, &ita);
+	aml_tiling_fini_iterator(&b, &itb);
 
 
 	/* delete the tilings */

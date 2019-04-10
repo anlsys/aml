@@ -108,10 +108,18 @@ int aml_tiling_init_iterator(struct aml_tiling *t,
 	return t->ops->init_iterator(t->data, it, flags);
 }
 
-int aml_tiling_destroy_iterator(struct aml_tiling *t,
-				struct aml_tiling_iterator *it)
+void aml_tiling_fini_iterator(struct aml_tiling *t,
+			     struct aml_tiling_iterator *it)
 {
 	assert(t != NULL);
 	assert(it != NULL);
-	return t->ops->destroy_iterator(t->data, it);
+	t->ops->fini_iterator(t->data, it);
+}
+
+void aml_tiling_destroy_iterator(struct aml_tiling *t,
+				struct aml_tiling_iterator **it)
+{
+	assert(t != NULL);
+	assert(it != NULL);
+	t->ops->destroy_iterator(t->data, it);
 }
