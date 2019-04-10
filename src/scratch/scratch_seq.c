@@ -320,8 +320,8 @@ void aml_scratch_seq_fini(struct aml_scratch *d)
 	if (d == NULL)
 		return;
 	scratch = (struct aml_scratch_seq *)d->data;
-	aml_vector_destroy(&scratch->data.requests);
-	aml_vector_destroy(&scratch->data.tilemap);
+	aml_vector_fini(&scratch->data.requests);
+	aml_vector_fini(&scratch->data.tilemap);
 	aml_area_munmap(scratch->data.sch_area,
 			scratch->data.sch_ptr,
 			scratch->data.scratch_size);

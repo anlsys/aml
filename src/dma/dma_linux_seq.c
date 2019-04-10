@@ -210,7 +210,7 @@ void aml_dma_linux_seq_fini(struct aml_dma *d)
 		return;
 	struct aml_dma_linux_seq *dma = (struct aml_dma_linux_seq *)d->data;
 
-	aml_vector_destroy(&dma->data.requests);
+	aml_vector_fini(&dma->data.requests);
 	pthread_mutex_destroy(&dma->data.lock);
 }
 

@@ -268,7 +268,7 @@ void aml_dma_linux_par_fini(struct aml_dma *d)
 
 		free(req->thread_data);
 	}
-	aml_vector_destroy(&dma->data.requests);
+	aml_vector_fini(&dma->data.requests);
 	pthread_mutex_destroy(&dma->data.lock);
 }
 

@@ -44,6 +44,6 @@ int main(int argc, char *argv[])
 	assert(aml_vector_find(&v, -1) == 1);
 	assert(aml_vector_size(&v) == 2);
 
-	aml_vector_destroy(&v);
+	aml_vector_fini(&v);
 	return 0;
 }
