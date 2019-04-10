@@ -20,13 +20,13 @@ int main(int argc, char *argv[])
 	AML_TILING_2D_ROWMAJOR_DECL(trm);
 	AML_TILING_2D_ROWMAJOR_DECL(trt);
 	AML_TILING_2D_COLMAJOR_DECL(tcm);
-	AML_TILING_2D_ROWMAJOR_DECL(tct);
+	AML_TILING_2D_COLMAJOR_DECL(tct);
 
 	/* Matrices used for checks:
 	 *  - rowm: stored in row-major, numbered in memory order
 	 *  - rowt: stored in row-major, transposition of rowm
 	 *  - colm: stored in col-major, number in memory order
-	 *  - colt: stored in col-major, transposition of colt
+	 *  - colt: stored in col-major, transposition of colm
 	 *
 	 * Matrices shapes:
 	 *
@@ -64,14 +64,14 @@ int main(int argc, char *argv[])
 	memcpy(colt, rowt, N*M*sizeof(int));
 
 	/* initialize the tilings */
-	aml_tiling_init(&trm, AML_TILING_TYPE_2D_ROWMAJOR,
-			sizeof(int), N*M*sizeof(int), N, M);
-	aml_tiling_init(&trt, AML_TILING_TYPE_2D_ROWMAJOR,
-			sizeof(int), N*M*sizeof(int), M, N);
-	aml_tiling_init(&tcm, AML_TILING_TYPE_2D_COLMAJOR,
-			sizeof(int), N*M*sizeof(int), M, N);
-	aml_tiling_init(&tct, AML_TILING_TYPE_2D_COLMAJOR,
-			sizeof(int), N*M*sizeof(int), N, M);
+	aml_tiling_2d_init(&trm, AML_TILING_TYPE_2D_ROWMAJOR,
+			   sizeof(int), N*M*sizeof(int), N, M);
+	aml_tiling_2d_init(&trt, AML_TILING_TYPE_2D_ROWMAJOR,
+			   sizeof(int), N*M*sizeof(int), M, N);
+	aml_tiling_2d_init(&tcm, AML_TILING_TYPE_2D_COLMAJOR,
+			   sizeof(int), N*M*sizeof(int), M, N);
+	aml_tiling_2d_init(&tct, AML_TILING_TYPE_2D_COLMAJOR,
+			   sizeof(int), N*M*sizeof(int), N, M);
 
 	size_t ndims[2];
 	aml_tiling_ndims(&trm, &ndims[0], &ndims[1]);
@@ -129,10 +129,10 @@ int main(int argc, char *argv[])
 
 
 	/* delete the tilings */
-	aml_tiling_destroy(&trm, AML_TILING_TYPE_2D_ROWMAJOR);
-	aml_tiling_destroy(&trt, AML_TILING_TYPE_2D_ROWMAJOR);
-	aml_tiling_destroy(&tcm, AML_TILING_TYPE_2D_COLMAJOR);
-	aml_tiling_destroy(&tct, AML_TILING_TYPE_2D_COLMAJOR);
+	aml_tiling_2d_fini(&trm);
+	aml_tiling_2d_fini(&trt);
+	aml_tiling_2d_fini(&tcm);
+	aml_tiling_2d_fini(&tct);
 	aml_finalize();
 	return 0;
 }

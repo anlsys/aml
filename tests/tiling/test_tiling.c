@@ -52,8 +52,8 @@ int main(int argc, char *argv[])
 	aml_init(&argc, &argv);
 
 	/* initialize the tilings */
-	aml_tiling_create(&a, AML_TILING_TYPE_1D, TILESIZE, TILESIZE*NBTILES);
-	aml_tiling_init(&b, AML_TILING_TYPE_1D, TILESIZE, TILESIZE*NBTILES);
+	aml_tiling_1d_create(&a, TILESIZE, TILESIZE*NBTILES);
+	aml_tiling_1d_init(&b, TILESIZE, TILESIZE*NBTILES);
 
 	/* initialize the iterators */
 	aml_tiling_create_iterator(a, &ita, 0);
@@ -69,9 +69,8 @@ int main(int argc, char *argv[])
 
 
 	/* delete the tilings */
-	aml_tiling_destroy(a, AML_TILING_TYPE_1D);
-	aml_tiling_destroy(&b, AML_TILING_TYPE_1D);
-	free(a);
+	aml_tiling_1d_destroy(&a);
+	aml_tiling_1d_fini(&b);
 
 	aml_finalize();
 	return 0;

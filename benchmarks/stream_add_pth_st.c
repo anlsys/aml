@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* initialize all the supporting struct */
-	assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_1D, tilesz, memsize));
+	assert(!aml_tiling_1d_init(&tiling, tilesz, memsize));
 	aml_area_linux_create(&slow, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
 				     &slowb, AML_AREA_LINUX_BINDING_FLAG_BIND);
 	assert(slow != NULL);
@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
 	aml_area_munmap(fast, c, memsize);
 	aml_area_linux_destroy(&slow);
 	aml_area_linux_destroy(&fast);
-	aml_tiling_destroy(&tiling, AML_TILING_TYPE_1D);
+	aml_tiling_1d_fini(&tiling);
 	aml_finalize();
 	return 0;
 }

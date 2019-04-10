@@ -28,8 +28,8 @@ int main(int argc, char *argv[])
 	aml_init(&argc, &argv);
 
 	/* initialize all the supporting struct */
-	assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_1D, TILESIZE*PAGE_SIZE,
-				TILESIZE*PAGE_SIZE*NBTILES));
+	assert(!aml_tiling_1d_init(&tiling, TILESIZE*PAGE_SIZE,
+				   TILESIZE*PAGE_SIZE*NBTILES));
 	aml_bitmap_zero(&nodemask);
 	aml_bitmap_set(&nodemask, 0);
 
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 	aml_dma_linux_seq_fini(&dma);
 	aml_area_munmap(&aml_area_linux, dst, TILESIZE*PAGE_SIZE*NBTILES);
 	aml_area_munmap(&aml_area_linux, src, TILESIZE*PAGE_SIZE*NBTILES);
-	aml_tiling_destroy(&tiling, AML_TILING_TYPE_1D);
+	aml_tiling_1d_fini(&tiling);
 
 	aml_finalize();
 	return 0;
