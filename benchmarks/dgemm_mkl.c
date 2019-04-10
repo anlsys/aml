@@ -34,10 +34,10 @@ int main(int argc, char *argv[])
 	long int N = atol(argv[3]);
 	unsigned long memsize = sizeof(double)*N*N;
 
-	slow = aml_area_linux_create(AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
+	aml_area_linux_create(&slow, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
 				     &slowb, AML_AREA_LINUX_BINDING_FLAG_BIND);
 	assert(slow != NULL);
-	fast = aml_area_linux_create(AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
+	aml_area_linux_create(&fast, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
 				     &fastb, AML_AREA_LINUX_BINDING_FLAG_BIND);
 	assert(fast != NULL);
 
@@ -65,8 +65,8 @@ int main(int argc, char *argv[])
 	aml_area_munmap(slow, a, memsize);
 	aml_area_munmap(slow, b, memsize);
 	aml_area_munmap(fast, c, memsize);
-	aml_area_linux_destroy(slow);
-	aml_area_linux_destroy(fast);
+	aml_area_linux_destroy(&slow);
+	aml_area_linux_destroy(&fast);
 	aml_finalize();
 	return 0;
 }

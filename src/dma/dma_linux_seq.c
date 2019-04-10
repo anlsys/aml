@@ -86,11 +86,11 @@ int aml_dma_linux_seq_create_request(struct aml_dma_data *d,
 	req = aml_vector_add(&dma->data.requests);
 
 	/* init the request */
-	if(type == AML_DMA_REQUEST_TYPE_COPY)
-	{
+	if (type == AML_DMA_REQUEST_TYPE_COPY) {
 		struct aml_tiling *dt, *st;
 		void *dptr, *sptr;
 		int dtid, stid;
+
 		dt = va_arg(ap, struct aml_tiling *);
 		dptr = va_arg(ap, void *);
 		dtid = va_arg(ap, int);
@@ -116,7 +116,7 @@ int aml_dma_linux_seq_destroy_request(struct aml_dma_data *d,
 	struct aml_dma_request_linux_seq *req =
 		(struct aml_dma_request_linux_seq *)r;
 
-	if(req->type == AML_DMA_REQUEST_TYPE_COPY)
+	if (req->type == AML_DMA_REQUEST_TYPE_COPY)
 		aml_dma_request_linux_seq_copy_destroy(req);
 
 	/* enough to remove from request vector */
@@ -136,7 +136,7 @@ int aml_dma_linux_seq_wait_request(struct aml_dma_data *d,
 		(struct aml_dma_request_linux_seq *)r;
 
 	/* execute */
-	if(req->type == AML_DMA_REQUEST_TYPE_COPY)
+	if (req->type == AML_DMA_REQUEST_TYPE_COPY)
 		dma->ops.do_copy(&dma->data, req);
 
 	/* destroy a completed request */
@@ -154,35 +154,48 @@ struct aml_dma_ops aml_dma_linux_seq_ops = {
  * Init functions:
  ******************************************************************************/
 
-int aml_dma_linux_seq_create(struct aml_dma **d, ...)
+int aml_dma_linux_seq_create(struct aml_dma **d, size_t nbreqs)
 {
-	va_list ap;
 	struct aml_dma *ret = NULL;
 	intptr_t baseptr, dataptr;
-	va_start(ap, d);
+	int err;
+
+	if (d == NULL)
+		return -AML_EINVAL;
 
 	/* alloc */
 	baseptr = (intptr_t) calloc(1, AML_DMA_LINUX_SEQ_ALLOCSIZE);
+	if (baseptr == 0) {
+		*d = NULL;
+		return -AML_ENOMEM;
+	}
 	dataptr = baseptr + sizeof(struct aml_dma);
 
 	ret = (struct aml_dma *)baseptr;
 	ret->data = (struct aml_dma_data *)dataptr;
+	ret->ops = &aml_dma_linux_seq_ops;
 
-	aml_dma_linux_seq_vinit(ret, ap);
+	err = aml_dma_linux_seq_init(ret, nbreqs);
+	if (err) {
+		*d = NULL;
+		free(ret);
+		return err;
+	}
 
-	va_end(ap);
 	*d = ret;
 	return 0;
 }
-int aml_dma_linux_seq_vinit(struct aml_dma *d, va_list ap)
-{
-	d->ops = &aml_dma_linux_seq_ops;
-	struct aml_dma_linux_seq *dma = (struct aml_dma_linux_seq *)d->data;
 
+int aml_dma_linux_seq_init(struct aml_dma *d, size_t nbreqs)
+{
+	struct aml_dma_linux_seq *dma;
+
+	if (d == NULL || d->data == NULL)
+		return -AML_EINVAL;
+	dma = (struct aml_dma_linux_seq *)d->data;
 	dma->ops = aml_dma_linux_seq_inner_ops;
 
 	/* request vector */
-	size_t nbreqs = va_arg(ap, size_t);
 	aml_vector_init(&dma->data.requests, nbreqs,
 			sizeof(struct aml_dma_request_linux_seq),
 			offsetof(struct aml_dma_request_linux_seq, type),
@@ -190,20 +203,22 @@ int aml_dma_linux_seq_vinit(struct aml_dma *d, va_list ap)
 	pthread_mutex_init(&dma->data.lock, NULL);
 	return 0;
 }
-int aml_dma_linux_seq_init(struct aml_dma *d, ...)
+
+void aml_dma_linux_seq_fini(struct aml_dma *d)
 {
-	int err;
-	va_list ap;
-	va_start(ap, d);
-	err = aml_dma_linux_seq_vinit(d, ap);
-	va_end(ap);
-	return err;
+	if (d == NULL || d->data == NULL)
+		return;
+	struct aml_dma_linux_seq *dma = (struct aml_dma_linux_seq *)d->data;
+
+	aml_vector_fini(&dma->data.requests);
+	pthread_mutex_destroy(&dma->data.lock);
 }
 
-int aml_dma_linux_seq_destroy(struct aml_dma *d)
+void aml_dma_linux_seq_destroy(struct aml_dma **d)
 {
-	struct aml_dma_linux_seq *dma = (struct aml_dma_linux_seq *)d->data;
-	aml_vector_destroy(&dma->data.requests);
-	pthread_mutex_destroy(&dma->data.lock);
-	return 0;
+	if (d == NULL)
+		return;
+	aml_dma_linux_seq_fini(*d);
+	free(*d);
+	*d = NULL;
 }

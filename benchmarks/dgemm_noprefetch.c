@@ -72,15 +72,15 @@ int main(int argc, char* argv[])
 	tilesize = sizeof(double)*T*T;
 
 	/* the initial tiling, of 2D square tiles */
-	assert(!aml_tiling_init(&tiling_row, AML_TILING_TYPE_2D_ROWMAJOR,
+	assert(!aml_tiling_2d_init(&tiling_row, AML_TILING_TYPE_2D_ROWMAJOR,
 				tilesize, memsize, N/T , N/T));
-	assert(!aml_tiling_init(&tiling_col, AML_TILING_TYPE_2D_COLMAJOR,
+	assert(!aml_tiling_2d_init(&tiling_col, AML_TILING_TYPE_2D_COLMAJOR,
 				tilesize, memsize, N/T , N/T));
 
-	slow = aml_area_linux_create(AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
+	aml_area_linux_create(&slow, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
 				     &slowb, AML_AREA_LINUX_BINDING_FLAG_BIND);
 	assert(slow != NULL);
-	fast = aml_area_linux_create(AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
+	aml_area_linux_create(&fast, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
 				     &fastb, AML_AREA_LINUX_BINDING_FLAG_BIND);
 	assert(fast != NULL);
 
@@ -154,10 +154,10 @@ int main(int argc, char* argv[])
 	aml_area_munmap(slow, a, memsize);
 	aml_area_munmap(slow, b, memsize);
 	aml_area_munmap(fast, c, memsize);
-	aml_area_linux_destroy(slow);
-	aml_area_linux_destroy(fast);
-	aml_tiling_destroy(&tiling_row, AML_TILING_TYPE_2D_ROWMAJOR);
-	aml_tiling_destroy(&tiling_col, AML_TILING_TYPE_2D_ROWMAJOR);
+	aml_area_linux_destroy(&slow);
+	aml_area_linux_destroy(&fast);
+	aml_tiling_2d_fini(&tiling_row);
+	aml_tiling_2d_fini(&tiling_col);
 	aml_finalize();
 	return 0;
 }

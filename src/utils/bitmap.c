@@ -16,14 +16,9 @@
 #define AML_BITMAP_NTH(i)      ((i) / AML_BITMAP_NBITS)
 #define AML_BITMAP_ITH(i)      (((i) % AML_BITMAP_NBITS))
 
-struct aml_bitmap * aml_bitmap_create(void)
-{
-	struct aml_bitmap *b = malloc(sizeof(struct aml_bitmap));
-	if(b == NULL)
-		return NULL;
-	aml_bitmap_zero(b);
-	return b;
-}
+/*******************************************************************************
+ * General operators
+*******************************************************************************/
 
 void aml_bitmap_copy(struct aml_bitmap *dst, const struct aml_bitmap *src)
 {
@@ -58,19 +53,6 @@ void aml_bitmap_copy_to_ulong(const struct aml_bitmap *dst,
 			src[AML_BITMAP_NTH(i)] |= (1UL << AML_BITMAP_ITH(i));
 }
 
-struct aml_bitmap *aml_bitmap_dup(const struct aml_bitmap *a)
-{
-	struct aml_bitmap *b = aml_bitmap_create();
-	if(b == NULL)
-		return NULL;
-	aml_bitmap_copy(b, a);
-	return b;
-}
-
-void aml_bitmap_destroy(struct aml_bitmap *bitmap)
-{
-	free(bitmap);
-}
 
 void aml_bitmap_zero(struct aml_bitmap *bitmap)
 {
@@ -316,6 +298,70 @@ aml_bitmap_from_string(struct aml_bitmap *bitmap, const char * bitmap_str){
 	}
 
 	aml_bitmap_copy(bitmap, &b);
+	return 0;
+}
+
+/*******************************************************************************
+ * create/destroy and others
+*******************************************************************************/
+
+int aml_bitmap_create(struct aml_bitmap **map)
+{
+	struct aml_bitmap *b = malloc(sizeof(struct aml_bitmap));
+	if(b == NULL)
+	{
+		*map = NULL;
+		return -AML_ENOMEM;
+	}
+	aml_bitmap_zero(b);
+	*map = b;
+	return 0;
+}
+
+/**
+ * Initialize (zero a struct aml_bitmap). Not necessary on stack allocated
+ * bitmaps.
+ * @return 0 on success (always).
+ **/
+int aml_bitmap_init(struct aml_bitmap *map)
+{
+	aml_bitmap_zero(map);
+	return 0;
+}
+
+/**
+ * Finalize a struct aml_bitmap. This is an empty function.
+ **/
+void aml_bitmap_fini(struct aml_bitmap *map)
+{
+}
+
+/**
+ * Destroy (finalize and free resources) for a struct aml_bitmap created by
+ * aml_bitmap_create.
+ *
+ * @param map is NULL after this call.
+ **/
+void aml_bitmap_destroy(struct aml_bitmap **map)
+{
+	free(*map);
+	*map = NULL;
+}
+
+/**
+ * On heap allocation of a copy of an existing bitmap.
+ **/
+int aml_bitmap_dup(struct aml_bitmap **dst, const struct aml_bitmap *src)
+{
+	struct aml_bitmap *ret;
+	int err;
+	err = aml_bitmap_create(&ret);
+	if(err) {
+		*dst = NULL;
+		return err;
+	}
+	aml_bitmap_copy(ret, src);
+	*dst = ret;
 	return 0;
 }
 

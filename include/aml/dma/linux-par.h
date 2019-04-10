@@ -41,9 +41,9 @@ struct aml_dma_linux_par_data {
 };
 
 struct aml_dma_linux_par_ops {
-	void *(*do_thread)(void *);
-	int (*do_copy)(struct aml_dma_linux_par_data *,
-		       struct aml_dma_request_linux_par *, int tid);
+	void *(*do_thread)(void *thread_data);
+	int (*do_copy)(struct aml_dma_linux_par_data *data,
+		       struct aml_dma_request_linux_par *request, int tid);
 };
 
 struct aml_dma_linux_par {
@@ -62,39 +62,42 @@ struct aml_dma_linux_par {
 	(sizeof(struct aml_dma_linux_par) + \
 	 sizeof(struct aml_dma))
 
-/*
+/**
  * Allocates and initializes a new parallel DMA.
- * "dma": an address where the pointer to the newly allocated DMA structure
- *        will be stored.
- * Variadic arguments:
- * - "nbreqs": an argument of type size_t; the initial number of slots for
- *             asynchronous request that are in-flight (will be increased
- *             automatically if necessary).
- * - "nbthreads": an argument of type size_t; the number of threads to launch
- *                for each request.
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_dma_linux_par_create(struct aml_dma **, ...);
-/*
- * Initializes a new parallel DMA.  This is a varargs-variant of the
- * aml_dma_linux_par_vinit() routine.
- * "dma": an allocated DMA structure.
- * Variadic arguments: see aml_dma_linux_par_create().
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_dma_linux_par_init(struct aml_dma *, ...);
-/*
+ *
+ * @param dma an address where the pointer to the newly allocated DMA structure
+ * will be stored.
+ * @param nbreqs the initial number of slots for asynchronous requests that are
+ * in-flight (will be increased automatically if necessary).
+ * @param nbthreads the number of threads to launch for each request.
+ *
+ * @return 0 if successful; an error code otherwise.
+ **/
+int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs,
+			     size_t nbthreads);
+
+/**
  * Initializes a new parallel DMA.
- * "dma": an allocated DMA structure.
- * "args": see the variadic arguments of aml_dma_linux_par_create().
- * Returns 0 if successful; an error code otherwise.
+ *
+ * @param dma a pointer to a dma declared with the AML_DMA_LINUX_PAR_DECL macro
+ * @param nbreqs the initial number of slots for asynchronous requests that are
+ * in-flight (will be increased automatically if necessary).
+ * @param nbthreads the number of threads to launch for each request.
+ *
+ * @return 0 if successful; an error code otherwise.
+ **/
+int aml_dma_linux_par_init(struct aml_dma *dma, size_t nbreqs,
+			   size_t nbthreads);
+
+/**
+ * Finalize a parallel DMA
+ **/
+void aml_dma_linux_par_fini(struct aml_dma *dma);
+
+/**
+ * Tears down a parallel DMA created with aml_dma_linux_par_create.
+ * @param dma the address of a pointer to a parallel dma. Will be NULL after.
  */
-int aml_dma_linux_par_vinit(struct aml_dma *, va_list);
-/*
- * Tears down an initialized parallel DMA.
- * "dma": an initialized DMA structure.
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_dma_linux_par_destroy(struct aml_dma *);
+void aml_dma_linux_par_destroy(struct aml_dma **dma);
 
 #endif // AML_LINUX_DMA_LINUX_PAR_H

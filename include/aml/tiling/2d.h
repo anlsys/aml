@@ -59,5 +59,43 @@ struct aml_tiling_iterator_2d_data {
 	(sizeof(struct aml_tiling_iterator_2d_data) + \
 	 sizeof(struct aml_tiling_iterator))
 
+/**
+ * Allocates and initializes a new 2D tiling.
+ *
+ * @param tiling  an address where the pointer to the newly allocated tiling
+ *           structure will be stored.
+ * @param type a type of 2D tiling
+ * @param tilesize provides the size of each tile.
+ * @param totalsize provides the size of the complete user data structure to be
+ *   tiled.
+ * @param rowsize the number of tiles in a row
+ * @param colsize the number of tiles in a column
+ * @return 0 if successful; an error code otherwise.
+ **/
+int aml_tiling_2d_create(struct aml_tiling **tiling, int type,
+			 size_t tilesize, size_t totalsize,
+			 size_t rowsize, size_t colsize);
+/**
+ * Initializes a tiling. Similar to create.
+ *
+ * @param tiling a tiling declared with AML_TILING_2D_DECL.
+ * @param 0 if successful; an error code otherwise.
+ **/
+int aml_tiling_2d_init(struct aml_tiling *tiling, int type,
+		       size_t tilesize, size_t totalsize,
+		       size_t rowsize, size_t colsize);
+
+/**
+ * Finalize a tiling.
+ **/
+void aml_tiling_2d_fini(struct aml_tiling *tiling);
+
+/**
+ * Tears down an initialized tiling.
+ *
+ * @param tiling a tiling created with aml_tiling_1d_create. NULL after return.
+ **/
+void aml_tiling_2d_destroy(struct aml_tiling **tiling);
+
 
 #endif /* AML_TILING_2D_H */

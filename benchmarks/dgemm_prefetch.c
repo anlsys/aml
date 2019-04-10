@@ -97,18 +97,18 @@ int main(int argc, char* argv[])
 	tilesize = sizeof(double)*T*T;
 
 	/* the initial tiling, 2d grid of tiles */
-	assert(!aml_tiling_init(&tiling_row, AML_TILING_TYPE_2D_ROWMAJOR,
+	assert(!aml_tiling_2d_init(&tiling_row, AML_TILING_TYPE_2D_ROWMAJOR,
 				tilesize, memsize, N/T , N/T));
-	assert(!aml_tiling_init(&tiling_col, AML_TILING_TYPE_2D_COLMAJOR,
+	assert(!aml_tiling_2d_init(&tiling_col, AML_TILING_TYPE_2D_COLMAJOR,
 				tilesize, memsize, N/T , N/T));
 	/* the prefetch tiling, 1D sequence of columns of tiles */
-	assert(!aml_tiling_init(&tiling_prefetch, AML_TILING_TYPE_1D,
+	assert(!aml_tiling_1d_init(&tiling_prefetch,
 				tilesize*(N/T), memsize));
 
-	slow = aml_area_linux_create(AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
+	aml_area_linux_create(&slow, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
 				     &slowb, AML_AREA_LINUX_BINDING_FLAG_BIND);
 	assert(slow != NULL);
-	fast = aml_area_linux_create(AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
+	aml_area_linux_create(&fast, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
 				     &fastb, AML_AREA_LINUX_BINDING_FLAG_BIND);
 	assert(fast != NULL);
 	
@@ -182,17 +182,17 @@ int main(int argc, char* argv[])
 	/* print the flops in GFLOPS */
 	printf("dgemm-prefetch: %llu %lld %lld %f\n", N, memsize, time,
 	       flops/1e9);
-	aml_scratch_par_destroy(&sa);
-	aml_scratch_par_destroy(&sb);
-	aml_dma_linux_seq_destroy(&dma);
+	aml_scratch_par_fini(&sa);
+	aml_scratch_par_fini(&sb);
+	aml_dma_linux_seq_fini(&dma);
 	aml_area_munmap(slow, a, memsize);
 	aml_area_munmap(slow, b, memsize);
 	aml_area_munmap(fast, c, memsize);
-	aml_area_linux_destroy(slow);
-	aml_area_linux_destroy(fast);
-	aml_tiling_destroy(&tiling_row, AML_TILING_TYPE_2D_ROWMAJOR);
-	aml_tiling_destroy(&tiling_col, AML_TILING_TYPE_2D_ROWMAJOR);
-	aml_tiling_destroy(&tiling_prefetch, AML_TILING_TYPE_1D);
+	aml_area_linux_destroy(&slow);
+	aml_area_linux_destroy(&fast);
+	aml_tiling_2d_fini(&tiling_row);
+	aml_tiling_2d_fini(&tiling_col);
+	aml_tiling_1d_fini(&tiling_prefetch);
 	aml_finalize();
 	return 0;
 }

@@ -93,12 +93,12 @@ int main(int argc, char *argv[])
 	}
 
 	/* initialize all the supporting struct */
-	assert(!aml_tiling_init(&tiling, AML_TILING_TYPE_1D, tilesz, memsize));
+	assert(!aml_tiling_1d_init(&tiling, tilesz, memsize));
 
-	slow = aml_area_linux_create(AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
+	aml_area_linux_create(&slow, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
 				     &slowb, AML_AREA_LINUX_BINDING_FLAG_BIND);
 	assert(slow != NULL);
-	fast = aml_area_linux_create(AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
+	aml_area_linux_create(&fast, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
 				     &fastb, AML_AREA_LINUX_BINDING_FLAG_BIND);
 	assert(fast != NULL);
 	assert(!aml_dma_linux_seq_init(&dma, numthreads*2));
@@ -131,15 +131,15 @@ int main(int argc, char *argv[])
 		assert(c[i] == esize);
 	}
 
-	aml_scratch_par_destroy(&sa);
-	aml_scratch_par_destroy(&sb);
-	aml_dma_linux_seq_destroy(&dma);
+	aml_scratch_par_fini(&sa);
+	aml_scratch_par_fini(&sb);
+	aml_dma_linux_seq_fini(&dma);
 	aml_area_munmap(slow, a, memsize);
 	aml_area_munmap(slow, b, memsize);
 	aml_area_munmap(fast, c, memsize);
-	aml_area_linux_destroy(slow);
-	aml_area_linux_destroy(fast);
-	aml_tiling_destroy(&tiling, AML_TILING_TYPE_1D);
+	aml_area_linux_destroy(&slow);
+	aml_area_linux_destroy(&fast);
+	aml_tiling_1d_fini(&tiling);
 	aml_finalize();
 	return 0;
 }

@@ -8,24 +8,21 @@
  * SPDX-License-Identifier: BSD-3-Clause
 *******************************************************************************/
 
-#include <stdlib.h>
 #include "aml.h"
+#include <stdlib.h>
 
-void*
-aml_area_mmap(const struct aml_area *area,
-	      void                 **ptr,
-	      size_t                 size)
+void *aml_area_mmap(const struct aml_area *area, void **ptr, size_t size)
 {
-	if(size == 0)
+	if (size == 0)
 		return NULL;
-	
-	if(area == NULL){
-	        aml_errno = AML_AREA_EINVAL;
+
+	if (area == NULL) {
+		aml_errno = AML_EINVAL;
 		return NULL;
 	}
-	
-	if(area->ops->mmap == NULL){
-	        aml_errno = AML_AREA_ENOTSUP;
+
+	if (area->ops->mmap == NULL) {
+		aml_errno = AML_ENOTSUP;
 		return NULL;
 	}
 
@@ -33,20 +30,17 @@ aml_area_mmap(const struct aml_area *area,
 	return area->ops->mmap(area->data, ptr, size);
 }
 
-int
-aml_area_munmap(const struct aml_area *area,
-		void                  *ptr,
-		size_t                 size)
+int aml_area_munmap(const struct aml_area *area, void *ptr, size_t size)
 {
-	if(ptr == NULL || size == 0)
+	if (ptr == NULL || size == 0)
 		return AML_SUCCESS;
-	
-	if(area == NULL)
-		return AML_AREA_EINVAL;
-	
-	if(area->ops->munmap == NULL)
-		return AML_AREA_ENOTSUP;
-	
+
+	if (area == NULL)
+		return -AML_EINVAL;
+
+	if (area->ops->munmap == NULL)
+		return -AML_ENOTSUP;
+
 	return area->ops->munmap(area->data, ptr, size);
 }
 

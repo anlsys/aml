@@ -19,6 +19,6 @@
 extern const int aml_version_major;
 extern const int aml_version_minor;
 extern const int aml_version_patch;
-extern const char* aml_version_string;
+extern const char *aml_version_string;
 
 #endif /* AML_VERSION_H */

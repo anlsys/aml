@@ -139,6 +139,12 @@ aml_area_munmap(const struct aml_area *area,
  * Representation of a data structure organization in memory.
  ******************************************************************************/
 
+/* Tiling types passed to the tiling create()/init()/vinit() routines.  */
+/* Regular, linear tiling with uniform tile sizes.  */
+#define AML_TILING_TYPE_1D 0
+#define AML_TILING_TYPE_2D_ROWMAJOR 1
+#define AML_TILING_TYPE_2D_COLMAJOR 2
+
 /* opaque handle to all tilings */
 struct aml_tiling_data;
 struct aml_tiling_iterator_data;
@@ -154,8 +160,10 @@ struct aml_tiling_ops {
 			       int flags);
 	int (*init_iterator)(struct aml_tiling_data *tiling,
 			     struct aml_tiling_iterator *iterator, int flags);
-	int (*destroy_iterator)(struct aml_tiling_data *tiling,
+	int (*fini_iterator)(struct aml_tiling_data *tiling,
 				struct aml_tiling_iterator *iterator);
+	int (*destroy_iterator)(struct aml_tiling_data *tiling,
+				struct aml_tiling_iterator **iterator);
 	int (*tileid)(const struct aml_tiling_data *tiling, va_list coords);
 	size_t (*tilesize)(const struct aml_tiling_data *tiling, int tileid);
 	void* (*tilestart)(const struct aml_tiling_data *tiling,
@@ -231,14 +239,22 @@ int aml_tiling_create_iterator(struct aml_tiling *tiling,
  */
 int aml_tiling_init_iterator(struct aml_tiling *tiling,
 			     struct aml_tiling_iterator *iterator, int flags);
+
+/*
+ * Finalize an initialized tiling iterator.
+ * "tiling": an initialized tiling structure.
+ * "iterator": an initialized tiling iterator structure.
+ */
+void aml_tiling_fini_iterator(struct aml_tiling *tiling,
+			      struct aml_tiling_iterator *iterator);
 /*
  * Tears down an initialized tiling iterator.
  * "tiling": an initialized tiling structure.
  * "iterator": an initialized tiling iterator structure.
  * Returns 0 if successful; an error code otherwise.
  */
-int aml_tiling_destroy_iterator(struct aml_tiling *tiling,
-				struct aml_tiling_iterator *iterator);
+void aml_tiling_destroy_iterator(struct aml_tiling *tiling,
+				struct aml_tiling_iterator **iterator);
 
 struct aml_tiling_iterator_ops {
 	int (*reset)(struct aml_tiling_iterator_data *iterator);
@@ -281,56 +297,6 @@ int aml_tiling_iterator_end(const struct aml_tiling_iterator *iterator);
  * Returns 0 if successful; an error code otherwise.
  */
 int aml_tiling_iterator_get(const struct aml_tiling_iterator *iterator, ...);
-
-/* Tiling types passed to the tiling create()/init()/vinit() routines.  */
-/* Regular, linear tiling with uniform tile sizes.  */
-#define AML_TILING_TYPE_1D 0
-#define AML_TILING_TYPE_2D_ROWMAJOR 1
-#define AML_TILING_TYPE_2D_COLMAJOR 2
-
-/*
- * Allocates and initializes a new tiling.
- * "tiling": an address where the pointer to the newly allocated tiling
- *           structure will be stored.
- * "type": see AML_TILING_TYPE_*.
- * Variadic arguments:
- * - if "type" equals AML_TILING_TYPE_1D, two additional arguments are needed:
- *   - "tilesize": an argument of type size_t; provides the size of each tile.
- *   - "totalsize": an argument of type size_t; provides the size of the
- *                  complete user data structure to be tiled.
- * - if "type" equals AML_TILING_TYPE_2D, four additional arguments are needed:
- *   - "tilesize": an argument of type size_t; provides the size of a tile.
- *   - "totalsize": an argument of type size_t; provides the size of the
- *                  complete user data structure to be tiled.
- *   - "rowsize": an argument of type size_t; the number of tiles in a row
- *   - "colsize": an argument of type size_t; the number of tiles in a column
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_tiling_create(struct aml_tiling **tiling, int type, ...);
-/*
- * Initializes a tiling.  This is a varargs-variant of the aml_tiling_vinit()
- * routine.
- * "tiling": an allocated tiling structure.
- * "type": see aml_tiling_create().
- * Variadic arguments: see aml_tiling_create().
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_tiling_init(struct aml_tiling *tiling, int type, ...);
-/*
- * Initializes a tiling.
- * "tiling": an allocated tiling structure.
- * "type": see aml_tiling_create().
- * "args": see the variadic arguments of aml_tiling_create().
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_tiling_vinit(struct aml_tiling *tiling, int type, va_list args);
-/*
- * Tears down an initialized tiling.
- * "tiling": an initialized tiling structure.
- * "type": see aml_tiling_create().
- * Returns 0 if successful; an error code otherwise.
- */
-int aml_tiling_destroy(struct aml_tiling *tiling, int type);
 
 /*******************************************************************************
  * DMA:
