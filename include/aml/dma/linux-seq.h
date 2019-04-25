@@ -11,36 +11,72 @@
 #ifndef AML_DMA_LINUX_SEQ_H
 #define AML_DMA_LINUX_SEQ_H 1
 
-/*******************************************************************************
- * Linux Sequential DMA API:
+/**
+ * @defgroup aml_dma_seq "AML Sequential DMA"
+ * @brief Sequential DMA implementation.
+ *
  * DMA logic implemented based on general linux API, with the caller thread
- * used as the only execution thread.
- ******************************************************************************/
+ * used as the only execution thread. This DMA implementation moves between
+ * pointers allocated with an aml_area_linux.
+ * @{
+ **/
 
+/**
+ * Default table of dma request operations for linux
+ * sequential dma.
+ **/
 extern struct aml_dma_ops aml_dma_linux_seq_ops;
 
+/** Inside of a sequential request for linux movement. **/
 struct aml_dma_request_linux_seq {
+	/**
+	 * The type of dma request
+	 * @see <aml.h>
+	 **/
 	int type;
+	/** The destination pointer of the data movement **/
 	void *dest;
+	/** The source pointer of the data movement **/
 	void *src;
+	/** The size of data to move **/
 	size_t size;
 };
 
+/** Inner data of sequential linux aml_dma implementation **/
 struct aml_dma_linux_seq_data {
+	/**
+	 * Queue of submitted requests.
+	 * Requests may be submitted concurrently but will all
+	 * be performed by a single thread.
+	 **/
 	struct aml_vector requests;
+	/** Lock for queuing requests concurrently **/
 	pthread_mutex_t lock;
 };
 
+/** Declaration of available linux sequential dma operations **/
 struct aml_dma_linux_seq_ops {
+	/**
+	 * Perform a sequential copy between source and destination
+	 * pointers allocated with an aml_area_linux.
+	 * @see aml_area
+	 **/
 	int (*do_copy)(struct aml_dma_linux_seq_data *dma,
 		       struct aml_dma_request_linux_seq *req);
 };
 
+/**
+ * aml_dma structure for linux based, sequential dma movement.
+ * Needs to be initialized with aml_dma_linux_seq_init().
+ * Can be passed to generic aml_dma_*() functions.
+ **/
 struct aml_dma_linux_seq {
 	struct aml_dma_linux_seq_ops ops;
 	struct aml_dma_linux_seq_data data;
 };
 
+
+/** Static declaration of aml_dma_linux_seq structure. **/
 #define AML_DMA_LINUX_SEQ_DECL(name) \
 	struct aml_dma_linux_seq __ ##name## _inner_data; \
 	struct aml_dma name = { \
@@ -48,6 +84,7 @@ struct aml_dma_linux_seq {
 		(struct aml_dma_data *)&__ ## name ## _inner_data, \
 	}
 
+/** Static declaration aml_dma_linux_seq structure size **/
 #define AML_DMA_LINUX_SEQ_ALLOCSIZE \
 	(sizeof(struct aml_dma_linux_seq) + \
 	 sizeof(struct aml_dma))
@@ -85,12 +122,16 @@ void aml_dma_linux_seq_fini(struct aml_dma *dma);
  */
 void aml_dma_linux_seq_destroy(struct aml_dma **dma);
 
-/* Performs a copy request.
- * "dma" the dma_linux_seq_data associated with a linux_seq dma.
- * "req" a valid linux_seq request.
- * Returns 0 if successful; an error code otherwise.
- */
+/**
+ * Performs a copy request.
+ * @param dma: the dma_linux_seq_data associated with a linux_seq dma.
+ * @param req: a valid linux_seq request.
+ * @return 0 if successful; an error code otherwise.
+ **/
 int aml_dma_linux_seq_do_copy(struct aml_dma_linux_seq_data *dma,
 			      struct aml_dma_request_linux_seq *req);
 
+/**
+ * @}
+ **/
 #endif // AML_DMA_LINUX_SEQ_H

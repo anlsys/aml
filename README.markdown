@@ -7,6 +7,30 @@ memory management policies for allocation and placement of data across devices.
 
 This library is still in the prototyping phase. APIs might break often.
 
+## Documentation
+
+The latest documentation can be found
+[online](https://argo-aml.readthedocs.io/en/latest/),
+can be installed when installing a release or generated
+from git clone before installing with
+```
+make -C doc doxygen
+```
+
+## Requirements:
+
+* autoconf
+* automake
+* libnuma
+
+## Installation
+
+```
+sh autogen.sh
+./configure
+make -j install
+```
+
 # General Architecture
 
 The architecture of the library relies on two principles: type-specific

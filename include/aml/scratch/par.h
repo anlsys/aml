@@ -11,43 +11,93 @@
 #ifndef AML_SCRATCH_PAR_H
 #define AML_SCRATCH_PAR_H 1
 
-/*******************************************************************************
- * Parallel scratchpad API:
+/**
+ * @defgroup aml_scratch_par "AML Parallel Scaratchpad"
+ * @brief Parallel Scratchpad implementation.
+ *
  * Scratchpad creates one thread to trigger synchronous dma movements.
- ******************************************************************************/
+ * @{
+ **/
 
+/**
+ * Default table of scratchpad operations for linux
+ * parallel dma.
+ **/
 extern struct aml_scratch_ops aml_scratch_par_ops;
 
+/** Inside of a parallel scratch request with linux dma. **/
 struct aml_scratch_request_par {
+	/**
+	 * The type of scratchpad request
+	 * @see <aml.h>
+	 **/
 	int type;
+	/** The source pointer of the data movement **/
 	void *srcptr;
+	/** The tile identifier in source pointer **/
 	int srcid;
+	/** The destination pointer of the data movement **/
 	void *dstptr;
+	/** The tile identifier in destination pointer **/
 	int dstid;
+	/** The scratchpad handling this request **/
 	struct aml_scratch_par *scratch;
+	/** The thread in charge of scratch request progress **/
 	pthread_t thread;
 };
 
+/**
+ * Inner data of the parallel scratchpad implementation
+ * \todo This is the same as struct aml_scratch_seq_data. Could be factorized
+ **/
 struct aml_scratch_par_data {
-	struct aml_area *src_area, *sch_area;
+	/** The source area where data comes from **/
+	struct aml_area *src_area;
+	/** The destination area where data temporariliy goes to **/
+	struct aml_area *sch_area;
+	/**
+	 * The data organisation.
+	 * /todo why can't source and destination tiling vary?
+	 **/
 	struct aml_tiling *tiling;
+	/** \todo What is this? **/
 	size_t scratch_size;
+	/** The dma engine in charge of the transfer **/
 	struct aml_dma *dma;
+	/** Pointer to data in scratch destination **/
 	void *sch_ptr;
+	/** The tilings involved in ongoing scratch requests **/
 	struct aml_vector tilemap;
+	/** The set of dma requests submitted to the dma to mode data  **/
 	struct aml_vector requests;
+	/** A lock to submit concurrent dma requests via the scratchpad **/
 	pthread_mutex_t lock;
 };
 
+/** The set of operation embeded in the parallel scratchpad **/
 struct aml_scratch_par_ops {
-	void *(*do_thread)(void *par_request);
+	/**
+	 * Function to submit asynchronously scratchpad request.
+	 * @param data: Argument of the thread starting the request,
+	 *              i.e a struct aml_scratch_request_par.
+	 * @return Unspecified value.
+	 **/
+	void *(*do_thread)(void *data);
 };
 
+/** Parallel implementation of a scratchpad **/
 struct aml_scratch_par {
+	/** Set of operations embeded in the scratchpad **/
 	struct aml_scratch_par_ops ops;
+	/** Data embeded in the scratchpad **/
 	struct aml_scratch_par_data data;
 };
 
+/**
+ * Static declaration of a parallel scratchpad.
+ * Needs to be initialized with aml_scratch_par_init()
+ * @see aml_scratch_par_init()
+ **/
 #define AML_SCRATCH_PAR_DECL(name) \
 	struct aml_scratch_par __ ##name## _inner_data; \
 	struct aml_scratch name = { \
@@ -55,6 +105,7 @@ struct aml_scratch_par {
 		(struct aml_scratch_data *)&__ ## name ## _inner_data, \
 	}
 
+/** Static declaration of a parallel scratchpad size. **/
 #define AML_SCRATCH_PAR_ALLOCSIZE \
 	(sizeof(struct aml_scratch_par) + \
 	 sizeof(struct aml_scratch))

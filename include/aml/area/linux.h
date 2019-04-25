@@ -15,81 +15,86 @@
 #include <numa.h>
 #include <numaif.h>
 
-/* allowed binding flags */
+/**
+ * @defgroup aml_area_linux "AML Linux Areas"
+ * @brief Linux Implementation of Areas.
+ *
+ * Linux implementation of AML areas.
+ * This building block relies on libnuma implementation and
+ * linux mmap/munmap to provide mmap/munmap on NUMA host
+ * host processor memory. New areas may be created
+ * to allocate a specific subset of memories.
+ * This building block also include a static declaration of
+ * a default initialized area that can be used out of the box with
+ * abstract area API.
+ *
+ * #include <aml/area/linux.h>
+ * @{
+ **/
+
+/**
+ * Allowed binding flag for area creation.
+ * This flag will apply strict binding to the selected bitmask.
+ * If subsequent allocation will failt if they cannot enforce binding
+ * on bitmask.
+ **/
 #define AML_AREA_LINUX_BINDING_FLAG_BIND       (MPOL_BIND)
+
+/**
+ * Allowed binding flag for area creation.
+ * This flag will make subsequent allocations to interleave
+ * pages on memories of the bitmask.
+ **/
 #define AML_AREA_LINUX_BINDING_FLAG_INTERLEAVE (MPOL_INTERLEAVE)
+
+/**
+ * Allowed binding flag for area creation.
+ * This flag will make subsequent allocations to bound to the
+ * nodes of bitmask if possible, else to some other node.
+ **/
 #define AML_AREA_LINUX_BINDING_FLAG_PREFERRED  (MPOL_PREFERRED)
 
-/* allowed mmap flags to pass */
+/**
+ * Allowed mapping flag for area creation.
+ * This flag will make subsequent allocations to be private
+ * to the process making them.
+ **/
 #define AML_AREA_LINUX_MMAP_FLAG_PRIVATE (MAP_PRIVATE | MAP_ANONYMOUS)
+
+/**
+ * Allowed mapping flag for area creation.
+ * This flag will make subsequent allocations to be visible to
+ * other processes of the system.
+ **/
 #define AML_AREA_LINUX_MMAP_FLAG_SHARED  (MAP_SHARED | MAP_ANONYMOUS)
 
+/**
+ * This contains area operations implementation
+ * for linux area.
+ **/
 extern struct aml_area_ops aml_area_linux_ops;
 
-/* User data stored inside area */
+/**
+ * Default linux area with private mapping and no binding.
+ * Can be used out of the box with aml_area_*() functions.
+ **/
+extern struct aml_area aml_area_linux;
+
+/**
+ * Implementation of aml_area_data for linux areas.
+ **/
 struct aml_area_linux_data {
-	/** numanodes to use **/
+	/** numanodes to use when allocating data **/
 	struct bitmask *nodeset;
-	/** numaif.h mbind policy or AML_AREA_LINUX_FLAG_* **/
+	/** binding policy **/
 	int             binding_flags;
 	/** mmap flags **/
 	int             mmap_flags;
 };
 
-/* Default linux area with private mapping and no binding. */
-extern struct aml_area aml_area_linux;
-
-
-/*******************************************************************************
- * Linux operators
-*******************************************************************************/
-
 /**
- * Bind memory of size "size" pointed by "ptr" to binding set in "bind".
- * If mbind call was not successfull, i.e AML_FAILURE is returned, then errno
- * should be inspected for further error checking.
+ * Static declaration of an aml area with linux ops.
  **/
-int
-aml_area_linux_mbind(struct aml_area_linux_data    *bind,
-		     void                          *ptr,
-		     size_t                         size);
-
-/**
- * Function to check whether binding of a ptr obtained with
- * aml_area_linux_mmap() then aml_area_linux_mbind() match area settings.
- * Returns 1 if mapped memory binding in ptr match area_data binding settings,
- * else 0.
- **/
-int
-aml_area_linux_check_binding(struct aml_area_linux_data *area_data,
-			     void                       *ptr,
-			     size_t                      size);
-
-/**
- * mmap hook for aml area.
- * Fails with AML_FAILURE. On failure errno should be checked for further
- * error investigations.
- **/
-void*
-aml_area_linux_mmap(const struct aml_area_data  *area_data,
-		    void                        *ptr,
-		    size_t                       size);
-
-/**
- * munmap hook for aml area, to unmap memory mapped with aml_area_linux_mmap().
- * Fails with AML_FAILURE. On failure errno should be checked for further
- * error investigations.
- **/
-int
-aml_area_linux_munmap(const struct aml_area_data *area_data,
-		      void *ptr,
-		      const size_t size);
-
-/*******************************************************************************
- * create/destroy and others
-*******************************************************************************/
-
-
 #define AML_AREA_LINUX_DECL(name) \
 	struct aml_area_linux_data __ ##name## _inner_data; \
 	struct aml_area name = { \
@@ -97,12 +102,16 @@ aml_area_linux_munmap(const struct aml_area_data *area_data,
 		(struct aml_area_data *)&__ ## name ## _inner_data, \
 	}
 
+/**
+ * Static declaration of the size of a linux aml area.
+ **/
 #define AML_AREA_LINUX_ALLOCSIZE \
 	(sizeof(struct aml_area_linux_data) + \
 	 sizeof(struct aml_area))
 
-
 /**
+ * \brief Linux area creation.
+ *
  * Allocate and initialize a struct aml_area implemented by aml_area_linux
  * operations.
  * @param[out] area pointer to an uninitialized struct aml_area pointer to
@@ -121,24 +130,94 @@ int aml_area_linux_create(struct aml_area **area, const int mmap_flags,
 			  const struct aml_bitmap *nodemask,
 			  const int binding_flags);
 
+
+/**
+ * \brief Linux area destruction.
+ *
+ * Destroy (finalize and free resources) a struct aml_area created by
+ * aml_area_linux_create().
+ *
+ * @param area is NULL after this call.
+ **/
+void aml_area_linux_destroy(struct aml_area **area);
+
 /**
  * Initialize a struct aml_area declared using the AML_AREA_LINUX_DECL macro.
- * See aml_area_linux_create for details on arguments.
+ * @see aml_area_linux_create() for details on arguments.
  */
 int aml_area_linux_init(struct aml_area *area, const int mmap_flags,
 			const struct aml_bitmap *nodemask,
 			const int binding_flags);
+
 /**
  * Finalize a struct aml_area initialized with aml_area_linux_init.
  */
 void aml_area_linux_fini(struct aml_area *area);
 
 /**
- * Destroy (finalize and free resources) a struct aml_area created by
- * aml_area_linux_create.
- *
- * @param area is NULL after this call.
+ * Bind memory of size "size" pointed by "ptr" to binding set in "bind".
+ * If mbind call was not successfull, i.e AML_FAILURE is returned, then errno
+ * should be inspected for further error checking.
+ * @param bind: The binding settings. mmap_flags is actually unused.
+ * @param ptr: The data to bind.
+ * @param size: The size of the data pointed by ptr.
+ * @return an AML error code.
  **/
-void aml_area_linux_destroy(struct aml_area **area);
+int
+aml_area_linux_mbind(struct aml_area_linux_data    *bind,
+		     void                          *ptr,
+		     size_t                         size);
+
+/**
+ * Function to check whether binding of a ptr obtained with
+ * aml_area_linux_mmap() then aml_area_linux_mbind() match area settings.
+ * @param area_data: The expected binding settings.
+ * @param ptr: The data supposely bound.
+ * @param size: The data size.
+ * @return 1 if mapped memory binding in ptr match area_data binding settings,
+ * else 0.
+ **/
+int
+aml_area_linux_check_binding(struct aml_area_linux_data *area_data,
+			     void                       *ptr,
+			     size_t                      size);
+
+/**
+ * \brief mmap block for aml area.
+ *
+ * This function is a wrapper on mmap function using arguments set in
+ * mmap_flags of area_data.
+ * This function does not perform binding, unlike it is done in areas created
+ * with aml_area_linux_create().
+ * @param area_data: The structure containing mmap_flags for mmap call.
+ *        nodemask and bind_flags fields are ignored.
+ * @param ptr: A hint provided to mmap function.
+ * @param size: The size to allocate.
+ * @return NULL on failure, else a valid pointer to memory.
+ * Upon failure, errno should be checked for further error investigations.
+ **/
+void*
+aml_area_linux_mmap(const struct aml_area_data  *area_data,
+		    void                        *ptr,
+		    size_t                       size);
+
+/**
+ * \brief munmap hook for aml area.
+ *
+ * unmap memory mapped with aml_area_linux_mmap().
+ * @param area_data: unused
+ * @param ptr: The virtual memory to unmap.
+ * @param size: The size of virtual memory to unmap.
+ * @return AML_FAILURE on error, AML_SUCCESS.
+ * Upon failure errno should be checked for further error investigations.
+ **/
+int
+aml_area_linux_munmap(const struct aml_area_data *area_data,
+		      void *ptr,
+		      const size_t size);
+
+/**
+ * @}
+ **/
 
 #endif //AML_AREA_LINUX_NUMA_H

@@ -4,6 +4,7 @@ variables:
 stages:
   - style
   - build
+  - release
 
 make:generic:
   stage: build
@@ -53,3 +54,12 @@ checkpatch:
   stage: style
   script:
     - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl
+
+readthedocs:
+  stage: release
+  when: on_success
+  only:
+    - master
+    - /v\.[0-9]+\.[0-9]+\.[0-9]+/
+  script:
+    - nix run nixpkgs.curl -c curl -X POST -d "branch=$CI_COMMIT_REF_NAME" -d "token=$READTHEDOCS_TOKEN" https://readthedocs.org/api/v2/webhook/argo-aml/83161/
