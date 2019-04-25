@@ -11,26 +11,56 @@
 #ifndef AML_TILING_2D_H
 #define AML_TILING_2D_H 1
 
-/*******************************************************************************
- * Tiling 2D:
- * a contiguous memory area composed of contiguous tiles arranged in 2D grid.
- ******************************************************************************/
+/**
+ * @defgroup aml_tiling_2d "AML 2D Tiling"
+ * @brief 2 dimensions tiling implementation.
+ *
+ * Implementation of 2D tilings, i.e a contiguous memory area composed
+ * of contiguous tiles arranged in 2D grid.
+ * @{
+ **/
 
+/**
+ * Initialized structure containing operations
+ * on 2D tiling aranged in row major order.
+ **/
 extern struct aml_tiling_ops aml_tiling_2d_rowmajor_ops;
+
+/**
+ * Initialized structure containing operations
+ * on 2D tiling aranged in column major order.
+ **/
 extern struct aml_tiling_ops aml_tiling_2d_colmajor_ops;
+
+/**
+ * Initialized structure containing operations
+ * on 2D tiling aranged.
+ **/
 extern struct aml_tiling_iterator_ops aml_tiling_iterator_2d_ops;
 
+/**
+ * Data of 2 dimensions tiling. 2D tiling consists in a set of
+ * contiguous data blocks with information to iterate on it as a
+ * 2D structure.
+ **/
 struct aml_tiling_2d_data {
+	/** The size of a data block in tiling **/
 	size_t blocksize;
+	/** The toal size of the tiling **/
 	size_t totalsize;
-	size_t ndims[2]; /* # number of rows, # number of cols (in tiles) */
+	/* # number of rows, # number of columns (in tiles) */
+	size_t ndims[2];
 };
 
+/** Data of 2 dimensions tiling iterator. **/
 struct aml_tiling_iterator_2d_data {
+	/** Index of the current iteration **/
 	size_t i;
+	/** Tiling beeing iterated **/
 	struct aml_tiling_2d_data *tiling;
 };
 
+/** Static declaration of 2D tiling aranged in row major fashion **/
 #define AML_TILING_2D_ROWMAJOR_DECL(name) \
 	struct aml_tiling_2d_data __ ##name## _inner_data; \
 	struct aml_tiling name = { \
@@ -38,6 +68,7 @@ struct aml_tiling_iterator_2d_data {
 		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
 	}
 
+/** Static declaration of 2D tiling aranged in column major fashion **/
 #define AML_TILING_2D_COLMAJOR_DECL(name) \
 	struct aml_tiling_2d_data __ ##name## _inner_data; \
 	struct aml_tiling name = { \
@@ -45,6 +76,7 @@ struct aml_tiling_iterator_2d_data {
 		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
 	}
 
+/** Static declaration of 2D tiling iterator **/
 #define AML_TILING_ITERATOR_2D_DECL(name) \
 	struct aml_tiling_iterator_2d_data __ ##name## _inner_data; \
 	struct aml_tiling_iterator name = { \
@@ -52,9 +84,11 @@ struct aml_tiling_iterator_2d_data {
 		(struct aml_tiling_iterator_data *)&__ ## name ## _inner_data, \
 	}
 
+/** Static declaration of the size of a 2D tiling **/
 #define AML_TILING_2D_ALLOCSIZE (sizeof(struct aml_tiling_2d_data) + \
 				 sizeof(struct aml_tiling))
 
+/** Static declaration of the size of a 2D tiling iterator **/
 #define AML_TILING_ITERATOR_2D_ALLOCSIZE \
 	(sizeof(struct aml_tiling_iterator_2d_data) + \
 	 sizeof(struct aml_tiling_iterator))
@@ -97,5 +131,9 @@ void aml_tiling_2d_fini(struct aml_tiling *tiling);
  **/
 void aml_tiling_2d_destroy(struct aml_tiling **tiling);
 
+
+/**
+ * @}
+ **/
 
 #endif /* AML_TILING_2D_H */

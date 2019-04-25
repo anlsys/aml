@@ -30,8 +30,8 @@ int main(int argc, char *argv[])
 	aml_init(&argc, &argv);
 
 	/* initialize all the supporting struct */
-	assert(!aml_tiling_1d_init(&tiling, TILESIZE*PAGE_SIZE,
-				   TILESIZE*PAGE_SIZE*NBTILES));
+	assert(!aml_tiling_1d_init(&tiling, TILESIZE*_SC_PAGE_SIZE,
+				   TILESIZE*_SC_PAGE_SIZE*NBTILES));
 	aml_bitmap_zero(&nodemask);
 	aml_bitmap_set(&nodemask, 0);
 
@@ -39,10 +39,10 @@ int main(int argc, char *argv[])
 	assert(!aml_dma_linux_seq_init(&dma, maxrequests));
 
 	/* allocate some memory */
-	src = aml_area_mmap(&aml_area_linux, NULL, TILESIZE*PAGE_SIZE*NBTILES);
+	src = aml_area_mmap(&aml_area_linux, NULL, TILESIZE*_SC_PAGE_SIZE*NBTILES);
 	assert(src != NULL);
 
-	memset(src, 42, TILESIZE*PAGE_SIZE*NBTILES);
+	memset(src, 42, TILESIZE*_SC_PAGE_SIZE*NBTILES);
 
 	/* create scratchpad */
 	assert(!aml_scratch_par_init(&scratch, &aml_area_linux, &aml_area_linux, &dma, &tiling,
@@ -58,23 +58,23 @@ int main(int argc, char *argv[])
 		dp = aml_tiling_tilestart(&tiling, dst, di);
 		sp = aml_tiling_tilestart(&tiling, src, i);
 
-		assert(!memcmp(sp, dp, TILESIZE*PAGE_SIZE));
+		assert(!memcmp(sp, dp, TILESIZE*_SC_PAGE_SIZE));
 
-		memset(dp, 33, TILESIZE*PAGE_SIZE);
+		memset(dp, 33, TILESIZE*_SC_PAGE_SIZE);
 	
 		aml_scratch_push(&scratch, src, &si, dst, di);
 		assert(si == i);
 
 		sp = aml_tiling_tilestart(&tiling, src, si);
 
-		assert(!memcmp(sp, dp, TILESIZE*PAGE_SIZE));
+		assert(!memcmp(sp, dp, TILESIZE*_SC_PAGE_SIZE));
 	}
 
 	/* delete everything */
 	aml_scratch_par_fini(&scratch);
 	aml_dma_linux_seq_fini(&dma);
-	aml_area_munmap(&aml_area_linux, dst, TILESIZE*PAGE_SIZE*NBTILES);
-	aml_area_munmap(&aml_area_linux, src, TILESIZE*PAGE_SIZE*NBTILES);
+	aml_area_munmap(&aml_area_linux, dst, TILESIZE*_SC_PAGE_SIZE*NBTILES);
+	aml_area_munmap(&aml_area_linux, src, TILESIZE*_SC_PAGE_SIZE*NBTILES);
 	aml_tiling_1d_fini(&tiling);
 
 	aml_finalize();

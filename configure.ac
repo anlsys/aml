@@ -69,6 +69,12 @@ AC_CHECK_HEADERS([numa.h],,[AC_MSG_ERROR([AML requires libnuma headers.])])
 AC_CHECK_HEADERS([numaif.h],,[AC_MSG_ERROR([AML requires libnuma headers.])])
 AC_CHECK_LIB(numa, mbind,,[AC_MSG_ERROR([AML requires libnuma.])])
 
+# Doxygen
+# See m4/ax_doxygen.m4
+AC_CHECK_PROG(doxygen_happy, [doxygen], [yes], [no])
+
+AM_CONDITIONAL([AML_DOXYGEN],[ test "x$doxygen_happy" = "xyes" ])
+
 AC_CONFIG_HEADERS([include/config.h])
 
 AC_CONFIG_FILES([Makefile
@@ -80,6 +86,7 @@ AC_CONFIG_FILES([Makefile
 		 src/utils/Makefile
 		 include/Makefile
 		 tests/Makefile
+		 doc/Makefile
 		 benchmarks/Makefile
 		 aml.pc
 		 include/aml/utils/version.h])

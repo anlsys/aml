@@ -11,46 +11,79 @@
 #ifndef AML_DMA_LINUX_PAR_H
 #define AML_DMA_LINUX_PAR_H 1
 
-/*******************************************************************************
- * Linux Parallel DMA API:
- * DMA logic implemented based on general linux API, with the caller thread
- * used as the only execution thread.
- ******************************************************************************/
+/**
+ * @defgroup aml_dma_par "AML Parallel DMA"
+ * @brief Parallel DMA implementation.
+ *
+ * DMA logic implemented based on general linux API, asynchronous execution
+ * threads. This DMA implementation moves between pointers allocated with an
+ * aml_area_linux.
+ * @{
+ **/
 
+/**
+ * Default table of dma request operations for linux
+ * parallel dma.
+ **/
 extern struct aml_dma_ops aml_dma_linux_par_ops;
 
+/** Thread data embeded inside an asynchronous dma request. **/
 struct aml_dma_linux_par_thread_data {
+	/**
+	 * A logical identifier of the thread in charge for
+	 * the request progress.
+	 **/
 	int tid;
+	/** The actual thread in charge for the request progress**/
 	pthread_t thread;
+	/** The dma containing sequential operations **/
 	struct aml_dma_linux_par *dma;
+	/** The request handled by this thread **/
 	struct aml_dma_request_linux_par *req;
 };
 
+/** Inside of a parallel request for linux movement. **/
 struct aml_dma_request_linux_par {
+	/**
+	 * The type of dma request
+	 * @see <aml.h>
+	 **/
 	int type;
+	/** The destination pointer of the data movement **/
 	void *dest;
+	/** The source pointer of the data movement **/
 	void *src;
+	/** The size of data to move **/
 	size_t size;
+	/** The thread data in charge of the request progress **/
 	struct aml_dma_linux_par_thread_data *thread_data;
 };
 
+/** Inside of a parallel request for linux movement. **/
 struct aml_dma_linux_par_data {
 	size_t nbthreads;
 	struct aml_vector requests;
 	pthread_mutex_t lock;
 };
 
+/** Declaration of linux parallel dma operations **/
 struct aml_dma_linux_par_ops {
 	void *(*do_thread)(void *thread_data);
 	int (*do_copy)(struct aml_dma_linux_par_data *data,
 		       struct aml_dma_request_linux_par *request, int tid);
 };
 
+/**
+ * aml_dma structure for linux based, parallel dma movement
+ * Needs to be initialized with aml_dma_linux_par_init().
+ * Can be passed to generic aml_dma_*() functions.
+ **/
 struct aml_dma_linux_par {
 	struct aml_dma_linux_par_ops ops;
 	struct aml_dma_linux_par_data data;
 };
 
+/** Static declaration of aml_dma_linux_par structure. **/
 #define AML_DMA_LINUX_PAR_DECL(name) \
 	struct aml_dma_linux_par __ ##name## _inner_data; \
 	struct aml_dma name = { \
@@ -58,6 +91,7 @@ struct aml_dma_linux_par {
 		(struct aml_dma_data *)&__ ## name ## _inner_data, \
 	}
 
+/** Static declaration of aml_dma_linux_par structure size. **/
 #define AML_DMA_LINUX_PAR_ALLOCSIZE \
 	(sizeof(struct aml_dma_linux_par) + \
 	 sizeof(struct aml_dma))
@@ -97,7 +131,10 @@ void aml_dma_linux_par_fini(struct aml_dma *dma);
 /**
  * Tears down a parallel DMA created with aml_dma_linux_par_create.
  * @param dma the address of a pointer to a parallel dma. Will be NULL after.
- */
+ **/
 void aml_dma_linux_par_destroy(struct aml_dma **dma);
 
+/**
+ * @}
+ **/
 #endif // AML_LINUX_DMA_LINUX_PAR_H

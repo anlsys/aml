@@ -12,6 +12,16 @@
 #define AML_ERROR_H
 
 /**
+ * @defgroup aml_error "AML Error Management"
+ * @brief AML Error Codes and Functions
+ *
+ * Error codes and error helper functions.
+ * As is quite common in C code, error code values are defined in positive,
+ * but are returned in negative.
+ * @{
+ **/
+
+/**
  * Variable set by aml function calls. aml_errno should be checked after an aml
  * function call returning an error and prior to any other aml call that may
  * overwrite it.
@@ -31,17 +41,50 @@ const char *aml_strerror(const int errno);
  **/
 void aml_perror(const char *msg);
 
-/**
- * Error codes.
- * As is quite common in C code, error code values are defined in positive,
- * but are returned in negative.
- */
-#define AML_SUCCESS	0	/* Generic value for success */
-#define AML_FAILURE	1	/* Generic value for failure */
-#define AML_ENOMEM	2	/* No enough memory available. */
-#define AML_EINVAL	3	/* Invalid argument provided */
-#define AML_EDOM	4	/* value out of bound. */
-#define AML_ENOTSUP	5	/* Operation not supported */
-#define AML_ERROR_MAX	6	/* Max allowed value for errors. */
+/** Generic value for success **/
+#define AML_SUCCESS	0
 
-#endif
+/**
+ * Generic value for failure
+ * Usually when this is the returned value,
+ * the function will detail another way to
+ * inspect error.
+ **/
+#define AML_FAILURE	1
+
+/**
+ * Not enough memory was available
+ * for fulfilling AML function call.
+ **/
+#define AML_ENOMEM	2
+
+/**
+ * One of the argument provided to
+ * AML function call was invalid.
+ **/
+#define AML_EINVAL	3
+
+/**
+ * One of the arguments provided
+ * to AML function call has out of bound
+ * value.
+ **/
+#define AML_EDOM	4
+
+/**
+ * Invoked AML abstraction function is actually
+ * not implemented for this particular version of
+ * AML abstraction.
+ **/
+#define AML_ENOTSUP     5
+
+/**
+ * Max allowed value for errors.
+ **/
+#define AML_ERROR_MAX   6
+
+/**
+ * @}
+ **/
+
+#endif //AML_ERROR_H

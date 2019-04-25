@@ -8,17 +8,83 @@
  * SPDX-License-Identifier: BSD-3-Clause
 *******************************************************************************/
 
+/**
+ * @defgroup aml_version "AML Version Management"
+ * @brief AML library Version.
+ * @{
+ **/
+
 #ifndef AML_VERSION_H
 #define AML_VERSION_H 1
 
+/**
+ * AML Major version (compilation time value).
+ * Major version changes in AML
+ * denotes ABI changes which prevent
+ * compatibility with previous major version ABI.
+ * 
+ **/
 #define	AML_VERSION_MAJOR @PACKAGE_VERSION_MAJOR@
+
+/**
+ * AML Minor version (compilation time value).
+ * AML ABI is compatible across increasing minor
+ * versions.
+ * New minor versions should only bring new features
+ * or improvement without breaking the old ABI.
+ **/
 #define	AML_VERSION_MINOR @PACKAGE_VERSION_MINOR@
+
+/**
+ * AML Patch version (compilation time value).
+ * AML version for patch and fix releases.
+ **/
 #define	AML_VERSION_PATCH @PACKAGE_VERSION_PATCH@
+
+/**
+ * AML version as string.
+ * "major.minor.patch"
+ **/
 #define	AML_VERSION_STRING "@PACKAGE_VERSION@"
 
+/**
+ * AML Major version (runtime value).
+ * If runtime value and compilation value do not
+ * match, either the wrong library is linked or
+ * the program has been compiled with the wrong header.
+ * @see AML_VERSION_MAJOR
+ **/
 extern const int aml_version_major;
+
+/**
+ * AML Minor version (runtime value).
+ * If runtime value and compilation value do not
+ * match, either the wrong library is linked or
+ * the program has been compiled with the wrong header.
+ * @see AML_VERSION_MINOR
+ **/
 extern const int aml_version_minor;
+
+/**
+ * AML Patch version (runtime value).
+ * If runtime value and compilation value do not
+ * match, either the wrong library is linked or
+ * the program has been compiled with the wrong header.
+ * @see AML_VERSION_PATCH
+ **/
 extern const int aml_version_patch;
+
+/**
+ * AML version as string (runtime value).
+ * If runtime value and compilation value do not
+ * match, either the wrong library is linked or
+ * the program has been compiled with the wrong header.
+ * @see AML_VERSION_STRING
+ **/
 extern const char *aml_version_string;
+
+/**
+ * @}
+ **/
 
 #endif /* AML_VERSION_H */

@@ -28,8 +28,8 @@ int main(int argc, char *argv[])
 	aml_init(&argc, &argv);
 
 	/* initialize all the supporting struct */
-	assert(!aml_tiling_1d_init(&tiling, TILESIZE*PAGE_SIZE,
-				   TILESIZE*PAGE_SIZE*NBTILES));
+	assert(!aml_tiling_1d_init(&tiling, TILESIZE*_SC_PAGE_SIZE,
+				   TILESIZE*_SC_PAGE_SIZE*NBTILES));
 	aml_bitmap_zero(&nodemask);
 	aml_bitmap_set(&nodemask, 0);
 
@@ -37,24 +37,24 @@ int main(int argc, char *argv[])
 	assert(!aml_dma_linux_seq_init(&dma, maxrequests));
 
 	/* allocate some memory */
-	src = aml_area_mmap(&aml_area_linux, NULL, TILESIZE*PAGE_SIZE*NBTILES);
+	src = aml_area_mmap(&aml_area_linux, NULL, TILESIZE*_SC_PAGE_SIZE*NBTILES);
 	assert(src != NULL);
-	dst = aml_area_mmap(&aml_area_linux, NULL, TILESIZE*PAGE_SIZE*NBTILES);
+	dst = aml_area_mmap(&aml_area_linux, NULL, TILESIZE*_SC_PAGE_SIZE*NBTILES);
 	assert(dst != NULL);
 
-	memset(src, 42, TILESIZE*PAGE_SIZE*NBTILES);
-	memset(dst, 24, TILESIZE*PAGE_SIZE*NBTILES);
+	memset(src, 42, TILESIZE*_SC_PAGE_SIZE*NBTILES);
+	memset(dst, 24, TILESIZE*_SC_PAGE_SIZE*NBTILES);
 
 	/* move some stuff by copy */
 	for(int i = 0; i < NBTILES; i++)
 		aml_dma_copy(&dma, &tiling, dst, i, &tiling, src, i);
 
-	assert(!memcmp(src, dst, TILESIZE*PAGE_SIZE*NBTILES));
+	assert(!memcmp(src, dst, TILESIZE*_SC_PAGE_SIZE*NBTILES));
 
 	/* delete everything */
 	aml_dma_linux_seq_fini(&dma);
-	aml_area_munmap(&aml_area_linux, dst, TILESIZE*PAGE_SIZE*NBTILES);
-	aml_area_munmap(&aml_area_linux, src, TILESIZE*PAGE_SIZE*NBTILES);
+	aml_area_munmap(&aml_area_linux, dst, TILESIZE*_SC_PAGE_SIZE*NBTILES);
+	aml_area_munmap(&aml_area_linux, src, TILESIZE*_SC_PAGE_SIZE*NBTILES);
 	aml_tiling_1d_fini(&tiling);
 
 	aml_finalize();
