@@ -1,18 +1,30 @@
 Welcome to AML Documentation Page {#index}
 ============
 
-AML is a memory management library designed for highly optimized
-codes to delegate complex memory operations.
+AML is a memory management library designed to ease the use of complex memory
+topologies and complex data layout optimizations for high-performance computing
+applications.
+
+AML is Open Source, distributed under the BSD 3 clause license.
 
 ## Overview
 
-AML goals are the following:
-1. to provide a convenient interface for addressing all heterogeneous
-addressable memories and moving data around.
-2. to provide an interface for expressing and translating data
-structures between several representations and physical memories.
+AML is a framework providing locality-preserving abstractions to application
+developers. In particular, AML aims to expose flexible interfaces to describe
+and reason about how applications deal with data layout, tiling of data,
+placement of data across hardware topologies, and affinity between work and
+data.
 
-Toward achieving these goals, AML implements the following abstractions:
+AML is organized as a collection of abstractions, presented as *building
+blocks*, to develop explicit memory and data management policies. AML goals
+are:
+* __composability__: application developers and performance experts should be
+to pick and choose which building blocks to use depending on their specific
+needs.
+* __flexibility__: users should be able to customize, replace, or change the
+configuration of each building block as much as possible.
+
+As of now, AML implements the following abstractions:
 
 \image html building-blocks-diagram.png width=400cm
 
@@ -21,34 +33,26 @@ Toward achieving these goals, AML implements the following abstractions:
 * [DMA](@ref aml_dma), an engine to asynchronously move data structures between areas,
 * [Scratchpad](@ref aml_scratch), a stage-in, stage-out abstraction for prefetching.
 
-Each of these abstractions have several implementations. For instance,
-areas may refer to usual DDR of a subset of them, GPU memory or non-volatile memory.
-Tilings are implemented to reflect either 1D or 2D structures etc.
-
-## Problems Solved with AML
-
-AML library is designed for highly optimized codes to delegate complex memory
-operations. AML is currently used in a
-[proof of concept](https://xgitlab.cels.anl.gov/argo/nauts/tree/master/papers/mchpc18)
-of efficient matrix multiplication on architectures with software managed memory side
-cache. It is also currently being extended toward specialized memory allocations
-for latency sensitive applications.
+Each of these abstractions have several implementations. For instance, areas
+may refer to usual DRAM or a subset of them, GPU memory or non-volatile memory.
+Tilings are implemented to reflect either 1D or 2D structures and so on.
 
 ## Quick Start Guide
 
 ### Download
 
-* [Github version](https://xgitlab.cels.anl.gov/argo/aml):
+* [Development version](https://xgitlab.cels.anl.gov/argo/aml):
 ```
 git clone git@xgitlab.cels.anl.gov:argo/aml.git
 ```
-* Release versions: 
+* Release versions:
 TODO after release.
 
 ### Requirements:
 
 * autoconf
 * automake
+* libtool
 * libnuma
 
 ### Installation
@@ -88,25 +92,20 @@ aml_finalize();
 
 * Link your program with `-laml`
 
-See above building blocks specific pages for further examples and information on
-library features.
+See above building blocks specific pages for further examples and information
+on library features.
 
 ## Support
 
-AML interface with users is mainly done through
-[gitlab issue interface](https://xgitlab.cels.anl.gov/argo/aml/issues) and
-direct contact with developers/maintainers:
-* Swann Perarnau (swann@anl.gov)
-* Nicolas Denoyelle (ndenoyelle@anl.gov)
-
-AML is looking forward to new users. If you think your problem can be solved with AML
-eventually with some additional non-existing features which are relevant to the library,
-please let us know. Tell us about your topic of interests and your scientific/technical
-problems. We are also pleased to improve the software, thus any suggestion, bug
-declaration, contribution is welcomed.
+Support for AML is provided through the
+[gitlab issue interface](https://xgitlab.cels.anl.gov/argo/aml/issues).
+Alternatively you can contact directly the developers/maintainers:
+* Swann Perarnau (swann AT anl DOT gov)
+* Nicolas Denoyelle (ndenoyelle AT anl DOT gov)
 
 ## Contributing
 
-AML is looking forward to new collaborations and contributions.
-If you wish to contribute to AML project rendez-vous [here](@ref contributing_page)
+AML welcomes any comment, suggestion, bug reporting, or feature request, as
+well as code contributions. See the [contributing page](@ref contributing_page)
+for more info.
 
