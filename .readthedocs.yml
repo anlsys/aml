@@ -10,10 +10,6 @@ sphinx:
   builder: html
   configuration: doc/conf.py
 
-# Optionally build your docs in additional formats such as PDF and ePub
-formats: htmlzip
-
 python:
   install:
-    - method: pip
-      path: breathe
+    - requirements: doc/requirements.txt

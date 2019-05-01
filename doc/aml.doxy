@@ -796,7 +796,7 @@ INPUT                  = ../include \
 			 ../include/aml/dma \
 			 ../include/aml/scratch \
 			 ../include/aml/utils \
-			 ../CONTRIBUTING.markdown
+			 ../CONTRIBUTING.markdown \
 			 img/building-blocks-diagram.png
 
 # This tag can be used to specify the character encoding of the source files
