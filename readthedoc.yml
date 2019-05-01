@@ -12,4 +12,8 @@ sphinx:
 
 # Optionally build your docs in additional formats such as PDF and ePub
 formats: htmlzip
-    
+
+python:
+  install:
+    - method: pip
+      path: breathe
