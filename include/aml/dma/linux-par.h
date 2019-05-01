@@ -12,7 +12,7 @@
 #define AML_DMA_LINUX_PAR_H 1
 
 /**
- * @defgroup aml_dma_par "AML Parallel DMA"
+ * @defgroup aml_dma_linux_par "AML Parallel DMA"
  * @brief Parallel DMA implementation.
  *
  * DMA logic implemented based on general linux API, asynchronous execution

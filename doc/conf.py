@@ -24,8 +24,10 @@ import os
 import sys
 import subprocess
 
-# Generate documentation
-subprocess.call('doxygen aml.doxy', shell=True)
+# Generate doxygen first if in read the docs.
+read_the_docs = os.environ.get('READTHEDOCS', None) == 'True'
+if read_the_docs:
+    subprocess.call('doxygen aml.doxy', shell=True)
  
 # -- General configuration ---------------------------------------------------
 
@@ -35,7 +37,7 @@ language = 'C'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = []
+extensions = ["breathe", "recommonmark"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = []
@@ -45,25 +47,32 @@ templates_path = []
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
+# ensure that the master file is index.
+# mostly needed because the sphinx version on RTD expects a contents.rst
+# instead.
+master_doc = 'index'
+
 # -- Project information -----------------------------------------------------
 
 project   = 'AML'
 copyright = 'Copyright 2019 UChicago Argonne, LLC'
 author    = 'Swann Perarnau, Kamil Iskra, Brian Suchy, Valentin Reis, Nicolas Denoyelle'
-release   = 'X.X.X'
+release   = '0.1.0'
 
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+if read_the_docs:
+    html_theme = 'default'
+else:
+    html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = []
 
-#Overwrite sphinx documentation with doxygen documentation.
-html_extra_path = ['build-doxygen/html']
-
+breathe_projects = {"aml": "build-doxygen/xml"}
+breathe_default_project = "aml"

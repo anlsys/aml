@@ -794,8 +794,8 @@ INPUT                  = ../include \
                          ../include/aml/area \
 			 ../include/aml/tiling \
 			 ../include/aml/dma \
+			 ../include/aml/scratch \
 			 ../include/aml/utils \
-			 md \
 			 ../CONTRIBUTING.markdown
 			 img/building-blocks-diagram.png
 
@@ -1953,7 +1953,7 @@ MAN_LINKS              = NO
 # captures the structure of the code including all documentation.
 # The default value is: NO.
 
-GENERATE_XML           = NO
+GENERATE_XML           = YES
 
 # The XML_OUTPUT tag is used to specify where the XML pages will be put. If a
 # relative path is entered the value of OUTPUT_DIRECTORY will be put in front of

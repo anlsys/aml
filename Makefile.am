@@ -1,12 +1,8 @@
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = src include tests
+SUBDIRS = src include tests doc
 
 if ADD_BENCHMARKS
 SUBDIRS += benchmarks
-endif
-
-if AML_DOXYGEN
-SUBDIRS += doc
 endif
 
 pkgconfigdir = $(libdir)/pkgconfig

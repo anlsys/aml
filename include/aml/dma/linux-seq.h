@@ -12,7 +12,7 @@
 #define AML_DMA_LINUX_SEQ_H 1
 
 /**
- * @defgroup aml_dma_seq "AML Sequential DMA"
+ * @defgroup aml_dma_linux_seq "AML Sequential DMA"
  * @brief Sequential DMA implementation.
  *
  * DMA logic implemented based on general linux API, with the caller thread

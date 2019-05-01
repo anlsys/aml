@@ -308,51 +308,6 @@ struct aml_tiling {
 };
 
 /**
- Allocates and initializes a new tiling.
- * @param tiling: an address where the pointer to the newly allocated tiling
- *        structure will be stored.
- * @param type: see AML_TILING_TYPE_*.
- *        If "type" equals AML_TILING_TYPE_1D, two additional arguments are
- *        needed: tilesize, totalsize.
- *        If "type" equals AML_TILING_TYPE_2D, four additional arguments are
- *        needed: tilesize, totalsize, rowsize, colsize.
- * @param tilesize: an argument of type size_t; provides the size of a tile.
- * @param totalsize: an argument of type size_t; provides the size of the
- *        complete user data structure to be tiled.
- * @param rowsize: an argument of type size_t; the number of tiles in a row
- * @param colsize: an argument of type size_t; the number of tiles in a column
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_tiling_create(struct aml_tiling **tiling, int type, ...);
-
-/**
- * Initializes a tiling.  This is a varargs-variant of the aml_tiling_vinit()
- * routine.
- * @param tiling: an allocated tiling structure.
- * @param type: see aml_tiling_create().
- * Variadic arguments: see aml_tiling_create().
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_tiling_init(struct aml_tiling *tiling, int type, ...);
-
-/**
- * Initializes a tiling.
- * @param tiling: an allocated tiling structure.
- * @param type: see aml_tiling_create().
- * @param args: see the variadic arguments of aml_tiling_create().
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_tiling_vinit(struct aml_tiling *tiling, int type, va_list args);
-
-/**
- * Tears down an initialized tiling.
- * @param tiling: an initialized tiling structure.
- * @param type: see aml_tiling_create().
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_tiling_destroy(struct aml_tiling *tiling, int type);
-
-/**
  * Provides the tile id of a tile.
  * @param tiling: an initialized tiling structure.
  * @param coordinates: a list of size_t coordinates, one per dimension of the
