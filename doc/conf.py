@@ -28,6 +28,8 @@ import subprocess
 read_the_docs = os.environ.get('READTHEDOCS', None) == 'True'
 if read_the_docs:
     subprocess.call('doxygen aml.doxy', shell=True)
+    # Readthedocs doxygen version is too old to copy images when building xml
+    subprocess.call('cp img/*png build-doxygen/xml/', shell=True)
  
 # -- General configuration ---------------------------------------------------
 
