@@ -78,7 +78,7 @@ dist:
     - integration    
   script:
     - nix-build "$ARGOPKGS" -A aml-dist --arg aml-src ./.
-    - ./release.sh CREATE $CI_JOB_ID $CI_PROJECT_ID $RELEASE_TOKEN $CI_COMMIT_REF_NAME
+    - nix run nixpkgs.bash -c ./release.sh CREATE $CI_JOB_ID $CI_PROJECT_ID $RELEASE_TOKEN $CI_COMMIT_REF_NAME
   artifacts:
     when: on_success
     paths:
