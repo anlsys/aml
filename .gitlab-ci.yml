@@ -4,8 +4,20 @@ variables:
 stages:
   - style
   - build
-  - dist
+  - docs
   - release
+
+repoquality:
+  stage: style
+  script:
+    - nix run -f "$ARGOPKGS" repoquality --command repoquality
+  tags:
+    - integration
+
+checkpatch:
+  stage: style
+  script:
+    - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl
 
 make:generic:
   stage: build
@@ -44,55 +56,27 @@ make:knl:
   tags:
     - knl
 
-repoquality:
-  stage: style
+readthedocs:
+  stage: docs
+  when: on_success
+  only:
+    - master
+    - /v[0-9]+\.[0-9]+\.x/
   script:
-    - nix run -f "$ARGOPKGS" repoquality --command repoquality
-  tags:
-    - integration
+    - nix run nixpkgs.curl -c curl -X POST -d "branch=$CI_COMMIT_REF_NAME" -d "token=$READTHEDOCS_TOKEN" https://readthedocs.org/api/v2/webhook/argo-aml/83161/
 
-checkpatch:
-  stage: style
-  script:
-    - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl
-
-dist-artifacts:
-  stage: dist
+dist:
+  stage: release
   when: on_success
   only:
     - tags
   script:
     - nix-build "$ARGOPKGS" -A aml-dist --arg aml-src ./.
-    - echo "$CI_JOB_ID" > .cijobid
-  artifacts:
-    when: on_success
-    paths:
-      - result/*.tar.gz
-      - .cijobid
-    expire_in: 1h
-
-readthedocs:
-  stage: release
-  when: on_success
-  only:
-    - master
-    - /v\.[0-9]+\.[0-9]+\.x/
-  script:
-    - nix run nixpkgs.curl -c curl -X POST -d "branch=$CI_COMMIT_REF_NAME" -d "token=$READTHEDOCS_TOKEN" https://readthedocs.org/api/v2/webhook/argo-aml/83161/
-
-dist-release:
-  stage: release
-  when: on_success
-  only:
-    - tags
-  dependencies: 
-    - dist-artifacts    
-  script:
-    - CI_ARTIFACT_JOB_ID="$(cat .cijobid)"
-    - ./release.sh CREATE $CI_ARTIFACT_JOB_ID $CI_PROJECT_ID $RELEASE_TOKEN $CI_COMMIT_REF_NAME
+    - ./release.sh CREATE $CI_JOB_ID $CI_PROJECT_ID $RELEASE_TOKEN $CI_COMMIT_REF_NAME
   artifacts:
     when: on_success
     paths:
       - result/*.tar.gz
       - CHECKSUM
     expire_in: 1000y
+
