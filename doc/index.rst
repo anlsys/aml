@@ -122,11 +122,13 @@ Contributing
 ------------
 
 AML welcomes any comment, suggestion, bug reporting, or feature request, as
-well as code contributions. See the [contributing page](@ref contributing_page)
+well as code contributions. See the
+`contributing doc <https://xgitlab.cels.anl.gov/argo/aml/blob/master/CONTRIBUTING.markdown>`_
 for more info.
 
 .. toctree::
    :maxdepth: 2
+   :caption: Table of Contents
 
    pages/areas
    pages/tilings
