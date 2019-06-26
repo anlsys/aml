@@ -6,9 +6,14 @@ if BUILD_DOCS
 build-docs:
 	$(DOXYGEN) aml.doxy
 	$(SPHINXBUILD) -b html -a . $(SPHINX_BUILD_DIR)
+
+dist-hook: build-docs
+	cp -r $(SPHINX_BUILD_DIR) $(distdir)
 else
 build-docs:
-	echo "not building documentation"
+	@echo "not building documentation"
+
+dist-hook: build-docs
 endif
 
 create-doc-dir:
@@ -25,8 +30,5 @@ uninstall-local:
 
 clean-local:
 	rm -rf $(DOXYGEN_BUILD_DIR) $(SPHINX_BUILD_DIR)
-
-dist-hook: build-docs
-	cp -r $(SPHINX_BUILD_DIR) $(distdir)
 
 EXTRA_DIST= aml.doxy conf.py pages index.rst img
