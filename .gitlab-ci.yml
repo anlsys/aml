@@ -30,12 +30,31 @@ make:generic:
   variables:
     CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter"
   script:
-    - ./autogen.sh
     - mkdir build
+    - ./autogen.sh
     - ./configure --prefix=`pwd`/build
     - make
     - make check
     - make install
+  artifacts:
+    when: on_failure
+    paths:
+      - config.log
+      - tests/*.log
+
+make:out-of-tree:
+  stage: build
+  except:
+    - /^wip.*/
+    - /^WIP.*/
+  variables:
+    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter"
+  script:
+    - mkdir out
+    - cd out
+    - ../configure
+    - make
+    - make check
   artifacts:
     when: on_failure
     paths:
@@ -60,6 +79,7 @@ make:knl:
   artifacts:
     when: on_failure
     paths:
+      - config.log
       - tests/*.log
 
 readthedocs:
