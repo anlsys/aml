@@ -30,8 +30,8 @@ make:generic:
   variables:
     CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter"
   script:
-    - mkdir build
     - ./autogen.sh
+    - mkdir build
     - ./configure --prefix=`pwd`/build
     - make
     - make check
@@ -50,9 +50,11 @@ make:out-of-tree:
   variables:
     CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter"
   script:
+    - ./autogen.sh
     - mkdir out
     - cd out
-    - ../configure
+    - mkdir build
+    - ../configure --prefix=`pwd`/build
     - make
     - make check
   artifacts:
