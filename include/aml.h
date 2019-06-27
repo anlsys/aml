@@ -19,6 +19,7 @@
 #define AML_H 1
 
 #include <assert.h>
+#include <errno.h>
 #include <inttypes.h>
 #include <numa.h>
 #include <numaif.h>

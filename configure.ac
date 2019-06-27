@@ -1,37 +1,43 @@
-# see semver.org for version info
+# See semver.org for version info
+#################################
+
 m4_define([VERSION_MAJOR], [0])
 m4_define([VERSION_MINOR], [1])
 m4_define([VERSION_PATCH], [0])
 m4_define([VERSION_STRING], VERSION_MAJOR.VERSION_MINOR.VERSION_PATCH)
 
+# Init build tools
+##################
+
 AC_INIT([aml],[VERSION_STRING],[swann@anl.gov])
+AC_CONFIG_SRCDIR([include/aml.h])
+AC_CONFIG_AUX_DIR([m4])
+AC_CONFIG_MACRO_DIR([m4])
+# automake should fail on any error
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects 1.12])
+
+# Detect features
+#################
+
+AC_LANG([C])
+AC_USE_SYSTEM_EXTENSIONS
+AC_PROG_CC
+AC_PROG_CC_C99
+AM_PROG_CC_C_O
+AC_PROG_CPP
+AC_TYPE_SIZE_T
+AC_TYPE_INTPTR_T
+
+AM_PROG_AR
+LT_INIT
+
+# Extra dependencies, configuration
+###################################
 
 AC_SUBST([PACKAGE_VERSION_MAJOR],[VERSION_MAJOR])
 AC_SUBST([PACKAGE_VERSION_MINOR],[VERSION_MINOR])
 AC_SUBST([PACKAGE_VERSION_PATCH],[VERSION_PATCH])
 
-# are we in the right source dir ?
-AC_CONFIG_SRCDIR([include/aml.h])
-
-# build artefacts in separate dir
-AC_CONFIG_AUX_DIR([m4])
-AC_CONFIG_MACRO_DIR([m4])
-
-# automake should fail on any error
-AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects 1.12])
-AM_PROG_AR
-
-# check for libtool
-LT_INIT
-
-# check for programs
-AC_LANG([C])
-AC_PROG_CC
-AC_PROG_CC_STDC
-AM_PROG_CC_C_O
-AC_PROG_CPP
-AC_TYPE_SIZE_T
-AC_TYPE_INTPTR_T
 
 # support for testing with valgrind
 AC_ARG_ENABLE(valgrind,
@@ -87,6 +93,8 @@ else
 fi
 AM_CONDITIONAL([BUILD_DOCS],[ test "x$BUILD_DOCS" = xyes ])
 
+# Output
+########
 
 AC_CONFIG_HEADERS([include/config.h])
 

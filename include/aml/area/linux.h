@@ -11,10 +11,6 @@
 #ifndef AML_AREA_LINUX_NUMA_H
 #define AML_AREA_LINUX_NUMA_H
 
-#include <sys/mman.h>
-#include <numa.h>
-#include <numaif.h>
-
 /**
  * @defgroup aml_area_linux "AML Linux Areas"
  * @brief Linux Implementation of Areas.
