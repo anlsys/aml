@@ -21,6 +21,8 @@ int aml_errno;
 
 int aml_init(int *argc, char **argv[])
 {
+	// disable warnings
+	(void)argc; (void)argv;
 	return 0;
 }
 
