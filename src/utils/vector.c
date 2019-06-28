@@ -29,7 +29,7 @@ int aml_vector_resize(struct aml_vector *vec, size_t newsize)
 
 	vec->ptr = realloc(vec->ptr, newsize * vec->sz);
 	assert(vec->ptr != NULL);
-	for (int i = vec->nbelems; i < newsize; i++) {
+	for (size_t i = vec->nbelems; i < newsize; i++) {
 		int *k = AML_VECTOR_KEY_P(vec, i);
 		*k = vec->na;
 	}
@@ -47,8 +47,13 @@ size_t aml_vector_size(const struct aml_vector *vec)
 void *aml_vector_get(struct aml_vector *vec, int id)
 {
 	assert(vec != NULL);
-	if (id != vec->na && id < vec->nbelems)
-		return AML_VECTOR_ELT_P(vec, id);
+	if (id == vec->na || id < 0)
+		return NULL;
+
+	size_t idx = (size_t)id;
+
+	if (idx < vec->nbelems)
+		return AML_VECTOR_ELT_P(vec, idx);
 	else
 		return NULL;
 }
@@ -57,7 +62,7 @@ void *aml_vector_get(struct aml_vector *vec, int id)
 int aml_vector_find(const struct aml_vector *vec, int key)
 {
 	assert(vec != NULL);
-	for (int i = 0; i < vec->nbelems; i++) {
+	for (size_t i = 0; i < vec->nbelems; i++) {
 		int *k = AML_VECTOR_KEY_P(vec, i);
 
 		if (*k == key)
@@ -135,7 +140,7 @@ int aml_vector_init(struct aml_vector *vec, size_t reserve, size_t size,
 	vec->na = na;
 	vec->nbelems = reserve;
 	vec->ptr = ptr;
-	for (int i = 0; i < vec->nbelems; i++) {
+	for (size_t i = 0; i < vec->nbelems; i++) {
 		int *k = AML_VECTOR_KEY_P(vec, i);
 		*k = na;
 	}
