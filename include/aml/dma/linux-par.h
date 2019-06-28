@@ -33,7 +33,7 @@ struct aml_dma_linux_par_thread_data {
 	 * A logical identifier of the thread in charge for
 	 * the request progress.
 	 **/
-	int tid;
+	size_t tid;
 	/** The actual thread in charge for the request progress**/
 	pthread_t thread;
 	/** The dma containing sequential operations **/
@@ -70,7 +70,7 @@ struct aml_dma_linux_par_data {
 struct aml_dma_linux_par_ops {
 	void *(*do_thread)(void *thread_data);
 	int (*do_copy)(struct aml_dma_linux_par_data *data,
-		       struct aml_dma_request_linux_par *request, int tid);
+		       struct aml_dma_request_linux_par *request, size_t tid);
 };
 
 /**

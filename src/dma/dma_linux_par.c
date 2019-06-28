@@ -66,7 +66,7 @@ void *aml_dma_linux_par_do_thread(void *arg)
 }
 
 int aml_dma_linux_par_do_copy(struct aml_dma_linux_par_data *dma,
-			      struct aml_dma_request_linux_par *req, int tid)
+			      struct aml_dma_request_linux_par *req, size_t tid)
 {
 	assert(dma != NULL);
 	assert(req != NULL);
@@ -125,7 +125,7 @@ int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 	}
 	pthread_mutex_unlock(&dma->data.lock);
 
-	for (int i = 0; i < dma->data.nbthreads; i++) {
+	for (size_t i = 0; i < dma->data.nbthreads; i++) {
 		struct aml_dma_linux_par_thread_data *rd = &req->thread_data[i];
 
 		rd->req = req;
@@ -149,7 +149,7 @@ int aml_dma_linux_par_destroy_request(struct aml_dma_data *d,
 		(struct aml_dma_request_linux_par *)r;
 
 	/* we cancel and join, instead of killing, for a cleaner result */
-	for (int i = 0; i < dma->data.nbthreads; i++) {
+	for (size_t i = 0; i < dma->data.nbthreads; i++) {
 		pthread_cancel(req->thread_data[i].thread);
 		pthread_join(req->thread_data[i].thread, NULL);
 	}
@@ -172,7 +172,7 @@ int aml_dma_linux_par_wait_request(struct aml_dma_data *d,
 	struct aml_dma_request_linux_par *req =
 		(struct aml_dma_request_linux_par *)r;
 
-	for (int i = 0; i < dma->data.nbthreads; i++)
+	for (size_t i = 0; i < dma->data.nbthreads; i++)
 		pthread_join(req->thread_data[i].thread, NULL);
 
 	/* destroy a completed request */
@@ -244,7 +244,7 @@ int aml_dma_linux_par_init(struct aml_dma *d, size_t nbreqs,
 			sizeof(struct aml_dma_request_linux_par),
 			offsetof(struct aml_dma_request_linux_par, type),
 			AML_DMA_REQUEST_TYPE_INVALID);
-	for (int i = 0; i < nbreqs; i++) {
+	for (size_t i = 0; i < nbreqs; i++) {
 		struct aml_dma_request_linux_par *req =
 			aml_vector_get(&dma->data.requests, i);
 
@@ -262,7 +262,7 @@ void aml_dma_linux_par_fini(struct aml_dma *d)
 	if (d == NULL || d->data == NULL)
 		return;
 	dma = (struct aml_dma_linux_par *)d->data;
-	for (int i = 0; i < aml_vector_size(&dma->data.requests); i++) {
+	for (size_t i = 0; i < aml_vector_size(&dma->data.requests); i++) {
 		struct aml_dma_request_linux_par *req =
 			aml_vector_get(&dma->data.requests, i);
 
