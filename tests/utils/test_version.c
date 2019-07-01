@@ -11,7 +11,7 @@
 #include "aml.h"
 #include <assert.h>
 
-int main(int argc, char *argv[])
+int main(void)
 {
 	assert(aml_version_major == AML_VERSION_MAJOR);
 	assert(aml_version_minor == AML_VERSION_MINOR);

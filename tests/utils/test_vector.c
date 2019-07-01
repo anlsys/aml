@@ -11,7 +11,7 @@
 #include "aml.h"
 #include <assert.h>
 
-int main(int argc, char *argv[])
+int main(void)
 {
 	struct aml_vector v;
 
