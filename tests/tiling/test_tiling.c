@@ -36,8 +36,9 @@ int doit(struct aml_tiling *t, struct aml_tiling_iterator *it)
 	for(i = 0; i < NBTILES; i++)
 	{
 		ptr = (intptr_t) aml_tiling_tilestart(t, NULL, i);
-		assert(ptr == i*TILESIZE);
+		assert(ptr == (intptr_t)i*TILESIZE);
 	}
+	return 0;
 }
 
 int main(int argc, char *argv[])
