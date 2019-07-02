@@ -100,11 +100,6 @@ AC_CONFIG_HEADERS([include/config.h])
 
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
-		 src/area/Makefile
-		 src/dma/Makefile
-		 src/tiling/Makefile
-		 src/scratch/Makefile
-		 src/utils/Makefile
 		 include/Makefile
 		 tests/Makefile
 		 doc/Makefile
