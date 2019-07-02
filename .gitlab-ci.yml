@@ -39,6 +39,7 @@ make:generic:
   artifacts:
     when: on_failure
     paths:
+      - config.log
       - tests/*.log
 
 make:knl:
