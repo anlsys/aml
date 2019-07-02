@@ -42,6 +42,27 @@ make:generic:
       - config.log
       - tests/*.log
 
+make:out-of-tree:
+  stage: build
+  except:
+    - /^wip.*/
+    - /^WIP.*/
+  variables:
+    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter"
+  script:
+    - ./autogen.sh
+    - mkdir out
+    - cd out
+    - mkdir build
+    - ../configure --prefix=`pwd`/build
+    - make
+    - make check
+  artifacts:
+    when: on_failure
+    paths:
+      - config.log
+      - tests/*.log
+
 make:knl:
   stage: build
   except:
@@ -60,6 +81,7 @@ make:knl:
   artifacts:
     when: on_failure
     paths:
+      - config.log
       - tests/*.log
 
 readthedocs:

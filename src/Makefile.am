@@ -1,4 +1,4 @@
-AM_CFLAGS = -I$(top_srcdir)/include $(PTHREAD_CFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/include $(PTHREAD_CFLAGS)
 AM_LDFLAGS = $(PTHREAD_LIBS)
 
 
