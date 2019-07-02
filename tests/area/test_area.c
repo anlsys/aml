@@ -17,7 +17,6 @@ void test_map(const struct aml_area *area){
 	assert(area->ops->munmap != NULL);
 
 	void *ptr;
-	int err;
 	size_t s;
 	const size_t sizes[4] = {1, 32, 4096, 1<<20};
 

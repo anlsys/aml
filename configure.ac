@@ -67,7 +67,7 @@ AC_CHECK_LIB(dl, dlopen)
 
 # add pthread support.
 # doc in m4/ax_pthread.m4. Defines automake PTHREAD_CFLAGS and PTHREAD_LIBS
-AX_PTHREAD
+AX_PTHREAD([],[AC_MSG_ERROR([Cannot find how to compile with pthreads.])])
 CC="$PTHREAD_CC"
 
 # NUMA support
@@ -100,11 +100,6 @@ AC_CONFIG_HEADERS([include/config.h])
 
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
-		 src/area/Makefile
-		 src/dma/Makefile
-		 src/tiling/Makefile
-		 src/scratch/Makefile
-		 src/utils/Makefile
 		 include/Makefile
 		 tests/Makefile
 		 doc/Makefile

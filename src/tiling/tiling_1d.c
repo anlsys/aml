@@ -62,8 +62,7 @@ struct aml_tiling_iterator_ops aml_tiling_iterator_1d_ops = {
 
 int aml_tiling_1d_tileid(const struct aml_tiling_data *t, va_list ap)
 {
-	const struct aml_tiling_1d_data *data =
-		(const struct aml_tiling_1d_data *)t;
+	(void)t;
 	size_t x = va_arg(ap, size_t);
 	return x;
 }
@@ -99,7 +98,7 @@ int aml_tiling_1d_ndims(const struct aml_tiling_data *t, va_list ap)
 	size_t *x = va_arg(ap, size_t *);
 	*x = data->totalsize/data->blocksize;
 	if (data->totalsize % data->blocksize != 0)
-		*x++;
+		*x += 1;
 	return 0;
 }
 
@@ -107,6 +106,7 @@ int aml_tiling_1d_init_iterator(struct aml_tiling_data *t,
 				struct aml_tiling_iterator *it, int flags)
 {
 	assert(it->data != NULL);
+	(void)flags;
 	struct aml_tiling_iterator_1d_data *data =
 		(struct aml_tiling_iterator_1d_data *)it->data;
 
@@ -136,12 +136,15 @@ int aml_tiling_1d_create_iterator(struct aml_tiling_data *t,
 int aml_tiling_1d_fini_iterator(struct aml_tiling_data *t,
 				   struct aml_tiling_iterator *it)
 {
+	(void)t;
+	(void)it;
 	return 0;
 }
 
 int aml_tiling_1d_destroy_iterator(struct aml_tiling_data *t,
 				   struct aml_tiling_iterator **it)
 {
+	(void)t;
 	free(*it);
 	return 0;
 }
@@ -197,7 +200,6 @@ int aml_tiling_1d_create(struct aml_tiling **t,
 int aml_tiling_1d_init(struct aml_tiling *t,
 		       size_t tilesize, size_t totalsize)
 {
-	int err;
 	struct aml_tiling_1d_data *data;
 
 	if (t == NULL || t->data == NULL)
@@ -215,6 +217,7 @@ int aml_tiling_1d_init(struct aml_tiling *t,
 void aml_tiling_1d_fini(struct aml_tiling *t)
 {
 	/* nothing to do */
+	(void)t;
 }
 
 

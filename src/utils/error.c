@@ -20,11 +20,11 @@ static const char * const aml_error_strings[] = {
 	[AML_ENOTSUP]	= "Operation not supported",
 };
 
-const char *aml_strerror(const int errno)
+const char *aml_strerror(const int err)
 {
-	if (errno < 0 || errno < AML_ERROR_MAX)
+	if (err < 0 || err < AML_ERROR_MAX)
 		return "Unknown error";
-	return aml_error_strings[errno];
+	return aml_error_strings[err];
 }
 
 void aml_perror(const char *msg)

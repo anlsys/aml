@@ -1,8 +1,7 @@
 AM_COLOR_TESTS = yes
 
-# add OpenMP to flags for test programs
-AM_CFLAGS = -I$(top_srcdir)/include
-AM_LDFLAGS = ../src/libaml.la
+AM_CFLAGS = -I$(top_srcdir)/include $(PTHREAD_CFLAGS)
+AM_LDFLAGS = ../src/libaml.la $(PTHREAD_LIBS)
 
 # valgrind support
 if TEST_VALGRIND

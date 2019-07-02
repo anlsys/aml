@@ -47,6 +47,8 @@ aml_area_linux_check_binding(struct aml_area_linux_data *area_data,
 {
 	int err, mode, i;
 	struct bitmask *nodeset;
+	// unused parameter
+	(void)size;
 
 	nodeset = numa_allocate_nodemask();
 	if (nodeset == NULL)
@@ -209,7 +211,6 @@ int aml_area_linux_init(struct aml_area *area, const int mmap_flags,
 			const int binding_flags)
 {
 	struct aml_area_linux_data *data;
-	int err;
 
 	if (area == NULL)
 		return -AML_EINVAL;

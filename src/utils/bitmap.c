@@ -7,9 +7,8 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
 *******************************************************************************/
-
+#include "config.h"
 #include "aml.h"
-#include <string.h>
 
 #define AML_BITMAP_EMPTY       (0UL)
 #define AML_BITMAP_FULL        (~0UL)

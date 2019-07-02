@@ -30,10 +30,10 @@ extern int aml_errno;
 
 /**
  * Get a string description of an aml error.
- * @param errno: the aml error number.
+ * @param err: the aml error number.
  * Returns a static string describing the error.
  **/
-const char *aml_strerror(const int errno);
+const char *aml_strerror(const int err);
 
 /**
  * Print error on standard error output.

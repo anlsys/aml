@@ -58,6 +58,7 @@ void *aml_scratch_par_do_thread(void *arg)
 
 	aml_dma_copy(scratch->data.dma, scratch->data.tiling, req->dstptr,
 		     req->dstid, scratch->data.tiling, req->srcptr, req->srcid);
+	return NULL;
 }
 
 struct aml_scratch_par_ops aml_scratch_par_inner_ops = {
