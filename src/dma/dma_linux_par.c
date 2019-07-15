@@ -106,7 +106,7 @@ int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 	struct aml_dma_request_linux_par *req;
 
 	pthread_mutex_lock(&dma->data.lock);
-	req = aml_vector_add(&dma->data.requests);
+	req = aml_vector_add(dma->data.requests);
 
 	/* init the request */
 	if (type == AML_DMA_REQUEST_TYPE_COPY) {
@@ -158,7 +158,7 @@ int aml_dma_linux_par_destroy_request(struct aml_dma_data *d,
 		aml_dma_request_linux_par_copy_destroy(req);
 
 	pthread_mutex_lock(&dma->data.lock);
-	aml_vector_remove(&dma->data.requests, req);
+	aml_vector_remove(dma->data.requests, req);
 	pthread_mutex_unlock(&dma->data.lock);
 	return 0;
 }
@@ -180,7 +180,7 @@ int aml_dma_linux_par_wait_request(struct aml_dma_data *d,
 		aml_dma_request_linux_par_copy_destroy(req);
 
 	pthread_mutex_lock(&dma->data.lock);
-	aml_vector_remove(&dma->data.requests, req);
+	aml_vector_remove(dma->data.requests, req);
 	pthread_mutex_unlock(&dma->data.lock);
 	return 0;
 }
@@ -195,88 +195,71 @@ struct aml_dma_ops aml_dma_linux_par_ops = {
  * Init functions:
  ******************************************************************************/
 
-int aml_dma_linux_par_create(struct aml_dma **d, size_t nbreqs,
+int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs,
 			     size_t nbthreads)
 {
 	struct aml_dma *ret = NULL;
-	intptr_t baseptr, dataptr;
-	int err;
+	struct aml_dma_linux_par *d;
 
-	if (d == NULL)
+	if (dma == NULL)
 		return -AML_EINVAL;
+
+	*dma = NULL;
 
 	/* alloc */
-	baseptr = (intptr_t) calloc(1, AML_DMA_LINUX_PAR_ALLOCSIZE);
-	if (baseptr == 0) {
-		*d = NULL;
+	ret = calloc(1, sizeof(struct aml_dma));
+	if (ret == NULL)
+		return -AML_ENOMEM;
+
+	ret->ops = &aml_dma_linux_par_ops;
+	ret->data = calloc(1, sizeof(struct aml_dma_linux_par));
+	if (ret->data == NULL) {
+		free(ret);
 		return -AML_ENOMEM;
 	}
-	dataptr = baseptr + sizeof(struct aml_dma);
-
-	ret = (struct aml_dma *)baseptr;
-	ret->data = (struct aml_dma_data *)dataptr;
-	ret->ops = &aml_dma_linux_par_ops;
-
-	err = aml_dma_linux_par_init(ret, nbreqs, nbthreads);
-	if (err) {
-		*d = NULL;
-		free(ret);
-		return err;
-	}
-
-	*d = ret;
-	return 0;
-}
-
-int aml_dma_linux_par_init(struct aml_dma *d, size_t nbreqs,
-			   size_t nbthreads)
-{
-	struct aml_dma_linux_par *dma;
-
-	if (d == NULL || d->data == NULL)
-		return -AML_EINVAL;
-	dma = (struct aml_dma_linux_par *)d->data;
-	dma->ops = aml_dma_linux_par_inner_ops;
+	d = (struct aml_dma_linux_par *)ret->data;
+	d->ops = aml_dma_linux_par_inner_ops;
 
 	/* allocate request array */
-	dma->data.nbthreads = nbthreads;
-	aml_vector_init(&dma->data.requests, nbreqs,
-			sizeof(struct aml_dma_request_linux_par),
-			offsetof(struct aml_dma_request_linux_par, type),
-			AML_DMA_REQUEST_TYPE_INVALID);
+	d->data.nbthreads = nbthreads;
+	aml_vector_create(&d->data.requests, nbreqs,
+			  sizeof(struct aml_dma_request_linux_par),
+			  offsetof(struct aml_dma_request_linux_par, type),
+			  AML_DMA_REQUEST_TYPE_INVALID);
 	for (size_t i = 0; i < nbreqs; i++) {
 		struct aml_dma_request_linux_par *req =
-			aml_vector_get(&dma->data.requests, i);
+			aml_vector_get(d->data.requests, i);
 
-		req->thread_data = calloc(dma->data.nbthreads,
+		req->thread_data = calloc(d->data.nbthreads,
 				sizeof(struct aml_dma_linux_par_thread_data));
 	}
-	pthread_mutex_init(&dma->data.lock, NULL);
+	pthread_mutex_init(&d->data.lock, NULL);
+
+	*dma = ret;
 	return 0;
 }
 
-void aml_dma_linux_par_fini(struct aml_dma *d)
+void aml_dma_linux_par_destroy(struct aml_dma **dma)
 {
-	struct aml_dma_linux_par *dma;
+	struct aml_dma *d;
+	struct aml_dma_linux_par *l;
 
+	if (dma == NULL)
+		return;
+	d = *dma;
 	if (d == NULL || d->data == NULL)
 		return;
-	dma = (struct aml_dma_linux_par *)d->data;
-	for (size_t i = 0; i < aml_vector_size(&dma->data.requests); i++) {
+	l = (struct aml_dma_linux_par *)d->data;
+	for (size_t i = 0; i < aml_vector_size(l->data.requests); i++) {
 		struct aml_dma_request_linux_par *req =
-			aml_vector_get(&dma->data.requests, i);
+			aml_vector_get(l->data.requests, i);
 
 		free(req->thread_data);
 	}
-	aml_vector_fini(&dma->data.requests);
-	pthread_mutex_destroy(&dma->data.lock);
-}
+	aml_vector_destroy(&l->data.requests);
+	pthread_mutex_destroy(&l->data.lock);
 
-void aml_dma_linux_par_destroy(struct aml_dma **d)
-{
-	if (d == NULL)
-		return;
-	aml_dma_linux_par_fini(*d);
-	free(*d);
-	*d = NULL;
+	free(l);
+	free(d);
+	*dma = NULL;
 }

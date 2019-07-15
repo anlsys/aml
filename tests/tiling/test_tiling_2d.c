@@ -17,10 +17,11 @@
 
 int main(int argc, char *argv[])
 {
-	AML_TILING_2D_ROWMAJOR_DECL(trm);
-	AML_TILING_2D_ROWMAJOR_DECL(trt);
-	AML_TILING_2D_COLMAJOR_DECL(tcm);
-	AML_TILING_2D_COLMAJOR_DECL(tct);
+	struct aml_tiling *trm;
+	struct aml_tiling *trt;
+	struct aml_tiling *tcm;
+	struct aml_tiling *tct;
+
 
 	/* Matrices used for checks:
 	 *  - rowm: stored in row-major, numbered in memory order
@@ -64,19 +65,19 @@ int main(int argc, char *argv[])
 	memcpy(colt, rowt, N*M*sizeof(int));
 
 	/* initialize the tilings */
-	aml_tiling_2d_init(&trm, AML_TILING_TYPE_2D_ROWMAJOR,
-			   sizeof(int), N*M*sizeof(int), N, M);
-	aml_tiling_2d_init(&trt, AML_TILING_TYPE_2D_ROWMAJOR,
-			   sizeof(int), N*M*sizeof(int), M, N);
-	aml_tiling_2d_init(&tcm, AML_TILING_TYPE_2D_COLMAJOR,
-			   sizeof(int), N*M*sizeof(int), M, N);
-	aml_tiling_2d_init(&tct, AML_TILING_TYPE_2D_COLMAJOR,
-			   sizeof(int), N*M*sizeof(int), N, M);
+	aml_tiling_2d_create(&trm, AML_TILING_TYPE_2D_ROWMAJOR,
+			     sizeof(int), N*M*sizeof(int), N, M);
+	aml_tiling_2d_create(&trt, AML_TILING_TYPE_2D_ROWMAJOR,
+			     sizeof(int), N*M*sizeof(int), M, N);
+	aml_tiling_2d_create(&tcm, AML_TILING_TYPE_2D_COLMAJOR,
+			     sizeof(int), N*M*sizeof(int), M, N);
+	aml_tiling_2d_create(&tct, AML_TILING_TYPE_2D_COLMAJOR,
+			     sizeof(int), N*M*sizeof(int), N, M);
 
 	size_t ndims[2];
-	aml_tiling_ndims(&trm, &ndims[0], &ndims[1]);
+	aml_tiling_ndims(trm, &ndims[0], &ndims[1]);
 	assert(ndims[0] == N && ndims[1] == M);
-	aml_tiling_ndims(&tcm, &ndims[0], &ndims[1]);
+	aml_tiling_ndims(tcm, &ndims[0], &ndims[1]);
 	assert(ndims[0] == M && ndims[1] == N);
 
 	/* check that the tilings gives me the right ids */
@@ -84,8 +85,8 @@ int main(int argc, char *argv[])
 	for(int i = 0; i < N; i++)
 		for(int j = 0; j < M; j++)
 		{
-			int irow = aml_tiling_tileid(&trm, i, j);
-			int icol = aml_tiling_tileid(&tcm, j, i);
+			int irow = aml_tiling_tileid(trm, i, j);
+			int icol = aml_tiling_tileid(tcm, j, i);
 			assert(irow == icol && irow == num);
 			num++;
 		}
@@ -95,10 +96,10 @@ int main(int argc, char *argv[])
 	for(int i = 0; i < N; i++)
 		for(int j = 0; j < M; j++)
 		{
-			int irow = aml_tiling_tileid(&trm, i, j);
-			int icol = aml_tiling_tileid(&tcm, j, i);
-			int *rm = aml_tiling_tilestart(&trm, &rowm, irow);
-			int *cm = aml_tiling_tilestart(&tcm, &colm, icol);
+			int irow = aml_tiling_tileid(trm, i, j);
+			int icol = aml_tiling_tileid(tcm, j, i);
+			int *rm = aml_tiling_tilestart(trm, &rowm, irow);
+			int *cm = aml_tiling_tilestart(tcm, &colm, icol);
 			assert(*rm == num && *cm == num);
 			num++;
 		}
@@ -108,10 +109,10 @@ int main(int argc, char *argv[])
 	for(int i = 0; i < N; i++)
 		for(int j = 0; j < M; j++)
 		{
-			int icm = aml_tiling_tileid(&tcm, j, i);
-			int *cm = aml_tiling_tilestart(&tcm, &rowm, icm);
-			int irt = aml_tiling_tileid(&trt, j, i);
-			int *rt = aml_tiling_tilestart(&trt, &rowt, irt);
+			int icm = aml_tiling_tileid(tcm, j, i);
+			int *cm = aml_tiling_tilestart(tcm, &rowm, icm);
+			int irt = aml_tiling_tileid(trt, j, i);
+			int *rt = aml_tiling_tilestart(trt, &rowt, irt);
 			assert(*cm == *rt);
 		}
 
@@ -120,19 +121,19 @@ int main(int argc, char *argv[])
 	for(int i = 0; i < M; i++)
 		for(int j = 0; j < N; j++)
 		{
-			int irm = aml_tiling_tileid(&trm, j, i);
-			int *rm = aml_tiling_tilestart(&trm, &colm, irm);
-			int ict = aml_tiling_tileid(&tct, j, i);
-			int *ct = aml_tiling_tilestart(&tct, &rowt, ict);
+			int irm = aml_tiling_tileid(trm, j, i);
+			int *rm = aml_tiling_tilestart(trm, &colm, irm);
+			int ict = aml_tiling_tileid(tct, j, i);
+			int *ct = aml_tiling_tilestart(tct, &rowt, ict);
 			assert(*rm == *ct);
 		}
 
 
 	/* delete the tilings */
-	aml_tiling_2d_fini(&trm);
-	aml_tiling_2d_fini(&trt);
-	aml_tiling_2d_fini(&tcm);
-	aml_tiling_2d_fini(&tct);
+	aml_tiling_2d_destroy(&trm);
+	aml_tiling_2d_destroy(&trt);
+	aml_tiling_2d_destroy(&tcm);
+	aml_tiling_2d_destroy(&tct);
 	aml_finalize();
 	return 0;
 }

@@ -195,17 +195,6 @@ int aml_bitmap_from_string(struct aml_bitmap *bitmap, const char *bitmap_str);
 char *aml_bitmap_to_string(const struct aml_bitmap *bitmap);
 
 /**
- * Static bitmap declaration.
- * This macro is not really needed,
- * but it is here for consistency with other
- * AML blocks.
- **/
-#define AML_BITMAP_DECL(name) struct aml_bitmap name
-
-/** The size in bytes of aml bitmap. **/
-#define AML_BITMAP_ALLOCSIZE (sizeof(struct aml_bitmap))
-
-/**
  * Allocate a new empty (all zero) struct aml_bitmap.
  * @param[out] map pointer to an uninitialized struct aml_bitmap pointer to
  * receive the new bitmap.
@@ -214,20 +203,6 @@ char *aml_bitmap_to_string(const struct aml_bitmap *bitmap);
  * -AML_ENOMEM if there wasn't enough memory available.
  **/
 int aml_bitmap_create(struct aml_bitmap **map);
-
-/**
- * Initialize (zero a struct aml_bitmap). Not necessary on stack allocated
- * bitmaps.
- * @param map: The bitmap to initialize.
- * @return 0 on success (always).
- **/
-int aml_bitmap_init(struct aml_bitmap *map);
-
-/**
- * Finalize a struct aml_bitmap. This is an empty function.
- * @param map: The bitmap to finalize.
- **/
-void aml_bitmap_fini(struct aml_bitmap *map);
 
 /**
  * Destroy (finalize and free resources) for a struct aml_bitmap created by

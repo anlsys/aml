@@ -44,33 +44,24 @@ int doit(struct aml_tiling *t, struct aml_tiling_iterator *it)
 int main(int argc, char *argv[])
 {
 	struct aml_tiling *a;
-	AML_TILING_1D_DECL(b);
-	
-	struct aml_tiling_iterator *ita;
-	AML_TILING_ITERATOR_1D_DECL(itb);
+	struct aml_tiling_iterator *it;
 
 	/* library initialization */
 	aml_init(&argc, &argv);
 
 	/* initialize the tilings */
 	aml_tiling_1d_create(&a, TILESIZE, TILESIZE*NBTILES);
-	aml_tiling_1d_init(&b, TILESIZE, TILESIZE*NBTILES);
 
 	/* initialize the iterators */
-	aml_tiling_create_iterator(a, &ita, 0);
-	aml_tiling_init_iterator(&b, &itb, 0);
+	aml_tiling_create_iterator(a, &it, 0);
 
-	doit(a, ita);
-	doit(&b, &itb);
+	doit(a, it);
 
 	/* delete the iterators */
-	aml_tiling_destroy_iterator(a, &ita);
-	aml_tiling_fini_iterator(&b, &itb);
-
+	aml_tiling_destroy_iterator(a, &it);
 
 	/* delete the tilings */
 	aml_tiling_1d_destroy(&a);
-	aml_tiling_1d_fini(&b);
 
 	aml_finalize();
 	return 0;

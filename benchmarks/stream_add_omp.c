@@ -38,8 +38,8 @@ int main(int argc, char *argv[])
 	 */
 	struct aml_area *slow = &aml_area_linux, *fast = aml_area_linux;
 
-	struct aml_dma dma;
-	assert(!aml_dma_init(&dma, 0));
+	struct aml_dma *dma;
+	assert(!aml_dma_create(&dma, 0));
 
 	void *a, *b, *c;
 
@@ -75,19 +75,19 @@ int main(int argc, char *argv[])
 	{
 		for(unsigned long i = 0; i < numthreads*CHUNKING; i++) {
 			#pragma omp task depend(inout: wa[i*esz:esz])
-			assert(!aml_dma_move(&dma, &fast, &slow, &wa[i*esz], esz));
+			assert(!aml_dma_move(dma, &fast, &slow, &wa[i*esz], esz));
 			#pragma omp task depend(inout: wb[i*esz:esz])
-			assert(!aml_dma_move(&dma, &fast, &slow, &wb[i*esz], esz));
+			assert(!aml_dma_move(dma, &fast, &slow, &wb[i*esz], esz));
 			#pragma omp task depend(inout: wc[i*esz:esz])
-			assert(!aml_dma_move(&dma, &fast, &slow, &wc[i*esz], esz));
+			assert(!aml_dma_move(dma, &fast, &slow, &wc[i*esz], esz));
 			#pragma omp task depend(in: wa[i*esz:esz], wb[i*esz:esz]) depend(out: wc[i*esz:esz])
 			kernel(&wa[i*esz], &wb[i*esz], &wc[i*esz], esz);
 			#pragma omp task depend(inout: wa[i*esz:esz])
-			assert(!aml_dma_move(&dma, &slow, &fast, &wa[i*esz], esz));
+			assert(!aml_dma_move(dma, &slow, &fast, &wa[i*esz], esz));
 			#pragma omp task depend(inout: wb[i*esz:esz])
-			assert(!aml_dma_move(&dma, &slow, &fast, &wb[i*esz], esz));
+			assert(!aml_dma_move(dma, &slow, &fast, &wb[i*esz], esz));
 			#pragma omp task depend(inout: wc[i*esz:esz])
-			assert(!aml_dma_move(&dma, &slow, &fast, &wc[i*esz], esz));
+			assert(!aml_dma_move(dma, &slow, &fast, &wc[i*esz], esz));
 		}
 	}
 

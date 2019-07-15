@@ -301,33 +301,14 @@ int aml_bitmap_from_string(struct aml_bitmap *bitmap, const char *bitmap_str)
 
 int aml_bitmap_create(struct aml_bitmap **map)
 {
-	struct aml_bitmap *b = malloc(sizeof(struct aml_bitmap));
+	struct aml_bitmap *b = calloc(1, sizeof(struct aml_bitmap));
 
 	if (b == NULL) {
 		*map = NULL;
 		return -AML_ENOMEM;
 	}
-	aml_bitmap_zero(b);
 	*map = b;
 	return 0;
-}
-
-/**
- * Initialize (zero a struct aml_bitmap). Not necessary on stack allocated
- * bitmaps.
- * @return 0 on success (always).
- **/
-int aml_bitmap_init(struct aml_bitmap *map)
-{
-	aml_bitmap_zero(map);
-	return 0;
-}
-
-/**
- * Finalize a struct aml_bitmap. This is an empty function.
- **/
-void aml_bitmap_fini(__attribute__ ((unused)) struct aml_bitmap *map)
-{
 }
 
 /**

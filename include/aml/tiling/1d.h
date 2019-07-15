@@ -44,31 +44,6 @@ struct aml_tiling_iterator_1d_data {
 	struct aml_tiling_1d_data *tiling;
 };
 
-/** Static declaration of 1D tiling **/
-#define AML_TILING_1D_DECL(name) \
-	struct aml_tiling_1d_data __ ##name## _inner_data; \
-	struct aml_tiling name = { \
-		&aml_tiling_1d_ops, \
-		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
-	}
-
-/** Static declaration of 1D tiling iterator **/
-#define AML_TILING_ITERATOR_1D_DECL(name) \
-	struct aml_tiling_iterator_1d_data __ ##name## _inner_data; \
-	struct aml_tiling_iterator name = { \
-		&aml_tiling_iterator_1d_ops, \
-		(struct aml_tiling_iterator_data *)&__ ## name ## _inner_data, \
-	}
-
-/** Static declaration of the size of a 1D tiling **/
-#define AML_TILING_1D_ALLOCSIZE (sizeof(struct aml_tiling_1d_data) + \
-				 sizeof(struct aml_tiling))
-
-/** Static declaration of the size of a 1D tiling iterator **/
-#define AML_TILING_ITERATOR_1D_ALLOCSIZE \
-	(sizeof(struct aml_tiling_iterator_1d_data) + \
-	 sizeof(struct aml_tiling_iterator))
-
 /**
  * Allocates and initializes a new 1D tiling.
  *
@@ -81,20 +56,6 @@ struct aml_tiling_iterator_1d_data {
  **/
 int aml_tiling_1d_create(struct aml_tiling **tiling,
 			 size_t tilesize, size_t totalsize);
-/**
- * Initializes a tiling. Similar to create.
- *
- * @param tiling a tiling declared with AML_TILING_1D_DECL.
- * @param 0 if successful; an error code otherwise.
- **/
-int aml_tiling_1d_init(struct aml_tiling *tiling, size_t tilesize,
-		       size_t totalsize);
-
-/**
- * Finalize a tiling.
- **/
-void aml_tiling_1d_fini(struct aml_tiling *tiling);
-
 /**
  * Tears down an initialized tiling.
  *

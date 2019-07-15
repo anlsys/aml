@@ -89,23 +89,6 @@ struct aml_area_linux_data {
 };
 
 /**
- * Static declaration of an aml area with linux ops.
- **/
-#define AML_AREA_LINUX_DECL(name) \
-	struct aml_area_linux_data __ ##name## _inner_data; \
-	struct aml_area name = { \
-		&aml_area_linux_ops, \
-		(struct aml_area_data *)&__ ## name ## _inner_data, \
-	}
-
-/**
- * Static declaration of the size of a linux aml area.
- **/
-#define AML_AREA_LINUX_ALLOCSIZE \
-	(sizeof(struct aml_area_linux_data) + \
-	 sizeof(struct aml_area))
-
-/**
  * \brief Linux area creation.
  *
  * Allocate and initialize a struct aml_area implemented by aml_area_linux
@@ -136,19 +119,6 @@ int aml_area_linux_create(struct aml_area **area, const int mmap_flags,
  * @param area is NULL after this call.
  **/
 void aml_area_linux_destroy(struct aml_area **area);
-
-/**
- * Initialize a struct aml_area declared using the AML_AREA_LINUX_DECL macro.
- * @see aml_area_linux_create() for details on arguments.
- */
-int aml_area_linux_init(struct aml_area *area, const int mmap_flags,
-			const struct aml_bitmap *nodemask,
-			const int binding_flags);
-
-/**
- * Finalize a struct aml_area initialized with aml_area_linux_init.
- */
-void aml_area_linux_fini(struct aml_area *area);
 
 /**
  * Bind memory of size "size" pointed by "ptr" to binding set in "bind".

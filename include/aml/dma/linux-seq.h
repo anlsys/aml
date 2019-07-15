@@ -49,7 +49,7 @@ struct aml_dma_linux_seq_data {
 	 * Requests may be submitted concurrently but will all
 	 * be performed by a single thread.
 	 **/
-	struct aml_vector requests;
+	struct aml_vector *requests;
 	/** Lock for queuing requests concurrently **/
 	pthread_mutex_t lock;
 };
@@ -67,7 +67,7 @@ struct aml_dma_linux_seq_ops {
 
 /**
  * aml_dma structure for linux based, sequential dma movement.
- * Needs to be initialized with aml_dma_linux_seq_init().
+ * Needs to be initialized with aml_dma_linux_seq_create().
  * Can be passed to generic aml_dma_*() functions.
  **/
 struct aml_dma_linux_seq {
@@ -75,19 +75,6 @@ struct aml_dma_linux_seq {
 	struct aml_dma_linux_seq_data data;
 };
 
-
-/** Static declaration of aml_dma_linux_seq structure. **/
-#define AML_DMA_LINUX_SEQ_DECL(name) \
-	struct aml_dma_linux_seq __ ##name## _inner_data; \
-	struct aml_dma name = { \
-		&aml_dma_linux_seq_ops, \
-		(struct aml_dma_data *)&__ ## name ## _inner_data, \
-	}
-
-/** Static declaration aml_dma_linux_seq structure size **/
-#define AML_DMA_LINUX_SEQ_ALLOCSIZE \
-	(sizeof(struct aml_dma_linux_seq) + \
-	 sizeof(struct aml_dma))
 
 /**
  * Allocates and initializes a new sequential DMA.
@@ -100,21 +87,6 @@ struct aml_dma_linux_seq {
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_linux_seq_create(struct aml_dma **dma, size_t nbreqs);
-
-/**
- * Initializes a new sequential DMA.
- *
- * @param dma a pointer to a dma declared with the AML_DMA_LINUX_SEQ_DECL macro
- * @param nbreqs same as the create version.
- *
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_dma_linux_seq_init(struct aml_dma *dma, size_t nbreqs);
-
-/**
- * Finalize a sequential DMA
- **/
-void aml_dma_linux_seq_fini(struct aml_dma *dma);
 
 /**
  * Tears down a sequential DMA created with aml_dma_linux_seq_create.

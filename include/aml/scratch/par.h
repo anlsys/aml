@@ -67,9 +67,9 @@ struct aml_scratch_par_data {
 	/** Pointer to data in scratch destination **/
 	void *sch_ptr;
 	/** The tilings involved in ongoing scratch requests **/
-	struct aml_vector tilemap;
+	struct aml_vector *tilemap;
 	/** The set of dma requests submitted to the dma to mode data  **/
-	struct aml_vector requests;
+	struct aml_vector *requests;
 	/** A lock to submit concurrent dma requests via the scratchpad **/
 	pthread_mutex_t lock;
 };
@@ -94,23 +94,6 @@ struct aml_scratch_par {
 };
 
 /**
- * Static declaration of a parallel scratchpad.
- * Needs to be initialized with aml_scratch_par_init()
- * @see aml_scratch_par_init()
- **/
-#define AML_SCRATCH_PAR_DECL(name) \
-	struct aml_scratch_par __ ##name## _inner_data; \
-	struct aml_scratch name = { \
-		&aml_scratch_par_ops, \
-		(struct aml_scratch_data *)&__ ## name ## _inner_data, \
-	}
-
-/** Static declaration of a parallel scratchpad size. **/
-#define AML_SCRATCH_PAR_ALLOCSIZE \
-	(sizeof(struct aml_scratch_par) + \
-	 sizeof(struct aml_scratch))
-
-/**
  * Allocates and initializes a new parallel scratchpad.
  *
  * @param scratch an address where the pointer to the newly allocated scratchpad
@@ -131,26 +114,6 @@ int aml_scratch_par_create(struct aml_scratch **scratch,
 			   struct aml_area *src_area,
 			   struct aml_dma *dma, struct aml_tiling *tiling,
 			   size_t nbtiles, size_t nbreqs);
-
-/**
- * Initializes a new parallel scratchpad. Similar to the create.
- *
- * @param scratch a pointer to a scratch declared with AML_SCRATCH_PAR_DECL.
- *
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_scratch_par_init(struct aml_scratch *scratch,
-			   struct aml_area *scratch_area,
-			   struct aml_area *src_area,
-			   struct aml_dma *dma, struct aml_tiling *tiling,
-			   size_t nbtiles, size_t nbreqs);
-
-/**
- * Finalize a scratchpad.
- *
- * @param scratch a pointer to a scratch initialized by aml_scratch_par_init
- **/
-void aml_scratch_par_fini(struct aml_scratch *scratch);
 
 /**
  * Tears down an initialized parallel scratchpad.
