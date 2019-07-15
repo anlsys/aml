@@ -60,39 +60,6 @@ struct aml_tiling_iterator_2d_data {
 	struct aml_tiling_2d_data *tiling;
 };
 
-/** Static declaration of 2D tiling aranged in row major fashion **/
-#define AML_TILING_2D_ROWMAJOR_DECL(name) \
-	struct aml_tiling_2d_data __ ##name## _inner_data; \
-	struct aml_tiling name = { \
-		&aml_tiling_2d_rowmajor_ops, \
-		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
-	}
-
-/** Static declaration of 2D tiling aranged in column major fashion **/
-#define AML_TILING_2D_COLMAJOR_DECL(name) \
-	struct aml_tiling_2d_data __ ##name## _inner_data; \
-	struct aml_tiling name = { \
-		&aml_tiling_2d_colmajor_ops, \
-		(struct aml_tiling_data *)&__ ## name ## _inner_data, \
-	}
-
-/** Static declaration of 2D tiling iterator **/
-#define AML_TILING_ITERATOR_2D_DECL(name) \
-	struct aml_tiling_iterator_2d_data __ ##name## _inner_data; \
-	struct aml_tiling_iterator name = { \
-		&aml_tiling_iterator_2d_ops, \
-		(struct aml_tiling_iterator_data *)&__ ## name ## _inner_data, \
-	}
-
-/** Static declaration of the size of a 2D tiling **/
-#define AML_TILING_2D_ALLOCSIZE (sizeof(struct aml_tiling_2d_data) + \
-				 sizeof(struct aml_tiling))
-
-/** Static declaration of the size of a 2D tiling iterator **/
-#define AML_TILING_ITERATOR_2D_ALLOCSIZE \
-	(sizeof(struct aml_tiling_iterator_2d_data) + \
-	 sizeof(struct aml_tiling_iterator))
-
 /**
  * Allocates and initializes a new 2D tiling.
  *
@@ -109,20 +76,6 @@ struct aml_tiling_iterator_2d_data {
 int aml_tiling_2d_create(struct aml_tiling **tiling, int type,
 			 size_t tilesize, size_t totalsize,
 			 size_t rowsize, size_t colsize);
-/**
- * Initializes a tiling. Similar to create.
- *
- * @param tiling a tiling declared with AML_TILING_2D_DECL.
- * @param 0 if successful; an error code otherwise.
- **/
-int aml_tiling_2d_init(struct aml_tiling *tiling, int type,
-		       size_t tilesize, size_t totalsize,
-		       size_t rowsize, size_t colsize);
-
-/**
- * Finalize a tiling.
- **/
-void aml_tiling_2d_fini(struct aml_tiling *tiling);
 
 /**
  * Tears down an initialized tiling.

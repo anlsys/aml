@@ -100,22 +100,6 @@ int aml_tiling_create_iterator(struct aml_tiling *t,
 	return t->ops->create_iterator(t->data, it, flags);
 }
 
-int aml_tiling_init_iterator(struct aml_tiling *t,
-			     struct aml_tiling_iterator *it, int flags)
-{
-	assert(t != NULL);
-	assert(it != NULL);
-	return t->ops->init_iterator(t->data, it, flags);
-}
-
-void aml_tiling_fini_iterator(struct aml_tiling *t,
-			     struct aml_tiling_iterator *it)
-{
-	assert(t != NULL);
-	assert(it != NULL);
-	t->ops->fini_iterator(t->data, it);
-}
-
 void aml_tiling_destroy_iterator(struct aml_tiling *t,
 				struct aml_tiling_iterator **it)
 {

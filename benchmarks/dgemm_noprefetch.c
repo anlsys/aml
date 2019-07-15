@@ -21,8 +21,8 @@
 #include <math.h>
 #include <stdlib.h>
 
-AML_TILING_2D_ROWMAJOR_DECL(tiling_row);
-AML_TILING_2D_COLMAJOR_DECL(tiling_col);
+struct aml_tiling *tiling_row;
+struct aml_tiling *tiling_col;
 struct aml_area *slow, *fast;
 size_t memsize, tilesize, N, T;
 double *a, *b, *c;
@@ -34,7 +34,7 @@ void do_work()
 	ldb = lda;
 	ldc = lda;
 	size_t ndims[2];
-	aml_tiling_ndims(&tiling_row, &ndims[0], &ndims[1]);
+	aml_tiling_ndims(tiling_row, &ndims[0], &ndims[1]);
 
 	for(int k = 0; k < ndims[1]; k++)
 	{
@@ -45,12 +45,12 @@ void do_work()
 			{
 				size_t aoff, boff, coff;
 				double *ap, *bp, *cp;
-				aoff = aml_tiling_tileid(&tiling_col, i, k);
-				boff = aml_tiling_tileid(&tiling_row, k, j);
-				coff = aml_tiling_tileid(&tiling_row, i, j);
-				ap = aml_tiling_tilestart(&tiling_col, a, aoff);
-				bp = aml_tiling_tilestart(&tiling_row, b, boff);
-				cp = aml_tiling_tilestart(&tiling_row, c, coff);
+				aoff = aml_tiling_tileid(tiling_col, i, k);
+				boff = aml_tiling_tileid(tiling_row, k, j);
+				coff = aml_tiling_tileid(tiling_row, i, j);
+				ap = aml_tiling_tilestart(tiling_col, a, aoff);
+				bp = aml_tiling_tilestart(tiling_row, b, boff);
+				cp = aml_tiling_tilestart(tiling_row, c, coff);
 				cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, ldc, lda, ldb, 1.0, ap, lda, bp, ldb, 1.0, cp, ldc);
 			}
 		}
@@ -72,10 +72,10 @@ int main(int argc, char* argv[])
 	tilesize = sizeof(double)*T*T;
 
 	/* the initial tiling, of 2D square tiles */
-	assert(!aml_tiling_2d_init(&tiling_row, AML_TILING_TYPE_2D_ROWMAJOR,
-				tilesize, memsize, N/T , N/T));
-	assert(!aml_tiling_2d_init(&tiling_col, AML_TILING_TYPE_2D_COLMAJOR,
-				tilesize, memsize, N/T , N/T));
+	assert(!aml_tiling_2d_create(&tiling_row, AML_TILING_TYPE_2D_ROWMAJOR,
+				     tilesize, memsize, N/T , N/T));
+	assert(!aml_tiling_2d_create(&tiling_col, AML_TILING_TYPE_2D_COLMAJOR,
+				     tilesize, memsize, N/T , N/T));
 
 	aml_area_linux_create(&slow, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
 				     &slowb, AML_AREA_LINUX_BINDING_FLAG_BIND);
@@ -156,8 +156,8 @@ int main(int argc, char* argv[])
 	aml_area_munmap(fast, c, memsize);
 	aml_area_linux_destroy(&slow);
 	aml_area_linux_destroy(&fast);
-	aml_tiling_2d_fini(&tiling_row);
-	aml_tiling_2d_fini(&tiling_col);
+	aml_tiling_2d_destroy(&tiling_row);
+	aml_tiling_2d_destroy(&tiling_col);
 	aml_finalize();
 	return 0;
 }

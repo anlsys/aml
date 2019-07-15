@@ -116,43 +116,54 @@ int aml_tiling_1d_init_iterator(struct aml_tiling_data *t,
 	return 0;
 }
 
-int aml_tiling_1d_create_iterator(struct aml_tiling_data *t,
+int aml_tiling_1d_create_iterator(struct aml_tiling_data *tiling,
 				  struct aml_tiling_iterator **it, int flags)
 {
-	intptr_t baseptr, dataptr;
 	struct aml_tiling_iterator *ret;
+	struct aml_tiling_iterator_1d_data *data;
+	(void)flags;
 
-	baseptr = (intptr_t) calloc(1, AML_TILING_ITERATOR_1D_ALLOCSIZE);
-	dataptr = baseptr + sizeof(struct aml_tiling_iterator);
+	if (it == NULL)
+		return -AML_EINVAL;
 
-	ret = (struct aml_tiling_iterator *)baseptr;
-	ret->data = (struct aml_tiling_iterator_data *)dataptr;
+	*it = NULL;
 
-	aml_tiling_1d_init_iterator(t, ret, flags);
+	ret = calloc(1, sizeof(struct aml_tiling_iterator));
+	if (ret == NULL)
+		return -AML_ENOMEM;
+
+	ret->ops = &aml_tiling_iterator_1d_ops;
+	ret->data = calloc(1, sizeof(struct aml_tiling_iterator_1d_data));
+	if (ret->data == NULL) {
+		free(ret);
+		return -AML_ENOMEM;
+	}
+	data = (struct aml_tiling_iterator_1d_data *)ret->data;
+	data->i = 0;
+	data->tiling = (struct aml_tiling_1d_data *)tiling;
 	*it = ret;
-	return 0;
-}
-
-int aml_tiling_1d_fini_iterator(struct aml_tiling_data *t,
-				   struct aml_tiling_iterator *it)
-{
-	(void)t;
-	(void)it;
-	return 0;
+	return AML_SUCCESS;
 }
 
 int aml_tiling_1d_destroy_iterator(struct aml_tiling_data *t,
-				   struct aml_tiling_iterator **it)
+				   struct aml_tiling_iterator **iter)
 {
+	struct aml_tiling_iterator *it;
 	(void)t;
-	free(*it);
-	return 0;
+
+	if (iter == NULL)
+		return -AML_EINVAL;
+	it = *iter;
+	if (it == NULL || it->data == NULL)
+		return -AML_EINVAL;
+	free(it->data);
+	free(it);
+	*iter = NULL;
+	return AML_SUCCESS;
 }
 
 struct aml_tiling_ops aml_tiling_1d_ops = {
 	aml_tiling_1d_create_iterator,
-	aml_tiling_1d_init_iterator,
-	aml_tiling_1d_fini_iterator,
 	aml_tiling_1d_destroy_iterator,
 	aml_tiling_1d_tileid,
 	aml_tiling_1d_tilesize,
@@ -164,68 +175,48 @@ struct aml_tiling_ops aml_tiling_1d_ops = {
  * 1D create/destroy
  ******************************************************************************/
 
-int aml_tiling_1d_create(struct aml_tiling **t,
+int aml_tiling_1d_create(struct aml_tiling **tiling,
 			 size_t tilesize, size_t totalsize)
 {
 	struct aml_tiling *ret = NULL;
-	intptr_t baseptr, dataptr;
-	int err;
+	struct aml_tiling_1d_data *t;
 
-	if (t == NULL)
+	if (tiling == NULL || tilesize > totalsize)
 		return -AML_EINVAL;
+
+	*tiling = NULL;
 
 	/* alloc */
-	baseptr = (intptr_t) calloc(1, AML_TILING_1D_ALLOCSIZE);
-	if (baseptr == 0) {
-		*t = NULL;
+	ret = calloc(1, sizeof(struct aml_tiling));
+	if (ret == NULL)
+		return -AML_ENOMEM;
+
+	ret->ops = &aml_tiling_1d_ops;
+	ret->data = calloc(1, sizeof(struct aml_tiling_1d_data));
+	if (ret->data == NULL) {
+		free(ret);
 		return -AML_ENOMEM;
 	}
-	dataptr = baseptr + sizeof(struct aml_tiling);
+	t = (struct aml_tiling_1d_data *) ret->data;
 
-	ret = (struct aml_tiling *)baseptr;
-	ret->data = (struct aml_tiling_data *)dataptr;
-	ret->ops = &aml_tiling_1d_ops;
+	t->blocksize = tilesize;
+	t->totalsize = totalsize;
 
-	err = aml_tiling_1d_init(ret, tilesize, totalsize);
-	if (err) {
-		free(ret);
-		ret = NULL;
-	}
-
-	*t = ret;
-	return err;
+	*tiling = ret;
+	return AML_SUCCESS;
 }
 
-
-int aml_tiling_1d_init(struct aml_tiling *t,
-		       size_t tilesize, size_t totalsize)
+void aml_tiling_1d_destroy(struct aml_tiling **tiling)
 {
-	struct aml_tiling_1d_data *data;
+	struct aml_tiling *t;
 
-	if (t == NULL || t->data == NULL)
-		return -AML_EINVAL;
-	data = (struct aml_tiling_1d_data *)t->data;
-
-	if (tilesize > totalsize)
-		return -AML_EINVAL;
-
-	data->blocksize = tilesize;
-	data->totalsize = totalsize;
-	return 0;
-}
-
-void aml_tiling_1d_fini(struct aml_tiling *t)
-{
-	/* nothing to do */
-	(void)t;
-}
-
-
-void aml_tiling_1d_destroy(struct aml_tiling **t)
-{
-	if (t == NULL)
+	if (tiling == NULL)
 		return;
-	free(*t);
-	*t = NULL;
+	t = *tiling;
+	if (t == NULL || t->data == NULL)
+		return;
+	free(t->data);
+	free(t);
+	*tiling = NULL;
 }
 

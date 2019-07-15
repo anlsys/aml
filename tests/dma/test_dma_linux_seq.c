@@ -19,22 +19,18 @@
 
 int main(int argc, char *argv[])
 {
-	AML_TILING_1D_DECL(tiling);
-	AML_DMA_LINUX_SEQ_DECL(dma);
-	struct aml_bitmap nodemask;
+	struct aml_tiling *tiling;
+	struct aml_dma *dma;
 	void *dst, *src;
 
 	/* library initialization */
 	aml_init(&argc, &argv);
 
 	/* initialize all the supporting struct */
-	assert(!aml_tiling_1d_init(&tiling, TILESIZE*_SC_PAGE_SIZE,
-				   TILESIZE*_SC_PAGE_SIZE*NBTILES));
-	aml_bitmap_zero(&nodemask);
-	aml_bitmap_set(&nodemask, 0);
-
+	assert(!aml_tiling_1d_create(&tiling, TILESIZE*_SC_PAGE_SIZE,
+				     TILESIZE*_SC_PAGE_SIZE*NBTILES));
 	size_t maxrequests = NBTILES;
-	assert(!aml_dma_linux_seq_init(&dma, maxrequests));
+	assert(!aml_dma_linux_seq_create(&dma, maxrequests));
 
 	/* allocate some memory */
 	src = aml_area_mmap(&aml_area_linux, NULL, TILESIZE*_SC_PAGE_SIZE*NBTILES);
@@ -47,15 +43,15 @@ int main(int argc, char *argv[])
 
 	/* move some stuff by copy */
 	for(int i = 0; i < NBTILES; i++)
-		aml_dma_copy(&dma, &tiling, dst, i, &tiling, src, i);
+		aml_dma_copy(dma, tiling, dst, i, tiling, src, i);
 
 	assert(!memcmp(src, dst, TILESIZE*_SC_PAGE_SIZE*NBTILES));
 
 	/* delete everything */
-	aml_dma_linux_seq_fini(&dma);
+	aml_dma_linux_seq_destroy(&dma);
 	aml_area_munmap(&aml_area_linux, dst, TILESIZE*_SC_PAGE_SIZE*NBTILES);
 	aml_area_munmap(&aml_area_linux, src, TILESIZE*_SC_PAGE_SIZE*NBTILES);
-	aml_tiling_1d_fini(&tiling);
+	aml_tiling_1d_destroy(&tiling);
 
 	aml_finalize();
 	return 0;

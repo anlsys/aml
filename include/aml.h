@@ -265,16 +265,6 @@ struct aml_tiling_ops {
 	/**
 	 * \todo Doc
 	 **/
-	int (*init_iterator)(struct aml_tiling_data *tiling,
-			     struct aml_tiling_iterator *iterator, int flags);
-	/**
-	 * \todo Doc
-	 **/
-	int (*fini_iterator)(struct aml_tiling_data *tiling,
-				struct aml_tiling_iterator *iterator);
-	/**
-	 * \todo Doc
-	 **/
 	int (*destroy_iterator)(struct aml_tiling_data *tiling,
 				struct aml_tiling_iterator **iterator);
 	/**
@@ -396,23 +386,6 @@ struct aml_tiling_iterator {
 int aml_tiling_create_iterator(struct aml_tiling *tiling,
 			       struct aml_tiling_iterator **iterator,
 			       int flags);
-/**
- * Initializes a tiling iterator.
- * @param tiling: an initialized tiling structure.
- * @param iterator: an allocated tiling iterator structure.
- * @param flags: reserved for future use; pass 0 for now.
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_tiling_init_iterator(struct aml_tiling *tiling,
-			     struct aml_tiling_iterator *iterator, int flags);
-
-/**
- * Finalize an initialized tiling iterator.
- * @param tiling: an initialized tiling structure.
- * @param iterator: an initialized tiling iterator structure.
- **/
-void aml_tiling_fini_iterator(struct aml_tiling *tiling,
-			      struct aml_tiling_iterator *iterator);
 /**
  * Tears down an initialized tiling iterator.
  * @param tiling: an initialized tiling structure.

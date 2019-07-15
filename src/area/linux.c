@@ -183,41 +183,13 @@ int aml_area_linux_create(struct aml_area **area, const int mmap_flags,
 			  const int binding_flags)
 {
 	struct aml_area *ret = NULL;
-	intptr_t baseptr, dataptr;
-	int err = AML_SUCCESS;
-
-	baseptr = (intptr_t) calloc(1, AML_AREA_LINUX_ALLOCSIZE);
-	if (baseptr == 0) {
-		*area = NULL;
-		return -AML_ENOMEM;
-	}
-	dataptr = baseptr + sizeof(struct aml_area);
-
-	ret = (struct aml_area *)baseptr;
-	ret->data = (struct aml_area_data *)dataptr;
-	ret->ops = &aml_area_linux_ops;
-
-	err = aml_area_linux_init(ret, mmap_flags, nodemask, binding_flags);
-	if (err) {
-		free(ret);
-		ret = NULL;
-	}
-	*area = ret;
-	return err;
-}
-
-int aml_area_linux_init(struct aml_area *area, const int mmap_flags,
-			const struct aml_bitmap *nodemask,
-			const int binding_flags)
-{
 	struct aml_area_linux_data *data;
+	int err;
 
 	if (area == NULL)
 		return -AML_EINVAL;
-	data = (struct aml_area_linux_data *)area->data;
 
-	if (data == NULL)
-		return -AML_EINVAL;
+	*area = NULL;
 
 	/* check flags */
 	if (!aml_area_linux_check_mmap_flags(mmap_flags) ||
@@ -225,14 +197,28 @@ int aml_area_linux_init(struct aml_area *area, const int mmap_flags,
 		return -AML_EINVAL;
 	}
 
+	ret = calloc(1, sizeof(struct aml_area));
+	if (ret == NULL)
+		return -AML_ENOMEM;
+
+	ret->ops = &aml_area_linux_ops;
+	ret->data = calloc(1, sizeof(struct aml_area_linux_data));
+	if (ret->data == NULL) {
+		err = -AML_ENOMEM;
+		goto err_f_ret;
+	}
+	data = (struct aml_area_linux_data *)ret->data;
+
 	/* set area_data and area */
 	data->binding_flags = binding_flags;
 	data->mmap_flags = mmap_flags;
 
 	/* check/set nodemask */
 	data->nodeset = numa_get_mems_allowed();
-	if (data->nodeset == NULL)
-		return -AML_ENOMEM;
+	if (data->nodeset == NULL) {
+		err = -AML_ENOMEM;
+		goto err_f_data;
+	}
 
 	/* check if the nodemask is compatible with the nodeset */
 	if (nodemask != NULL) {
@@ -243,32 +229,39 @@ int aml_area_linux_init(struct aml_area *area, const int mmap_flags,
 			;
 
 		if (aml_last > allowed_last) {
-			numa_free_nodemask(data->nodeset);
-			return -AML_EDOM;
+			err = -AML_EDOM;
+			goto err_f_node;
 		}
 		aml_bitmap_copy_to_ulong(nodemask,
 					 data->nodeset->maskp,
 					 data->nodeset->size);
 	}
+	*area = ret;
 	return AML_SUCCESS;
-}
-
-void aml_area_linux_fini(struct aml_area *area)
-{
-	if (area == NULL || area->data == NULL)
-		return;
-	struct aml_area_linux_data *data =
-		(struct aml_area_linux_data *) area->data;
-
+err_f_node:
 	numa_free_nodemask(data->nodeset);
+err_f_data:
+	free(ret->data);
+err_f_ret:
+	free(ret);
+	return err;
 }
 
 void aml_area_linux_destroy(struct aml_area **area)
 {
+	struct aml_area *a;
+	struct aml_area_linux_data *data;
+
 	if (area == NULL)
 		return;
-	aml_area_linux_fini(*area);
-	free(*area);
+	a = *area;
+	if (a == NULL || a->data == NULL)
+		return;
+
+	data = (struct aml_area_linux_data *) a->data;
+	numa_free_nodemask(data->nodeset);
+	free(data);
+	free(a);
 	*area = NULL;
 }
 

@@ -124,56 +124,54 @@ int aml_tiling_2d_ndims(const struct aml_tiling_data *t, va_list ap)
 	return 0;
 }
 
-int aml_tiling_2d_init_iterator(struct aml_tiling_data *t,
-				struct aml_tiling_iterator *it, int flags)
-{
-	assert(it->data != NULL);
-	(void)flags;
-	struct aml_tiling_iterator_2d_data *data =
-		(struct aml_tiling_iterator_2d_data *)it->data;
-	it->ops = &aml_tiling_iterator_2d_ops;
-	data->i = 0;
-	data->tiling = (struct aml_tiling_2d_data *)t;
-	return 0;
-}
-
-int aml_tiling_2d_create_iterator(struct aml_tiling_data *t,
+int aml_tiling_2d_create_iterator(struct aml_tiling_data *tiling,
 				  struct aml_tiling_iterator **it, int flags)
 {
-	intptr_t baseptr, dataptr;
 	struct aml_tiling_iterator *ret;
+	struct aml_tiling_iterator_2d_data *data;
+	(void)flags;
 
-	baseptr = (intptr_t) calloc(1, AML_TILING_ITERATOR_2D_ALLOCSIZE);
-	dataptr = baseptr + sizeof(struct aml_tiling_iterator);
+	if (it == NULL)
+		return -AML_EINVAL;
 
-	ret = (struct aml_tiling_iterator *)baseptr;
-	ret->data = (struct aml_tiling_iterator_data *)dataptr;
+	*it = NULL;
 
-	aml_tiling_2d_init_iterator(t, ret, flags);
+	ret = calloc(1, sizeof(struct aml_tiling_iterator));
+	if (ret == NULL)
+		return -AML_ENOMEM;
+
+	ret->ops = &aml_tiling_iterator_2d_ops;
+	ret->data = calloc(1, sizeof(struct aml_tiling_iterator_2d_data));
+	if (ret->data == NULL) {
+		free(ret);
+		return -AML_ENOMEM;
+	}
+	data = (struct aml_tiling_iterator_2d_data *)ret->data;
+	data->i = 0;
+	data->tiling = (struct aml_tiling_2d_data *)tiling;
 	*it = ret;
-	return 0;
-}
-
-int aml_tiling_2d_fini_iterator(struct aml_tiling_data *t,
-				struct aml_tiling_iterator *it)
-{
-	(void)t;
-	(void)it;
-	return 0;
+	return AML_SUCCESS;
 }
 
 int aml_tiling_2d_destroy_iterator(struct aml_tiling_data *t,
-				   struct aml_tiling_iterator **it)
+				   struct aml_tiling_iterator **iter)
 {
+	struct aml_tiling_iterator *it;
 	(void)t;
-	free(*it);
-	return 0;
+
+	if (iter == NULL)
+		return -AML_EINVAL;
+	it = *iter;
+	if (it == NULL || it->data == NULL)
+		return -AML_EINVAL;
+	free(it->data);
+	free(it);
+	*iter = NULL;
+	return AML_SUCCESS;
 }
 
 struct aml_tiling_ops aml_tiling_2d_rowmajor_ops = {
 	aml_tiling_2d_create_iterator,
-	aml_tiling_2d_init_iterator,
-	aml_tiling_2d_fini_iterator,
 	aml_tiling_2d_destroy_iterator,
 	aml_tiling_2d_rowmajor_tileid,
 	aml_tiling_2d_tilesize,
@@ -183,8 +181,6 @@ struct aml_tiling_ops aml_tiling_2d_rowmajor_ops = {
 
 struct aml_tiling_ops aml_tiling_2d_colmajor_ops = {
 	aml_tiling_2d_create_iterator,
-	aml_tiling_2d_init_iterator,
-	aml_tiling_2d_fini_iterator,
 	aml_tiling_2d_destroy_iterator,
 	aml_tiling_2d_colmajor_tileid,
 	aml_tiling_2d_tilesize,
@@ -196,81 +192,62 @@ struct aml_tiling_ops aml_tiling_2d_colmajor_ops = {
  * 2d create/destroy
  ******************************************************************************/
 
-int aml_tiling_2d_create(struct aml_tiling **t, int type,
+int aml_tiling_2d_create(struct aml_tiling **tiling, int type,
 			 size_t tilesize, size_t totalsize,
 			 size_t rowsize, size_t colsize)
 {
 	struct aml_tiling *ret = NULL;
-	intptr_t baseptr, dataptr;
-	int err;
+	struct aml_tiling_2d_data *data;
 
-	if (t == NULL)
+	if (tiling == NULL)
 		return -AML_EINVAL;
 
 	if (type != AML_TILING_TYPE_2D_ROWMAJOR &&
 	    type != AML_TILING_TYPE_2D_COLMAJOR)
 		return -AML_EINVAL;
 
-	/* alloc */
-	baseptr = (intptr_t) calloc(1, AML_TILING_2D_ALLOCSIZE);
-	if (baseptr == 0) {
-		*t = NULL;
-		return -AML_ENOMEM;
-	}
-	dataptr = baseptr + sizeof(struct aml_tiling);
+	if (tilesize > totalsize)
+		return -AML_EINVAL;
 
-	ret = (struct aml_tiling *)baseptr;
-	ret->data = (struct aml_tiling_data *)dataptr;
+	*tiling = NULL;
+
+	/* alloc */
+	ret = calloc(1, sizeof(struct aml_tiling));
+	if (ret == NULL)
+		return -AML_ENOMEM;
+
 	if (type == AML_TILING_TYPE_2D_ROWMAJOR)
 		ret->ops = &aml_tiling_2d_rowmajor_ops;
 	else
 		ret->ops = &aml_tiling_2d_colmajor_ops;
 
-	err = aml_tiling_2d_init(ret, type, tilesize, totalsize,
-				 rowsize, colsize);
-	if (err) {
+	ret->data = calloc(1, sizeof(struct aml_tiling_2d_data));
+	if (ret->data == NULL) {
 		free(ret);
-		ret = NULL;
+		return -AML_ENOMEM;
 	}
-
-	*t = ret;
-	return err;
-}
-
-
-int aml_tiling_2d_init(struct aml_tiling *t, int type,
-		       size_t tilesize, size_t totalsize,
-		       size_t rowsize, size_t colsize)
-{
-	struct aml_tiling_2d_data *data;
-	(void)type;
-
-	if (t == NULL || t->data == NULL)
-		return -AML_EINVAL;
-	data = (struct aml_tiling_2d_data *)t->data;
-
-	if (tilesize > totalsize)
-		return -AML_EINVAL;
+	data = (struct aml_tiling_2d_data *)ret->data;
 
 	data->blocksize = tilesize;
 	data->totalsize = totalsize;
 	data->ndims[0] = rowsize;
 	data->ndims[1] = colsize;
-	return 0;
+
+	*tiling = ret;
+	return AML_SUCCESS;
 }
 
-void aml_tiling_2d_fini(struct aml_tiling *t)
+void aml_tiling_2d_destroy(struct aml_tiling **tiling)
 {
-	/* nothing to do */
-	(void)t;
-}
+	struct aml_tiling *t;
 
-
-void aml_tiling_2d_destroy(struct aml_tiling **t)
-{
-	if (t == NULL)
+	if (tiling == NULL)
 		return;
-	free(*t);
-	*t = NULL;
+	t = *tiling;
+	if (t == NULL || t->data == NULL)
+		return;
+	free(t->data);
+	free(t);
+	*tiling = NULL;
 }
 

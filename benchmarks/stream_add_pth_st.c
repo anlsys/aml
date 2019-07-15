@@ -27,9 +27,9 @@
 size_t numthreads, tilesz, esz;
 unsigned long *a, *b, *c;
 struct aml_area *slow, *fast;
-AML_TILING_1D_DECL(tiling);
-AML_SCRATCH_PAR_DECL(sa);
-AML_SCRATCH_PAR_DECL(sb);
+struct aml_tiling *tiling;
+struct aml_scratch *sa;
+struct aml_scratch *sb;
 
 int kernel(unsigned long *a, unsigned long *b, unsigned long *c, size_t n)
 {
@@ -53,25 +53,25 @@ void *th_work(void *arg)
 	void *abaseptr, *bbaseptr;
 	struct winfo *wi = arg;
 	offset = wi->tid*CHUNKING;
-	ap = aml_tiling_tilestart(&tiling, a, offset);
-	bp = aml_tiling_tilestart(&tiling, b, offset);
-	cp = aml_tiling_tilestart(&tiling, c, offset);
-	abaseptr = aml_scratch_baseptr(&sa);
-	bbaseptr = aml_scratch_baseptr(&sb);
+	ap = aml_tiling_tilestart(tiling, a, offset);
+	bp = aml_tiling_tilestart(tiling, b, offset);
+	cp = aml_tiling_tilestart(tiling, c, offset);
+	abaseptr = aml_scratch_baseptr(sa);
+	bbaseptr = aml_scratch_baseptr(sb);
 	ai = -1; bi = -1;
 	for(i = 0; i < CHUNKING-1; i++) {
 		struct aml_scratch_request *ar, *br;
 		oldai = ai; oldbi = bi;
-		aml_scratch_async_pull(&sa, &ar, abaseptr, &ai, a, offset+i+1);
-		aml_scratch_async_pull(&sb, &br, bbaseptr, &bi, b, offset+i+1);
+		aml_scratch_async_pull(sa, &ar, abaseptr, &ai, a, offset+i+1);
+		aml_scratch_async_pull(sb, &br, bbaseptr, &bi, b, offset+i+1);
 		kernel(ap, bp, cp, esz);
-		aml_scratch_wait(&sa, ar);
-		aml_scratch_wait(&sb, br);
-		ap = aml_tiling_tilestart(&tiling, abaseptr, ai);
-		bp = aml_tiling_tilestart(&tiling, bbaseptr, bi);
-		cp = aml_tiling_tilestart(&tiling, c, offset+i+1);
-		aml_scratch_release(&sa, oldai);
-		aml_scratch_release(&sb, oldbi);
+		aml_scratch_wait(sa, ar);
+		aml_scratch_wait(sb, br);
+		ap = aml_tiling_tilestart(tiling, abaseptr, ai);
+		bp = aml_tiling_tilestart(tiling, bbaseptr, bi);
+		cp = aml_tiling_tilestart(tiling, c, offset+i+1);
+		aml_scratch_release(sa, oldai);
+		aml_scratch_release(sb, oldbi);
 	}
 	kernel(ap, bp, cp, esz);
 
@@ -79,7 +79,7 @@ void *th_work(void *arg)
 }
 int main(int argc, char *argv[])
 {
-	AML_DMA_LINUX_SEQ_DECL(dma);
+	struct aml_dma *dma;
 	struct aml_bitmap slowb, fastb;
 	aml_init(&argc, &argv);
 	assert(argc == 4);
@@ -100,17 +100,17 @@ int main(int argc, char *argv[])
 	}
 
 	/* initialize all the supporting struct */
-	assert(!aml_tiling_1d_init(&tiling, tilesz, memsize));
+	assert(!aml_tiling_1d_create(&tiling, tilesz, memsize));
 	aml_area_linux_create(&slow, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
 				     &slowb, AML_AREA_LINUX_BINDING_FLAG_BIND);
 	assert(slow != NULL);
 	aml_area_linux_create(&fast, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
 				     &fastb, AML_AREA_LINUX_BINDING_FLAG_BIND);
 	assert(fast != NULL);
-	assert(!aml_dma_linux_seq_init(&dma, (size_t)numthreads*4));
-	assert(!aml_scratch_par_init(&sa, &fast, &slow, &dma, &tiling,
+	assert(!aml_dma_linux_seq_create(dma, (size_t)numthreads*4));
+	assert(!aml_scratch_par_create(&sa, fast, slow, dma, tiling,
 				     (size_t)2*numthreads, (size_t)numthreads));
-	assert(!aml_scratch_par_init(&sb, &fast, &slow, &dma, &tiling,
+	assert(!aml_scratch_par_create(&sb, fast, slow, dma, tiling,
 				     (size_t)2*numthreads, (size_t)numthreads));
 
 	/* allocation */
@@ -142,15 +142,15 @@ int main(int argc, char *argv[])
 		assert(c[i] == esize);
 	}
 
-	aml_scratch_par_fini(&sa);
-	aml_scratch_par_fini(&sb);
-	aml_dma_linux_seq_fini(&dma);
+	aml_scratch_par_destroy(&sa);
+	aml_scratch_par_destroy(&sb);
+	aml_dma_linux_seq_destroy(&dma);
 	aml_area_munmap(slow, a, memsize);
 	aml_area_munmap(slow, b, memsize);
 	aml_area_munmap(fast, c, memsize);
 	aml_area_linux_destroy(&slow);
 	aml_area_linux_destroy(&fast);
-	aml_tiling_1d_fini(&tiling);
+	aml_tiling_1d_destroy(&tiling);
 	aml_finalize();
 	return 0;
 }

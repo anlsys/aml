@@ -95,14 +95,14 @@ void aml_vector_remove(struct aml_vector *vec, void *elem)
 }
 
 /*******************************************************************************
- * Init/destroy:
+ * Create/Destroy:
  ******************************************************************************/
 
 int aml_vector_create(struct aml_vector **vec, size_t reserve, size_t size,
 		      size_t key, int na)
 {
 	struct aml_vector *ret = NULL;
-	int err;
+	void *ptr;
 
 	if (vec == NULL)
 		return -AML_EINVAL;
@@ -112,53 +112,40 @@ int aml_vector_create(struct aml_vector **vec, size_t reserve, size_t size,
 		*vec = NULL;
 		return -AML_ENOMEM;
 	}
-	err = aml_vector_init(ret, reserve, size, key, na);
-	if (err) {
-		*vec = NULL;
+
+	ptr = calloc(reserve, size);
+	if (ptr == NULL) {
 		free(ret);
-		return err;
+		*vec = NULL;
+		return -AML_ENOMEM;
 	}
+
+	ret->sz = size;
+	ret->off = key;
+	ret->na = na;
+	ret->nbelems = reserve;
+	ret->ptr = ptr;
+	for (size_t i = 0; i < ret->nbelems; i++) {
+		int *k = AML_VECTOR_KEY_P(ret, i);
+		*k = na;
+	}
+
 	*vec = ret;
 	return 0;
 }
 
-
-int aml_vector_init(struct aml_vector *vec, size_t reserve, size_t size,
-		    size_t key, int na)
-{
-	void *ptr;
-
-	if (vec == NULL)
-		return -AML_EINVAL;
-
-	ptr = calloc(reserve, size);
-	if (ptr == NULL)
-		return -AML_ENOMEM;
-
-	vec->sz = size;
-	vec->off = key;
-	vec->na = na;
-	vec->nbelems = reserve;
-	vec->ptr = ptr;
-	for (size_t i = 0; i < vec->nbelems; i++) {
-		int *k = AML_VECTOR_KEY_P(vec, i);
-		*k = na;
-	}
-	return 0;
-}
-
-void aml_vector_fini(struct aml_vector *vec)
-{
-	if (vec == NULL)
-		return;
-	free(vec->ptr);
-}
-
 void aml_vector_destroy(struct aml_vector **vec)
 {
+	struct aml_vector *v;
+
 	if (vec == NULL)
 		return;
-	aml_vector_fini(*vec);
-	free(*vec);
+
+	v = *vec;
+	if (v == NULL)
+		return;
+
+	free(v->ptr);
+	free(v);
 	*vec = NULL;
 }

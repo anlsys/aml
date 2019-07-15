@@ -20,24 +20,21 @@
 
 int main(int argc, char *argv[])
 {
-	AML_TILING_1D_DECL(tiling);
-	AML_DMA_LINUX_PAR_DECL(dma);
-	AML_SCRATCH_SEQ_DECL(scratch);
-	struct aml_bitmap nodemask;
+	struct aml_tiling *tiling;
+	struct aml_dma *dma;
+	struct aml_scratch *scratch;
 	void *dst, *src;
 
 	/* library initialization */
 	aml_init(&argc, &argv);
 
 	/* initialize all the supporting struct */
-	assert(!aml_tiling_1d_init(&tiling, TILESIZE*_SC_PAGE_SIZE,
-				   TILESIZE*_SC_PAGE_SIZE*NBTILES));
-	aml_bitmap_zero(&nodemask);
-	aml_bitmap_set(&nodemask, 0);
+	assert(!aml_tiling_1d_create(&tiling, TILESIZE*_SC_PAGE_SIZE,
+				     TILESIZE*_SC_PAGE_SIZE*NBTILES));
 
 	size_t maxrequests = NBTILES;
 	size_t maxthreads = 4;
-	assert(!aml_dma_linux_par_init(&dma, maxrequests, maxthreads));
+	assert(!aml_dma_linux_par_create(&dma, maxrequests, maxthreads));
 
 	/* allocate some memory */
 	src = aml_area_mmap(&aml_area_linux, NULL, TILESIZE*_SC_PAGE_SIZE*NBTILES);
@@ -46,37 +43,37 @@ int main(int argc, char *argv[])
 	memset(src, 42, TILESIZE*_SC_PAGE_SIZE*NBTILES);
 
 	/* create scratchpad */
-	assert(!aml_scratch_seq_init(&scratch, &aml_area_linux, &aml_area_linux, &dma, &tiling,
+	assert(!aml_scratch_seq_create(&scratch, &aml_area_linux, &aml_area_linux, dma, tiling,
 				     (size_t)NBTILES, (size_t)NBTILES));
-	dst = aml_scratch_baseptr(&scratch);
+	dst = aml_scratch_baseptr(scratch);
 	/* move some stuff */
 	for(int i = 0; i < NBTILES; i++)
 	{
 		int di, si;
 		void *dp, *sp;
-		aml_scratch_pull(&scratch, dst, &di, src, i);
+		aml_scratch_pull(scratch, dst, &di, src, i);
 	
-		dp = aml_tiling_tilestart(&tiling, dst, di);
-		sp = aml_tiling_tilestart(&tiling, src, i);
+		dp = aml_tiling_tilestart(tiling, dst, di);
+		sp = aml_tiling_tilestart(tiling, src, i);
 
 		assert(!memcmp(sp, dp, TILESIZE*_SC_PAGE_SIZE));
 
 		memset(dp, 33, TILESIZE*_SC_PAGE_SIZE);
 	
-		aml_scratch_push(&scratch, src, &si, dst, di);
+		aml_scratch_push(scratch, src, &si, dst, di);
 		assert(si == i);
 
-		sp = aml_tiling_tilestart(&tiling, src, si);
+		sp = aml_tiling_tilestart(tiling, src, si);
 
 		assert(!memcmp(sp, dp, TILESIZE*_SC_PAGE_SIZE));
 	}
 
 	/* delete everything */
-	aml_scratch_seq_fini(&scratch);
-	aml_dma_linux_par_fini(&dma);
+	aml_scratch_seq_destroy(&scratch);
+	aml_dma_linux_par_destroy(&dma);
 	aml_area_munmap(&aml_area_linux, dst, TILESIZE*_SC_PAGE_SIZE*NBTILES);
 	aml_area_munmap(&aml_area_linux, src, TILESIZE*_SC_PAGE_SIZE*NBTILES);
-	aml_tiling_1d_fini(&tiling);
+	aml_tiling_1d_destroy(&tiling);
 
 	aml_finalize();
 	return 0;

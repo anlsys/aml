@@ -44,11 +44,6 @@ struct aml_vector {
 	void *ptr;
 };
 
-/** not needed, here for consistency **/
-#define AML_VECTOR_DECL(name) struct aml_vector name
-/** not needed, here for consistency **/
-#define AML_VECTOR_ALLOCSIZE (sizeof(struct aml_vector))
-
 /**
  * Provides the total number of elements in the vector, including currently
  * unused ones.
@@ -110,21 +105,6 @@ void aml_vector_remove(struct aml_vector *vector, void *elem);
  **/
 int aml_vector_create(struct aml_vector **vector, size_t num, size_t size,
 		      size_t key, int na);
-
-/**
- * Initializes a vector. Similar to create.
- *
- * @param vector: a vector declared with AML_VECTOR_DECL
- **/
-int aml_vector_init(struct aml_vector *vector, size_t num, size_t size,
-		    size_t key, int na);
-
-/**
- * Finalize a vector. Frees all inner resources.
- *
- * @param vector: a vector initialized by aml_vector_init.
- **/
-void aml_vector_fini(struct aml_vector *vector);
 
 /**
  * Finalize and free a struct aml_vector.
