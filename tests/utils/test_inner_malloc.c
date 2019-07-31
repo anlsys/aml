@@ -13,13 +13,9 @@
 
 int main(void)
 {
-	assert(AML_SIZEOF_ALIGN_GENERIC(16, size_t) % 16 == 0);
-	assert(AML_SIZEOF_ALIGN_GENERIC(16, char) % 16 == 0);
-	assert(AML_SIZEOF_ALIGN_DEFAULT(struct aml_area) %
-		       AML_DEFAULT_INNER_MALLOC_ALIGN == 0);
 	intptr_t *ptr = AML_INNER_MALLOC_2(void *, void *);
 	assert(ptr != NULL);
-	void *b = AML_INNER_MALLOC_NEXTPTR(ptr, void *);
+	void *b = AML_INNER_MALLOC_NEXTPTR(ptr, void *, void *);
 	assert(b == &ptr[1]);
 	free(ptr);
 	return 0;

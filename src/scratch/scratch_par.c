@@ -253,17 +253,13 @@ int aml_scratch_par_create(struct aml_scratch **scratch,
 
 	*scratch = NULL;
 
-	/* alloc */
-	ret = calloc(1, sizeof(struct aml_scratch));
+	ret = AML_INNER_MALLOC_2(struct aml_scratch, struct aml_scratch_par);
 	if (ret == NULL)
 		return -AML_ENOMEM;
 
 	ret->ops = &aml_scratch_par_ops;
-	ret->data = calloc(1, sizeof(struct aml_scratch_par));
-	if (ret->data == NULL) {
-		free(ret);
-		return -AML_ENOMEM;
-	}
+	ret->data = AML_INNER_MALLOC_NEXTPTR(ret, struct aml_scratch,
+					     struct aml_scratch_par);
 	s = (struct aml_scratch_par *)ret->data;
 	s->ops = aml_scratch_par_inner_ops;
 
@@ -300,8 +296,10 @@ void aml_scratch_par_destroy(struct aml_scratch **scratch)
 	if (scratch == NULL)
 		return;
 	s = *scratch;
-	if (s == NULL || s->data == NULL)
+	if (s == NULL)
 		return;
+
+	assert(s->data != NULL);
 	inner = (struct aml_scratch_par *)s->data;
 	aml_vector_destroy(&inner->data.requests);
 	aml_vector_destroy(&inner->data.tilemap);
@@ -309,7 +307,6 @@ void aml_scratch_par_destroy(struct aml_scratch **scratch)
 			inner->data.sch_ptr,
 			inner->data.scratch_size);
 	pthread_mutex_destroy(&inner->data.lock);
-	free(inner);
 	free(s);
 	*scratch = NULL;
 }
