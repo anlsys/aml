@@ -792,6 +792,7 @@ WARN_LOGFILE           =
 
 INPUT                  = ../include \
                          ../include/aml/area \
+                         ../include/aml/layout \			 
 			 ../include/aml/tiling \
 			 ../include/aml/dma \
 			 ../include/aml/scratch \

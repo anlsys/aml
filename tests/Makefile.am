@@ -16,6 +16,8 @@ AREA_TESTS = \
 	area/test_area \
 	area/test_linux
 
+LAYOUT_TESTS = layout/test_layout
+
 TILING_TESTS = tiling/test_tiling \
 	       tiling/test_tiling_2d
 
@@ -28,6 +30,7 @@ SCRATCH_TESTS = scratch/test_scratch_seq \
 # unit tests
 UNIT_TESTS = $(UTILS_TESTS) \
 	     $(TILING_TESTS) \
+	     $(LAYOUT_TESTS) \
 	     $(BINDING_TESTS) \
 	     $(AREA_TESTS) \
 	     $(DMA_LINUX_TESTS) \

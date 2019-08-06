@@ -28,7 +28,7 @@ make:generic:
     - /^wip.*/
     - /^WIP.*/
   variables:
-    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter"
+    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-pointer-arith -Wno-unused-but-set-parameter"
   script:
     - ./autogen.sh
     - mkdir build
@@ -48,7 +48,7 @@ make:out-of-tree:
     - /^wip.*/
     - /^WIP.*/
   variables:
-    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter"
+    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-pointer-arith -Wno-unused-but-set-parameter"
   script:
     - ./autogen.sh
     - mkdir out
