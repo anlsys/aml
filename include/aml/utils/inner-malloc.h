@@ -45,6 +45,14 @@
  **/
 #define AML_INNER_MALLOC_2(a, b) calloc(1, AML_SIZEOF_ALIGNED(a, b))
 
+/** Allocate a pointer that can be used to contain two types plus an extra area
+ * aligned on a third type.
+ *
+ **/
+#define AML_INNER_MALLOC_EXTRA(a, b, c, sz) \
+	calloc(1, AML_SIZEOF_ALIGNED(struct { a  __f1; b __f2; }, c) + \
+	       (sizeof(c)*sz))
+
 /** Returns the next pointer after an AML_INNER_MALLOC.
  *
  * Can be used to iterate over the pointers we need, using the last two types as
@@ -52,6 +60,15 @@
  **/
 #define AML_INNER_MALLOC_NEXTPTR(ptr, a, b) \
 	(void *)(((intptr_t) ptr) + AML_OFFSETOF_ALIGNED(a, b))
+
+/** Returns a pointer inside the extra zone after an AML_INNER_MALLOC_EXTRA.
+ *
+ * Can be used to iterate over the pointers we need.
+ **/
+#define AML_INNER_MALLOC_EXTRA_NEXTPTR(ptr, a, b, c, off) \
+	(void *)(((intptr_t) ptr) + \
+		 AML_OFFSETOF_ALIGNED(struct { a  __f1; b __f2; }, c) + \
+		 ((off)*sizeof(c)))
 
 /**
  * @}
