@@ -6,7 +6,7 @@
  * For more info, see https://xgitlab.cels.anl.gov/argo/aml
  *
  * SPDX-License-Identifier: BSD-3-Clause
-*******************************************************************************/
+ ******************************************************************************/
 
 /**
  * \file aml.h
@@ -393,7 +393,7 @@ int aml_tiling_create_iterator(struct aml_tiling *tiling,
  * @return 0 if successful; an error code otherwise.
  **/
 void aml_tiling_destroy_iterator(struct aml_tiling *tiling,
-				struct aml_tiling_iterator **iterator);
+				 struct aml_tiling_iterator **iterator);
 
 
 /**
@@ -474,17 +474,17 @@ struct aml_dma_request;
 struct aml_dma_data;
 
 /**
- aml_dma_ops is a structure containing operations for a specific
- * aml_dma implementation.
- * These operation are operation are detailed in the structure.
- * They are specific in:
- * - the type of aml_area source and destination,
- * - the progress engine performing the operation,
- * - the type of of source and destination data structures.
- *
- * Each different combination of these three points may require a different
- * set of dma operations.
- **/
+   aml_dma_ops is a structure containing operations for a specific
+   * aml_dma implementation.
+   * These operation are operation are detailed in the structure.
+   * They are specific in:
+   * - the type of aml_area source and destination,
+   * - the progress engine performing the operation,
+   * - the type of of source and destination data structures.
+   *
+   * Each different combination of these three points may require a different
+   * set of dma operations.
+   **/
 struct aml_dma_ops {
 	/**
 	 * Initiate a data movement, from a source pointer to a destination
@@ -582,6 +582,365 @@ int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request *req);
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request *req);
+
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @}
+ * @defgroup aml_layout "AML Layout"
+ * @brief Low level description of data orrganization at the byte granularity.
+ *
+ * Layout describes how contiguous element of a flat memory address space are
+ * organized into a multidimensional array of elements of a fixed size.
+ * The abstraction provide functions to build layouts, access elements,
+ * reshape a layout, or subset a layout.
+ *
+ * Layouts are characterized by:
+ * * A pointer to the data it describes
+ * * A set of dimensions on which data spans.
+ * * A stride in between elements of a dimension.
+ * * A pitch indicating the space between contiguous elements of a dimension.
+ *
+ * The figure below describes a 2D layout with a sub-layout
+ * (obtained with aml_layout_slice()) operation. The sub-layout has a stride
+ * of 1 element along the second dimension. The slice has an offset of 1 element
+ * along the same dimension, and its pitch is the pitch of the original
+ * layout. Calling aml_layout_deref() on this sublayout with appropriate
+ * coordinates will return a pointer to elements noted (coor_x, coord_y).
+ * @see aml_layout_slice()
+ *
+ * @image html layout.png "2D layout with a 2D slice." width=400cm
+ *
+ * Access to specific elements of a layout can be done with
+ * the aml_layout_deref() function. Access to an element is always done
+ * relatively to the dimensions order set by at creation time.
+ * However, internally, the library will store dimensions from the last
+ * dimension to the first dimension such that elements along the first dimension
+ * are contiguous in memory. This order is defined called with the value
+ * AML_LAYOUT_ORDER_FORTRAN. Therefore, AML provides access to elements
+ * without the overhead of user order choice through function suffixed
+ * with "native".
+ * @see aml_layout_deref()
+ * @see aml_layout_deref_native()
+ * @see aml_layout_dims_native()
+ * @see aml_layout_slice_native()
+ *
+ * The layout abstraction also provides a function to reshape data
+ * with a different set of dimensions. A reshaped layout will access
+ * the same data but with different coordinates as pictured in the
+ * figure below.
+ * @see aml_layout_reshape()
+ *
+ * @image html reshape.png "2D layout turned into a 3D layout." width=700cm
+ *
+ * @see aml_layout_dense
+ * @see aml_layout_pad
+ * @{
+ **/
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct aml_layout_ops;
+struct aml_layout_data;
+
+/** Structure definition of AML layouts **/
+struct aml_layout {
+	/** Layout functions implementation **/
+	struct aml_layout_ops *ops;
+	/** Implementation specific data of a layout**/
+	struct aml_layout_data *data;
+};
+
+/** List of operators implemented by layouts. **/
+struct aml_layout_ops {
+	/**
+	 * Layout must provide a way to access a specific element
+	 * according to the provided dimensions.
+	 * Coordinates bounds checking is done in the generic API.
+	 * Coordinates provided by the user will match the order
+	 * Of the dimensions provided by the user in the constructor.
+	 * However, dimensions are always stored internally in the
+	 * AML_LAYOUT_ORDER_FORTRAN order.
+	 * @param data[in]: The non-NULL handle to layout internal data.
+	 * @param coords[in]: The non-NULL coordinates on which to access data.
+	 * Coordinates are checked to be valid in aml_layout_deref().
+	 * @return A pointer to the dereferenced element on success.
+	 * @return NULL on failure with aml_errno set to the error reason.
+	 **/
+	void *(*deref)(const struct aml_layout_data *data,
+		       const size_t *coords);
+
+	/**
+	 * Function for derefencing elements of a layout inside the library.
+	 * Layout assumes data is always stored in AML_LAYOUT_ORDER_FORTRAN
+	 * order. Coordinates provided by the library will match the same
+	 * order, i.e last dimension first.
+	 * @param data[in]: The non-NULL handle to layout internal data.
+	 * @param coords[in]: The non-NULL coordinates on which to access data.
+	 * The first coordinate should be the last dimensions and so on to the
+	 * last, coordinate, last dimension.
+	 * @return A pointer to the dereferenced element on success.
+	 * @return NULL on failure with aml_errno set to the error reason.
+	 **/
+	void *(*deref_native)(const struct aml_layout_data *data,
+			      const size_t *coords);
+
+	/**
+	 * Get the order in which dimensions of the layout are
+	 * supposed to be accessed by the user.
+	 * @param data[in]: The non-NULL handle to layout internal data.
+	 * @return Order value. It is a bitmask with order bit set (or not set).
+	 * Output value can be further checked against order AML_LAYOUT_ORDER
+	 * flags by using the macro AML_LAYOUT_ORDER() on output value.
+	 * @see AML_LAYOUT_ORDER()
+	 **/
+	int (*order)(const struct aml_layout_data *data);
+
+	/**
+	 * Return the layout dimensions in the user order.
+	 * @param data[in]: The non-NULL handle to layout internal data.
+	 * @param dims[out]: The non-NULL array of dimensions to fill. It is
+	 * supposed to be large enough to contain ndims() elements.
+	 * @return AML_SUCCESS on success, else an AML error code.
+	 **/
+	int (*dims)(const struct aml_layout_data *data, size_t *dims);
+
+	/**
+	 * Return the layout dimensions in the order they are actually stored
+	 * in the library.
+	 * @param data[in]: The non-NULL handle to layout internal data.
+	 * @param dims[out]: The non-NULL array of dimensions to fill. It is
+	 * supposed to be large enough to contain ndims() elements.
+	 * @return AML_SUCCESS on success, else an AML error code.
+	 **/
+	int (*dims_native)(const struct aml_layout_data *data,
+			   size_t *dims);
+
+	/**
+	 * Return the number of dimensions in a layout.
+	 * @param data[in]: The non-NULL handle to layout internal data.
+	 * @return The number of dimensions in the layout.
+	 **/
+	size_t (*ndims)(const struct aml_layout_data *data);
+
+	/**
+	 * Return the size of layout elements.
+	 * @param data[in]: The non-NULL handle to layout internal data.
+	 * @return The size of elements stored with this layout.
+	 **/
+	size_t (*element_size)(const struct aml_layout_data *data);
+
+	/**
+	 * Reshape the layout with different dimensions.
+	 * Layout dimensions are checked in aml_layout_reshape() to store
+	 * the exact same number of elements.
+	 * @param data[in]: The non-NULL handle to layout internal data.
+	 * @param output[out]: A non NULL pointer to a layout where to allocate
+	 * a new layout resulting from the reshape operation.
+	 * @param ndims[in]: The number of dimensions of the new layout.
+	 * @param dims[in]: The number of elements along each dimension of
+	 * the new layout.
+	 * @return AML_SUCCESS on success, else an AML error code (<0).
+	 **/
+	int (*reshape)(const struct aml_layout_data *data,
+		       struct aml_layout **output,
+		       const size_t ndims,
+		       const size_t *dims);
+
+	/**
+	 * Return a layout that is a subset of another layout.
+	 * Slice arguments compatibility with the original layout are
+	 * checked in aml_layout_slice().
+	 * @param data[in]: The non-NULL handle to layout internal data.
+	 * @param output[out]: A non NULL pointer to a layout where to allocate
+	 * a new layout resulting from the slice operation.
+	 * @param dims[in]: The number of elements of the slice along each
+	 * dimension .
+	 * @param offsets[in]: The index of the first element of the slice
+	 * in each dimension.
+	 * @param strides[in]: The displacement (in number of elements) between
+	 * elements of the slice.
+	 * @return A newly allocated layout with the queried subset of the
+	 * original layout on succes.
+	 * @return NULL on error with aml_errno set to the failure reason.
+	 **/
+	int (*slice)(const struct aml_layout_data *data,
+		     struct aml_layout **output,
+		     const size_t *dims,
+		     const size_t *offsets,
+		     const size_t *strides);
+
+	/**
+	 * Return a layout that is a subset of another layout, assuming
+	 * dimensions are stored with AML_LAYOUT_ORDER_FORTRAN.
+	 * Slice arguments compatibility with the original layout are
+	 * checked in aml_layout_slice().
+	 * @param data[in]: The non-NULL handle to layout internal data.
+	 * @param output[out]: A non NULL pointer to a layout where to allocate
+	 * a new layout resulting from the slice operation.
+	 * @param dims[in]: The number of elements of the slice along each
+	 * dimension .
+	 * @param offsets[in]: The index of the first element of the slice
+	 * in each dimension.
+	 * @param strides[in]: The displacement (in number of elements) between
+	 * elements of the slice.
+	 * @return A newly allocated layout with the queried subset of the
+	 * original layout on succes.
+	 * @return NULL on error with aml_errno set to the failure reason.
+	 **/
+	int (*slice_native)(const struct aml_layout_data *data,
+			    struct aml_layout **output,
+			    const size_t *dims,
+			    const size_t *offsets,
+			    const size_t *strides);
+};
+
+/**
+ * Tag specifying user storage of dimensions inside a layout.
+ * Layout order is the first bit in an integer bitmask.
+ * @see AML_LAYOUT_ORDER()
+ * This tag will store dimensions in the order provided by the user,
+ * i.e elements of the last dimension will be contiguous in memory.
+ **/
+#define AML_LAYOUT_ORDER_C (0<<0)
+
+/**
+ * Tag specifying user storage of dimensions inside a layout.
+ * Layout order is the first bit in an integer bitmask.
+ * @see AML_LAYOUT_ORDER()
+ * This tag will store dimensions in the reversed order provided
+ * by the user, i.e elements of the first dimension will be contiguous
+ * in memory. This storage is the actual storage used by the library
+ * inside the structure.
+ **/
+#define AML_LAYOUT_ORDER_FORTRAN (1<<0)
+
+/**
+ * This is equivalent to AML_LAYOUT_ORDER_C.
+ * @see AML_LAYOUT_ORDER_C
+ **/
+#define AML_LAYOUT_ORDER_COLUMN_MAJOR (0<<0)
+
+/**
+ * This is equivalent to AML_LAYOUT_ORDER_FORTRAN.
+ * @see AML_LAYOUT_ORDER_FORTRAN
+ **/
+#define AML_LAYOUT_ORDER_ROW_MAJOR (1<<0)
+
+/**
+ * Get the order bit of an integer bitmask.
+ * The value can be further checked for equality
+ * with AML_LAYOUT_ORDER_* values.
+ * @param x: An integer with the first bit set
+ * to the order value.
+ * @return An integer containing only the bit order.
+ **/
+#define AML_LAYOUT_ORDER(x) ((x) & (1<<0))
+
+/**
+ * Dereference an element of a layout by its coordinates.
+ * @param layout[in]: An initialized layout.
+ * @param coords[in]: The coordinates on which to access data.
+ * @return A pointer to the dereferenced element on success.
+ * @return NULL on failure with aml_errno set to the error reason:
+ * * AML_EINVAL if coordinate are out of bound
+ * * See specific implementation of layout for further information
+ * on possible error codes.
+ **/
+void *aml_layout_deref(const struct aml_layout *layout,
+		       const size_t *coords);
+
+/**
+ * Equivalent to aml_layout_deref() but with bound checking
+ * on coordinates.
+ * @see aml_layout_deref()
+ **/
+void *aml_layout_deref_safe(const struct aml_layout *layout,
+			    const size_t *coords);
+
+/**
+ * Get the order in which dimensions of the layout are supposed to be
+ * accessed by the user.
+ * @param layout[in]: An initialized layout.
+ * @return The order (>0) on success, an AML error (<0) on failure.
+ * @return On success, a bitmask with order bit set (or not set).
+ * Output value can be further checked against order AML_LAYOUT_ORDER
+ * flags by using the macro AML_LAYOUT_ORDER() on output value.
+ * @see AML_LAYOUT_ORDER()
+ **/
+int aml_layout_order(const struct aml_layout *layout);
+
+/**
+ * Return the layout dimensions in the user order.
+ * @param layout[in]: An initialized layout.
+ * @param dims[out]: The non-NULL array of dimensions to fill. It is
+ * supposed to be large enough to contain ndims() elements.
+ * @return AML_SUCCESS on success, else an AML error code.
+ **/
+int aml_layout_dims(const struct aml_layout *layout, size_t *dims);
+
+/**
+ * Return the number of dimensions in a layout.
+ * @param layout[in]: An initialized layout.
+ * @return The number of dimensions in the layout.
+ **/
+size_t aml_layout_ndims(const struct aml_layout *layout);
+
+/**
+ * @brief Return the size of layout elements.
+ * @param layout[in]: An initialized layout.
+ * @return The size of elements stored with this layout.
+ **/
+size_t aml_layout_element_size(const struct aml_layout *layout);
+
+/**
+ * @brief Reshape the layout with different dimensions.
+ * This function checks that the number of elements of
+ * the reshaped layout matches the number of elements
+ * in the original layout. Additional constraint may apply
+ * depending on the layout implementation.
+ * @param layout[in]: An initialized layout.
+ * @param reshaped_layout[out]: A newly allocated layout
+ * with the queried shape on succes.
+ * @param ndims[in]: The number of dimensions of the new layout.
+ * @param dims[in]: The number of elements along each dimension of
+ * the new layout.
+ * @return AML_SUCCESS on success.
+ * @return AML_EINVAL if reshape dimensions are not compatible
+ * with original layout dimensions.
+ * @return AML_ENOMEM if AML failed to allocate the new structure.
+ * @return Another aml_error code. Refer to the layout
+ * implementation of reshape function.
+ **/
+int aml_layout_reshape(const struct aml_layout *layout,
+		       struct aml_layout **reshaped_layout,
+		       const size_t ndims,
+		       const size_t *dims);
+
+/**
+ * Return a layout that is a subset of another layout.
+ * The number of elements to subset along each dimension
+ * must be compatible with offsets and strides.
+ * This function checks that the amount of elements along
+ * each dimensions of the slice actually fits in the original
+ * layout.
+ * @param layout[in]: An initialized layout.
+ * @param reshaped_layout[out]: a pointer where to store a
+ * newly allocated layout with the queried subset of the
+ * original layout on succes.
+ * @param dims[in]: The number of elements of the slice along each
+ * dimension .
+ * @param offsets[in]: The index of the first element of the slice
+ * in each dimension. If NULL, offset is set to 0.
+ * @param strides[in]: The displacement (in number of elements) between
+ * elements of the slice. If NULL, stride is set to 1.
+ * @return AML_SUCCESS on success, else an AML error code (<0).
+ **/
+int aml_layout_slice(const struct aml_layout *layout,
+		     struct aml_layout **reshaped_layout,
+		     const size_t *dims,
+		     const size_t *offsets,
+		     const size_t *strides);
 
 ////////////////////////////////////////////////////////////////////////////////
 

@@ -6,6 +6,11 @@ AREA_SOURCES = \
 	       area/area.c \
 	       area/linux.c
 
+LAYOUT_SOURCES = \
+	       layout/layout.c \
+	       layout/dense.c \
+	       layout/reshape.c
+
 DMA_SOURCES = \
 	      dma/dma.c \
 	      dma/dma_linux_par.c \
@@ -31,6 +36,7 @@ LIB_SOURCES = \
 	      $(DMA_SOURCES) \
 	      $(SCRATCH_SOURCES) \
 	      $(TILING_SOURCES) \
+	      $(LAYOUT_SOURCES) \
 	      $(UTILS_SOURCES) \
 	      aml.c
 

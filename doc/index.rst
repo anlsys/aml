@@ -34,7 +34,8 @@ As of now, AML implements the following abstractions:
    :align: right
 
 * :doc:`Areas <pages/areas>`, a set of addressable physical memories,
-* :doc:`Tilings <pages/tilings>`, a description of tiling data structures,
+* :doc:`Layout <pages/layout>`, a description of data structures organization,
+* :doc:`Tilings <pages/tilings>`, (soon to be replaced),
 * :doc:`DMAs <pages/dmas>`, an engine to asynchronously move data structures between areas,
 * :doc:`Scratchpads <pages/scratchs>`, a stage-in, stage-out abstraction for prefetching.
 
@@ -132,5 +133,6 @@ for more info.
 
    pages/areas
    pages/tilings
+   pages/layout
    pages/dmas
    pages/scratchs

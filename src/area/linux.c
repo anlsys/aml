@@ -106,10 +106,10 @@ void *aml_area_linux_mmap(const struct aml_area_data  *area_data,
 	return out;
 }
 
-int aml_area_linux_munmap(
-		__attribute__ ((unused)) const struct aml_area_data *area_data,
+int aml_area_linux_munmap(const struct aml_area_data *area_data,
 		void *ptr, const size_t size)
 {
+	(void)area_data;
 	int err = munmap(ptr, size);
 
 	if (err == -1)
