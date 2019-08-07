@@ -35,6 +35,7 @@
 
 #include "aml/utils/bitmap.h"
 #include "aml/utils/error.h"
+#include "aml/utils/inner-malloc.h"
 #include "aml/utils/vector.h"
 #include "aml/utils/version.h"
 

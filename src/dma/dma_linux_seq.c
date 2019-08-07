@@ -164,16 +164,12 @@ int aml_dma_linux_seq_create(struct aml_dma **dma, size_t nbreqs)
 
 	*dma = NULL;
 
-	/* alloc */
-	ret = calloc(1, sizeof(struct aml_dma));
+	ret = AML_INNER_MALLOC_2(struct aml_dma, struct aml_dma_linux_seq);
 	if (ret == NULL)
 		return -AML_ENOMEM;
 
-	ret->data = calloc(1, sizeof(struct aml_dma_linux_seq));
-	if (ret->data == NULL) {
-		free(ret);
-		return -AML_ENOMEM;
-	}
+	ret->data = AML_INNER_MALLOC_NEXTPTR(ret, struct aml_dma,
+					     struct aml_dma_linux_seq);
 	ret->ops = &aml_dma_linux_seq_ops;
 	d = (struct aml_dma_linux_seq *)ret->data;
 
@@ -196,12 +192,13 @@ void aml_dma_linux_seq_destroy(struct aml_dma **dma)
 	if (dma == NULL)
 		return;
 	d = *dma;
-	if (d == NULL || d->data == NULL)
+	if (d == NULL)
 		return;
+
+	assert(d->data != NULL);
 	l = (struct aml_dma_linux_seq *)d->data;
 	aml_vector_destroy(&l->data.requests);
 	pthread_mutex_destroy(&l->data.lock);
-	free(l);
 	free(d);
 	*dma = NULL;
 }

@@ -197,16 +197,13 @@ int aml_area_linux_create(struct aml_area **area, const int mmap_flags,
 		return -AML_EINVAL;
 	}
 
-	ret = calloc(1, sizeof(struct aml_area));
+	ret = AML_INNER_MALLOC_2(struct aml_area, struct aml_area_linux_data);
 	if (ret == NULL)
 		return -AML_ENOMEM;
 
+	ret->data = AML_INNER_MALLOC_NEXTPTR(ret, struct aml_area,
+					     struct aml_area_linux_data);
 	ret->ops = &aml_area_linux_ops;
-	ret->data = calloc(1, sizeof(struct aml_area_linux_data));
-	if (ret->data == NULL) {
-		err = -AML_ENOMEM;
-		goto err_f_ret;
-	}
 	data = (struct aml_area_linux_data *)ret->data;
 
 	/* set area_data and area */
@@ -217,7 +214,7 @@ int aml_area_linux_create(struct aml_area **area, const int mmap_flags,
 	data->nodeset = numa_get_mems_allowed();
 	if (data->nodeset == NULL) {
 		err = -AML_ENOMEM;
-		goto err_f_data;
+		goto err_f_ret;
 	}
 
 	/* check if the nodemask is compatible with the nodeset */
@@ -240,8 +237,6 @@ int aml_area_linux_create(struct aml_area **area, const int mmap_flags,
 	return AML_SUCCESS;
 err_f_node:
 	numa_free_nodemask(data->nodeset);
-err_f_data:
-	free(ret->data);
 err_f_ret:
 	free(ret);
 	return err;
@@ -255,12 +250,13 @@ void aml_area_linux_destroy(struct aml_area **area)
 	if (area == NULL)
 		return;
 	a = *area;
-	if (a == NULL || a->data == NULL)
+	if (a == NULL)
 		return;
 
+	/* with our creators it should not happen */
+	assert(a->data != NULL);
 	data = (struct aml_area_linux_data *) a->data;
 	numa_free_nodemask(data->nodeset);
-	free(data);
 	free(a);
 	*area = NULL;
 }

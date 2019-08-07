@@ -14,35 +14,43 @@
 #include "aml/layout/dense.h"
 #include "aml/layout/reshape.h"
 
-static struct aml_layout *aml_layout_reshape_alloc(const size_t ndims,
-						   const size_t target_ndims)
+static int aml_layout_reshape_alloc(struct aml_layout **ret,
+				    const size_t ndims,
+				    const size_t target_ndims)
 {
-	struct aml_layout *l;
-	struct aml_layout_data_reshape *r;
-	char *c;
+	struct aml_layout *layout;
+	struct aml_layout_data_reshape *data;
 
-	l = malloc(sizeof(struct aml_layout) +
-		   sizeof(struct aml_layout_data_reshape) +
-		   2 * ndims * sizeof(size_t) +
-		   target_ndims * sizeof(size_t));
-	if (l == NULL)
-		return NULL;
+	layout = AML_INNER_MALLOC_EXTRA(struct aml_layout,
+					struct aml_layout_data_reshape,
+					size_t, (2*ndims)+target_ndims);
+	if (layout == NULL) {
+		*ret = NULL;
+		return -AML_ENOMEM;
+	}
 
-	c = (char *)l;
-	c += sizeof(*l);
-	r = (struct aml_layout_data_reshape *)c;
-	c += sizeof(*r);
-	r->dims = (size_t *)c;
-	c += ndims * sizeof(*r->dims);
-	r->coffsets = (size_t *)c;
-	c += ndims * sizeof(*r->coffsets);
-	r->target_dims = (size_t *)c;
+	data = AML_INNER_MALLOC_NEXTPTR(layout,
+					struct aml_layout,
+					struct aml_layout_data_reshape);
+	layout->data = (struct aml_layout_data *)data;
+	data->dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
+					    struct aml_layout,
+					    struct aml_layout_data_reshape,
+					    size_t, 0);
+	data->coffsets = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
+					    struct aml_layout,
+					    struct aml_layout_data_reshape,
+					    size_t, ndims);
+	data->target_dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
+					    struct aml_layout,
+					    struct aml_layout_data_reshape,
+					    size_t, 2*ndims);
 
-	r->target = NULL;
-	r->target_ndims = target_ndims;
-	r->ndims = ndims;
-	l->data = (struct aml_layout_data *) r;
-	return l;
+	data->target = NULL;
+	data->target_ndims = target_ndims;
+	data->ndims = ndims;
+	*ret = layout;
+	return AML_SUCCESS;
 }
 
 int aml_layout_reshape_create(struct aml_layout **layout,
@@ -56,14 +64,15 @@ int aml_layout_reshape_create(struct aml_layout **layout,
 	size_t target_ndims;
 	size_t prod;
 	size_t target_prod;
+	int err;
 
 	if (layout == NULL || target == NULL || ndims == 0)
 		return -AML_EINVAL;
 
 	target_ndims = aml_layout_ndims(target);
-	output = aml_layout_reshape_alloc(ndims, target_ndims);
-	if (output == NULL)
-		return -AML_ENOMEM;
+	err = aml_layout_reshape_alloc(&output, ndims, target_ndims);
+	if (err)
+		return err;
 
 	data = (struct aml_layout_data_reshape *)output->data;
 	data->target = target;

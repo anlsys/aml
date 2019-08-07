@@ -12,41 +12,47 @@
 #include "aml/layout/native.h"
 #include "aml/layout/dense.h"
 
-static struct aml_layout *aml_layout_dense_alloc(const size_t ndims)
+static int aml_layout_dense_alloc(struct aml_layout **ret,
+				  const size_t ndims)
 {
-	struct aml_layout_dense *data;
 	struct aml_layout *layout;
-	char *l;
+	struct aml_layout_dense *data;
 
-	layout = malloc((sizeof(struct aml_layout) +
-			 sizeof(struct aml_layout_dense) +
-			 (ndims * 4) * sizeof(size_t)));
-
+	layout = AML_INNER_MALLOC_EXTRA(struct aml_layout,
+					struct aml_layout_dense,
+					size_t, 4*ndims);
 	if (layout == NULL) {
-		perror("malloc");
-		return NULL;
+		*ret = NULL;
+		return -AML_ENOMEM;
 	}
 
-	l = (char *) layout;
-	l += sizeof(*layout);
-	data = (struct aml_layout_dense *) l;
-	l += sizeof(*data);
-	data->dims   = (size_t *) l;
-
-	l += sizeof(*data->dims) * ndims;
-	data->stride = (size_t *) l;
+	data = AML_INNER_MALLOC_NEXTPTR(layout,
+					struct aml_layout,
+					struct aml_layout_dense);
+	layout->data = (struct aml_layout_data *) data;
+	data->dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
+						    struct aml_layout,
+						    struct aml_layout_dense,
+						    size_t, 0);
+	data->stride = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
+						      struct aml_layout,
+						      struct aml_layout_dense,
+						      size_t, ndims);
 	for (size_t i = 0; i < ndims; i++)
 		data->stride[i] = 1;
 
-	l += sizeof(*data->stride) * ndims;
-	data->pitch  = (size_t *) l;
-	l += sizeof(*data->pitch)  * ndims;
-	data->cpitch = (size_t *) l;
-
+	data->pitch = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
+						      struct aml_layout,
+						      struct aml_layout_dense,
+						      size_t, ndims*2);
+	data->cpitch = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
+						      struct aml_layout,
+						      struct aml_layout_dense,
+						      size_t, ndims*3);
 	data->ptr = NULL;
 	data->ndims = ndims;
-	layout->data = (struct aml_layout_data *) data;
-	return layout;
+	*ret = layout;
+	return AML_SUCCESS;
 }
 
 static
@@ -79,16 +85,16 @@ int aml_layout_dense_create(struct aml_layout **layout,
 
 	struct aml_layout *l;
 	struct aml_layout_dense *data;
+	int err;
 
 	if (layout == NULL)
 		return -AML_EINVAL;
 
-	l = aml_layout_dense_alloc(ndims);
-	if (l == NULL)
-		return -AML_ENOMEM;
+	err = aml_layout_dense_alloc(&l, ndims);
+	if (err)
+		return err;
 
 	data = (struct aml_layout_dense *)l->data;
-
 	data->ptr = ptr;
 	data->cpitch[0] = element_size;
 
@@ -305,9 +311,9 @@ int aml_layout_column_reshape(const struct aml_layout_data *data,
 
 	d = (const struct aml_layout_dense *)data;
 
-	layout = aml_layout_dense_alloc(ndims);
-	if (layout == NULL)
-		return -AML_ENOMEM;
+	err = aml_layout_dense_alloc(&layout, ndims);
+	if (err)
+		return err;
 
 	err = reshape_dims(d, ndims, dims, stride, cpitch);
 	if (err != AML_SUCCESS) {
@@ -336,13 +342,14 @@ int aml_layout_column_slice(const struct aml_layout_data *data,
 	struct aml_layout *layout;
 	const struct aml_layout_dense *d;
 	void *ptr;
+	int err;
 
 	d = (const struct aml_layout_dense *)data;
 	ptr = aml_layout_column_deref(data, offsets);
 
-	layout = aml_layout_dense_alloc(d->ndims);
-	if (layout == NULL)
-		return -AML_ENOMEM;
+	err = aml_layout_dense_alloc(&layout, d->ndims);
+	if (err)
+		return err;
 
 	size_t cpitch[d->ndims + 1];
 	size_t new_strides[d->ndims];
@@ -432,9 +439,9 @@ int aml_layout_row_reshape(const struct aml_layout_data *data,
 	int err;
 
 	d = (const struct aml_layout_dense *)data;
-	layout = aml_layout_dense_alloc(ndims);
-	if (layout == NULL)
-		return -AML_ENOMEM;
+	err = aml_layout_dense_alloc(&layout, ndims);
+	if (err)
+		return err;
 
 	for (size_t i = 0; i < ndims; i++)
 		n_dims[ndims - i - 1] = dims[i];
@@ -466,6 +473,7 @@ int aml_layout_row_slice(const struct aml_layout_data *data,
 	struct aml_layout *layout;
 	const struct aml_layout_dense *d;
 	void *ptr;
+	int err;
 
 	d = (const struct aml_layout_dense *)data;
 
@@ -474,9 +482,9 @@ int aml_layout_row_slice(const struct aml_layout_data *data,
 	size_t n_dims[d->ndims];
 	size_t n_strides[d->ndims];
 
-	layout = aml_layout_dense_alloc(d->ndims);
-	if (layout == NULL)
-		return -AML_ENOMEM;
+	err = aml_layout_dense_alloc(&layout, d->ndims);
+	if (err)
+		return err;
 
 	for (size_t i = 0; i < d->ndims; i++) {
 		n_offsets[i] = offsets[d->ndims - i - 1];
@@ -513,15 +521,16 @@ int aml_layout_row_slice_native(const struct aml_layout_data *data,
 	struct aml_layout *layout;
 	const struct aml_layout_dense *d;
 	void *ptr;
+	int err;
 
 	d = (const struct aml_layout_dense *)data;
 
 	size_t cpitch[d->ndims + 1];
 	size_t new_strides[d->ndims];
 
-	layout = aml_layout_dense_alloc(d->ndims);
-	if (layout == NULL)
-		return -AML_ENOMEM;
+	err = aml_layout_dense_alloc(&layout, d->ndims);
+	if (err)
+		return err;
 
 	cpitch[d->ndims] = d->cpitch[d->ndims];
 	for (size_t i = 0; i < d->ndims; i++) {

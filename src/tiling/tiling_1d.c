@@ -128,16 +128,14 @@ int aml_tiling_1d_create_iterator(struct aml_tiling_data *tiling,
 
 	*it = NULL;
 
-	ret = calloc(1, sizeof(struct aml_tiling_iterator));
+	ret = AML_INNER_MALLOC_2(struct aml_tiling_iterator,
+				 struct aml_tiling_iterator_1d_data);
 	if (ret == NULL)
 		return -AML_ENOMEM;
 
 	ret->ops = &aml_tiling_iterator_1d_ops;
-	ret->data = calloc(1, sizeof(struct aml_tiling_iterator_1d_data));
-	if (ret->data == NULL) {
-		free(ret);
-		return -AML_ENOMEM;
-	}
+	ret->data = AML_INNER_MALLOC_NEXTPTR(ret, struct aml_tiling_iterator,
+					struct aml_tiling_iterator_1d_data);
 	data = (struct aml_tiling_iterator_1d_data *)ret->data;
 	data->i = 0;
 	data->tiling = (struct aml_tiling_1d_data *)tiling;
@@ -154,9 +152,8 @@ int aml_tiling_1d_destroy_iterator(struct aml_tiling_data *t,
 	if (iter == NULL)
 		return -AML_EINVAL;
 	it = *iter;
-	if (it == NULL || it->data == NULL)
+	if (it == NULL)
 		return -AML_EINVAL;
-	free(it->data);
 	free(it);
 	*iter = NULL;
 	return AML_SUCCESS;
@@ -186,17 +183,13 @@ int aml_tiling_1d_create(struct aml_tiling **tiling,
 
 	*tiling = NULL;
 
-	/* alloc */
-	ret = calloc(1, sizeof(struct aml_tiling));
+	ret = AML_INNER_MALLOC_2(struct aml_tiling, struct aml_tiling_1d_data);
 	if (ret == NULL)
 		return -AML_ENOMEM;
 
 	ret->ops = &aml_tiling_1d_ops;
-	ret->data = calloc(1, sizeof(struct aml_tiling_1d_data));
-	if (ret->data == NULL) {
-		free(ret);
-		return -AML_ENOMEM;
-	}
+	ret->data = AML_INNER_MALLOC_NEXTPTR(ret, struct aml_tiling,
+					     struct aml_tiling_1d_data);
 	t = (struct aml_tiling_1d_data *) ret->data;
 
 	t->blocksize = tilesize;
@@ -213,9 +206,8 @@ void aml_tiling_1d_destroy(struct aml_tiling **tiling)
 	if (tiling == NULL)
 		return;
 	t = *tiling;
-	if (t == NULL || t->data == NULL)
+	if (t == NULL)
 		return;
-	free(t->data);
 	free(t);
 	*tiling = NULL;
 }
