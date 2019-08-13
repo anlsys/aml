@@ -35,11 +35,9 @@ struct aml_dma_request_linux_seq {
 	 **/
 	int type;
 	/** The destination pointer of the data movement **/
-	void *dest;
+	struct aml_layout *dest;
 	/** The source pointer of the data movement **/
-	void *src;
-	/** The size of data to move **/
-	size_t size;
+	struct aml_layout *src;
 };
 
 /** Inner data of sequential linux aml_dma implementation **/

@@ -10,6 +10,7 @@
 
 #include "aml.h"
 #include "aml/dma/linux-par.h"
+#include "aml/layout/dense.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -29,25 +30,24 @@
  ******************************************************************************/
 
 int aml_dma_request_linux_par_copy_init(struct aml_dma_request_linux_par *req,
-					struct aml_tiling *dt,
-					void *dptr, int dtid,
-					struct aml_tiling *st,
-					void *sptr, int stid)
+					int type,
+					struct aml_layout *dest,
+					struct aml_layout *src)
 {
 	assert(req != NULL);
-
-	req->type = AML_DMA_REQUEST_TYPE_COPY;
-	/* figure out pointers */
-	req->dest = aml_tiling_tilestart(dt, dptr, dtid);
-	req->src = aml_tiling_tilestart(st, sptr, stid);
-	req->size = aml_tiling_tilesize(st, stid);
-	/* TODO: assert size match */
+	req->type = type;
+	req->dest = dest;
+	req->src = src;
 	return 0;
 }
 
 int aml_dma_request_linux_par_copy_destroy(struct aml_dma_request_linux_par *r)
 {
 	assert(r != NULL);
+	if (r->type == AML_DMA_REQUEST_TYPE_PTR) {
+		aml_layout_dense_destroy(&r->dest);
+		aml_layout_dense_destroy(&r->src);
+	}
 	return 0;
 }
 
@@ -57,37 +57,16 @@ int aml_dma_request_linux_par_copy_destroy(struct aml_dma_request_linux_par *r)
 
 void *aml_dma_linux_par_do_thread(void *arg)
 {
-	struct aml_dma_linux_par_thread_data *data =
-		(struct aml_dma_linux_par_thread_data *)arg;
+	struct aml_dma_request_linux_par *req =
+		(struct aml_dma_request_linux_par *)arg;
 
-	if (data->req->type == AML_DMA_REQUEST_TYPE_COPY)
-		data->dma->ops.do_copy(&data->dma->data, data->req, data->tid);
+	if (req->type != AML_DMA_REQUEST_TYPE_INVALID)
+		aml_copy_layout_generic(req->dest, req->src);
 	return NULL;
-}
-
-int aml_dma_linux_par_do_copy(struct aml_dma_linux_par_data *dma,
-			      struct aml_dma_request_linux_par *req, size_t tid)
-{
-	assert(dma != NULL);
-	assert(req != NULL);
-
-	/* chunk memory */
-	size_t nbthreads = dma->nbthreads;
-	size_t chunksize = req->size / nbthreads;
-
-	void *dest = (void *)((intptr_t)req->dest + tid * chunksize);
-	void *src = (void *)((intptr_t)req->src + tid * chunksize);
-
-	if (tid == nbthreads - 1 && req->size > chunksize * nbthreads)
-		chunksize += req->size % nbthreads;
-
-	memcpy(dest, src, chunksize);
-	return 0;
 }
 
 struct aml_dma_linux_par_ops aml_dma_linux_par_inner_ops = {
 	aml_dma_linux_par_do_thread,
-	aml_dma_linux_par_do_copy,
 };
 
 /*******************************************************************************
@@ -109,30 +88,37 @@ int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 	req = aml_vector_add(dma->data.requests);
 
 	/* init the request */
-	if (type == AML_DMA_REQUEST_TYPE_COPY) {
-		struct aml_tiling *dt, *st;
-		void *dptr, *sptr;
-		int dtid, stid;
+	if (type == AML_DMA_REQUEST_TYPE_LAYOUT) {
+		struct aml_layout *dl, *sl;
 
-		dt = va_arg(ap, struct aml_tiling *);
-		dptr = va_arg(ap, void *);
-		dtid = va_arg(ap, int);
-		st = va_arg(ap, struct aml_tiling *);
-		sptr = va_arg(ap, void *);
-		stid = va_arg(ap, int);
-		aml_dma_request_linux_par_copy_init(req, dt, dptr, dtid,
-						    st, sptr, stid);
+		dl = va_arg(ap, struct aml_layout *);
+		sl = va_arg(ap, struct aml_layout *);
+		aml_dma_request_linux_par_copy_init(req,
+						    AML_DMA_REQUEST_TYPE_LAYOUT,
+						    dl, sl);
+	} else if (type == AML_DMA_REQUEST_TYPE_PTR) {
+		struct aml_layout *dl, *sl;
+		void *dp, *sp;
+		size_t sz;
+
+		dp = va_arg(ap, void *);
+		sp = va_arg(ap, void *);
+		sz = va_arg(ap, size_t);
+		/* simple 1D layout, none of the parameters really matter, as
+		 * long as the copy generates a single memcpy.
+		 */
+		aml_layout_dense_create(&dl, dp, 0, sizeof(size_t), 1,
+					&sz, NULL, NULL);
+		aml_layout_dense_create(&sl, sp, 0, sizeof(size_t), 1,
+					&sz, NULL, NULL);
+		aml_dma_request_linux_par_copy_init(req,
+						    AML_DMA_REQUEST_TYPE_PTR,
+						    dl, sl);
 	}
 	pthread_mutex_unlock(&dma->data.lock);
 
-	for (size_t i = 0; i < dma->data.nbthreads; i++) {
-		struct aml_dma_linux_par_thread_data *rd = &req->thread_data[i];
-
-		rd->req = req;
-		rd->dma = dma;
-		rd->tid = i;
-		pthread_create(&rd->thread, NULL, dma->ops.do_thread, rd);
-	}
+	if (req->type != AML_DMA_REQUEST_TYPE_INVALID)
+		pthread_create(&req->thread, NULL, dma->ops.do_thread, req);
 	*r = (struct aml_dma_request *)req;
 	return 0;
 }
@@ -149,13 +135,11 @@ int aml_dma_linux_par_destroy_request(struct aml_dma_data *d,
 		(struct aml_dma_request_linux_par *)r;
 
 	/* we cancel and join, instead of killing, for a cleaner result */
-	for (size_t i = 0; i < dma->data.nbthreads; i++) {
-		pthread_cancel(req->thread_data[i].thread);
-		pthread_join(req->thread_data[i].thread, NULL);
-	}
-
-	if (req->type == AML_DMA_REQUEST_TYPE_COPY)
+	if (req->type != AML_DMA_REQUEST_TYPE_INVALID) {
+		pthread_cancel(req->thread);
+		pthread_join(req->thread, NULL);
 		aml_dma_request_linux_par_copy_destroy(req);
+	}
 
 	pthread_mutex_lock(&dma->data.lock);
 	aml_vector_remove(dma->data.requests, req);
@@ -172,12 +156,10 @@ int aml_dma_linux_par_wait_request(struct aml_dma_data *d,
 	struct aml_dma_request_linux_par *req =
 		(struct aml_dma_request_linux_par *)r;
 
-	for (size_t i = 0; i < dma->data.nbthreads; i++)
-		pthread_join(req->thread_data[i].thread, NULL);
-
-	/* destroy a completed request */
-	if (req->type == AML_DMA_REQUEST_TYPE_COPY)
+	if (req->type != AML_DMA_REQUEST_TYPE_INVALID) {
+		pthread_join(req->thread, NULL);
 		aml_dma_request_linux_par_copy_destroy(req);
+	}
 
 	pthread_mutex_lock(&dma->data.lock);
 	aml_vector_remove(dma->data.requests, req);
@@ -195,8 +177,7 @@ struct aml_dma_ops aml_dma_linux_par_ops = {
  * Init functions:
  ******************************************************************************/
 
-int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs,
-			     size_t nbthreads)
+int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs)
 {
 	struct aml_dma *ret = NULL;
 	struct aml_dma_linux_par *d;
@@ -217,18 +198,10 @@ int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs,
 	d->ops = aml_dma_linux_par_inner_ops;
 
 	/* allocate request array */
-	d->data.nbthreads = nbthreads;
 	aml_vector_create(&d->data.requests, nbreqs,
 			  sizeof(struct aml_dma_request_linux_par),
 			  offsetof(struct aml_dma_request_linux_par, type),
 			  AML_DMA_REQUEST_TYPE_INVALID);
-	for (size_t i = 0; i < nbreqs; i++) {
-		struct aml_dma_request_linux_par *req =
-			aml_vector_get(d->data.requests, i);
-
-		req->thread_data = calloc(d->data.nbthreads,
-				sizeof(struct aml_dma_linux_par_thread_data));
-	}
 	pthread_mutex_init(&d->data.lock, NULL);
 
 	*dma = ret;
@@ -248,12 +221,6 @@ void aml_dma_linux_par_destroy(struct aml_dma **dma)
 
 	assert(d->data != NULL);
 	l = (struct aml_dma_linux_par *)d->data;
-	for (size_t i = 0; i < aml_vector_size(l->data.requests); i++) {
-		struct aml_dma_request_linux_par *req =
-			aml_vector_get(l->data.requests, i);
-
-		free(req->thread_data);
-	}
 	aml_vector_destroy(&l->data.requests);
 	pthread_mutex_destroy(&l->data.lock);
 

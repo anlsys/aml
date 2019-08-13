@@ -42,8 +42,12 @@ int main(int argc, char *argv[])
 	memset(dst, 24, TILESIZE*_SC_PAGE_SIZE*NBTILES);
 
 	/* move some stuff by copy */
-	for(int i = 0; i < NBTILES; i++)
-		aml_dma_copy(dma, tiling, dst, i, tiling, src, i);
+	for(int i = 0; i < NBTILES; i++) {
+		void *d = aml_tiling_tilestart(tiling, dst, i);
+		void *s = aml_tiling_tilestart(tiling, src, i);
+		aml_dma_copy(dma, AML_DMA_REQUEST_TYPE_PTR,
+			     d, s, TILESIZE*_SC_PAGE_SIZE);
+	}
 
 	assert(!memcmp(src, dst, TILESIZE*_SC_PAGE_SIZE*NBTILES));
 

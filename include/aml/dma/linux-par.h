@@ -27,21 +27,6 @@
  **/
 extern struct aml_dma_ops aml_dma_linux_par_ops;
 
-/** Thread data embeded inside an asynchronous dma request. **/
-struct aml_dma_linux_par_thread_data {
-	/**
-	 * A logical identifier of the thread in charge for
-	 * the request progress.
-	 **/
-	size_t tid;
-	/** The actual thread in charge for the request progress**/
-	pthread_t thread;
-	/** The dma containing sequential operations **/
-	struct aml_dma_linux_par *dma;
-	/** The request handled by this thread **/
-	struct aml_dma_request_linux_par *req;
-};
-
 /** Inside of a parallel request for linux movement. **/
 struct aml_dma_request_linux_par {
 	/**
@@ -50,27 +35,24 @@ struct aml_dma_request_linux_par {
 	 **/
 	int type;
 	/** The destination pointer of the data movement **/
-	void *dest;
+	struct aml_layout *dest;
 	/** The source pointer of the data movement **/
-	void *src;
-	/** The size of data to move **/
-	size_t size;
-	/** The thread data in charge of the request progress **/
-	struct aml_dma_linux_par_thread_data *thread_data;
+	struct aml_layout *src;
+	/** The dma containing sequential operations **/
+	struct aml_dma_linux_par *dma;
+	/** The actual thread in charge for the request progress**/
+	pthread_t thread;
 };
 
 /** Inside of a parallel request for linux movement. **/
 struct aml_dma_linux_par_data {
-	size_t nbthreads;
 	struct aml_vector *requests;
 	pthread_mutex_t lock;
 };
 
 /** Declaration of linux parallel dma operations **/
 struct aml_dma_linux_par_ops {
-	void *(*do_thread)(void *thread_data);
-	int (*do_copy)(struct aml_dma_linux_par_data *data,
-		       struct aml_dma_request_linux_par *request, size_t tid);
+	void *(*do_thread)(void *data);
 };
 
 /**
@@ -94,8 +76,7 @@ struct aml_dma_linux_par {
  *
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs,
-			     size_t nbthreads);
+int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs);
 
 /**
  * Tears down a parallel DMA created with aml_dma_linux_par_create.

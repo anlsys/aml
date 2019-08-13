@@ -54,9 +54,14 @@ int aml_scratch_seq_doit(struct aml_scratch_seq_data *scratch,
 {
 	assert(scratch != NULL);
 	assert(req != NULL);
+	void *dest, *src;
+	size_t size;
+
+	dest = aml_tiling_tilestart(req->tiling, req->dstptr, req->dstid);
+	src = aml_tiling_tilestart(req->tiling, req->srcptr, req->srcid);
+	size = aml_tiling_tilesize(req->tiling, req->srcid);
 	return aml_dma_async_copy(scratch->dma, &req->dma_req,
-				  req->tiling, req->dstptr, req->dstid,
-				  req->tiling, req->srcptr, req->srcid);
+				  AML_DMA_REQUEST_TYPE_PTR, dest, src, size);
 }
 
 struct aml_scratch_seq_ops aml_scratch_seq_inner_ops = {

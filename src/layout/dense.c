@@ -125,7 +125,7 @@ int aml_layout_dense_create(struct aml_layout **layout,
 		else
 			memcpy(data->pitch, dims, ndims * sizeof(size_t));
 		for (size_t i = 1; i <= ndims; i++)
-			data->cpitch[i] = data->cpitch[i-1]*pitch[i-1];
+			data->cpitch[i] = data->cpitch[i-1]*data->pitch[i-1];
 		break;
 	default:
 		free(l);
