@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 	aml_area_linux_create(&fast, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
 				     &fastb, AML_AREA_LINUX_BINDING_FLAG_BIND);
 	assert(fast != NULL);
-	assert(!aml_dma_linux_par_create(&dma, numthreads*2, numthreads));
+	assert(!aml_dma_linux_par_create(&dma, numthreads*2));
 	assert(!aml_scratch_seq_create(&sa, fast, slow, dma, tiling,
 				     (size_t)2*numthreads, (size_t)1));
 	assert(!aml_scratch_seq_create(&sb, fast, slow, dma, tiling,

@@ -432,162 +432,6 @@ int aml_tiling_iterator_get(const struct aml_tiling_iterator *iterator, ...);
 
 /**
  * @}
- * @defgroup aml_dma "AML DMA"
- * @brief Management of low-level memory movements.
- *
- * AML DMA is the abstraction for handling memory movements.
- * AML DMA can asynchronously move data from one area to another.
- * While performing a movement, DMA operation
- * may also translates from a source tiling to a different
- * destination tiling.
- *
- * @image html dma.png width=600
- * @{
- **/
-
-////////////////////////////////////////////////////////////////////////////////
-
-/**
- * Internal macros used for tracking DMA request types.
- * Invalid request type.  Used for marking inactive requests in the vector.
- **/
-#define AML_DMA_REQUEST_TYPE_INVALID -1
-
-/**
- * Internal macros used for tracking DMA request types.
- * Copy request type.  Uses memcpy() for data migration.
- **/
-#define AML_DMA_REQUEST_TYPE_COPY 0
-
-/**
- * aml_dma is mainly used to asynchronously move data.
- * aml_dma_request is an opaque structure containing information
- * about ongoing request for data movement in a dma operation.
- * @see aml_dma_ops
- * @see aml_dma_async_copy()
- **/
-struct aml_dma_request;
-
-/**
- * Opaque handle implemented by each aml_dma implementations.
- * Should not be used by end-users.
- **/
-struct aml_dma_data;
-
-/**
-   aml_dma_ops is a structure containing operations for a specific
-   * aml_dma implementation.
-   * These operation are operation are detailed in the structure.
-   * They are specific in:
-   * - the type of aml_area source and destination,
-   * - the progress engine performing the operation,
-   * - the type of of source and destination data structures.
-   *
-   * Each different combination of these three points may require a different
-   * set of dma operations.
-   **/
-struct aml_dma_ops {
-	/**
-	 * Initiate a data movement, from a source pointer to a destination
-	 * pointer, and output a request handler for managing the transfer.
-	 * @param dma: dma_implementation internal data.
-	 * @param req: Output the request handle to manage termination
-	 *        of the movement.
-	 * @param type: A valid AML_DMA_REQUEST_TYPE_* specifying the kind
-	 *        of operation to perform.
-	 * @param args: list of variadic arguments provided to aml_dma_copy()
-	 * @return an AML error code.
-	 **/
-	int (*create_request)(struct aml_dma_data *dma,
-			      struct aml_dma_request **req, int type,
-			      va_list args);
-
-	/**
-	 * Destroy the request handle. If the data movement is still ongoing,
-	 * then cancel it.
-	 *
-	 * @param dma: dma_implementation internal data.
-	 * @param req: the request handle to manage termination of the movement.
-	 * @return an AML error code.
-	 **/
-	int (*destroy_request)(struct aml_dma_data *dma,
-			       struct aml_dma_request *req);
-
-	/**
-	 * Wait for termination of a data movement and destroy the request
-	 * handle.
-	 *
-	 * @param dma: dma_implementation internal data.
-	 * @param req: the request handle to manage termination of the movement.
-	 * @return an AML error code.
-	 **/
-	int (*wait_request)(struct aml_dma_data *dma,
-			    struct aml_dma_request *req);
-};
-
-/**
- * aml_dma is an abstraction for (asynchronously) moving data
- * from one area to another. The implementation of dma to use
- * is depends on the source and destination areas. The appropriate
- * dma choice is delegated to the user.
- * @see struct aml_area.
- **/
-struct aml_dma {
-	/** @see aml_dma_ops **/
-	struct aml_dma_ops *ops;
-	/** @see aml_dma_data **/
-	struct aml_dma_data *data;
-};
-
-/**
- * Requests a synchronous data copy between two different tiles, using
- * memcpy() or equivalent.
- * @param dma: an initialized DMA structure.
- * @param dt: an argument of type struct aml_tiling*; the destination tiling
- *        structure.
- * @param dptr: an argument of type void*; the start address of the complete
- *        destination user data structure.
- * @param dtid: an argument of type int; the destination tile identifier.
- * @param st: an argument of type struct aml_tiling*; the source tiling
- *        structure.
- * @param sptr: an argument of type void*; the start address of the
- *        complete source user data structure.
- * @param stid: an argument of type int; the source tile identifier.
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_dma_copy(struct aml_dma *dma, ...);
-
-/**
- * Requests a data copy between two different tiles.  This is an asynchronous
- * version of aml_dma_copy().
- * @param dma: an initialized DMA structure.
- * @param req: an address where the pointer to the newly assigned DMA request
- *        will be stored.
- * Variadic arguments: see aml_dma_copy().
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_dma_async_copy(struct aml_dma *dma, struct aml_dma_request **req, ...);
-
-/**
- * Waits for an asynchronous DMA request to complete.
- * @param dma: an initialized DMA structure.
- * @param req: a DMA request obtained using aml_dma_async_*() calls.
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request *req);
-
-/**
- * Tears down an asynchronous DMA request before it completes.
- * @param dma: an initialized DMA structure.
- * @param req: a DMA request obtained using aml_dma_async_*() calls.
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request *req);
-
-////////////////////////////////////////////////////////////////////////////////
-
-/**
- * @}
  * @defgroup aml_layout "AML Layout"
  * @brief Low level description of data orrganization at the byte granularity.
  *
@@ -942,6 +786,169 @@ int aml_layout_slice(const struct aml_layout *layout,
 		     const size_t *dims,
 		     const size_t *offsets,
 		     const size_t *strides);
+
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @}
+ * @defgroup aml_dma "AML DMA"
+ * @brief Management of low-level memory movements.
+ *
+ * AML DMA (inspired by Direct Memory Access engines) is an abstraction over the
+ * ability to move data between places. A DMAs presents an interface that allows
+ * clients to create an asynchronous request to move data and to wait for this
+ * request to complete. Depending on the exact operation it is configured to do,
+ * the DMA might transform the data during the operation.
+ *
+ * Implementations are mostly responsible for providing access to various types
+ * of execution engine for data movement itself.
+ *
+ * @image html dma.png width=600
+ * @{
+ **/
+
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Internal macros used for tracking DMA request types.
+ * Invalid request type.  Used for marking inactive requests in the vector.
+ **/
+#define AML_DMA_REQUEST_TYPE_INVALID -1
+
+/**
+ * The request is in the format (dest layout, src layout)
+ **/
+#define AML_DMA_REQUEST_TYPE_LAYOUT 0
+
+/**
+ * The request is in the format (dest ptr, src ptr, size)
+ */
+#define AML_DMA_REQUEST_TYPE_PTR 1
+
+/**
+ * aml_dma is mainly used to asynchronously move data.
+ * aml_dma_request is an opaque structure containing information
+ * about ongoing request for data movement in a dma operation.
+ * @see aml_dma_ops
+ * @see aml_dma_async_copy()
+ **/
+struct aml_dma_request;
+
+/**
+ * Opaque handle implemented by each aml_dma implementations.
+ * Should not be used by end-users.
+ **/
+struct aml_dma_data;
+
+/**
+   aml_dma_ops is a structure containing operations for a specific
+   * aml_dma implementation.
+   * These operation are operation are detailed in the structure.
+   * They are specific in:
+   * - the type of aml_area source and destination,
+   * - the progress engine performing the operation,
+   * - the type of of source and destination data structures.
+   *
+   * Each different combination of these three points may require a different
+   * set of dma operations.
+   **/
+struct aml_dma_ops {
+	/**
+	 * Initiate a data movement, from a source pointer to a destination
+	 * pointer, and output a request handler for managing the transfer.
+	 * @param dma: dma_implementation internal data.
+	 * @param req[out]: the request handle to manage termination
+	 *        of the movement.
+	 * @param type: A valid AML_DMA_REQUEST_TYPE_* specifying the kind
+	 *        of operation to perform.
+	 * @param args: list of variadic arguments provided to aml_dma_copy()
+	 * @return an AML error code.
+	 **/
+	int (*create_request)(struct aml_dma_data *dma,
+			      struct aml_dma_request **req,
+			      int type, va_list args);
+
+	/**
+	 * Destroy the request handle. If the data movement is still ongoing,
+	 * then cancel it.
+	 *
+	 * @param dma: dma_implementation internal data.
+	 * @param req: the request handle to manage termination of the movement.
+	 * @return an AML error code.
+	 **/
+	int (*destroy_request)(struct aml_dma_data *dma,
+			       struct aml_dma_request *req);
+
+	/**
+	 * Wait for termination of a data movement and destroy the request
+	 * handle.
+	 *
+	 * @param dma: dma_implementation internal data.
+	 * @param req: the request handle to manage termination of the movement.
+	 * @return an AML error code.
+	 **/
+	int (*wait_request)(struct aml_dma_data *dma,
+			    struct aml_dma_request *req);
+};
+
+/**
+ * aml_dma is an abstraction for (asynchronously) moving data
+ * from one area to another. The implementation of dma to use
+ * is depends on the source and destination areas. The appropriate
+ * dma choice is delegated to the user.
+ * @see struct aml_area.
+ **/
+struct aml_dma {
+	/** @see aml_dma_ops **/
+	struct aml_dma_ops *ops;
+	/** @see aml_dma_data **/
+	struct aml_dma_data *data;
+};
+
+/**
+ * Requests a synchronous data copy between two different buffers.
+ * @param dma: an initialized DMA structure.
+ * Variadic arguments: implementation-specific.
+ * @return 0 if successful; an error code otherwise.
+ **/
+int aml_dma_copy(struct aml_dma *dma, int type, ...);
+
+/**
+ * Requests a data copy between two different buffers.This is an asynchronous
+ * version of aml_dma_copy().
+ * @param dma: an initialized DMA structure.
+ * @param req: an address where the pointer to the newly assigned DMA request
+ *        will be stored.
+ * Variadic arguments: implementation-specific.
+ * @return 0 if successful; an error code otherwise.
+ **/
+int aml_dma_async_copy(struct aml_dma *dma, struct aml_dma_request **req,
+		       int type, ...);
+
+/**
+ * Waits for an asynchronous DMA request to complete.
+ * @param dma: an initialized DMA structure.
+ * @param req: a DMA request obtained using aml_dma_async_*() calls.
+ * @return 0 if successful; an error code otherwise.
+ **/
+int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request *req);
+
+/**
+ * Tears down an asynchronous DMA request before it completes.
+ * @param dma: an initialized DMA structure.
+ * @param req: a DMA request obtained using aml_dma_async_*() calls.
+ * @return 0 if successful; an error code otherwise.
+ **/
+int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request *req);
+
+/**
+ * Generic helper to copy from one layout to another.
+ * @param dst[out]: destination layout
+ * @param src[in]: source layout
+ */
+int aml_copy_layout_generic(struct aml_layout *dst,
+			    const struct aml_layout *src);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 

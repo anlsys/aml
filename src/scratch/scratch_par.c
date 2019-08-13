@@ -56,8 +56,17 @@ void *aml_scratch_par_do_thread(void *arg)
 		(struct aml_scratch_request_par *)arg;
 	struct aml_scratch_par *scratch = req->scratch;
 
-	aml_dma_copy(scratch->data.dma, scratch->data.tiling, req->dstptr,
-		     req->dstid, scratch->data.tiling, req->srcptr, req->srcid);
+	void *dest, *src;
+	size_t size;
+
+	dest = aml_tiling_tilestart(scratch->data.tiling,
+				    req->dstptr, req->dstid);
+	src = aml_tiling_tilestart(scratch->data.tiling,
+				   req->srcptr, req->srcid);
+	size = aml_tiling_tilesize(scratch->data.tiling, req->srcid);
+
+	aml_dma_copy(scratch->data.dma, AML_DMA_REQUEST_TYPE_PTR,
+		     dest, src, size);
 	return NULL;
 }
 
@@ -68,8 +77,6 @@ struct aml_scratch_par_ops aml_scratch_par_inner_ops = {
 /*******************************************************************************
  * Public API
  ******************************************************************************/
-
-/* TODO: not thread-safe */
 
 int aml_scratch_par_create_request(struct aml_scratch_data *d,
 				   struct aml_scratch_request **r,

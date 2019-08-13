@@ -10,6 +10,7 @@
 
 #include "aml.h"
 #include "aml/dma/linux-seq.h"
+#include "aml/layout/dense.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -29,19 +30,15 @@
  ******************************************************************************/
 
 int aml_dma_request_linux_seq_copy_init(struct aml_dma_request_linux_seq *req,
-					const struct aml_tiling *dt,
-					void *dptr, int dtid,
-					const struct aml_tiling *st,
-					const void *sptr, int stid)
+					int type,
+					struct aml_layout *dest,
+					struct aml_layout *src)
 {
 	assert(req != NULL);
-
-	req->type = AML_DMA_REQUEST_TYPE_COPY;
+	req->type = type;
 	/* figure out pointers */
-	req->dest = aml_tiling_tilestart(dt, dptr, dtid);
-	req->src = aml_tiling_tilestart(st, sptr, stid);
-	req->size = aml_tiling_tilesize(st, stid);
-	/* TODO: assert size match */
+	req->dest = dest;
+	req->src = src;
 	return 0;
 }
 
@@ -54,12 +51,13 @@ int aml_dma_request_linux_seq_copy_destroy(struct aml_dma_request_linux_seq *r)
 /*******************************************************************************
  * Internal functions
  ******************************************************************************/
+
 int aml_dma_linux_seq_do_copy(struct aml_dma_linux_seq_data *dma,
 			      struct aml_dma_request_linux_seq *req)
 {
 	assert(dma != NULL);
 	assert(req != NULL);
-	memcpy(req->dest, req->src, req->size);
+	aml_copy_layout_generic(req->dest, req->src);
 	return 0;
 }
 
@@ -86,19 +84,32 @@ int aml_dma_linux_seq_create_request(struct aml_dma_data *d,
 	req = aml_vector_add(dma->data.requests);
 
 	/* init the request */
-	if (type == AML_DMA_REQUEST_TYPE_COPY) {
-		struct aml_tiling *dt, *st;
-		void *dptr, *sptr;
-		int dtid, stid;
+	if (type == AML_DMA_REQUEST_TYPE_LAYOUT) {
+		struct aml_layout *dl, *sl;
 
-		dt = va_arg(ap, struct aml_tiling *);
-		dptr = va_arg(ap, void *);
-		dtid = va_arg(ap, int);
-		st = va_arg(ap, struct aml_tiling *);
-		sptr = va_arg(ap, void *);
-		stid = va_arg(ap, int);
-		aml_dma_request_linux_seq_copy_init(req, dt, dptr, dtid,
-						    st, sptr, stid);
+		dl = va_arg(ap, struct aml_layout *);
+		sl = va_arg(ap, struct aml_layout *);
+		aml_dma_request_linux_seq_copy_init(req,
+						    AML_DMA_REQUEST_TYPE_LAYOUT,
+						    dl, sl);
+	} else if (type == AML_DMA_REQUEST_TYPE_PTR) {
+		struct aml_layout *dl, *sl;
+		void *dp, *sp;
+		size_t sz;
+
+		dp = va_arg(ap, void *);
+		sp = va_arg(ap, void *);
+		sz = va_arg(ap, size_t);
+		/* simple 1D layout, none of the parameters really matter, as
+		 * long as the copy generates a single memcpy.
+		 */
+		aml_layout_dense_create(&dl, dp, 0, sizeof(size_t), 1,
+					&sz, NULL, NULL);
+		aml_layout_dense_create(&sl, sp, 0, sizeof(size_t), 1,
+					&sz, NULL, NULL);
+		aml_dma_request_linux_seq_copy_init(req,
+						    AML_DMA_REQUEST_TYPE_PTR,
+						    dl, sl);
 	}
 	pthread_mutex_unlock(&dma->data.lock);
 	*r = (struct aml_dma_request *)req;
@@ -116,8 +127,13 @@ int aml_dma_linux_seq_destroy_request(struct aml_dma_data *d,
 	struct aml_dma_request_linux_seq *req =
 		(struct aml_dma_request_linux_seq *)r;
 
-	if (req->type == AML_DMA_REQUEST_TYPE_COPY)
+	if (req->type == AML_DMA_REQUEST_TYPE_LAYOUT)
 		aml_dma_request_linux_seq_copy_destroy(req);
+	else if (req->type == AML_DMA_REQUEST_TYPE_PTR) {
+		aml_layout_dense_destroy(&req->dest);
+		aml_layout_dense_destroy(&req->src);
+		aml_dma_request_linux_seq_copy_destroy(req);
+	}
 
 	/* enough to remove from request vector */
 	pthread_mutex_lock(&dma->data.lock);
@@ -136,7 +152,7 @@ int aml_dma_linux_seq_wait_request(struct aml_dma_data *d,
 		(struct aml_dma_request_linux_seq *)r;
 
 	/* execute */
-	if (req->type == AML_DMA_REQUEST_TYPE_COPY)
+	if (req->type != AML_DMA_REQUEST_TYPE_INVALID)
 		dma->ops.do_copy(&dma->data, req);
 
 	/* destroy a completed request */
