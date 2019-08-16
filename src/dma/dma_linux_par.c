@@ -68,6 +68,7 @@ void *aml_dma_linux_par_do_thread(void *arg)
 	struct aml_dma_linux_par_request_data *req =
 		(struct aml_dma_linux_par_request_data *)arg;
 
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	if (req->type != AML_DMA_REQUEST_TYPE_INVALID)
 		aml_copy_layout_generic(req->dest, req->src);
 	return NULL;
@@ -91,6 +92,7 @@ int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 		(struct aml_dma_linux_par *)d;
 	struct aml_dma_request_linux_par *ret;
 	struct aml_dma_linux_par_request_data *req;
+	int err = AML_SUCCESS;
 
 	pthread_mutex_lock(&dma->data.lock);
 	req = aml_vector_add(dma->data.requests);
@@ -101,6 +103,10 @@ int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 
 		dl = va_arg(ap, struct aml_layout *);
 		sl = va_arg(ap, struct aml_layout *);
+		if (dl == NULL || sl == NULL) {
+			err = -AML_EINVAL;
+			goto unlock;
+		}
 		aml_dma_linux_par_request_data_init(req,
 						    AML_DMA_REQUEST_TYPE_LAYOUT,
 						    dl, sl);
@@ -112,17 +118,21 @@ int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 		dp = va_arg(ap, void *);
 		sp = va_arg(ap, void *);
 		sz = va_arg(ap, size_t);
+		if (dp == NULL || sp == NULL || sz == 0) {
+			err = -AML_EINVAL;
+			goto unlock;
+		}
 		/* simple 1D layout, none of the parameters really matter, as
 		 * long as the copy generates a single memcpy.
 		 */
-		aml_layout_dense_create(&dl, dp, 0, sizeof(size_t), 1,
-					&sz, NULL, NULL);
-		aml_layout_dense_create(&sl, sp, 0, sizeof(size_t), 1,
-					&sz, NULL, NULL);
+		aml_layout_dense_create(&dl, dp, 0, 1, 1, &sz, NULL, NULL);
+		aml_layout_dense_create(&sl, sp, 0, 1, 1, &sz, NULL, NULL);
 		aml_dma_linux_par_request_data_init(req,
 						    AML_DMA_REQUEST_TYPE_PTR,
 						    dl, sl);
-	}
+	} else
+		err = -AML_EINVAL;
+unlock:
 	pthread_mutex_unlock(&dma->data.lock);
 	if (req->type != AML_DMA_REQUEST_TYPE_INVALID) {
 		int uuid = aml_vector_getid(dma->data.requests, req);
@@ -131,20 +141,22 @@ int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 		aml_dma_request_linux_par_create(&ret, uuid);
 		*r = (struct aml_dma_request *)ret;
 	}
-	return 0;
+	return err;
 }
 
 int aml_dma_linux_par_destroy_request(struct aml_dma_data *d,
-				      struct aml_dma_request *r)
+				      struct aml_dma_request **r)
 {
 	assert(d != NULL);
 	assert(r != NULL);
 	struct aml_dma_linux_par *dma =
 		(struct aml_dma_linux_par *)d;
-
-	struct aml_dma_request_linux_par *req =
-		(struct aml_dma_request_linux_par *)r;
+	struct aml_dma_request_linux_par *req;
 	struct aml_dma_linux_par_request_data *inner_req;
+
+	if (*r == NULL)
+		return -AML_EINVAL;
+	req = (struct aml_dma_request_linux_par *)*r;
 
 	inner_req = aml_vector_get(dma->data.requests, req->uuid);
 	if (inner_req == NULL)
@@ -154,44 +166,49 @@ int aml_dma_linux_par_destroy_request(struct aml_dma_data *d,
 	if (inner_req->type != AML_DMA_REQUEST_TYPE_INVALID) {
 		pthread_cancel(inner_req->thread);
 		pthread_join(inner_req->thread, NULL);
-		if (inner_req->type == AML_DMA_REQUEST_TYPE_PTR) {
-			aml_layout_dense_destroy(&inner_req->dest);
-			aml_layout_dense_destroy(&inner_req->src);
-		}
+	}
+
+	if (inner_req->type == AML_DMA_REQUEST_TYPE_PTR) {
+		aml_layout_dense_destroy(&inner_req->dest);
+		aml_layout_dense_destroy(&inner_req->src);
 	}
 	pthread_mutex_lock(&dma->data.lock);
 	aml_vector_remove(dma->data.requests, inner_req);
 	pthread_mutex_unlock(&dma->data.lock);
 	aml_dma_request_linux_par_destroy(&req);
+	*r = NULL;
 	return 0;
 }
 
 int aml_dma_linux_par_wait_request(struct aml_dma_data *d,
-				   struct aml_dma_request *r)
+				   struct aml_dma_request **r)
 {
 	assert(d != NULL);
 	assert(r != NULL);
 	struct aml_dma_linux_par *dma = (struct aml_dma_linux_par *)d;
-	struct aml_dma_request_linux_par *req =
-		(struct aml_dma_request_linux_par *)r;
+	struct aml_dma_request_linux_par *req;
 	struct aml_dma_linux_par_request_data *inner_req;
+
+	if (*r == NULL)
+		return -AML_EINVAL;
+	req = (struct aml_dma_request_linux_par *)*r;
 
 	inner_req = aml_vector_get(dma->data.requests, req->uuid);
 	if (inner_req == NULL)
 		return -AML_EINVAL;
 
-	if (inner_req->type != AML_DMA_REQUEST_TYPE_INVALID) {
+	if (inner_req->type != AML_DMA_REQUEST_TYPE_INVALID)
 		pthread_join(inner_req->thread, NULL);
-		if (inner_req->type == AML_DMA_REQUEST_TYPE_PTR) {
-			aml_layout_dense_destroy(&inner_req->dest);
-			aml_layout_dense_destroy(&inner_req->src);
-		}
-	}
 
+	if (inner_req->type == AML_DMA_REQUEST_TYPE_PTR) {
+		aml_layout_dense_destroy(&inner_req->dest);
+		aml_layout_dense_destroy(&inner_req->src);
+	}
 	pthread_mutex_lock(&dma->data.lock);
 	aml_vector_remove(dma->data.requests, inner_req);
 	pthread_mutex_unlock(&dma->data.lock);
 	aml_dma_request_linux_par_destroy(&req);
+	*r = NULL;
 	return 0;
 }
 
@@ -236,22 +253,28 @@ int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs)
 	return 0;
 }
 
-void aml_dma_linux_par_destroy(struct aml_dma **dma)
+void aml_dma_linux_par_destroy(struct aml_dma **d)
 {
-	struct aml_dma *d;
-	struct aml_dma_linux_par *l;
+	struct aml_dma_linux_par *dma;
 
-	if (dma == NULL)
+	if (d == NULL || *d == NULL)
 		return;
-	d = *dma;
-	if (d == NULL)
-		return;
+	dma = (struct aml_dma_linux_par *)(*d)->data;
+	for (size_t i = 0; i < aml_vector_size(dma->data.requests); i++) {
+		struct aml_dma_linux_par_request_data *req;
 
-	assert(d->data != NULL);
-	l = (struct aml_dma_linux_par *)d->data;
-	aml_vector_destroy(&l->data.requests);
-	pthread_mutex_destroy(&l->data.lock);
-
-	free(d);
-	*dma = NULL;
+		req = aml_vector_get(dma->data.requests, i);
+		if (req->type != AML_DMA_REQUEST_TYPE_INVALID) {
+			pthread_cancel(req->thread);
+			pthread_join(req->thread, NULL);
+		}
+		if (req->type == AML_DMA_REQUEST_TYPE_PTR) {
+			aml_layout_dense_destroy(&req->dest);
+			aml_layout_dense_destroy(&req->src);
+		}
+	}
+	aml_vector_destroy(&dma->data.requests);
+	pthread_mutex_destroy(&dma->data.lock);
+	free(*d);
+	*d = NULL;
 }

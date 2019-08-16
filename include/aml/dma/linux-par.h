@@ -50,7 +50,7 @@ struct aml_dma_linux_par_request_data {
 	pthread_t thread;
 };
 
-/** Inside of a parallel request for linux movement. **/
+/** Inside of a parallel dma for linux movement. **/
 struct aml_dma_linux_par_data {
 	struct aml_vector *requests;
 	pthread_mutex_t lock;

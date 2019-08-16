@@ -183,7 +183,7 @@ int aml_scratch_seq_destroy_request(struct aml_scratch_data *d,
 		return -AML_EINVAL;
 
 	if (inner_req->type != AML_SCRATCH_REQUEST_TYPE_NOOP)
-		aml_dma_cancel(scratch->data.dma, inner_req->dma_req);
+		aml_dma_cancel(scratch->data.dma, &inner_req->dma_req);
 
 	/* destroy removes the tile from the scratch */
 	if (inner_req->type == AML_SCRATCH_REQUEST_TYPE_PUSH)
@@ -215,7 +215,7 @@ int aml_scratch_seq_wait_request(struct aml_scratch_data *d,
 
 	/* wait for completion of the request */
 	if (inner_req->type != AML_SCRATCH_REQUEST_TYPE_NOOP)
-		aml_dma_wait(scratch->data.dma, inner_req->dma_req);
+		aml_dma_wait(scratch->data.dma, &inner_req->dma_req);
 
 	/* cleanup a completed request. In case of push, free up the tile */
 	pthread_mutex_lock(&scratch->data.lock);
