@@ -24,12 +24,28 @@
 /*******************************************************************************
  * Requests:
  ******************************************************************************/
+int aml_scratch_request_par_create(struct aml_scratch_request_par **req,
+				   int uuid)
+{
+	assert(req != NULL);
+	*req = calloc(1, sizeof(struct aml_scratch_request_par));
+	if (*req == NULL)
+		return -AML_ENOMEM;
+	(*req)->uuid = uuid;
+	return 0;
+}
 
-int aml_scratch_request_par_init(struct aml_scratch_request_par *req, int type,
-				 struct aml_scratch_par *scratch,
-				 void *dstptr, int dstid, void *srcptr,
-				 int srcid)
+void aml_scratch_request_par_destroy(struct aml_scratch_request_par **req)
+{
+	assert(req != NULL);
+	free(*req);
+	*req = NULL;
+}
 
+int aml_scratch_par_request_data_init(struct aml_scratch_par_request_data *req,
+				      int type, struct aml_scratch_par *scratch,
+				      void *dstptr, int dstid, void *srcptr,
+				      int srcid)
 {
 	assert(req != NULL);
 	req->type = type;
@@ -41,19 +57,13 @@ int aml_scratch_request_par_init(struct aml_scratch_request_par *req, int type,
 	return 0;
 }
 
-int aml_scratch_request_par_destroy(struct aml_scratch_request_par *r)
-{
-	assert(r != NULL);
-	return 0;
-}
-
 /*******************************************************************************
  * Internal functions
  ******************************************************************************/
 void *aml_scratch_par_do_thread(void *arg)
 {
-	struct aml_scratch_request_par *req =
-		(struct aml_scratch_request_par *)arg;
+	struct aml_scratch_par_request_data *req =
+		(struct aml_scratch_par_request_data *)arg;
 	struct aml_scratch_par *scratch = req->scratch;
 
 	void *dest, *src;
@@ -86,11 +96,12 @@ int aml_scratch_par_create_request(struct aml_scratch_data *d,
 	assert(r != NULL);
 	struct aml_scratch_par *scratch =
 		(struct aml_scratch_par *)d;
-
-	struct aml_scratch_request_par *req;
+	struct aml_scratch_request_par *ret;
+	struct aml_scratch_par_request_data *req;
 
 	pthread_mutex_lock(&scratch->data.lock);
 	req = aml_vector_add(scratch->data.requests);
+
 	/* init the request */
 	if (type == AML_SCRATCH_REQUEST_TYPE_PUSH) {
 		int scratchid;
@@ -110,8 +121,9 @@ int aml_scratch_par_create_request(struct aml_scratch_data *d,
 		*srcid = *slot;
 
 		/* init request */
-		aml_scratch_request_par_init(req, type, scratch, srcptr, *srcid,
-					     scratchptr, scratchid);
+		aml_scratch_par_request_data_init(req, type, scratch, srcptr,
+						  *srcid, scratchptr,
+						  scratchid);
 	} else if (type == AML_SCRATCH_REQUEST_TYPE_PULL) {
 		int *scratchid;
 		int srcid;
@@ -140,46 +152,54 @@ int aml_scratch_par_create_request(struct aml_scratch_data *d,
 		*scratchid = slot;
 
 		/* init request */
-		aml_scratch_request_par_init(req, type, scratch,
-					     scratchptr, *scratchid,
-					     srcptr, srcid);
+		aml_scratch_par_request_data_init(req, type, scratch,
+						  scratchptr, *scratchid,
+						  srcptr, srcid);
 	}
+	int uuid = aml_vector_getid(scratch->data.requests, req);
+
+	assert(uuid != AML_SCRATCH_REQUEST_TYPE_INVALID);
+	aml_scratch_request_par_create(&ret, uuid);
 	pthread_mutex_unlock(&scratch->data.lock);
 	/* thread creation */
 	if (req->type != AML_SCRATCH_REQUEST_TYPE_NOOP)
 		pthread_create(&req->thread, NULL, scratch->ops.do_thread, req);
-	*r = (struct aml_scratch_request *)req;
+	*r = (struct aml_scratch_request *)ret;
 	return 0;
 }
 
 int aml_scratch_par_destroy_request(struct aml_scratch_data *d,
-					 struct aml_scratch_request *r)
+				    struct aml_scratch_request *r)
 {
 	assert(d != NULL);
 	assert(r != NULL);
 	struct aml_scratch_par *scratch =
 		(struct aml_scratch_par *)d;
-
+	struct aml_scratch_par_request_data *inner_req;
 	struct aml_scratch_request_par *req =
 		(struct aml_scratch_request_par *)r;
 	int *tile;
 
-	if (req->type != AML_SCRATCH_REQUEST_TYPE_NOOP) {
-		pthread_cancel(req->thread);
-		pthread_join(req->thread, NULL);
+	inner_req = aml_vector_get(scratch->data.requests, req->uuid);
+	if (inner_req == NULL)
+		return -AML_EINVAL;
+
+	if (inner_req->type != AML_SCRATCH_REQUEST_TYPE_NOOP) {
+		pthread_cancel(inner_req->thread);
+		pthread_join(inner_req->thread, NULL);
 	}
 
-	aml_scratch_request_par_destroy(req);
 
 	/* destroy removes the tile from the scratch */
+	if (inner_req->type == AML_SCRATCH_REQUEST_TYPE_PUSH)
+		tile = aml_vector_get(scratch->data.tilemap, inner_req->srcid);
+	else if (inner_req->type == AML_SCRATCH_REQUEST_TYPE_PULL)
+		tile = aml_vector_get(scratch->data.tilemap, inner_req->dstid);
 	pthread_mutex_lock(&scratch->data.lock);
-	if (req->type == AML_SCRATCH_REQUEST_TYPE_PUSH)
-		tile = aml_vector_get(scratch->data.tilemap, req->srcid);
-	else if (req->type == AML_SCRATCH_REQUEST_TYPE_PULL)
-		tile = aml_vector_get(scratch->data.tilemap, req->dstid);
 	aml_vector_remove(scratch->data.tilemap, tile);
-	aml_vector_remove(scratch->data.requests, req);
+	aml_vector_remove(scratch->data.requests, inner_req);
 	pthread_mutex_unlock(&scratch->data.lock);
+	aml_scratch_request_par_destroy(&req);
 	return 0;
 }
 
@@ -189,23 +209,28 @@ int aml_scratch_par_wait_request(struct aml_scratch_data *d,
 	assert(d != NULL);
 	assert(r != NULL);
 	struct aml_scratch_par *scratch = (struct aml_scratch_par *)d;
+	struct aml_scratch_par_request_data *inner_req;
 	struct aml_scratch_request_par *req =
 		(struct aml_scratch_request_par *)r;
 	int *tile;
 
+	inner_req = aml_vector_get(scratch->data.requests, req->uuid);
+	if (inner_req == NULL)
+		return -AML_EINVAL;
+
 	/* wait for completion of the request */
-	if (req->type != AML_SCRATCH_REQUEST_TYPE_NOOP)
-		pthread_join(req->thread, NULL);
+	if (inner_req->type != AML_SCRATCH_REQUEST_TYPE_NOOP)
+		pthread_join(inner_req->thread, NULL);
 
 	/* cleanup a completed request. In case of push, free up the tile */
-	aml_scratch_request_par_destroy(req);
 	pthread_mutex_lock(&scratch->data.lock);
-	if (req->type == AML_SCRATCH_REQUEST_TYPE_PUSH) {
-		tile = aml_vector_get(scratch->data.tilemap, req->srcid);
+	if (inner_req->type == AML_SCRATCH_REQUEST_TYPE_PUSH) {
+		tile = aml_vector_get(scratch->data.tilemap, inner_req->srcid);
 		aml_vector_remove(scratch->data.tilemap, tile);
 	}
-	aml_vector_remove(scratch->data.requests, req);
+	aml_vector_remove(scratch->data.requests, inner_req);
 	pthread_mutex_unlock(&scratch->data.lock);
+	aml_scratch_request_par_destroy(&req);
 	return 0;
 }
 
@@ -277,8 +302,8 @@ int aml_scratch_par_create(struct aml_scratch **scratch,
 
 	/* allocate request array */
 	aml_vector_create(&s->data.requests, nbreqs,
-			  sizeof(struct aml_scratch_request_par),
-			  offsetof(struct aml_scratch_request_par, type),
+			  sizeof(struct aml_scratch_par_request_data),
+			  offsetof(struct aml_scratch_par_request_data, type),
 			  AML_SCRATCH_REQUEST_TYPE_INVALID);
 
 	/* s init */

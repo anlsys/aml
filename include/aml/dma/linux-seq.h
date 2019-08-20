@@ -27,8 +27,14 @@
  **/
 extern struct aml_dma_ops aml_dma_linux_seq_ops;
 
-/** Inside of a sequential request for linux movement. **/
+/** Request handle for clients of the DMA. **/
 struct aml_dma_request_linux_seq {
+	/** internal request uuid, index in the request vector. **/
+	int uuid;
+};
+
+/** Inside of a sequential request for linux movement. **/
+struct aml_dma_linux_seq_request_data {
 	/**
 	 * The type of dma request
 	 * @see <aml.h>
@@ -60,7 +66,7 @@ struct aml_dma_linux_seq_ops {
 	 * @see aml_area
 	 **/
 	int (*do_copy)(struct aml_dma_linux_seq_data *dma,
-		       struct aml_dma_request_linux_seq *req);
+		       struct aml_dma_linux_seq_request_data *req);
 };
 
 /**
@@ -99,7 +105,7 @@ void aml_dma_linux_seq_destroy(struct aml_dma **dma);
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_linux_seq_do_copy(struct aml_dma_linux_seq_data *dma,
-			      struct aml_dma_request_linux_seq *req);
+			      struct aml_dma_linux_seq_request_data *req);
 
 /**
  * @}

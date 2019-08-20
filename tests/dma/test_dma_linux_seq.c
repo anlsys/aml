@@ -15,7 +15,7 @@
 #include <assert.h>
 
 #define TILESIZE (2)
-#define NBTILES (4)
+#define NBTILES (16)
 
 int main(int argc, char *argv[])
 {
@@ -29,8 +29,7 @@ int main(int argc, char *argv[])
 	/* initialize all the supporting struct */
 	assert(!aml_tiling_1d_create(&tiling, TILESIZE*_SC_PAGE_SIZE,
 				     TILESIZE*_SC_PAGE_SIZE*NBTILES));
-	size_t maxrequests = NBTILES;
-	assert(!aml_dma_linux_seq_create(&dma, maxrequests));
+	assert(!aml_dma_linux_seq_create(&dma, 1));
 
 	/* allocate some memory */
 	src = aml_area_mmap(&aml_area_linux, NULL, TILESIZE*_SC_PAGE_SIZE*NBTILES);
@@ -42,12 +41,17 @@ int main(int argc, char *argv[])
 	memset(dst, 24, TILESIZE*_SC_PAGE_SIZE*NBTILES);
 
 	/* move some stuff by copy */
+	struct aml_dma_request *requests[NBTILES];
 	for(int i = 0; i < NBTILES; i++) {
 		void *d = aml_tiling_tilestart(tiling, dst, i);
 		void *s = aml_tiling_tilestart(tiling, src, i);
-		aml_dma_copy(dma, AML_DMA_REQUEST_TYPE_PTR,
-			     d, s, TILESIZE*_SC_PAGE_SIZE);
+		assert(!aml_dma_async_copy(dma, &requests[i],
+					   AML_DMA_REQUEST_TYPE_PTR,
+					   d, s, (size_t)TILESIZE*_SC_PAGE_SIZE));
+		assert(requests[i] != NULL);
 	}
+	for(int i = 0; i < NBTILES; i++)
+		assert(!aml_dma_wait(dma, requests[i]));
 
 	assert(!memcmp(src, dst, TILESIZE*_SC_PAGE_SIZE*NBTILES));
 
