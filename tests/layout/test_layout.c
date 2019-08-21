@@ -55,8 +55,8 @@ void test_slice_contiguous(void)
 		//fprintf(stderr, "%d == %d\n", val, *(int *)ptr);
 		assert( val == *(int *)ptr);
 	}
-	free(a);
-	free(b);
+	aml_layout_dense_destroy(&a);
+	aml_layout_dense_destroy(&b);
 
 	assert(aml_layout_dense_create(&a,
 				       (void *) memory,
@@ -85,8 +85,8 @@ void test_slice_contiguous(void)
 		assert( val == *(int *)ptr);
 		
 	}
-	free(a);
-	free(b);
+	aml_layout_dense_destroy(&a);
+	aml_layout_dense_destroy(&b);
 }
 
 void test_slice_strided(void)
@@ -140,8 +140,8 @@ void test_slice_strided(void)
 			       stride[0] * (offsets_col[0] + new_stride_col[0] * k)] == *(int *)ptr);
 	}
 	
-	free(a);
-	free(b);
+	aml_layout_dense_destroy(&a);
+	aml_layout_dense_destroy(&b);
 
 	assert(aml_layout_dense_create(&a,
 				       (void *) memory,
@@ -163,8 +163,8 @@ void test_slice_strided(void)
 		assert( memory[stride[2] * (offsets_col[2] + new_stride_col[2] * i)][stride[1] * (offsets_col[1] + new_stride_col[1] * j)][stride[0] * (offsets_col[0] + new_stride_col[0] * k)] == *(int *)ptr);
 	}
 
-	free(a);
-	free(b);
+	aml_layout_dense_destroy(&a);
+	aml_layout_dense_destroy(&b);
 
 }
 
@@ -218,9 +218,9 @@ void test_reshape_contiguous(void)
 		assert(i == *(int *)c_ptr);
 	}
 
-	free(a);
-	free(b);
-	free(c);
+	aml_layout_dense_destroy(&a);
+	aml_layout_dense_destroy(&b);
+	aml_layout_dense_destroy(&c);
 
 	assert(aml_layout_dense_create(&a,
 				       (void *) memory,
@@ -250,9 +250,9 @@ void test_reshape_contiguous(void)
 		assert(i == *(int *)c_ptr);
 	}
 
-	free(a);
-	free(b);
-	free(c);
+	aml_layout_dense_destroy(&a);
+	aml_layout_dense_destroy(&b);
+	aml_layout_dense_destroy(&c);
 }
 
 void test_reshape_discontiguous(void)
@@ -315,9 +315,9 @@ void test_reshape_discontiguous(void)
 		assert(i == *(int *)ptr);
 	}
 
-	free(a);
-	free(b);
-	free(c);
+	aml_layout_dense_destroy(&a);
+	aml_layout_dense_destroy(&b);
+	aml_layout_dense_destroy(&c);
 
 	assert(aml_layout_dense_create(&a,
 				       (void *) memory,
@@ -353,9 +353,9 @@ void test_reshape_discontiguous(void)
 		assert(i == *(int *)ptr);
 	}
 
-	free(a);
-	free(b);
-	free(c);
+	aml_layout_dense_destroy(&a);
+	aml_layout_dense_destroy(&b);
+	aml_layout_dense_destroy(&c);
 }
 
 void test_reshape_strided(void)
@@ -416,9 +416,9 @@ void test_reshape_strided(void)
 		assert(i == *(int *)ptr);
 	}
 
-	free(a);
-	free(b);
-	free(c);
+	aml_layout_dense_destroy(&a);
+	aml_layout_dense_destroy(&b);
+	aml_layout_dense_destroy(&c);
 
 	assert(aml_layout_dense_create(&a,
 				       (void *) memory,
@@ -452,9 +452,9 @@ void test_reshape_strided(void)
 		assert(i == *(int *)ptr);
 	}
 
-	free(a);
-	free(b);
-	free(c);
+	aml_layout_dense_destroy(&a);
+	aml_layout_dense_destroy(&b);
+	aml_layout_dense_destroy(&c);
 }
 
 void test_base(void)
@@ -469,7 +469,7 @@ void test_base(void)
 	size_t stride[5] = {1, 2, 1, 1, 1};
 
 	size_t dims_col[5] = {2, 3, 7, 11, 13};
-        size_t dims_row[5] = {13, 11, 7, 3, 2};
+	size_t dims_row[5] = {13, 11, 7, 3, 2};
 
 	size_t pitch_col[5] = {4, 8, 8, 12, 16};
 	size_t pitch_row[5] = {16, 12, 8, 8, 4};
@@ -477,9 +477,52 @@ void test_base(void)
 	size_t stride_col[5] = {1, 2, 1, 1, 1};
 	size_t stride_row[5] = {1, 1, 1, 2, 1};
 
-        for(size_t i = 0; i < 4*8*8*12*16; i++)
+	for(size_t i = 0; i < 4*8*8*12*16; i++)
 		((float*)(&memory[0][0][0][0][0]))[i] = (float)i;
 
+	/* test invalid input */
+	assert(aml_layout_dense_create(NULL, (void *) memory,
+				       AML_LAYOUT_ORDER_COLUMN_MAJOR,
+				       sizeof(int), 5, dims_col, stride_col,
+				       pitch_col) == -AML_EINVAL);
+	assert(aml_layout_dense_create(&a, NULL,
+				       AML_LAYOUT_ORDER_COLUMN_MAJOR,
+				       sizeof(int), 5, dims_col, stride_col,
+				       pitch_col) == -AML_EINVAL);
+	/* missing: we don't test the tags/order value */
+	assert(aml_layout_dense_create(&a, (void *) memory,
+				       AML_LAYOUT_ORDER_COLUMN_MAJOR,
+				       0, 5, dims_col, stride_col,
+				       pitch_col) == -AML_EINVAL);
+	assert(aml_layout_dense_create(&a, (void *) memory,
+				       AML_LAYOUT_ORDER_COLUMN_MAJOR,
+				       sizeof(int), 0, dims_col, stride_col,
+				       pitch_col) == -AML_EINVAL);
+	assert(aml_layout_dense_create(&a, (void *) memory,
+				       AML_LAYOUT_ORDER_COLUMN_MAJOR,
+				       sizeof(int), 5, NULL, stride_col,
+				       pitch_col) == -AML_EINVAL);
+	aml_layout_dense_destroy(NULL);
+
+	/* test partial data */
+	assert(aml_layout_dense_create(&a,
+				       (void *) memory,
+				       AML_LAYOUT_ORDER_COLUMN_MAJOR,
+				       sizeof(int),
+				       5,
+				       dims_col,
+				       NULL,
+				       pitch_col) == AML_SUCCESS);
+	aml_layout_dense_destroy(&a);
+	assert(aml_layout_dense_create(&a,
+				       (void *) memory,
+				       AML_LAYOUT_ORDER_COLUMN_MAJOR,
+				       sizeof(int),
+				       5,
+				       dims_col,
+				       stride_col,
+				       NULL) == AML_SUCCESS);
+	aml_layout_dense_destroy(&a);
 
 	/* initialize column order layouts */
 	assert(aml_layout_dense_create(&a,
@@ -533,16 +576,32 @@ void test_base(void)
 	assert(res_addr == test_addr);
 	assert(AML_LAYOUT_ORDER_COLUMN_MAJOR == aml_layout_order(a));
 
-	free(a);
+	aml_layout_dense_destroy(&a);
+
+	/* test partial data */
+	assert(aml_layout_dense_create(&a,
+				       (void *) memory,
+				       AML_LAYOUT_ORDER_ROW_MAJOR,
+				       sizeof(float),
+				       5, dims_row,
+				       NULL,
+				       pitch_row) == AML_SUCCESS);
+	aml_layout_dense_destroy(&a);
+	assert(aml_layout_dense_create(&a, (void *) memory,
+				       AML_LAYOUT_ORDER_ROW_MAJOR,
+				       sizeof(float),
+				       5, dims_row,
+				       stride_row,
+				       NULL) == AML_SUCCESS);
+	aml_layout_dense_destroy(&a);
 
 	/* initialize row order layouts */
-	aml_layout_dense_create(&a,
-				(void *)memory,
-				AML_LAYOUT_ORDER_ROW_MAJOR,
-				sizeof(float),
-				5, dims_row,
-				stride_row,
-				pitch_row);
+	assert(aml_layout_dense_create(&a, (void *) memory,
+				       AML_LAYOUT_ORDER_ROW_MAJOR,
+				       sizeof(float),
+				       5, dims_row,
+				       stride_row,
+				       pitch_row) == AML_SUCCESS);
 	
 	adataptr = (struct aml_layout_dense *)a->data;
 	bdataptr = (struct aml_layout_dense *)b->data;
@@ -571,7 +630,7 @@ void test_base(void)
 	assert(res_addr == test_addr);
 	assert(AML_LAYOUT_ORDER_ROW_MAJOR == aml_layout_order(a));
 
-	free(a);
+	aml_layout_dense_destroy(&a);
 }
 
 int main(int argc, char *argv[])

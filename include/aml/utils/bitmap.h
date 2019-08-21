@@ -27,9 +27,9 @@
 /** The type used to store bits **/
 #define AML_BITMAP_TYPE  unsigned long
 /** The number of basic type elements used to store bits **/
-#define AML_BITMAP_SIZE  (AML_BITMAP_BYTES/sizeof(AML_BITMAP_TYPE))
+#define AML_BITMAP_SIZE  ((int)(AML_BITMAP_BYTES/sizeof(AML_BITMAP_TYPE)))
 /** The number of bits held in each basic type element **/
-#define AML_BITMAP_NBITS (8 * sizeof(AML_BITMAP_TYPE))
+#define AML_BITMAP_NBITS ((int)(8 * sizeof(AML_BITMAP_TYPE)))
 
 /**
  * aml_bitmap is a static array of elements wrapped in a structure.
@@ -50,13 +50,13 @@ void aml_bitmap_copy(struct aml_bitmap *dst, const struct aml_bitmap *src);
  * Empty a bitmap with all bits cleared.
  * @param bitmap: The bitmap to set.
  **/
-void aml_bitmap_zero(struct aml_bitmap *bitmap);
+int aml_bitmap_zero(struct aml_bitmap *bitmap);
 
 /**
  * Fill a bitmap with all bits set.
  * @param bitmap: The bitmap to set.
  **/
-void aml_bitmap_fill(struct aml_bitmap *bitmap);
+int aml_bitmap_fill(struct aml_bitmap *bitmap);
 
 /**
  * Check whether a bit in bitmap is set.
@@ -135,7 +135,7 @@ int aml_bitmap_clear_range(struct aml_bitmap *bitmap,
  * @param bitmap: The bitmap to inspect.
  * @return The number of bits set in bitmap.
  **/
-unsigned long aml_bitmap_nset(const struct aml_bitmap *bitmap);
+int aml_bitmap_nset(const struct aml_bitmap *bitmap);
 
 /**
  * Copy a unsigned long array used as a bitmap into an actual bitmap.

@@ -9,58 +9,91 @@
 *******************************************************************************/
 
 #include "aml.h"
-#include "aml/area/linux.h"
+#include "aml/layout/dense.h"
 #include "aml/dma/linux-seq.h"
-#include "aml/tiling/1d.h"
 #include <assert.h>
-
-#define TILESIZE (2)
-#define NBTILES (16)
 
 int main(int argc, char *argv[])
 {
-	struct aml_tiling *tiling;
 	struct aml_dma *dma;
-	void *dst, *src;
+	size_t isz = 1<<16;
+	int idest[isz];
+	int isrc[isz];
+	struct aml_layout *idl, *isl;
 
 	/* library initialization */
 	aml_init(&argc, &argv);
 
-	/* initialize all the supporting struct */
-	assert(!aml_tiling_1d_create(&tiling, TILESIZE*_SC_PAGE_SIZE,
-				     TILESIZE*_SC_PAGE_SIZE*NBTILES));
+	/* support data structures */
+	assert(!aml_layout_dense_create(&idl, idest, 0, sizeof(int), 1, &isz,
+					NULL, NULL));
+	assert(!aml_layout_dense_create(&isl, isrc, 0, sizeof(int), 1, &isz,
+					NULL, NULL));
+	for (size_t i = 0; i < isz; i++) {
+		idest[i] = 42;
+		isrc[i] = 24;
+	}
+	/* invalid create input */
+	assert(aml_dma_linux_seq_create(NULL, 1) == -AML_EINVAL);
+
+	/* invalid requests */
 	assert(!aml_dma_linux_seq_create(&dma, 1));
+	assert(aml_dma_copy(dma, 42) == -AML_EINVAL);
+	assert(aml_dma_copy(dma, AML_DMA_REQUEST_TYPE_PTR, NULL, isrc, isz) ==
+	       -AML_EINVAL);
+	assert(aml_dma_copy(dma, AML_DMA_REQUEST_TYPE_PTR, idest, NULL, isz) ==
+	       -AML_EINVAL);
+	assert(aml_dma_copy(dma, AML_DMA_REQUEST_TYPE_PTR, idest, isrc, 0) ==
+	       -AML_EINVAL);
+	assert(aml_dma_copy(dma, AML_DMA_REQUEST_TYPE_LAYOUT, NULL, isl) ==
+	       -AML_EINVAL);
+	assert(aml_dma_copy(dma, AML_DMA_REQUEST_TYPE_LAYOUT, idl, NULL) ==
+	       -AML_EINVAL);
 
-	/* allocate some memory */
-	src = aml_area_mmap(&aml_area_linux, NULL, TILESIZE*_SC_PAGE_SIZE*NBTILES);
-	assert(src != NULL);
-	dst = aml_area_mmap(&aml_area_linux, NULL, TILESIZE*_SC_PAGE_SIZE*NBTILES);
-	assert(dst != NULL);
+	struct aml_dma_request *r1, *r2;
+	/* force dma to increase its requests queue */
+	assert(!aml_dma_async_copy(dma, &r1, AML_DMA_REQUEST_TYPE_LAYOUT,
+				   idl, isl));
+	assert(!aml_dma_async_copy(dma, &r2, AML_DMA_REQUEST_TYPE_LAYOUT,
+				   idl, isl));
 
-	memset(src, 42, TILESIZE*_SC_PAGE_SIZE*NBTILES);
-	memset(dst, 24, TILESIZE*_SC_PAGE_SIZE*NBTILES);
+	assert(aml_dma_wait(dma, NULL) == -AML_EINVAL);
+	assert(!aml_dma_wait(dma, &r1));
+	assert(!aml_dma_wait(dma, &r2));
 
-	/* move some stuff by copy */
-	struct aml_dma_request *requests[NBTILES];
-	for(int i = 0; i < NBTILES; i++) {
-		void *d = aml_tiling_tilestart(tiling, dst, i);
-		void *s = aml_tiling_tilestart(tiling, src, i);
+	/* cancel a request on the fly */
+	assert(aml_dma_cancel(dma, NULL) == -AML_EINVAL);
+	assert(!aml_dma_async_copy(dma, &r1, AML_DMA_REQUEST_TYPE_LAYOUT,
+				   idl, isl));
+	assert(!aml_dma_cancel(dma, &r1));
+
+
+	/* destroy a running dma */
+	assert(!aml_dma_async_copy(dma, &r1, AML_DMA_REQUEST_TYPE_LAYOUT,
+				   idl, isl));
+	aml_dma_linux_seq_destroy(&dma);
+
+	/* move data around */
+	assert(!aml_dma_linux_seq_create(&dma, 1));
+	struct aml_dma_request *requests[16];
+	for (int i = 0; i < 16; i++) {
+		size_t sz = isz/16;
+		size_t off = i*sz;
+		void *dptr = (void *)&(idest[off]);
+		void *sptr = (void *)&(isrc[off]);
+
 		assert(!aml_dma_async_copy(dma, &requests[i],
 					   AML_DMA_REQUEST_TYPE_PTR,
-					   d, s, (size_t)TILESIZE*_SC_PAGE_SIZE));
+					   dptr, sptr, sz*sizeof(int)));
 		assert(requests[i] != NULL);
 	}
-	for(int i = 0; i < NBTILES; i++)
-		assert(!aml_dma_wait(dma, requests[i]));
+	for(int i = 0; i < 16; i++)
+		assert(!aml_dma_wait(dma, &requests[i]));
 
-	assert(!memcmp(src, dst, TILESIZE*_SC_PAGE_SIZE*NBTILES));
+	assert(!memcmp(isrc, idest, isz*sizeof(int)));
 
 	/* delete everything */
 	aml_dma_linux_seq_destroy(&dma);
-	aml_area_munmap(&aml_area_linux, dst, TILESIZE*_SC_PAGE_SIZE*NBTILES);
-	aml_area_munmap(&aml_area_linux, src, TILESIZE*_SC_PAGE_SIZE*NBTILES);
-	aml_tiling_1d_destroy(&tiling);
-
 	aml_finalize();
 	return 0;
 }

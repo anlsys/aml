@@ -88,7 +88,9 @@ int aml_dma_copy(struct aml_dma *dma, int type, ...)
 	va_start(ap, type);
 	ret = dma->ops->create_request(dma->data, &req, type, ap);
 	va_end(ap);
-	ret = dma->ops->wait_request(dma->data, req);
+	if (ret != AML_SUCCESS)
+		return ret;
+	ret = dma->ops->wait_request(dma->data, &req);
 	return ret;
 }
 
@@ -107,16 +109,16 @@ int aml_dma_async_copy(struct aml_dma *dma, struct aml_dma_request **req,
 	return ret;
 }
 
-int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request *req)
+int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request **req)
 {
-	assert(dma != NULL);
-	assert(req != NULL);
+	if (dma == NULL || req == NULL)
+		return -AML_EINVAL;
 	return dma->ops->destroy_request(dma->data, req);
 }
 
-int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request *req)
+int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request **req)
 {
-	assert(dma != NULL);
-	assert(req != NULL);
+	if (dma == NULL || req == NULL)
+		return -AML_EINVAL;
 	return dma->ops->wait_request(dma->data, req);
 }

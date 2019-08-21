@@ -87,7 +87,8 @@ int aml_layout_dense_create(struct aml_layout **layout,
 	struct aml_layout_dense *data;
 	int err;
 
-	if (layout == NULL)
+	if (layout == NULL || ptr == NULL || !element_size || !ndims ||
+	    dims == NULL)
 		return -AML_EINVAL;
 
 	err = aml_layout_dense_alloc(&l, ndims);
@@ -111,8 +112,6 @@ int aml_layout_dense_create(struct aml_layout **layout,
 			else
 				data->pitch[i] = dims[ndims-i-1];
 		}
-		for (size_t i = 1; i <= ndims; i++)
-			data->cpitch[i] = data->cpitch[i-1]*pitch[ndims-i];
 		break;
 
 	case AML_LAYOUT_ORDER_COLUMN_MAJOR:
@@ -124,14 +123,14 @@ int aml_layout_dense_create(struct aml_layout **layout,
 			memcpy(data->pitch, pitch, ndims * sizeof(size_t));
 		else
 			memcpy(data->pitch, dims, ndims * sizeof(size_t));
-		for (size_t i = 1; i <= ndims; i++)
-			data->cpitch[i] = data->cpitch[i-1]*data->pitch[i-1];
 		break;
 	default:
 		free(l);
 		return -AML_EINVAL;
 
 	}
+	for (size_t i = 1; i <= ndims; i++)
+		data->cpitch[i] = data->cpitch[i-1]*data->pitch[i-1];
 
 	*layout = l;
 	return AML_SUCCESS;

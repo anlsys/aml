@@ -877,7 +877,7 @@ struct aml_dma_ops {
 	 * @return an AML error code.
 	 **/
 	int (*destroy_request)(struct aml_dma_data *dma,
-			       struct aml_dma_request *req);
+			       struct aml_dma_request **req);
 
 	/**
 	 * Wait for termination of a data movement and destroy the request
@@ -888,7 +888,7 @@ struct aml_dma_ops {
 	 * @return an AML error code.
 	 **/
 	int (*wait_request)(struct aml_dma_data *dma,
-			    struct aml_dma_request *req);
+			    struct aml_dma_request **req);
 };
 
 /**
@@ -931,7 +931,7 @@ int aml_dma_async_copy(struct aml_dma *dma, struct aml_dma_request **req,
  * @param req: a DMA request obtained using aml_dma_async_*() calls.
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request *req);
+int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request **req);
 
 /**
  * Tears down an asynchronous DMA request before it completes.
@@ -939,7 +939,7 @@ int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request *req);
  * @param req: a DMA request obtained using aml_dma_async_*() calls.
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request *req);
+int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request **req);
 
 /**
  * Generic helper to copy from one layout to another.
