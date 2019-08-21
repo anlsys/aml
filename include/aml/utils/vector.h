@@ -16,16 +16,17 @@
  * @brief AML Vector API
  *
  * Generic vector type:
- * Vector of nbelems, each of size sz, with a comparison key at offset off
+ * Vector of nbelems, each of size sz, with a comparison key at offset off.
+ * Elements are not stored directly in the vector, but are allocated one by one.
  * @{
  **/
 
 /** Pointer to the key within element "e" of a vector "v".  **/
 #define AML_VECTOR_ELTKEY_P(v, e) ((int *)(((intptr_t) e) + v->off))
 /** Pointer to the key within element index "i" of a vector "v".  **/
-#define AML_VECTOR_KEY_P(v, i) ((int *)(((intptr_t) v->ptr) + i*v->sz + v->off))
+#define AML_VECTOR_KEY_P(v, i) ((int *)(((intptr_t) v->ptr[i]) + v->off))
 /** Pointer to the element index "i" of a vector "v".  **/
-#define AML_VECTOR_ELT_P(v, i) ((void *)(((intptr_t) v->ptr) + i*v->sz))
+#define AML_VECTOR_ELT_P(v, i) (v->ptr[i])
 
 /** AML vector structure **/
 struct aml_vector {
@@ -40,8 +41,8 @@ struct aml_vector {
 	 * key (of type int) is stored.
 	 **/
 	size_t off;
-	/** Pointer to elements in vector **/
-	void *ptr;
+	/** array of element pointers in the vector **/
+	void **ptr;
 };
 
 /**
@@ -59,6 +60,13 @@ size_t aml_vector_size(const struct aml_vector *vector);
  * @return a pointer to the requested element.
  **/
 void *aml_vector_get(struct aml_vector *vector, int index);
+/**
+ * Provides the index of element "elem" within the vector.
+ * @param vector: an initialized vector structure.
+ * @param elem: a valid element within "vector".
+ * @return the index to the element or "na" if not found.
+ **/
+int aml_vector_getid(struct aml_vector *vector, void *elem);
 /**
  * Find the first element with a particular key.
  * @param vector: an initialized vector structure.

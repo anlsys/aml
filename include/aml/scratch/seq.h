@@ -25,8 +25,14 @@
  **/
 extern struct aml_scratch_ops aml_scratch_seq_ops;
 
-/** Inside of a sequential scratch request with linux dma. **/
+/** Request handle for clients of the scratch. **/
 struct aml_scratch_request_seq {
+	/** internal request uuid, index in the request vector. **/
+	int uuid;
+};
+
+/** Inside of a sequential scratch request. **/
+struct aml_scratch_seq_request_data {
 	/**
 	 * The type of scratchpad request
 	 * @see <aml.h>
@@ -79,7 +85,7 @@ struct aml_scratch_seq_ops {
 	 * @param req: The request to execute.
 	 **/
 	int (*doit)(struct aml_scratch_seq_data *scratch,
-		    struct aml_scratch_request_seq *req);
+		    struct aml_scratch_seq_request_data *req);
 };
 
 /** Sequential implementation of a scratchpad **/
