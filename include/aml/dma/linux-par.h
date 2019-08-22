@@ -27,14 +27,8 @@
  **/
 extern struct aml_dma_ops aml_dma_linux_par_ops;
 
-/** Request handle for clients of the DMA. **/
-struct aml_dma_request_linux_par {
-	/** internal request uuid, index in the request vector. **/
-	int uuid;
-};
-
 /** Inside of a parallel request for linux movement. **/
-struct aml_dma_linux_par_request_data {
+struct aml_dma_request_linux_par {
 	/**
 	 * The type of dma request
 	 * @see <aml.h>
