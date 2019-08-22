@@ -65,8 +65,7 @@ void *aml_scratch_par_do_thread(void *arg)
 		(struct aml_scratch_request_par *)arg;
 	struct aml_scratch_par *scratch = req->scratch;
 
-	aml_dma_copy(scratch->data.dma, AML_DMA_REQUEST_TYPE_LAYOUT,
-		     req->dst, req->src);
+	aml_dma_copy(scratch->data.dma, req->dst, req->src);
 	return NULL;
 }
 

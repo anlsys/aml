@@ -38,18 +38,13 @@ int main(int argc, char *argv[])
 
 	/* invalid requests */
 	assert(!aml_dma_linux_par_create(&dma, 1));
-	assert(aml_dma_copy(dma, 42) == -AML_EINVAL);
-	assert(aml_dma_copy(dma, AML_DMA_REQUEST_TYPE_LAYOUT, NULL, isl) ==
-	       -AML_EINVAL);
-	assert(aml_dma_copy(dma, AML_DMA_REQUEST_TYPE_LAYOUT, idl, NULL) ==
-	       -AML_EINVAL);
+	assert(aml_dma_copy(dma, NULL, isl) == -AML_EINVAL);
+	assert(aml_dma_copy(dma, idl, NULL) == -AML_EINVAL);
 
 	struct aml_dma_request *r1, *r2;
 	/* force dma to increase its requests queue */
-	assert(!aml_dma_async_copy(dma, &r1, AML_DMA_REQUEST_TYPE_LAYOUT,
-				   idl, isl));
-	assert(!aml_dma_async_copy(dma, &r2, AML_DMA_REQUEST_TYPE_LAYOUT,
-				   idl, isl));
+	assert(!aml_dma_async_copy(dma, &r1, idl, isl));
+	assert(!aml_dma_async_copy(dma, &r2, idl, isl));
 
 	assert(aml_dma_wait(dma, NULL) == -AML_EINVAL);
 	assert(!aml_dma_wait(dma, &r1));
@@ -59,13 +54,11 @@ int main(int argc, char *argv[])
 	/* cancel a request on the fly */
 	assert(!aml_dma_linux_par_create(&dma, 1));
 	assert(aml_dma_cancel(dma, NULL) == -AML_EINVAL);
-	assert(!aml_dma_async_copy(dma, &r1, AML_DMA_REQUEST_TYPE_LAYOUT,
-				   idl, isl));
+	assert(!aml_dma_async_copy(dma, &r1, idl, isl));
 	assert(!aml_dma_cancel(dma, &r1));
 
 	/* destroy a running dma */
-	assert(!aml_dma_async_copy(dma, &r1, AML_DMA_REQUEST_TYPE_LAYOUT,
-				   idl, isl));
+	assert(!aml_dma_async_copy(dma, &r1, idl, isl));
 	aml_dma_linux_par_destroy(&dma);
 
 	/* move data around */
@@ -82,7 +75,6 @@ int main(int argc, char *argv[])
 		aml_layout_dense_create(&layouts[i][1], sptr, 0, sizeof(int),
 					1, &sz, NULL, NULL);
 		assert(!aml_dma_async_copy(dma, &requests[i],
-					   AML_DMA_REQUEST_TYPE_LAYOUT,
 					   layouts[i][0], layouts[i][1]));
 		assert(requests[i] != NULL);
 	}

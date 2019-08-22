@@ -64,7 +64,6 @@ int aml_scratch_seq_doit(struct aml_scratch_seq_data *scratch,
 	assert(scratch != NULL);
 	assert(req != NULL);
 	return aml_dma_async_copy(scratch->dma, &req->dma_req,
-				  AML_DMA_REQUEST_TYPE_LAYOUT,
 				  req->dst, req->src);
 }
 

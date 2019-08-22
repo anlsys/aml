@@ -854,14 +854,14 @@ struct aml_dma_ops {
 	 * @param dma: dma_implementation internal data.
 	 * @param req[out]: the request handle to manage termination
 	 *        of the movement.
-	 * @param type: A valid AML_DMA_REQUEST_TYPE_* specifying the kind
-	 *        of operation to perform.
-	 * @param args: list of variadic arguments provided to aml_dma_copy()
+	 * @param dest: layout describing the destination.
+	 * @param src: layout describing the source.
 	 * @return an AML error code.
 	 **/
 	int (*create_request)(struct aml_dma_data *dma,
 			      struct aml_dma_request **req,
-			      int type, va_list args);
+			      struct aml_layout *dest,
+			      struct aml_layout *src);
 
 	/**
 	 * Destroy the request handle. If the data movement is still ongoing,
@@ -903,10 +903,12 @@ struct aml_dma {
 /**
  * Requests a synchronous data copy between two different buffers.
  * @param dma: an initialized DMA structure.
- * Variadic arguments: implementation-specific.
+ * @param dest: layout describing the destination.
+ * @param src: layout describing the source.
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_dma_copy(struct aml_dma *dma, int type, ...);
+int aml_dma_copy(struct aml_dma *dma, struct aml_layout *dest,
+		 struct aml_layout *src);
 
 /**
  * Requests a data copy between two different buffers.This is an asynchronous
@@ -914,11 +916,13 @@ int aml_dma_copy(struct aml_dma *dma, int type, ...);
  * @param dma: an initialized DMA structure.
  * @param req: an address where the pointer to the newly assigned DMA request
  *        will be stored.
- * Variadic arguments: implementation-specific.
+ * @param dest: layout describing the destination.
+ * @param src: layout describing the source.
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_async_copy(struct aml_dma *dma, struct aml_dma_request **req,
-		       int type, ...);
+		       struct aml_layout *dest,
+		       struct aml_layout *src);
 
 /**
  * Waits for an asynchronous DMA request to complete.
