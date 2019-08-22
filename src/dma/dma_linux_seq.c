@@ -29,34 +29,21 @@
  * Requests:
  ******************************************************************************/
 
-int aml_dma_request_linux_seq_create(struct aml_dma_request_linux_seq **req,
-				     int uuid)
+int aml_dma_request_linux_seq_copy_init(struct aml_dma_request_linux_seq *req,
+					struct aml_layout *dest,
+					struct aml_layout *src)
 {
 	assert(req != NULL);
-	*req = calloc(1, sizeof(struct aml_dma_request_linux_seq));
-	if (*req == NULL)
-		return -AML_ENOMEM;
-	(*req)->uuid = uuid;
+	req->type = AML_DMA_REQUEST_TYPE_LAYOUT;
+	req->dest = dest;
+	req->src = src;
 	return 0;
 }
 
-void aml_dma_request_linux_seq_destroy(struct aml_dma_request_linux_seq **req)
+int aml_dma_request_linux_seq_copy_destroy(struct aml_dma_request_linux_seq *r)
 {
-	assert(req != NULL);
-	free(*req);
-	*req = NULL;
-}
-
-void aml_dma_linux_seq_request_data_init(
-				struct aml_dma_linux_seq_request_data *req,
-				int type,
-				struct aml_layout *dest,
-				struct aml_layout *src)
-{
-	assert(req != NULL);
-	req->type = type;
-	req->dest = dest;
-	req->src = src;
+	assert(r != NULL);
+	return 0;
 }
 
 /*******************************************************************************
@@ -64,7 +51,7 @@ void aml_dma_linux_seq_request_data_init(
  ******************************************************************************/
 
 int aml_dma_linux_seq_do_copy(struct aml_dma_linux_seq_data *dma,
-			      struct aml_dma_linux_seq_request_data *req)
+			      struct aml_dma_request_linux_seq *req)
 {
 	assert(dma != NULL);
 	assert(req != NULL);
@@ -82,64 +69,24 @@ struct aml_dma_linux_seq_ops aml_dma_linux_seq_inner_ops = {
 
 int aml_dma_linux_seq_create_request(struct aml_dma_data *d,
 				     struct aml_dma_request **r,
-				     int type, va_list ap)
+				     struct aml_layout *dest,
+				     struct aml_layout *src)
 {
+	/* NULL checks done by the generic API */
 	assert(d != NULL);
 	assert(r != NULL);
+	assert(dest != NULL);
+	assert(src != NULL);
 	struct aml_dma_linux_seq *dma =
 		(struct aml_dma_linux_seq *)d;
-	struct aml_dma_request_linux_seq *ret;
-	struct aml_dma_linux_seq_request_data *req;
-	int err = AML_SUCCESS;
+	struct aml_dma_request_linux_seq *req;
 
 	pthread_mutex_lock(&dma->data.lock);
 	req = aml_vector_add(dma->data.requests);
-
-	/* init the request */
-	if (type == AML_DMA_REQUEST_TYPE_LAYOUT) {
-		struct aml_layout *dl, *sl;
-
-		dl = va_arg(ap, struct aml_layout *);
-		sl = va_arg(ap, struct aml_layout *);
-		if (dl == NULL || sl == NULL) {
-			err = -AML_EINVAL;
-			goto unlock;
-		}
-		aml_dma_linux_seq_request_data_init(req,
-						    AML_DMA_REQUEST_TYPE_LAYOUT,
-						    dl, sl);
-	} else if (type == AML_DMA_REQUEST_TYPE_PTR) {
-		struct aml_layout *dl, *sl;
-		void *dp, *sp;
-		size_t sz;
-
-		dp = va_arg(ap, void *);
-		sp = va_arg(ap, void *);
-		sz = va_arg(ap, size_t);
-		if (dp == NULL || sp == NULL || sz == 0) {
-			err = -AML_EINVAL;
-			goto unlock;
-		}
-		/* simple 1D layout, none of the parameters really matter, as
-		 * long as the copy generates a single memcpy.
-		 */
-		aml_layout_dense_create(&dl, dp, 0, 1, 1, &sz, NULL, NULL);
-		aml_layout_dense_create(&sl, sp, 0, 1, 1, &sz, NULL, NULL);
-		aml_dma_linux_seq_request_data_init(req,
-						    AML_DMA_REQUEST_TYPE_PTR,
-						    dl, sl);
-	} else
-		err = -AML_EINVAL;
-unlock:
+	aml_dma_request_linux_seq_copy_init(req, dest, src);
 	pthread_mutex_unlock(&dma->data.lock);
-	if (req->type != AML_DMA_REQUEST_TYPE_INVALID) {
-		int uuid = aml_vector_getid(dma->data.requests, req);
-
-		assert(uuid != AML_DMA_REQUEST_TYPE_INVALID);
-		aml_dma_request_linux_seq_create(&ret, uuid);
-		*r = (struct aml_dma_request *)ret;
-	}
-	return err;
+	*r = (struct aml_dma_request *)req;
+	return 0;
 }
 
 int aml_dma_linux_seq_destroy_request(struct aml_dma_data *d,
@@ -150,25 +97,15 @@ int aml_dma_linux_seq_destroy_request(struct aml_dma_data *d,
 	struct aml_dma_linux_seq *dma =
 		(struct aml_dma_linux_seq *)d;
 	struct aml_dma_request_linux_seq *req;
-	struct aml_dma_linux_seq_request_data *inner_req;
 
 	if (*r == NULL)
 		return -AML_EINVAL;
 	req = (struct aml_dma_request_linux_seq *)*r;
 
-	inner_req = aml_vector_get(dma->data.requests, req->uuid);
-	if (inner_req == NULL)
-		return -AML_EINVAL;
-
+	aml_dma_request_linux_seq_copy_destroy(req);
 	pthread_mutex_lock(&dma->data.lock);
-	if (inner_req->type == AML_DMA_REQUEST_TYPE_PTR) {
-		aml_layout_dense_destroy(&inner_req->dest);
-		aml_layout_dense_destroy(&inner_req->src);
-	}
-
-	aml_vector_remove(dma->data.requests, inner_req);
+	aml_vector_remove(dma->data.requests, req);
 	pthread_mutex_unlock(&dma->data.lock);
-	aml_dma_request_linux_seq_destroy(&req);
 	*r = NULL;
 	return 0;
 }
@@ -180,19 +117,14 @@ int aml_dma_linux_seq_wait_request(struct aml_dma_data *d,
 	assert(r != NULL);
 	struct aml_dma_linux_seq *dma = (struct aml_dma_linux_seq *)d;
 	struct aml_dma_request_linux_seq *req;
-	struct aml_dma_linux_seq_request_data *inner_req;
 
 	if (*r == NULL)
 		return -AML_EINVAL;
 	req = (struct aml_dma_request_linux_seq *)*r;
 
-	inner_req = aml_vector_get(dma->data.requests, req->uuid);
-	if (inner_req == NULL)
-		return -AML_EINVAL;
-
 	/* execute */
-	if (inner_req->type != AML_DMA_REQUEST_TYPE_INVALID)
-		dma->ops.do_copy(&dma->data, inner_req);
+	if (req->type != AML_DMA_REQUEST_TYPE_INVALID)
+		dma->ops.do_copy(&dma->data, req);
 
 	/* destroy a completed request */
 	aml_dma_linux_seq_destroy_request(d, r);
@@ -230,8 +162,8 @@ int aml_dma_linux_seq_create(struct aml_dma **dma, size_t nbreqs)
 
 	d->ops = aml_dma_linux_seq_inner_ops;
 	aml_vector_create(&d->data.requests, nbreqs,
-			  sizeof(struct aml_dma_linux_seq_request_data),
-			  offsetof(struct aml_dma_linux_seq_request_data, type),
+			  sizeof(struct aml_dma_request_linux_seq),
+			  offsetof(struct aml_dma_request_linux_seq, type),
 			  AML_DMA_REQUEST_TYPE_INVALID);
 	pthread_mutex_init(&d->data.lock, NULL);
 

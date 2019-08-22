@@ -76,18 +76,16 @@ int aml_copy_layout_generic(struct aml_layout *dst,
  * abstract the request creation after this layer.
  ******************************************************************************/
 
-int aml_dma_copy(struct aml_dma *dma, int type, ...)
+int aml_dma_copy(struct aml_dma *dma, struct aml_layout *dest,
+		 struct aml_layout *src)
 {
-	va_list ap;
 	int ret;
 	struct aml_dma_request *req;
 
-	if (dma == NULL)
+	if (dma == NULL || dest == NULL || src == NULL)
 		return -AML_EINVAL;
 
-	va_start(ap, type);
-	ret = dma->ops->create_request(dma->data, &req, type, ap);
-	va_end(ap);
+	ret = dma->ops->create_request(dma->data, &req, dest, src);
 	if (ret != AML_SUCCESS)
 		return ret;
 	ret = dma->ops->wait_request(dma->data, &req);
@@ -95,18 +93,12 @@ int aml_dma_copy(struct aml_dma *dma, int type, ...)
 }
 
 int aml_dma_async_copy(struct aml_dma *dma, struct aml_dma_request **req,
-		       int type, ...)
+		       struct aml_layout *dest, struct aml_layout *src)
 {
-	va_list ap;
-	int ret;
-
-	if (dma == NULL || req == NULL)
+	if (dma == NULL || req == NULL || dest == NULL || src == NULL)
 		return -AML_EINVAL;
 
-	va_start(ap, type);
-	ret = dma->ops->create_request(dma->data, req, type, ap);
-	va_end(ap);
-	return ret;
+	return dma->ops->create_request(dma->data, req, dest, src);
 }
 
 int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request **req)

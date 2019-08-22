@@ -25,25 +25,19 @@
  **/
 extern struct aml_scratch_ops aml_scratch_par_ops;
 
-/** Request handle for clients of the scratch. **/
-struct aml_scratch_request_par {
-	/** internal request uuid, index in the request vector. **/
-	int uuid;
-};
-
 /** Inside of a parallel scratch request with linux dma. **/
-struct aml_scratch_par_request_data {
+struct aml_scratch_request_par {
 	/**
 	 * The type of scratchpad request
 	 * @see <aml.h>
 	 **/
 	int type;
 	/** The source pointer of the data movement **/
-	void *srcptr;
+	struct aml_layout *src;
 	/** The tile identifier in source pointer **/
 	int srcid;
 	/** The destination pointer of the data movement **/
-	void *dstptr;
+	struct aml_layout *dst;
 	/** The tile identifier in destination pointer **/
 	int dstid;
 	/** The scratchpad handling this request **/
