@@ -39,12 +39,6 @@ int main(int argc, char *argv[])
 	/* invalid requests */
 	assert(!aml_dma_linux_seq_create(&dma, 1));
 	assert(aml_dma_copy(dma, 42) == -AML_EINVAL);
-	assert(aml_dma_copy(dma, AML_DMA_REQUEST_TYPE_PTR, NULL, isrc, isz) ==
-	       -AML_EINVAL);
-	assert(aml_dma_copy(dma, AML_DMA_REQUEST_TYPE_PTR, idest, NULL, isz) ==
-	       -AML_EINVAL);
-	assert(aml_dma_copy(dma, AML_DMA_REQUEST_TYPE_PTR, idest, isrc, 0) ==
-	       -AML_EINVAL);
 	assert(aml_dma_copy(dma, AML_DMA_REQUEST_TYPE_LAYOUT, NULL, isl) ==
 	       -AML_EINVAL);
 	assert(aml_dma_copy(dma, AML_DMA_REQUEST_TYPE_LAYOUT, idl, NULL) ==
@@ -76,24 +70,32 @@ int main(int argc, char *argv[])
 	/* move data around */
 	assert(!aml_dma_linux_seq_create(&dma, 1));
 	struct aml_dma_request *requests[16];
+	struct aml_layout *layouts[16][2];
 	for (int i = 0; i < 16; i++) {
 		size_t sz = isz/16;
 		size_t off = i*sz;
 		void *dptr = (void *)&(idest[off]);
 		void *sptr = (void *)&(isrc[off]);
-
+		aml_layout_dense_create(&layouts[i][0], dptr, 0, sizeof(int),
+					1, &sz, NULL, NULL);
+		aml_layout_dense_create(&layouts[i][1], sptr, 0, sizeof(int),
+					1, &sz, NULL, NULL);
 		assert(!aml_dma_async_copy(dma, &requests[i],
-					   AML_DMA_REQUEST_TYPE_PTR,
-					   dptr, sptr, sz*sizeof(int)));
+					   AML_DMA_REQUEST_TYPE_LAYOUT,
+					   layouts[i][0], layouts[i][1]));
 		assert(requests[i] != NULL);
 	}
-	for(int i = 0; i < 16; i++)
+	for(int i = 0; i < 16; i++) {
 		assert(!aml_dma_wait(dma, &requests[i]));
-
+		aml_layout_dense_destroy(&layouts[i][0]);
+		aml_layout_dense_destroy(&layouts[i][1]);
+	}
 	assert(!memcmp(isrc, idest, isz*sizeof(int)));
 
 	/* delete everything */
 	aml_dma_linux_seq_destroy(&dma);
+	aml_layout_dense_destroy(&idl);
+	aml_layout_dense_destroy(&isl);
 	aml_finalize();
 	return 0;
 }

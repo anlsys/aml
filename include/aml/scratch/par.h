@@ -33,11 +33,11 @@ struct aml_scratch_request_par {
 	 **/
 	int type;
 	/** The source pointer of the data movement **/
-	void *srcptr;
+	struct aml_layout *src;
 	/** The tile identifier in source pointer **/
 	int srcid;
 	/** The destination pointer of the data movement **/
-	void *dstptr;
+	struct aml_layout *dst;
 	/** The tile identifier in destination pointer **/
 	int dstid;
 	/** The scratchpad handling this request **/

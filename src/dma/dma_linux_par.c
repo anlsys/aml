@@ -44,10 +44,6 @@ int aml_dma_request_linux_par_copy_init(struct aml_dma_request_linux_par *req,
 int aml_dma_request_linux_par_copy_destroy(struct aml_dma_request_linux_par *r)
 {
 	assert(r != NULL);
-	if (r->type == AML_DMA_REQUEST_TYPE_PTR) {
-		aml_layout_dense_destroy(&r->dest);
-		aml_layout_dense_destroy(&r->src);
-	}
 	return 0;
 }
 
@@ -100,26 +96,6 @@ int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 		}
 		aml_dma_request_linux_par_copy_init(req,
 						    AML_DMA_REQUEST_TYPE_LAYOUT,
-						    dl, sl);
-	} else if (type == AML_DMA_REQUEST_TYPE_PTR) {
-		struct aml_layout *dl, *sl;
-		void *dp, *sp;
-		size_t sz;
-
-		dp = va_arg(ap, void *);
-		sp = va_arg(ap, void *);
-		sz = va_arg(ap, size_t);
-		if (dp == NULL || sp == NULL || sz == 0) {
-			err = -AML_EINVAL;
-			goto unlock;
-		}
-		/* simple 1D layout, none of the parameters really matter, as
-		 * long as the copy generates a single memcpy.
-		 */
-		aml_layout_dense_create(&dl, dp, 0, 1, 1, &sz, NULL, NULL);
-		aml_layout_dense_create(&sl, sp, 0, 1, 1, &sz, NULL, NULL);
-		aml_dma_request_linux_par_copy_init(req,
-						    AML_DMA_REQUEST_TYPE_PTR,
 						    dl, sl);
 	} else
 		err = -AML_EINVAL;

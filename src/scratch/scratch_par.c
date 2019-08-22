@@ -9,6 +9,7 @@
 *******************************************************************************/
 
 #include "aml.h"
+#include "aml/layout/dense.h"
 #include "aml/scratch/par.h"
 #include <assert.h>
 
@@ -32,18 +33,26 @@ int aml_scratch_request_par_init(struct aml_scratch_request_par *req, int type,
 
 {
 	assert(req != NULL);
+	void *dp, *sp;
+	size_t size;
+
 	req->type = type;
 	req->scratch = scratch;
-	req->srcptr = srcptr;
 	req->srcid = srcid;
-	req->dstptr = dstptr;
 	req->dstid = dstid;
+	dp = aml_tiling_tilestart(scratch->data.tiling, dstptr, dstid);
+	sp = aml_tiling_tilestart(scratch->data.tiling, srcptr, srcid);
+	size = aml_tiling_tilesize(scratch->data.tiling, srcid);
+	aml_layout_dense_create(&req->dst, dp, 0, 1, 1, &size, NULL, NULL);
+	aml_layout_dense_create(&req->src, sp, 0, 1, 1, &size, NULL, NULL);
 	return 0;
 }
 
 int aml_scratch_request_par_destroy(struct aml_scratch_request_par *r)
 {
 	assert(r != NULL);
+	aml_layout_dense_destroy(&r->dst);
+	aml_layout_dense_destroy(&r->src);
 	return 0;
 }
 
@@ -56,17 +65,8 @@ void *aml_scratch_par_do_thread(void *arg)
 		(struct aml_scratch_request_par *)arg;
 	struct aml_scratch_par *scratch = req->scratch;
 
-	void *dest, *src;
-	size_t size;
-
-	dest = aml_tiling_tilestart(scratch->data.tiling,
-				    req->dstptr, req->dstid);
-	src = aml_tiling_tilestart(scratch->data.tiling,
-				   req->srcptr, req->srcid);
-	size = aml_tiling_tilesize(scratch->data.tiling, req->srcid);
-
-	aml_dma_copy(scratch->data.dma, AML_DMA_REQUEST_TYPE_PTR,
-		     dest, src, size);
+	aml_dma_copy(scratch->data.dma, AML_DMA_REQUEST_TYPE_LAYOUT,
+		     req->dst, req->src);
 	return NULL;
 }
 

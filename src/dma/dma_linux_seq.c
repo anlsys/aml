@@ -95,26 +95,6 @@ int aml_dma_linux_seq_create_request(struct aml_dma_data *d,
 		aml_dma_request_linux_seq_copy_init(req,
 						    AML_DMA_REQUEST_TYPE_LAYOUT,
 						    dl, sl);
-	} else if (type == AML_DMA_REQUEST_TYPE_PTR) {
-		struct aml_layout *dl, *sl;
-		void *dp, *sp;
-		size_t sz;
-
-		dp = va_arg(ap, void *);
-		sp = va_arg(ap, void *);
-		sz = va_arg(ap, size_t);
-		if (dp == NULL || sp == NULL || sz == 0) {
-			err = -AML_EINVAL;
-			goto unlock;
-		}
-		/* simple 1D layout, none of the parameters really matter, as
-		 * long as the copy generates a single memcpy.
-		 */
-		aml_layout_dense_create(&dl, dp, 0, 1, 1, &sz, NULL, NULL);
-		aml_layout_dense_create(&sl, sp, 0, 1, 1, &sz, NULL, NULL);
-		aml_dma_request_linux_seq_copy_init(req,
-						    AML_DMA_REQUEST_TYPE_PTR,
-						    dl, sl);
 	} else
 		err = -AML_EINVAL;
 unlock:
@@ -137,14 +117,7 @@ int aml_dma_linux_seq_destroy_request(struct aml_dma_data *d,
 		return -AML_EINVAL;
 	req = (struct aml_dma_request_linux_seq *)*r;
 
-	if (req->type == AML_DMA_REQUEST_TYPE_LAYOUT)
-		aml_dma_request_linux_seq_copy_destroy(req);
-	else if (req->type == AML_DMA_REQUEST_TYPE_PTR) {
-		aml_layout_dense_destroy(&req->dest);
-		aml_layout_dense_destroy(&req->src);
-		aml_dma_request_linux_seq_copy_destroy(req);
-	}
-
+	aml_dma_request_linux_seq_copy_destroy(req);
 	pthread_mutex_lock(&dma->data.lock);
 	aml_vector_remove(dma->data.requests, req);
 	pthread_mutex_unlock(&dma->data.lock);

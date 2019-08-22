@@ -34,12 +34,12 @@ struct aml_scratch_request_seq {
 	int type;
 	/** The tiling used for data organization in source and destination **/
 	struct aml_tiling *tiling;
-	/** The source pointer of the data movement **/
-	void *srcptr;
+	/** The source layout of the data movement **/
+	struct aml_layout *src;
 	/** The identifier of the source tile **/
 	int srcid;
 	/** The destination pointer of the data movement **/
-	void *dstptr;
+	struct aml_layout *dst;
 	/** The identifier of the destination tile **/
 	int dstid;
 	/** The request used for movement **/

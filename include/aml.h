@@ -821,11 +821,6 @@ int aml_layout_slice(const struct aml_layout *layout,
 #define AML_DMA_REQUEST_TYPE_LAYOUT 0
 
 /**
- * The request is in the format (dest ptr, src ptr, size)
- */
-#define AML_DMA_REQUEST_TYPE_PTR 1
-
-/**
  * aml_dma is mainly used to asynchronously move data.
  * aml_dma_request is an opaque structure containing information
  * about ongoing request for data movement in a dma operation.
