@@ -29,6 +29,10 @@ DMA_LINUX_TESTS = dma/test_dma_linux_seq \
 SCRATCH_TESTS = scratch/test_scratch_seq \
 		scratch/test_scratch_par
 
+if RUN_CUDA
+AREA_TESTS += area/test_cuda
+endif
+
 # unit tests
 UNIT_TESTS = $(UTILS_TESTS) \
 	     $(TILING_TESTS) \

@@ -9,6 +9,9 @@ stages:
 
 repoquality:
   stage: style
+  except:
+    - /^wip.*/
+    - /^WIP.*/
   script:
     - nix run -f "$ARGOPKGS" repoquality --command repoquality
   tags:
@@ -16,6 +19,9 @@ repoquality:
 
 checkpatch:
   stage: style
+  except:
+    - /^wip.*/
+    - /^WIP.*/
   tags:
     - integration
   script:
@@ -86,6 +92,9 @@ make:knl:
 
 readthedocs:
   stage: docs
+  except:
+    - /^wip.*/
+    - /^WIP.*/
   when: on_success
   only:
     - master
@@ -97,6 +106,9 @@ readthedocs:
 
 dist:
   stage: release
+  except:
+    - /^wip.*/
+    - /^WIP.*/
   when: on_success
   only:
     - tags

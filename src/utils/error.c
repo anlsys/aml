@@ -17,12 +17,13 @@ static const char * const aml_error_strings[] = {
 	[AML_ENOMEM]	= "Not enough memory",
 	[AML_EINVAL]	= "Invalid argument",
 	[AML_EDOM]	= "Value out of bound",
+	[AML_EBUSY]	= "Underlying resource is not available for operation",
 	[AML_ENOTSUP]	= "Operation not supported",
 };
 
 const char *aml_strerror(const int err)
 {
-	if (err < 0 || err < AML_ERROR_MAX)
+	if (err < 0 || err >= AML_ERROR_MAX)
 		return "Unknown error";
 	return aml_error_strings[err];
 }
