@@ -27,7 +27,8 @@ AM_PROG_CC_C_O
 AC_PROG_CPP
 AC_TYPE_SIZE_T
 AC_TYPE_INTPTR_T
-
+AC_PROG_AWK
+AC_PROG_GREP
 AM_PROG_AR
 LT_INIT
 
@@ -38,8 +39,9 @@ AC_SUBST([PACKAGE_VERSION_MAJOR],[VERSION_MAJOR])
 AC_SUBST([PACKAGE_VERSION_MINOR],[VERSION_MINOR])
 AC_SUBST([PACKAGE_VERSION_PATCH],[VERSION_PATCH])
 
-
 # support for testing with valgrind
+###################################
+
 AC_ARG_ENABLE(valgrind,
 [AS_HELP_STRING([--enable-valgrind],[Also valgrind on checks (default is no).])],
 [valgrind=true],[valgrind=false])
@@ -53,6 +55,8 @@ fi
 AM_CONDITIONAL([TEST_VALGRIND],[test "x$valgrind" = xtrue])
 
 # support for compiling benchmarks
+##################################
+
 AC_ARG_ENABLE(benchmarks,
 [AS_HELP_STRING([--enable-benchmarks],[Compile additional benchmarks (default is no).])],
 [benchmarks=true],[benchmarks=false])
@@ -66,17 +70,22 @@ AM_CONDITIONAL([ADD_BENCHMARKS],[test "x$benchmarks" = xtrue])
 AC_CHECK_LIB(dl, dlopen)
 
 # add pthread support.
+######################
+
 # doc in m4/ax_pthread.m4. Defines automake PTHREAD_CFLAGS and PTHREAD_LIBS
 AX_PTHREAD([],[AC_MSG_ERROR([Cannot find how to compile with pthreads.])])
 CC="$PTHREAD_CC"
 
 # NUMA support
+##############
+
 AC_CHECK_HEADERS([numa.h],,[AC_MSG_ERROR([AML requires libnuma headers.])])
 AC_CHECK_HEADERS([numaif.h],,[AC_MSG_ERROR([AML requires libnuma headers.])])
 AC_CHECK_LIB(numa, mbind,,[AC_MSG_ERROR([AML requires libnuma.])])
 
-
 # check doxygen + sphinx for documentation build
+################################################
+
 AC_CHECK_PROG([DOXYGEN], [doxygen], [doxygen], [no])
 AC_CHECK_PROG([SPHINXBUILD], [sphinx-build], [sphinx-build], [no])
 if [[ "x$DOXYGEN" != xno ]]; then
@@ -93,6 +102,47 @@ else
 fi
 AM_CONDITIONAL([BUILD_DOCS],[ test "x$BUILD_DOCS" = xyes ])
 
+# check nvidia compiler and libraries
+#####################################
+
+BUILD_CUDA=no
+AC_DEFINE([HAVE_CUDA], [0], [Whether aml support cuda library calls.])
+AC_DEFINE([RUN_CUDA], [0], [Whether the machine on which aml is compiled can run cuda code.])
+
+# Check compilation features
+AC_CHECK_PROG([NVCC], [nvcc], [nvcc], [no])
+AC_CHECK_LIB(cudart, cudaMalloc, [CUDART=yes], [CUDART=no])
+AC_CHECK_HEADERS([cuda.h], [CUDA_H=yes], [CUDA_H=no])
+AC_CHECK_HEADERS([cuda_runtime.h], [CUDA_RUNTIME_H=yes], [CUDA_RUNTIME_H=no])
+
+if [[ "x$NVCC"                != xno ]] && \
+   [[ "x$CUDART"              = xyes ]] && \
+   [[ "x$CUDA_H"              = xyes ]] && \
+   [[ "x$CUDA_RUNTIME_H"      = xyes ]]
+then
+   BUILD_CUDA=yes
+   AC_DEFINE([HAVE_CUDA], [1], [Whether aml support cuda library calls.])
+fi
+
+AM_CONDITIONAL([BUILD_CUDA],[ test "x$BUILD_CUDA" = xyes ])
+
+# Check runtime features
+if [[ "x$BUILD_CUDA" = xyes ]]; then
+   LIBS="$LIBS -lcudart"
+   RUN_CUDA=no
+   AC_MSG_CHECKING([that cudart code runs without error])
+   AC_RUN_IFELSE(
+       [AC_LANG_PROGRAM([[
+#include <cuda.h>
+#include <cuda_runtime.h>]],
+	 [int device; return cudaGetDevice(&device) == cudaSuccess ? 0 : 1;])],
+	 [AC_DEFINE([RUN_CUDA], [1], [Whether the machine on which aml is compiled can run cuda code.])
+         RUN_CUDA=yes],[])
+   AC_MSG_RESULT($RUN_CUDA)
+fi
+
+AM_CONDITIONAL([RUN_CUDA],[ test "x$RUN_CUDA" = xyes ])
+
 # Output
 ########
 
@@ -104,6 +154,7 @@ AC_CONFIG_FILES([Makefile
 		 tests/Makefile
 		 doc/Makefile
 		 benchmarks/Makefile
+		 o2lo
 		 aml.pc
-		 include/aml/utils/version.h])
+		 include/aml/utils/version.h], [chmod +x o2lo])
 AC_OUTPUT

@@ -21,7 +21,7 @@ void test_map(const struct aml_area *area){
 	const size_t sizes[4] = {1, 32, 4096, 1<<20};
 
 	for(s = 0; s<sizeof(sizes)/sizeof(*sizes); s++){
-		ptr = aml_area_mmap(area, &ptr, sizes[s]);
+		ptr = aml_area_mmap(area, NULL, sizes[s]);
 		assert(ptr != NULL);
 		memset(ptr, 0, sizes[s]);
 		assert(aml_area_munmap(area, ptr, sizes[s]) == AML_SUCCESS);

@@ -2,7 +2,8 @@ include_HEADERS=aml.h
 
 include_aml_areadir=$(includedir)/aml/area
 include_aml_area_HEADERS = \
-			      aml/area/linux.h
+			      aml/area/linux.h \
+			      aml/area/cuda.h
 
 include_aml_layoutdir=$(includedir)/aml/layout
 include_aml_layout_HEADERS = \
