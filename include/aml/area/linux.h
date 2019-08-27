@@ -92,17 +92,17 @@ struct aml_area_linux_mmap_options {
 /**
  * \brief Linux area creation.
  *
- * Allocates and initializes struct aml_area implemented by aml_area_linux
+ * Allocate and initialize a struct aml_area implemented by aml_area_linux
  * operations.
- * @param[out] area pointer to an uninitialized struct aml_area pointer to
+ * @param[out] area: pointer to an uninitialized struct aml_area pointer to
  *       receive the new area.
- * @param[in] nodemask list of memory nodes to use. Defaults to all allowed
+ * @param[in] nodemask: list of memory nodes to use. Defaults to all allowed
  *       memory nodes if NULL.
- * @param[in] policy: The memory allocation policy to use when binding to
+ * @param[in] policy: the memory allocation policy to use when binding to
  *       nodeset.
- * @return On success, returns 0 and fills "area" with a pointer to the new
+ * @return on success, returns 0 and fills "area" with a pointer to the new
  *       aml_area.
- * @return On failure, fills "area" with NULL and returns one of AML error
+ * @return on failure, fills "area" with NULL and returns one of AML error
  * codes:
  * - AML_ENOMEM if there wasn't enough memory available.
  * - AML_EINVAL if input flags were invalid.
@@ -117,21 +117,21 @@ int aml_area_linux_create(struct aml_area **area,
 /**
  * \brief Linux area destruction.
  *
- * Destroys (finalizes and frees resources) struct aml_area created by
+ * Destroy (finalizes and frees resources) a struct aml_area created by
  * aml_area_linux_create().
  *
- * @param area address of an initialized struct aml_area pointer, which will be
+ * @param[inout] area: address of an initialized struct aml_area pointer, which will be
  * reset to NULL on return from this call.
  **/
 void aml_area_linux_destroy(struct aml_area **area);
 
 /**
- * Binds memory of size "size" pointed to by "ptr" using the binding provided
+ * Bind memory of size "size" pointed to by "ptr" using the binding provided
  * in "bind". If the mbind() call was not successfull, i.e., AML_FAILURE is
  * returned, then "errno" should be inspected for further error information.
- * @param bind: The requested binding. "mmap_flags" is actually unused.
- * @param ptr: The memory to bind.
- * @param size: The size of the memory pointed to by "ptr".
+ * @param[in] bind: the requested binding. "mmap_flags" is actually unused.
+ * @param[in] ptr: the memory to bind.
+ * @param[in] size: the size of the memory pointed to by "ptr".
  * @return 0 if successful; an error code otherwise.
  **/
 int
@@ -140,12 +140,12 @@ aml_area_linux_mbind(struct aml_area_linux_data    *bind,
 		     size_t                         size);
 
 /**
- * Checks whether the binding of a pointer obtained with
+ * Check whether the binding of a pointer obtained with
  * aml_area_linux_mmap() followed by aml_area_linux_mbind() matches the area
  * settings.
- * @param area_data: The expected binding settings.
- * @param ptr: The supposedly bound memory.
- * @param size: The memory size.
+ * @param[in] area_data: the expected binding settings.
+ * @param[in] ptr: the supposedly bound memory.
+ * @param[in] size: the memory size.
  * @return 1 if the mapped memory binding in "ptr" matches the "area_data"
  * binding settings, else 0.
  **/
@@ -161,10 +161,10 @@ aml_area_linux_check_binding(struct aml_area_linux_data *area_data,
  * "mmap_flags" of "area_data".
  * This function does not perform binding, unlike what is done in areas created
  * using aml_area_linux_create().
- * @param area_data: The structure containing "mmap_flags" for the mmap() call.
+ * @param[in] area_data: The structure containing "mmap_flags" for the mmap() call.
  *        "nodemask" and "bind_flags" fields are ignored.
- * @param size: The size to allocate.
- * @param opts: See "aml_area_linux_mmap_options".
+ * @param[in] size: The size to allocate.
+ * @param[in] opts: See "aml_area_linux_mmap_options".
  * @return a valid memory pointer, or NULL on failure.
  * On failure, "errno" should be checked for further information.
  **/
@@ -177,9 +177,9 @@ aml_area_linux_mmap(const struct aml_area_data  *area_data,
  * \brief munmap hook for AML area.
  *
  * Unmaps memory mapped with aml_area_linux_mmap().
- * @param area_data: unused
- * @param ptr: The virtual memory to unmap.
- * @param size: The size of the virtual memory to unmap.
+ * @param[in] area_data: unused
+ * @param[inout] ptr: The virtual memory to unmap.
+ * @param[in] size: The size of the virtual memory to unmap.
  * @return AML_SUCCESS on success, else AML_FAILURE.
  * On failure, "errno" should be checked for further information.
  **/
