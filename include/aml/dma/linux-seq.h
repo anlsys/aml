@@ -38,6 +38,8 @@ struct aml_dma_request_linux_seq {
 	struct aml_layout *dest;
 	/** The source pointer of the data movement **/
 	struct aml_layout *src;
+	/** The operator being used **/
+	aml_dma_operator op;
 };
 
 /** Inner data of sequential linux aml_dma implementation **/
@@ -50,6 +52,8 @@ struct aml_dma_linux_seq_data {
 	struct aml_vector *requests;
 	/** Lock for queuing requests concurrently **/
 	pthread_mutex_t lock;
+	/** default operator **/
+	aml_dma_operator default_op;
 };
 
 /** Declaration of available linux sequential dma operations **/
@@ -81,10 +85,12 @@ struct aml_dma_linux_seq {
  * will be stored.
  * @param nbreqs the initial number of slots for asynchronous requests that are
  * in-flight (will be increased automatically if necessary).
+ * @param op: default operator
  *
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_dma_linux_seq_create(struct aml_dma **dma, size_t nbreqs);
+int aml_dma_linux_seq_create(struct aml_dma **dma, size_t nbreqs,
+			     aml_dma_operator op);
 
 /**
  * Tears down a sequential DMA created with aml_dma_linux_seq_create.

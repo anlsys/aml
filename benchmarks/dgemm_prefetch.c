@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
 	aml_area_linux_create(&fast, &fastb, AML_AREA_LINUX_POLICY_BIND);
 	assert(fast != NULL);
 	
-	assert(!aml_dma_linux_seq_create(&dma, 2));
+	assert(!aml_dma_linux_seq_create(&dma, 2, NULL));
 	assert(!aml_scratch_par_create(&sa, fast, slow, dma, tiling_prefetch, (size_t)2, (size_t)2));
 	assert(!aml_scratch_par_create(&sb, fast, slow, dma, tiling_prefetch, (size_t)2, (size_t)2));
 	/* allocation */

@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 	struct aml_area *slow = &aml_area_linux, *fast = aml_area_linux;
 
 	struct aml_dma *dma;
-	assert(!aml_dma_create(&dma, 0));
+	assert(!aml_dma_create(&dma, 0, NULL));
 
 	void *a, *b, *c;
 

@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 				     TILESIZE*_SC_PAGE_SIZE*NBTILES));
 
 	size_t maxrequests = NBTILES;
-	assert(!aml_dma_linux_seq_create(&dma, maxrequests));
+	assert(!aml_dma_linux_seq_create(&dma, maxrequests, NULL));
 
 	/* allocate some memory */
 	src = aml_area_mmap(&aml_area_linux, TILESIZE*_SC_PAGE_SIZE*NBTILES, NULL);

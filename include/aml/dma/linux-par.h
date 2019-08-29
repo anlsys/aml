@@ -42,12 +42,16 @@ struct aml_dma_request_linux_par {
 	struct aml_dma_linux_par *dma;
 	/** The actual thread in charge for the request progress**/
 	pthread_t thread;
+	/** operator for this request **/
+	aml_dma_operator op;
 };
 
 /** Inside of a parallel dma for linux movement. **/
 struct aml_dma_linux_par_data {
 	struct aml_vector *requests;
 	pthread_mutex_t lock;
+	/** default operator for this dma **/
+	aml_dma_operator default_op;
 };
 
 /** Declaration of linux parallel dma operations **/
@@ -73,10 +77,11 @@ struct aml_dma_linux_par {
  * @param nbreqs the initial number of slots for asynchronous requests that are
  * in-flight (will be increased automatically if necessary).
  * @param nbthreads the number of threads to launch for each request.
- *
+ * @param op: default operator
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs);
+int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs,
+			     aml_dma_operator op);
 
 /**
  * Tears down a parallel DMA created with aml_dma_linux_par_create.
