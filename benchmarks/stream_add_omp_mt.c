@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
 	assert(slow != NULL);
 	aml_area_linux_create(&fast, &fastb, AML_AREA_LINUX_POLICY_BIND);
 	assert(fast != NULL);
-	assert(!aml_dma_linux_par_create(&dma, numthreads*2, NULL));
+	assert(!aml_dma_linux_par_create(&dma, numthreads*2, NULL, NULL));
 	assert(!aml_scratch_seq_create(&sa, fast, slow, dma, tiling,
 				     (size_t)2*numthreads, (size_t)1));
 	assert(!aml_scratch_seq_create(&sb, fast, slow, dma, tiling,

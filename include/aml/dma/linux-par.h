@@ -44,6 +44,8 @@ struct aml_dma_request_linux_par {
 	pthread_t thread;
 	/** operator for this request **/
 	aml_dma_operator op;
+	/** operator argument for this request **/
+	void *op_arg;
 };
 
 /** Inside of a parallel dma for linux movement. **/
@@ -52,6 +54,8 @@ struct aml_dma_linux_par_data {
 	pthread_mutex_t lock;
 	/** default operator for this dma **/
 	aml_dma_operator default_op;
+	/** default operator arg for this dma **/
+	void *default_op_arg;
 };
 
 /** Declaration of linux parallel dma operations **/
@@ -81,7 +85,7 @@ struct aml_dma_linux_par {
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs,
-			     aml_dma_operator op);
+			     aml_dma_operator op, void *op_arg);
 
 /**
  * Tears down a parallel DMA created with aml_dma_linux_par_create.

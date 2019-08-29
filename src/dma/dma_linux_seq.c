@@ -32,13 +32,15 @@
 int aml_dma_request_linux_seq_copy_init(struct aml_dma_request_linux_seq *req,
 					struct aml_layout *dest,
 					struct aml_layout *src,
-					aml_dma_operator op)
+					aml_dma_operator op,
+					void *op_arg)
 {
 	assert(req != NULL);
 	req->type = AML_DMA_REQUEST_TYPE_LAYOUT;
 	req->dest = dest;
 	req->src = src;
 	req->op = op;
+	req->op_arg = op_arg;
 	return 0;
 }
 
@@ -58,7 +60,7 @@ int aml_dma_linux_seq_do_copy(struct aml_dma_linux_seq_data *dma,
 	assert(dma != NULL);
 	assert(req != NULL);
 	assert(req->op != NULL);
-	return req->op(req->dest, req->src);
+	return req->op(req->dest, req->src, req->op_arg);
 }
 
 struct aml_dma_linux_seq_ops aml_dma_linux_seq_inner_ops = {
@@ -73,7 +75,7 @@ int aml_dma_linux_seq_create_request(struct aml_dma_data *d,
 				     struct aml_dma_request **r,
 				     struct aml_layout *dest,
 				     struct aml_layout *src,
-				     aml_dma_operator op)
+				     aml_dma_operator op, void *op_arg)
 {
 	/* NULL checks done by the generic API */
 	assert(d != NULL);
@@ -86,10 +88,12 @@ int aml_dma_linux_seq_create_request(struct aml_dma_data *d,
 
 	if (op == NULL)
 		op = dma->data.default_op;
+	if (op_arg == NULL)
+		op_arg = dma->data.default_op_arg;
 
 	pthread_mutex_lock(&dma->data.lock);
 	req = aml_vector_add(dma->data.requests);
-	aml_dma_request_linux_seq_copy_init(req, dest, src, op);
+	aml_dma_request_linux_seq_copy_init(req, dest, src, op, op_arg);
 	pthread_mutex_unlock(&dma->data.lock);
 	*r = (struct aml_dma_request *)req;
 	return 0;
@@ -98,8 +102,7 @@ int aml_dma_linux_seq_create_request(struct aml_dma_data *d,
 int aml_dma_linux_seq_destroy_request(struct aml_dma_data *d,
 				      struct aml_dma_request **r)
 {
-	assert(d != NULL);
-	assert(r != NULL);
+	assert(d != NULL); assert(r != NULL);
 	struct aml_dma_linux_seq *dma =
 		(struct aml_dma_linux_seq *)d;
 	struct aml_dma_request_linux_seq *req;
@@ -148,7 +151,7 @@ struct aml_dma_ops aml_dma_linux_seq_ops = {
  ******************************************************************************/
 
 int aml_dma_linux_seq_create(struct aml_dma **dma, size_t nbreqs,
-			     aml_dma_operator op)
+			     aml_dma_operator op, void *op_arg)
 {
 	struct aml_dma *ret = NULL;
 	struct aml_dma_linux_seq *d;
@@ -169,9 +172,12 @@ int aml_dma_linux_seq_create(struct aml_dma **dma, size_t nbreqs,
 
 	d->ops = aml_dma_linux_seq_inner_ops;
 
-	if (op == NULL)
+	if (op == NULL) {
 		op = aml_copy_layout_generic;
+		op_arg = NULL;
+	}
 	d->data.default_op = op;
+	d->data.default_op_arg = op_arg;
 
 	aml_vector_create(&d->data.requests, nbreqs,
 			  sizeof(struct aml_dma_request_linux_seq),

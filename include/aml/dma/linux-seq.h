@@ -40,6 +40,8 @@ struct aml_dma_request_linux_seq {
 	struct aml_layout *src;
 	/** The operator being used **/
 	aml_dma_operator op;
+	/** Argument for operator **/
+	void *op_arg;
 };
 
 /** Inner data of sequential linux aml_dma implementation **/
@@ -54,6 +56,8 @@ struct aml_dma_linux_seq_data {
 	pthread_mutex_t lock;
 	/** default operator **/
 	aml_dma_operator default_op;
+	/** default op_arg **/
+	void *default_op_arg;
 };
 
 /** Declaration of available linux sequential dma operations **/
@@ -90,7 +94,7 @@ struct aml_dma_linux_seq {
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_linux_seq_create(struct aml_dma **dma, size_t nbreqs,
-			     aml_dma_operator op);
+			     aml_dma_operator op, void *op_arg);
 
 /**
  * Tears down a sequential DMA created with aml_dma_linux_seq_create.
