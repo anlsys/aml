@@ -13,6 +13,7 @@ AREA_SOURCES = \
 LAYOUT_SOURCES = \
 	       layout/layout.c \
 	       layout/dense.c \
+	       layout/pad.c \
 	       layout/reshape.c
 
 DMA_SOURCES = \
