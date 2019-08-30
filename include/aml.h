@@ -845,6 +845,15 @@ struct aml_dma_request;
 struct aml_dma_data;
 
 /**
+ * Type of the function used to perform the DMA between two layouts.
+ * @param dst: destination layout
+ * @param src: source layout
+ * @param arg: extra argument needed by the operator
+ **/
+typedef int (*aml_dma_operator)(struct aml_layout *dst,
+				const struct aml_layout *src, void *arg);
+
+/**
    aml_dma_ops is a structure containing operations for a specific
    * aml_dma implementation.
    * These operation are operation are detailed in the structure.
@@ -870,7 +879,8 @@ struct aml_dma_ops {
 	int (*create_request)(struct aml_dma_data *dma,
 			      struct aml_dma_request **req,
 			      struct aml_layout *dest,
-			      struct aml_layout *src);
+			      struct aml_layout *src,
+			      aml_dma_operator op, void *op_arg);
 
 	/**
 	 * Destroy the request handle. If the data movement is still ongoing,
@@ -914,10 +924,11 @@ struct aml_dma {
  * @param dma: an initialized DMA structure.
  * @param dest: layout describing the destination.
  * @param src: layout describing the source.
+ * @param op: optional custom operator for this dma
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_dma_copy(struct aml_dma *dma, struct aml_layout *dest,
-		 struct aml_layout *src);
+int aml_dma_copy_custom(struct aml_dma *dma, struct aml_layout *dest,
+		 struct aml_layout *src, aml_dma_operator op, void *op_arg);
 
 /**
  * Requests a data copy between two different buffers.This is an asynchronous
@@ -927,11 +938,17 @@ int aml_dma_copy(struct aml_dma *dma, struct aml_layout *dest,
  *        will be stored.
  * @param dest: layout describing the destination.
  * @param src: layout describing the source.
+ * @param op: optional custom operator for this dma
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_dma_async_copy(struct aml_dma *dma, struct aml_dma_request **req,
+int aml_dma_async_copy_custom(struct aml_dma *dma, struct aml_dma_request **req,
 		       struct aml_layout *dest,
-		       struct aml_layout *src);
+		       struct aml_layout *src,
+		       aml_dma_operator op, void *op_arg);
+
+#define aml_dma_copy(dma, d, s) aml_dma_copy_custom(dma, d, s, NULL, NULL)
+#define aml_dma_async_copy(dma, r, d, s) \
+	aml_dma_async_copy_custom(dma, r, d, s, NULL, NULL)
 
 /**
  * Waits for an asynchronous DMA request to complete.
@@ -953,9 +970,10 @@ int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request **req);
  * Generic helper to copy from one layout to another.
  * @param dst[out]: destination layout
  * @param src[in]: source layout
+ * @param arg: unused
  */
 int aml_copy_layout_generic(struct aml_layout *dst,
-			    const struct aml_layout *src);
+			    const struct aml_layout *src, void *arg);
 
 
 ////////////////////////////////////////////////////////////////////////////////

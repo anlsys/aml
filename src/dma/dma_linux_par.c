@@ -31,12 +31,15 @@
 
 int aml_dma_request_linux_par_copy_init(struct aml_dma_request_linux_par *req,
 					struct aml_layout *dest,
-					struct aml_layout *src)
+					struct aml_layout *src,
+					aml_dma_operator op, void *op_arg)
 {
 	assert(req != NULL);
 	req->type = AML_DMA_REQUEST_TYPE_LAYOUT;
 	req->dest = dest;
 	req->src = src;
+	req->op = op;
+	req->op_arg = op_arg;
 	return 0;
 }
 
@@ -57,7 +60,7 @@ void *aml_dma_linux_par_do_thread(void *arg)
 
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	if (req->type != AML_DMA_REQUEST_TYPE_INVALID)
-		aml_copy_layout_generic(req->dest, req->src);
+		req->op(req->dest, req->src, req->op_arg);
 	return NULL;
 }
 
@@ -72,7 +75,8 @@ struct aml_dma_linux_par_ops aml_dma_linux_par_inner_ops = {
 int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 				     struct aml_dma_request **r,
 				     struct aml_layout *dest,
-				     struct aml_layout *src)
+				     struct aml_layout *src,
+				     aml_dma_operator op, void *op_arg)
 {
 	/* NULL checks done by the generic API */
 	assert(d != NULL);
@@ -83,9 +87,14 @@ int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 		(struct aml_dma_linux_par *)d;
 	struct aml_dma_request_linux_par *req;
 
+	if (op == NULL)
+		op = dma->data.default_op;
+	if (op_arg == NULL)
+		op_arg = dma->data.default_op_arg;
+
 	pthread_mutex_lock(&dma->data.lock);
 	req = aml_vector_add(dma->data.requests);
-	aml_dma_request_linux_par_copy_init(req, dest, src);
+	aml_dma_request_linux_par_copy_init(req, dest, src, op, op_arg);
 	pthread_mutex_unlock(&dma->data.lock);
 	pthread_create(&req->thread, NULL, dma->ops.do_thread, req);
 	*r = (struct aml_dma_request *)req;
@@ -155,7 +164,8 @@ struct aml_dma_ops aml_dma_linux_par_ops = {
  * Init functions:
  ******************************************************************************/
 
-int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs)
+int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs,
+			     aml_dma_operator op, void *op_arg)
 {
 	struct aml_dma *ret = NULL;
 	struct aml_dma_linux_par *d;
@@ -174,6 +184,13 @@ int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs)
 	ret->ops = &aml_dma_linux_par_ops;
 	d = (struct aml_dma_linux_par *)ret->data;
 	d->ops = aml_dma_linux_par_inner_ops;
+
+	if (op == NULL) {
+		op = aml_copy_layout_generic;
+		op_arg = NULL;
+	}
+	d->data.default_op = op;
+	d->data.default_op_arg = op_arg;
 
 	/* allocate request array */
 	aml_vector_create(&d->data.requests, nbreqs,

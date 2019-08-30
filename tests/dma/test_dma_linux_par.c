@@ -34,10 +34,10 @@ int main(int argc, char *argv[])
 		isrc[i] = 24;
 	}
 	/* invalid create input */
-	assert(aml_dma_linux_par_create(NULL, 1) == -AML_EINVAL);
+	assert(aml_dma_linux_par_create(NULL, 1, NULL, NULL) == -AML_EINVAL);
 
 	/* invalid requests */
-	assert(!aml_dma_linux_par_create(&dma, 1));
+	assert(!aml_dma_linux_par_create(&dma, 1, NULL, NULL));
 	assert(aml_dma_copy(dma, NULL, isl) == -AML_EINVAL);
 	assert(aml_dma_copy(dma, idl, NULL) == -AML_EINVAL);
 
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 	aml_dma_linux_par_destroy(&dma);
 
 	/* cancel a request on the fly */
-	assert(!aml_dma_linux_par_create(&dma, 1));
+	assert(!aml_dma_linux_par_create(&dma, 1, NULL, NULL));
 	assert(aml_dma_cancel(dma, NULL) == -AML_EINVAL);
 	assert(!aml_dma_async_copy(dma, &r1, idl, isl));
 	assert(!aml_dma_cancel(dma, &r1));
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 	aml_dma_linux_par_destroy(&dma);
 
 	/* move data around */
-	assert(!aml_dma_linux_par_create(&dma, 1));
+	assert(!aml_dma_linux_par_create(&dma, 1, NULL, NULL));
 	struct aml_dma_request *requests[16];
 	struct aml_layout *layouts[16][2];
 	for (int i = 0; i < 16; i++) {
