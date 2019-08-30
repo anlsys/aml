@@ -52,107 +52,157 @@ static int aml_set_cuda_device(const int device, int *current_device)
 	return AML_SUCCESS;
 }
 
-static inline int handle_malloc_error(const int cuda_error)
+static inline int cuda_to_aml_alloc_error(const int cuda_error)
 {
 	switch (cuda_error) {
 	case cudaErrorInvalidValue:
-		aml_errno = AML_EINVAL;
-		return 1;
+		return AML_EINVAL;
 	case cudaErrorMemoryAllocation:
-		aml_errno = AML_ENOMEM;
-		return 1;
+		return AML_ENOMEM;
 	case cudaErrorNotSupported:
-		aml_errno = AML_ENOTSUP;
-		return 1;
+		return AML_ENOTSUP;
 	case cudaErrorInsufficientDriver:
-		aml_errno = AML_ENOTSUP;
-		return 1;
+		return AML_ENOTSUP;
 	case cudaErrorNoDevice:
-		aml_errno = AML_ENOTSUP;
-		return 1;
+		return AML_ENOTSUP;
 	case cudaErrorInitializationError:
-		aml_errno = AML_FAILURE;
-		return 1;
+		return AML_FAILURE;
 	case cudaErrorHostMemoryAlreadyRegistered:
-		aml_errno = AML_EBUSY;
-		return 1;
+		return AML_EBUSY;
 	default:
-		return 0;
+		return AML_SUCCESS;
 	}
 }
 
-void *aml_area_cuda_mmap(const struct aml_area_data *area_data,
-			 void *ptr, size_t size)
+int aml_area_cuda_mmap_opts(void **out,
+			    const size_t size,
+			    const int device, const int flags, void **ptr_map)
 {
-	(void)ptr;
-
-	int aml_error;
-	int cuda_error;
 	int current_device;
-	void *ret;
+	int error = AML_SUCCESS;
+	int cuda_flags;
 
-	struct aml_area_cuda_data *data =
-	    (struct aml_area_cuda_data *)area_data;
+	// Set target device.
+	if (device >= 0) {
+		error = aml_set_cuda_device(device, &current_device);
+		if (error != AML_SUCCESS)
+			goto cuda_fail;
+	}
+	// Unified Memory Allocation
+	if (flags & AML_AREA_CUDA_FLAG_ALLOC_UNIFIED) {
+		cuda_flags = cudaMemAttachHost;
 
-	// Set area target device.
-	if (data->device >= 0) {
-		aml_error = aml_set_cuda_device(data->device, &current_device);
-		if (aml_error != AML_SUCCESS) {
-			aml_errno = -aml_error;
-			return NULL;
+		if (flags & AML_AREA_CUDA_FLAG_ALLOC_GLOBAL)
+			cuda_flags = cudaMemAttachGlobal;
+
+		error = cudaMallocManaged(out, size, cuda_flags);
+		if (error != cudaSuccess)
+			goto cuda_fail;
+	}
+	// Mapped Allocation
+	else if (flags & AML_AREA_CUDA_FLAG_ALLOC_MAPPED) {
+		cuda_flags = cudaHostAllocMapped;
+
+		if (flags & AML_AREA_CUDA_FLAG_ALLOC_GLOBAL)
+			cuda_flags |= cudaHostAllocPortable;
+
+		if (flags & AML_AREA_CUDA_FLAG_ALLOC_HOST) {
+			error = cudaHostAlloc(out, size, cuda_flags);
+			if (error != cudaSuccess)
+				goto cuda_fail;
+		} else if (*ptr_map != NULL) {
+			error = cudaHostRegister(*ptr_map, size, cuda_flags);
+			if (error != cudaSuccess)
+				goto cuda_fail;
+			*out = *ptr_map;
+		} else {
+			error = AML_EINVAL;
+			goto fail;
 		}
 	}
+	// Host Allocation
+	else if (flags & AML_AREA_CUDA_FLAG_ALLOC_HOST) {
+		cuda_flags = cudaHostAllocDefault;
 
-	// Actual allocation
-	if (ptr == NULL)
-		cuda_error = cudaMallocManaged(&ret, size, data->flags);
+		if (flags & AML_AREA_CUDA_FLAG_ALLOC_GLOBAL)
+			cuda_flags |= cudaHostAllocPortable;
+
+		error = cudaHostAlloc(out, size, cuda_flags);
+		if (error != cudaSuccess)
+			goto cuda_fail;
+	}
+	// Device Allocation
 	else {
-		// ptr is allocated cpu memory. Then we have to map it on device
-		// memory.
-		cuda_error =
-			cudaHostRegister(ptr, size,
-					 cudaHostRegisterPortable);
-		if (handle_malloc_error(cuda_error))
-			return NULL;
-		cuda_error = cudaHostGetDevicePointer(&ret, ptr, 0);
+		error = cudaMalloc(out, size);
+		if (error != cudaSuccess)
+			goto cuda_fail;
 	}
 
-	// Attempt to restore to original device.
-	// If it fails, attempt to set aml_errno.
-	// However, it might be overwritten when handling allocation
-	// error code..
-	if (data->device >= 0 && current_device != data->device) {
-		aml_error = aml_set_cuda_device(current_device, NULL);
-		aml_errno = aml_error != AML_SUCCESS ? -aml_error : aml_errno;
-	}
-	// Handle allocation error code.
-	if (handle_malloc_error(cuda_error))
-		return NULL;
+	// restore original device
+	if (device >= 0 && current_device != device)
+		error = aml_set_cuda_device(current_device, NULL);
 
-	return ret;
+	return cuda_to_aml_alloc_error(error);
+
+cuda_fail:
+	error = cuda_to_aml_alloc_error(error);
+fail:
+	*out = NULL;
+	return error;
+}
+
+void *aml_area_cuda_mmap(const struct aml_area_data *area_data,
+			 size_t size, struct aml_area_mmap_options *options)
+{
+
+	void *out;
+	void *ptr_map;
+	int device = -1;
+	int error;
+	struct aml_area_cuda_data *data;
+	struct aml_area_cuda_mmap_options *opts;
+
+	data = (struct aml_area_cuda_data *)area_data;
+	opts = (struct aml_area_cuda_mmap_options *)options;
+
+	device = (opts != NULL && opts->device > 0) ?
+		opts->device : data->device;
+	ptr_map = opts == NULL ? NULL : opts->ptr;
+
+	error =
+	    aml_area_cuda_mmap_opts(&out, size, device, data->flags, &ptr_map);
+
+	if (error != AML_SUCCESS)
+		aml_errno = -error;
+
+	return out;
 }
 
 int aml_area_cuda_munmap(const struct aml_area_data *area_data,
 			 void *ptr, const size_t size)
 {
-	(void) (area_data);
-	(void) (size);
-	int cuda_error = cudaHostUnregister(ptr);
+	(void)size;
+	int flags = ((struct aml_area_cuda_data *)area_data)->flags;
+	int error;
 
-	if (cuda_error == cudaErrorHostMemoryNotRegistered ||
-	    cuda_error == cudaErrorInvalidValue){
-		cuda_error = cudaFree(ptr);
+	// Unified Memory Allocation
+	if (flags & AML_AREA_CUDA_FLAG_ALLOC_UNIFIED)
+		error = cudaFree(ptr);
+	// Mapped Allocation
+	else if (flags & AML_AREA_CUDA_FLAG_ALLOC_MAPPED) {
+		if (flags & AML_AREA_CUDA_FLAG_ALLOC_HOST)
+			error = cudaFreeHost(ptr);
+		else
+			error = cudaHostUnregister(ptr);
 	}
+	// Host Allocation
+	else if (flags & AML_AREA_CUDA_FLAG_ALLOC_HOST)
+		error = cudaFreeHost(ptr);
+	// Device Allocation
+	else
+		error = cudaFree(ptr);
 
-	switch (cuda_error) {
-	case cudaErrorInvalidValue:
-		return -AML_EINVAL;
-	case cudaSuccess:
-		return AML_SUCCESS;
-	default:
-		printf("cudaError: %s\n", cudaGetErrorString(cuda_error));
-		return -AML_FAILURE;
-	}
+	return cuda_to_aml_alloc_error(error);
 }
 
 /*******************************************************************************
@@ -161,7 +211,7 @@ int aml_area_cuda_munmap(const struct aml_area_data *area_data,
 
 int aml_area_cuda_create(struct aml_area **area,
 			 const int device,
-			 const enum aml_area_cuda_flags flags)
+			 const int flags)
 {
 	struct aml_area *ret;
 	struct aml_area_cuda_data *data;
@@ -169,6 +219,9 @@ int aml_area_cuda_create(struct aml_area **area,
 
 	if (cudaGetDeviceCount(&max_devices) != cudaSuccess)
 		return -AML_FAILURE;
+
+	if (device >= max_devices)
+		return -AML_EINVAL;
 
 	ret = AML_INNER_MALLOC_2(struct aml_area, struct aml_area_cuda_data);
 	if (ret == NULL)
@@ -179,18 +232,9 @@ int aml_area_cuda_create(struct aml_area **area,
 
 	ret->ops = &aml_area_cuda_ops;
 	ret->data = (struct aml_area_data *)data;
-	switch (flags) {
-	case AML_AREA_CUDA_ATTACH_GLOBAL:
-		data->flags = cudaMemAttachGlobal;
-		break;
-	case AML_AREA_CUDA_ATTACH_HOST:
-		data->flags = cudaMemAttachHost;
-		break;
-	default:
-		data->flags = cudaMemAttachHost;
-		break;
-	}
-	data->device = device < 0 || device >= max_devices ? -1 : device;
+
+	data->device = device < 0 ? -1 : device;
+	data->flags = flags;
 
 	*area = ret;
 	return AML_SUCCESS;
@@ -210,7 +254,7 @@ void aml_area_cuda_destroy(struct aml_area **area)
  ******************************************************************************/
 
 struct aml_area_cuda_data aml_area_cuda_data_default = {
-	.flags = cudaMemAttachHost,
+	.flags = AML_AREA_CUDA_FLAG_DEFAULT,
 	.device = -1,
 };
 

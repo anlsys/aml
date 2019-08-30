@@ -53,9 +53,9 @@ int main(int argc, char *argv[])
 		chunk_msz = MEMSIZE/(numthreads*CHUNKING);
 		esz = chunk_msz/sizeof(unsigned long);
 	}
-	a = aml_area_mmap(slow, NULL, MEMSIZE);
-	b = aml_area_mmap(slow, NULL, MEMSIZE);
-	c = aml_area_mmap(fast, NULL, MEMSIZE);
+	a = aml_area_mmap(slow, MEMSIZE, NULL);
+	b = aml_area_mmap(slow, MEMSIZE, NULL);
+	c = aml_area_mmap(fast, MEMSIZE, NULL);
 	assert(a != NULL && b != NULL && c != NULL);
 
 	/* create virtually accessible address range, backed by slow memory */

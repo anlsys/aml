@@ -288,8 +288,8 @@ int aml_scratch_seq_create(struct aml_scratch **scratch,
 
 	s->data.scratch_size = nbtiles * tilesize;
 	s->data.sch_ptr = aml_area_mmap(s->data.sch_area,
-					      NULL,
-					      s->data.scratch_size);
+					s->data.scratch_size,
+					NULL);
 	pthread_mutex_init(&s->data.lock, NULL);
 
 	*scratch = ret;

@@ -11,7 +11,9 @@
 #include "aml.h"
 #include <stdlib.h>
 
-void *aml_area_mmap(const struct aml_area *area, void **ptr, size_t size)
+void *aml_area_mmap(const struct aml_area *area,
+		    size_t size,
+		    struct aml_area_mmap_options *opts)
 {
 	if (size == 0)
 		return NULL;
@@ -27,7 +29,7 @@ void *aml_area_mmap(const struct aml_area *area, void **ptr, size_t size)
 	}
 
 
-	return area->ops->mmap(area->data, ptr, size);
+	return area->ops->mmap(area->data, size, opts);
 }
 
 int aml_area_munmap(const struct aml_area *area, void *ptr, size_t size)

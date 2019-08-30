@@ -34,16 +34,14 @@ int main(int argc, char *argv[])
 	long int N = atol(argv[3]);
 	unsigned long memsize = sizeof(double)*N*N;
 
-	aml_area_linux_create(&slow, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
-				     &slowb, AML_AREA_LINUX_BINDING_FLAG_BIND);
+	aml_area_linux_create(&slow, &slowb, AML_AREA_LINUX_POLICY_BIND);
 	assert(slow != NULL);
-	aml_area_linux_create(&fast, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
-				     &fastb, AML_AREA_LINUX_BINDING_FLAG_BIND);
+	aml_area_linux_create(&fast, &fastb, AML_AREA_LINUX_POLICY_BIND);
 	assert(fast != NULL);
 
-	a = aml_area_mmap(slow, NULL, memsize);
-	b = aml_area_mmap(slow, NULL, memsize);
-	c = aml_area_mmap(fast, NULL, memsize);
+	a = aml_area_mmap(slow, memsize, NULL);
+	b = aml_area_mmap(slow, memsize, NULL);
+	c = aml_area_mmap(fast, memsize, NULL);
 	assert(a != NULL && b != NULL && c != NULL);
 
 	double alpha = 1.0, beta = 1.0;

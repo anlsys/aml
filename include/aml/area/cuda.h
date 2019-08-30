@@ -27,32 +27,103 @@
  **/
 
 /**
- * Structure containing aml area hooks for cuda implementation.
- * For now there is only a single implementation of the hooks.
- * This implementation will choose between different cuda functions.
+ * Default cuda area flags.
+ * * Allocation on device only,
+ * * Allocation visible by a single device.
+ * * Allocation not mapped on host memory.
  **/
+#define AML_AREA_CUDA_FLAG_DEFAULT 0
+
+/**
+ * Device allocation flag.
+ * Default behaviour is allocation on device.
+ * If this flag is set then allocation will
+ * be on host.
+ **/
+#define AML_AREA_CUDA_FLAG_ALLOC_HOST (1 << 0)
+
+/**
+ * Mapping flag.
+ * Default behaviour is allocation not mapped.
+ * If set, the pointer returned by mmap function
+ * will be host side memory mapped on device.
+ * A pointer to device memory can then be retrieved
+ * by calling cudaHostGetDevicePointer().
+ * If AML_AREA_CUDA_FLAG_ALLOC_HOST is set, then
+ * host side memory will be allocated. Else,
+ * "ptr" field of mmap options will be used to map
+ * device memory ("ptr" must not be NULL).
+ *
+ * @see cudaHostRegister(), cudaHostAlloc().
+ **/
+#define AML_AREA_CUDA_FLAG_ALLOC_MAPPED (1 << 1)
+
+/**
+ * Unified memory flag.
+ * If this flag is set, then allocation will create
+ * a unified memory pointer usable on host and device.
+ * Additionally, AML_AREA_CUDA_FLAG_ALLOC_HOST and
+ * AML_AREA_CUDA_FLAG_ALLOC_MAPPED will be ignored.
+ *
+ * @see cudaMallocManaged()
+ **/
+#define	AML_AREA_CUDA_FLAG_ALLOC_UNIFIED (1 << 2)
+
+/**
+ * Unified memory setting flag.
+ * If AML_AREA_CUDA_FLAG_ALLOC_UNIFIED is set,
+ * then this flagged is looked to set
+ * cudaMallocManaged() flag cudaAttachGlobal.
+ * Else if AML_AREA_CUDA_FLAG_ALLOC_MAPPED is set,
+ * or AML_AREA_CUDA_FLAG_ALLOC_HOST flag is set,
+ * then this flag is looked to set cudaMallocHost()
+ * flag cudaHostAllocPortable.
+ * The default behaviour is to make allocation
+ * visible from a single device. If this flag is set,
+ * then allocation will be visible on all devices.
+ *
+ * @see cudaMallocManaged()
+ **/
+#define	AML_AREA_CUDA_FLAG_ALLOC_GLOBAL (1 << 3)
+
+/**
+ * Options that can eventually be passed to mmap
+ * call.
+ **/
+struct aml_area_cuda_mmap_options {
+	/**
+	 * Specify a different device for one mmap call.
+	 * if device < 0 use area device.
+	 **/
+	int device;
+	/**
+	 * Host memory pointer used for mapped allocations.
+	 * If flag AML_AREA_CUDA_FLAG_ALLOC_MAPPED is set
+	 * and ptr is NULL, ptr will be overwritten with
+	 * host allocated memory and will have to be freed
+	 * using cudaFreeHost().
+	 **/
+	void *ptr;
+};
+
+/** aml area hooks for cuda implementation. **/
 extern struct aml_area_ops aml_area_cuda_ops;
 
 /**
- * Default cuda area with private mapping in current device.
- * Can be used out of the box with aml_area_*() functions.
+ * Default cuda area:
+ * Allocation on device, visible by a single device,
+ * and not mapped on host memory.
  **/
 extern struct aml_area aml_area_cuda;
 
-/**
- * Allocation flags to pass to cudaMallocManaged().
- * @see cuda runtime API documentation / memory management.
- **/
-enum aml_area_cuda_flags {
-	AML_AREA_CUDA_ATTACH_GLOBAL,
-	AML_AREA_CUDA_ATTACH_HOST,
-};
-
 /** Implementation of aml_area_data for cuda areas. **/
 struct aml_area_cuda_data {
-	/** allocation flags in cuda format **/
+	/** Area allocation flags. **/
 	int flags;
-	/** The device id on which allocation is done. **/
+	/**
+	 * The device id on which allocation is done.
+	 * If device < 0, use current device.
+	 **/
 	int device;
 };
 
@@ -62,8 +133,8 @@ struct aml_area_cuda_data {
  * @param[out] area pointer to an uninitialized struct aml_area pointer to
  * receive the new area.
  * @param[in] device: A valid cuda device id, i.e from 0 to num_devices-1.
- * If device id is negative, then no cuda device will be selected when
- * using aml_area_cuda_mmap().
+ * If device id is negative, then current cuda device will be used using
+ * aml_area_cuda_mmap().
  * @param[in] flags: Allocation flags.
  *
  * @return AML_SUCCESS on success and area points to the new aml_area.
@@ -72,11 +143,10 @@ struct aml_area_cuda_data {
  * of devices.
  * @return -AML_ENOMEM if space to carry area cannot be allocated.
  *
- * @see enum aml_area_cuda_flags.
+ * @see AML_AREA_CUDA_FLAG_*.
  **/
 int aml_area_cuda_create(struct aml_area **area,
-			 const int device,
-			 const enum aml_area_cuda_flags flags);
+			 const int device, const int flags);
 
 /**
  * \brief Cuda area destruction.
@@ -94,8 +164,9 @@ void aml_area_cuda_destroy(struct aml_area **area);
  * This function is a wrapper on cuda alloc functions.
  * It uses area settings to: select device on which to perform allocation,
  * select allocation function and set its parameters.
- * Allocations can be standalone on device, shared across multiple devices,
- * and backed with cpu memory.
+ * Any pointer obtained through aml_area_cuda_mmap() must be unmapped with
+ * aml_area_cuda_munmap().
+ *
  * Device selection is not thread safe and requires to set the global
  * state of cuda library. When selecting a device, allocation may succeed
  * while setting device back to original context devices may fail. In that
@@ -103,31 +174,38 @@ void aml_area_cuda_destroy(struct aml_area **area);
  * function in order to catch the error when return value is not NULL.
  *
  * @param[in] area_data: The structure containing cuda area settings.
- * @param[in, out] ptr: If ptr is NULL, then call cudaMallocManaged() with
- * area flags. Memory will be allocated only device side.
- * If ptr is not NULL:
- * * ptr must point to a valid memory area.
- * Device side memory will be mapped on this host side memory.
- * According to cuda runtime API documentation
- * (cudaHostRegister()), host side memory pages will be locked or allocation
- * will fail.
  * @param[in] size: The size to allocate.
+ * @param[in] options: A struct aml_area_cuda_mmap_options *. If > 0,
+ * device will be used to select the target device.
+ * If area flags AML_AREA_CUDA_FLAG_MAPPED is set and
+ * AML_AREA_CUDA_FLAG_HOST is not set, then options field "ptr" must not
+ * be NULL and point to a host memory that can be mapped on GPU.
  *
- * @return A cuda pointer to allocated device memory on success, NULL on
- * failure. If failure occures, aml_errno variable is set with one of the
- * following values:
- * * AML_ENOTSUP is one of the cuda calls failed with error:
+ * @return NULL on failure with aml errno set to the following error codes:
+ * AML_ENOTSUP is one of the cuda calls failed with error:
  * cudaErrorInsufficientDriver, cudaErrorNoDevice.
- * * AML_EINVAL if target device id is not valid.
- * * AML_EBUSY if a specific device was requested and call to failed with error
- * cudaErrorDeviceAlreadyInUse, or if region was already mapped on device.
+ * * AML_EINVAL if target device id is not valid or provided argument are not
+ * compatible.
+ * * AML_EBUSY if a specific device was requested but was in already use.
  * * AML_ENOMEM if memory allocation failed with error
  * cudaErrorMemoryAllocation.
  * * AML_FAILURE if one of the cuda calls resulted in error
  * cudaErrorInitializationError.
+ * @return A cuda pointer usable on device and host if area flags contains
+ * AML_AREA_CUDA_FLAG_ALLOC_UNIFIED.
+ * @return A pointer to host memory on which one can call
+ * cudaHostGetDevicePointer() to get a pointer to mapped device memory, if
+ * AML_AREA_CUDA_FLAG_ALLOC_MAPPED is set.
+ * Obtained pointer must be unmapped with aml_area_cuda_munmap(). If host side
+ * memory was provided as mmap option, then it still has to be freed.
+ * @return A pointer to host memory if area flag AML_AREA_CUDA_FLAG_ALLOC_HOST
+ * is set.
+ * @return A pointer to device memory if no flag is set.
+ *
+ * @see AML_AREA_CUDA_FLAG_*
  **/
 void *aml_area_cuda_mmap(const struct aml_area_data *area_data,
-			 void *ptr, size_t size);
+			 size_t size, struct aml_area_mmap_options *options);
 
 /**
  * \brief munmap hook for aml area.

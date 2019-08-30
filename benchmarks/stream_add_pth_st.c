@@ -101,11 +101,9 @@ int main(int argc, char *argv[])
 
 	/* initialize all the supporting struct */
 	assert(!aml_tiling_1d_create(&tiling, tilesz, memsize));
-	aml_area_linux_create(&slow, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
-				     &slowb, AML_AREA_LINUX_BINDING_FLAG_BIND);
+	aml_area_linux_create(&slow, &slowb, AML_AREA_LINUX_POLICY_BIND);
 	assert(slow != NULL);
-	aml_area_linux_create(&fast, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
-				     &fastb, AML_AREA_LINUX_BINDING_FLAG_BIND);
+	aml_area_linux_create(&fast, &fastb, AML_AREA_LINUX_POLICY_BIND);
 	assert(fast != NULL);
 	assert(!aml_dma_linux_seq_create(dma, (size_t)numthreads*4));
 	assert(!aml_scratch_par_create(&sa, fast, slow, dma, tiling,
@@ -114,9 +112,9 @@ int main(int argc, char *argv[])
 				     (size_t)2*numthreads, (size_t)numthreads));
 
 	/* allocation */
-	a = aml_area_mmap(slow, NULL, memsize);
-	b = aml_area_mmap(slow, NULL, memsize);
-	c = aml_area_mmap(fast, NULL, memsize);
+	a = aml_area_mmap(slow, memsize, NULL);
+	b = aml_area_mmap(slow, memsize, NULL);
+	c = aml_area_mmap(fast, memsize, NULL);
 	assert(a != NULL && b != NULL && c != NULL);
 
 	unsigned long esize = memsize/sizeof(unsigned long);
@@ -127,7 +125,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* run kernel */
-	struct winfo *wis = aml_area_mmap(slow, NULL, numthreads * sizeof(struct winfo));
+	struct winfo *wis = aml_area_mmap(slow, numthreads * sizeof(struct winfo), NULL);
 	for(unsigned long i = 0; i < numthreads; i++) {
 		wis[i].tid = i;
 		pthread_create(&wis[i].th, NULL, &th_work, (void*)&wis[i]);
