@@ -105,6 +105,14 @@ int aml_finalize(void);
 struct aml_area_data;
 
 /**
+ * Opaque handle to pass additional options to area mmap hook.
+ * This is implementation specific and cannot be used as a
+ * generic interface but rather for customizing area behaviour
+ * on per mmap basis.
+ **/
+struct aml_area_mmap_options;
+
+/**
  * aml_area_ops is a structure containing implementations
  * of an area operations.
  * Aware users may create or modify implementation by assembling
@@ -114,21 +122,20 @@ struct aml_area_ops {
 	/**
 	 * Building block for coarse grain allocator of virtual memory.
 	 *
-	 * @param data: Opaque handle to implementation specific data.
-	 * @param ptr: A virtual address to be used by underlying
-	 *        implementation.
-	 *        Can be NULL.
-	 * @param size: The minimum size of allocation.
+	 * @param[in] data: Opaque handle to implementation specific data.
+	 * @param[in] size: The minimum size of allocation.
 	 *        Is greater than 0. Must not fail unless not enough
 	 *        memory is available, or ptr argument does not point to a
 	 *        suitable address.
 	 *        In case of failure, aml_errno must be set to an appropriate
 	 *        value.
+	 * @param[in/out] opts: Opaque handle to pass additional options to area
+	 *        mmap hook. Can be NULL and must work with NULL opts.
 	 * @return a pointer to allocated memory object.
 	 **/
 	void* (*mmap)(const struct aml_area_data  *data,
-		      void                        *ptr,
-		      size_t                       size);
+		      size_t                       size,
+		      struct aml_area_mmap_options *opts);
 
 	/**
 	 * Building block for unmapping of virtual memory mapped with mmap()
@@ -162,14 +169,16 @@ struct aml_area {
 
 /**
  * Low-level function for getting memory from an area.
- * @param area: A valid area implementing access to target memory.
- * @param ptr: Implementation specific argument. See specific header.
- * @param size: The usable size of memory returned.
+ * @param[in] area: A valid area implementing access to target memory.
+ * @param[in] size: The usable size of memory returned.
+ * @param[in, out] opts: Opaque handle to pass additional options to area
  * @return virtual memory from this area with at least queried size bytes.
+ * @return NULL on failure, with aml_errno set to the appropriate error
+ * code.
  **/
-void *aml_area_mmap(const struct aml_area *area,
-		    void                 **ptr,
-		    size_t                 size);
+void *aml_area_mmap(const struct aml_area        *area,
+		    size_t                        size,
+		    struct aml_area_mmap_options *opts);
 
 /**
  * Release data provided with aml_area_mmap() and the same area.

@@ -7,12 +7,32 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
 *******************************************************************************/
-#include "config.h"
 
+#include "config.h"
 #include "aml.h"
 #include "aml/area/linux.h"
+#include <inttypes.h>
+#include <sys/mman.h>
+#include <numa.h>
+#include <numaif.h>
+#include <assert.h>
 
 #define AML_AREA_LINUX_MBIND_FLAGS MPOL_MF_MOVE
+
+static inline int aml_area_linux_policy(const enum aml_area_linux_policy p)
+{
+	switch (p) {
+	case AML_AREA_LINUX_POLICY_DEFAULT:
+		return MPOL_DEFAULT;
+	case AML_AREA_LINUX_POLICY_BIND:
+		return MPOL_BIND;
+	case AML_AREA_LINUX_POLICY_PREFERRED:
+		return MPOL_PREFERRED;
+	case AML_AREA_LINUX_POLICY_INTERLEAVE:
+		return MPOL_INTERLEAVE;
+	}
+	return MPOL_DEFAULT;
+}
 
 int
 aml_area_linux_mbind(struct aml_area_linux_data    *bind,
@@ -27,10 +47,9 @@ aml_area_linux_mbind(struct aml_area_linux_data    *bind,
 	if (nodeset == NULL)
 		nodeset = numa_all_nodes_ptr;
 
-
 	long err = mbind(ptr,
 			 size,
-			 bind->binding_flags,
+			 aml_area_linux_policy(bind->policy),
 			 nodeset->maskp,
 			 nodeset->size,
 			 AML_AREA_LINUX_MBIND_FLAGS);
@@ -66,16 +85,16 @@ aml_area_linux_check_binding(struct aml_area_linux_data *area_data,
 	}
 
 	err = 1;
-	if (mode != area_data->binding_flags)
+	if (mode != aml_area_linux_policy(area_data->policy))
 		err = 0;
 	for (i = 0; i < numa_max_possible_node(); i++) {
 		int ptr_set = numa_bitmask_isbitset(nodeset, i);
 		int bitmask_set = numa_bitmask_isbitset(area_data->nodeset, i);
 
-		if (mode == AML_AREA_LINUX_BINDING_FLAG_BIND &&
+		if (mode == AML_AREA_LINUX_POLICY_BIND &&
 		    ptr_set != bitmask_set)
 			goto binding_failed;
-		if (mode == AML_AREA_LINUX_BINDING_FLAG_INTERLEAVE &&
+		if (mode == AML_AREA_LINUX_POLICY_INTERLEAVE &&
 		    ptr_set && !bitmask_set)
 			goto binding_failed;
 	}
@@ -88,15 +107,30 @@ aml_area_linux_check_binding(struct aml_area_linux_data *area_data,
 	return err;
 }
 
-void *aml_area_linux_mmap(const struct aml_area_data  *area_data,
-			  void                        *ptr,
-			  size_t                       size)
+void *aml_area_linux_mmap(const struct aml_area_data   *area_data,
+			  size_t                        size,
+			  struct aml_area_mmap_options *opts)
 {
-	struct aml_area_linux_data *data =
-		(struct aml_area_linux_data *) area_data;
+	(void) area_data;
+	void *out;
+	struct aml_area_linux_mmap_options *options;
 
-	void *out = mmap(ptr, size, PROT_READ|PROT_WRITE,
-			 data->mmap_flags, 0, 0);
+	options = (struct aml_area_linux_mmap_options *) opts;
+	if (options == NULL) {
+		out = mmap(NULL,
+			   size,
+			   PROT_READ|PROT_WRITE,
+			   MAP_PRIVATE | MAP_ANONYMOUS,
+			   0,
+			   0);
+	} else {
+		out = mmap(options->ptr,
+			   size,
+			   options->mode,
+			   options->flags,
+			   options->fd,
+			   options->offset);
+	}
 
 	if (out == MAP_FAILED) {
 		out = NULL;
@@ -119,10 +153,10 @@ int aml_area_linux_munmap(const struct aml_area_data *area_data,
 
 
 void *aml_area_linux_mmap_mbind(const struct aml_area_data  *area_data,
-				void                        *ptr,
-				size_t                       size)
+				size_t                       size,
+				struct aml_area_mmap_options *opts)
 {
-	void *out = aml_area_linux_mmap(area_data, ptr, size);
+	void *out = aml_area_linux_mmap(area_data, size, opts);
 
 	if (out == NULL)
 		return NULL;
@@ -130,7 +164,8 @@ void *aml_area_linux_mmap_mbind(const struct aml_area_data  *area_data,
 	struct aml_area_linux_data *data =
 		(struct aml_area_linux_data *) area_data;
 
-	if (data->nodeset != NULL || data->binding_flags != MPOL_DEFAULT) {
+	if (data->nodeset != NULL ||
+	    data->policy != AML_AREA_LINUX_POLICY_DEFAULT) {
 		int err = aml_area_linux_mbind(data, out, size);
 
 		if (err != AML_SUCCESS) {
@@ -148,39 +183,9 @@ void *aml_area_linux_mmap_mbind(const struct aml_area_data  *area_data,
  * Areas Initialization
  ******************************************************************************/
 
-static int aml_area_linux_check_mmap_flags(const int mmap_flags)
-{
-	switch (mmap_flags) {
-	case AML_AREA_LINUX_MMAP_FLAG_PRIVATE:
-		break;
-	case AML_AREA_LINUX_MMAP_FLAG_SHARED:
-		break;
-	default:
-		return 0;
-	}
-
-	return 1;
-}
-
-static int aml_area_linux_check_binding_flags(const int binding_flags)
-{
-	switch (binding_flags) {
-	case AML_AREA_LINUX_BINDING_FLAG_BIND:
-		break;
-	case AML_AREA_LINUX_BINDING_FLAG_INTERLEAVE:
-		break;
-	case AML_AREA_LINUX_BINDING_FLAG_PREFERRED:
-		break;
-	default:
-		return 0;
-	}
-
-	return 1;
-}
-
-int aml_area_linux_create(struct aml_area **area, const int mmap_flags,
+int aml_area_linux_create(struct aml_area **area,
 			  const struct aml_bitmap *nodemask,
-			  const int binding_flags)
+			  const enum aml_area_linux_policy policy)
 {
 	struct aml_area *ret = NULL;
 	struct aml_area_linux_data *data;
@@ -191,12 +196,6 @@ int aml_area_linux_create(struct aml_area **area, const int mmap_flags,
 
 	*area = NULL;
 
-	/* check flags */
-	if (!aml_area_linux_check_mmap_flags(mmap_flags) ||
-	    !aml_area_linux_check_binding_flags(binding_flags)) {
-		return -AML_EINVAL;
-	}
-
 	ret = AML_INNER_MALLOC_2(struct aml_area, struct aml_area_linux_data);
 	if (ret == NULL)
 		return -AML_ENOMEM;
@@ -206,9 +205,8 @@ int aml_area_linux_create(struct aml_area **area, const int mmap_flags,
 	ret->ops = &aml_area_linux_ops;
 	data = (struct aml_area_linux_data *)ret->data;
 
-	/* set area_data and area */
-	data->binding_flags = binding_flags;
-	data->mmap_flags = mmap_flags;
+	/* set area_data */
+	data->policy = policy;
 
 	/* check/set nodemask */
 	data->nodeset = numa_get_mems_allowed();
@@ -268,8 +266,7 @@ void aml_area_linux_destroy(struct aml_area **area)
 
 struct aml_area_linux_data aml_area_linux_data_default = {
 	.nodeset = NULL,
-	.binding_flags = MPOL_DEFAULT,
-	.mmap_flags = AML_AREA_LINUX_MMAP_FLAG_PRIVATE
+	.policy = AML_AREA_LINUX_POLICY_DEFAULT,
 };
 
 struct aml_area_ops aml_area_linux_ops = {
@@ -281,4 +278,3 @@ struct aml_area aml_area_linux = {
 	.ops = &aml_area_linux_ops,
 	.data = (struct aml_area_data *)(&aml_area_linux_data_default)
 };
-

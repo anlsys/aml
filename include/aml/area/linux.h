@@ -29,42 +29,6 @@
  **/
 
 /**
- * Allowed binding flag for area creation.
- * This flag will apply strict binding to the selected bitmask.
- * If subsequent allocation will failt if they cannot enforce binding
- * on bitmask.
- **/
-#define AML_AREA_LINUX_BINDING_FLAG_BIND       (MPOL_BIND)
-
-/**
- * Allowed binding flag for area creation.
- * This flag will make subsequent allocations to interleave
- * pages on memories of the bitmask.
- **/
-#define AML_AREA_LINUX_BINDING_FLAG_INTERLEAVE (MPOL_INTERLEAVE)
-
-/**
- * Allowed binding flag for area creation.
- * This flag will make subsequent allocations to bound to the
- * nodes of bitmask if possible, else to some other node.
- **/
-#define AML_AREA_LINUX_BINDING_FLAG_PREFERRED  (MPOL_PREFERRED)
-
-/**
- * Allowed mapping flag for area creation.
- * This flag will make subsequent allocations to be private
- * to the process making them.
- **/
-#define AML_AREA_LINUX_MMAP_FLAG_PRIVATE (MAP_PRIVATE | MAP_ANONYMOUS)
-
-/**
- * Allowed mapping flag for area creation.
- * This flag will make subsequent allocations to be visible to
- * other processes of the system.
- **/
-#define AML_AREA_LINUX_MMAP_FLAG_SHARED  (MAP_SHARED | MAP_ANONYMOUS)
-
-/**
  * This contains area operations implementation
  * for linux area.
  **/
@@ -76,6 +40,21 @@ extern struct aml_area_ops aml_area_linux_ops;
  **/
 extern struct aml_area aml_area_linux;
 
+/** Allowed policy flag for area creation. **/
+enum aml_area_linux_policy {
+	/** default allocation policy **/
+	AML_AREA_LINUX_POLICY_DEFAULT,
+	/** Enforce binding on specified area nodeset or fail. **/
+	AML_AREA_LINUX_POLICY_BIND,
+	/**
+	 * bind on specified area nodeset,
+	 * fallback on other available nodes.
+	 **/
+	AML_AREA_LINUX_POLICY_PREFERRED,
+	/** bind on specified area nodeset in a round-robin fashion. **/
+	AML_AREA_LINUX_POLICY_INTERLEAVE,
+};
+
 /**
  * Implementation of aml_area_data for linux areas.
  **/
@@ -83,9 +62,24 @@ struct aml_area_linux_data {
 	/** numanodes to use when allocating data **/
 	struct bitmask *nodeset;
 	/** binding policy **/
-	int             binding_flags;
-	/** mmap flags **/
-	int             mmap_flags;
+	enum aml_area_linux_policy policy;
+};
+
+/**
+ * Options implementation for aml area linux mmap.
+ * @see mmap man(2) page.
+ **/
+struct aml_area_linux_mmap_options {
+	/** hint address where to perform allocation **/
+	void *ptr;
+	/** Combination of mmap flags **/
+	int flags;
+	/** prot flags **/
+	int mode;
+	/** File descriptor backing and initializing memory. **/
+	int fd;
+	/** Offset in file descriptor for mapping **/
+	off_t offset;
 };
 
 /**
@@ -94,20 +88,20 @@ struct aml_area_linux_data {
  * Allocate and initialize a struct aml_area implemented by aml_area_linux
  * operations.
  * @param[out] area pointer to an uninitialized struct aml_area pointer to
- * receive the new area.
- * @param[in] mmap_flags flags to use when retrieving virtual memory with mmap
- * @param[in] binding_flags, flags to use when binding memory.
+ *       receive the new area.
  * @param[in] nodemask list of memory nodes to use. Default to allowed memory
- * nodes if NULL.
+ *       nodes if NULL.
+ * @param[in] policy: The memory allocation policy to use when binding on
+ *       nodeset.
  * @return On success, returns 0 and area points to the new aml_area.
  * @return On failure, sets area to NULL and returns one of AML error codes:
  * - AML_ENOMEM if there wasn't enough memory available.
  * - AML_EINVAL if inputs flags were invalid.
  * - AML_EDOM the nodemask provided is out of bounds (allowed nodeset).
  **/
-int aml_area_linux_create(struct aml_area **area, const int mmap_flags,
+int aml_area_linux_create(struct aml_area **area,
 			  const struct aml_bitmap *nodemask,
-			  const int binding_flags);
+			  const enum aml_area_linux_policy policy);
 
 
 /**
@@ -157,15 +151,15 @@ aml_area_linux_check_binding(struct aml_area_linux_data *area_data,
  * with aml_area_linux_create().
  * @param area_data: The structure containing mmap_flags for mmap call.
  *        nodemask and bind_flags fields are ignored.
- * @param ptr: A hint provided to mmap function.
  * @param size: The size to allocate.
+ * @param opts: The size to allocate.
  * @return NULL on failure, else a valid pointer to memory.
  * Upon failure, errno should be checked for further error investigations.
  **/
 void*
 aml_area_linux_mmap(const struct aml_area_data  *area_data,
-		    void                        *ptr,
-		    size_t                       size);
+		    size_t                       size,
+		    struct aml_area_mmap_options *opts);
 
 /**
  * \brief munmap hook for aml area.

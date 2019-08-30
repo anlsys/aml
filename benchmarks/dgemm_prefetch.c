@@ -105,20 +105,18 @@ int main(int argc, char* argv[])
 	assert(!aml_tiling_1d_create(&tiling_prefetch,
 				     tilesize*(N/T), memsize));
 
-	aml_area_linux_create(&slow, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
-				     &slowb, AML_AREA_LINUX_BINDING_FLAG_BIND);
+	aml_area_linux_create(&slow, &slowb, AML_AREA_LINUX_POLICY_BIND);
 	assert(slow != NULL);
-	aml_area_linux_create(&fast, AML_AREA_LINUX_MMAP_FLAG_PRIVATE,
-				     &fastb, AML_AREA_LINUX_BINDING_FLAG_BIND);
+	aml_area_linux_create(&fast, &fastb, AML_AREA_LINUX_POLICY_BIND);
 	assert(fast != NULL);
 	
 	assert(!aml_dma_linux_seq_create(&dma, 2));
 	assert(!aml_scratch_par_create(&sa, fast, slow, dma, tiling_prefetch, (size_t)2, (size_t)2));
 	assert(!aml_scratch_par_create(&sb, fast, slow, dma, tiling_prefetch, (size_t)2, (size_t)2));
 	/* allocation */
-	a = aml_area_mmap(slow, NULL, memsize);
-	b = aml_area_mmap(slow, NULL, memsize);
-	c = aml_area_mmap(fast, NULL, memsize);
+	a = aml_area_mmap(slow, memsize, NULL);
+	b = aml_area_mmap(slow, memsize, NULL);
+	c = aml_area_mmap(fast, memsize, NULL);
 	assert(a != NULL && b != NULL && c != NULL);
 
 	size_t ntilerows, ntilecols, tilerowsize, tilecolsize, rowsize, colsize;

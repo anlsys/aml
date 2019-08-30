@@ -266,9 +266,9 @@ main(int argc, char *argv[])
     aml_init(&argc, &argv);
     size_t size = sizeof(STREAM_TYPE)*(STREAM_ARRAY_SIZE+OFFSET);
     struct aml_area *area = aml_area_linux;
-    a = aml_area_mmap(area, NULL, size);
-    b = aml_area_mmap(area, NULL, size);
-    c = aml_area_mmap(area, NULL, size);
+    a = aml_area_mmap(area, size, NULL);
+    b = aml_area_mmap(area, size, NULL);
+    c = aml_area_mmap(area, size, NULL);
     
     /* Get initial value for system clock. */
 #pragma omp parallel for
