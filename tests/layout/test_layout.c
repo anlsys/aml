@@ -2,6 +2,7 @@
 #include <aml/layout/dense.h>
 #include <aml/layout/reshape.h>
 #include <aml/layout/native.h>
+#include <aml/layout/pad.h>
 #include <assert.h>
 
 void test_slice_contiguous(void)
@@ -633,12 +634,37 @@ void test_base(void)
 	aml_layout_dense_destroy(&a);
 }
 
+void test_pad()
+{
+	struct aml_layout *a, *b;
+	float memory[7][11];
+	size_t dims[2] = {7, 11};
+	size_t dims_pad[2] = {11, 13};
+	float one = 1.0;
+	size_t ret_dims[2];
+	assert(!aml_layout_dense_create(&a, (void *)memory, AML_LAYOUT_ORDER_C,
+					sizeof(float), 2, dims, NULL, NULL));
+	assert(!aml_layout_pad_create(&b, AML_LAYOUT_ORDER_C, a,
+				      dims_pad, &one));
+
+	assert(aml_layout_ndims(b) == 2);
+	assert(!aml_layout_dims(b, ret_dims));
+	assert(!memcmp(ret_dims, dims_pad, sizeof(size_t)*2));
+	ret_dims[0] = 10;
+	ret_dims[1] = 12;
+	assert(*(float *)aml_layout_deref(b, ret_dims) == one);
+	aml_layout_pad_destroy(&b);
+	aml_layout_dense_destroy(&a);
+}
+
+
 int main(int argc, char *argv[])
 {
 	/* library initialization */
 	aml_init(&argc, &argv);
 
 	test_base();
+	test_pad();
 	test_reshape_contiguous();
 	test_reshape_discontiguous();
 	test_reshape_strided();

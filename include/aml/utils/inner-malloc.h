@@ -51,7 +51,15 @@
  **/
 #define AML_INNER_MALLOC_EXTRA(a, b, c, sz) \
 	calloc(1, AML_SIZEOF_ALIGNED(struct { a  __f1; b __f2; }, c) + \
-	       (sizeof(c)*sz))
+	       (sizeof(c)*(sz)))
+
+/** Allocate a pointer that can be used to contain two types plus an extra area
+ * aligned on a third type, and extra bytes after that.
+ *
+ **/
+#define AML_INNER_MALLOC_4(a, b, c, sz, d) \
+	calloc(1, AML_SIZEOF_ALIGNED(struct { a  __f1; b __f2; }, c) + \
+	       (sizeof(c)*(sz)) + d)
 
 /** Returns the next pointer after an AML_INNER_MALLOC.
  *
