@@ -20,8 +20,7 @@ AREA_TESTS = \
 
 LAYOUT_TESTS = layout/test_layout
 
-TILING_TESTS = tiling/test_tiling \
-	       tiling/test_tiling_2d
+TILING_TESTS = tiling/test_tiling
 
 DMA_LINUX_TESTS = dma/test_dma_linux_seq \
 		  dma/test_dma_linux_par

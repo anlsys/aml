@@ -198,249 +198,6 @@ aml_area_munmap(const struct aml_area *area,
 
 /**
  * @}
- * @defgroup aml_tiling "AML Tiling"
- * @brief Tiling Data Structure High-Level API
- *
- * Tiling is an array representation of data structures.
- * AML tiling structure can be defined as 1D or 2D contiguous arrays.
- * Tiles in tilings can be of custom size and AML provides iterators to
- * easily access tiles element.
- * @{
- **/
-
-////////////////////////////////////////////////////////////////////////////////
-
-/**
- * Tiling types passed to some tiling routines.
- * Regular, linear tiling with uniform tile sizes.
- **/
-#define AML_TILING_TYPE_1D 0
-
-/**
- * Tiling types passed to some tiling routines.
- * 2-dimensional cartesian tiling with uniform tile sizes, stored
- * in rowmajor order
- **/
-#define AML_TILING_TYPE_2D_ROWMAJOR 1
-
-/**
- * Tiling types passed to some tiling routines.
- * 2-dimensional cartesian tiling with uniform tile sizes, stored
- * in colmajor order
- **/
-#define AML_TILING_TYPE_2D_COLMAJOR 2
-
-/**
- * aml_tiling_data is an opaque handle defined by each aml_tiling
- * implementation. This not supposed to be used by end users.
- **/
-struct aml_tiling_data;
-
-/**
- * aml_area_tiling_iterator_data is an opaque handle defined by each
- * aml_tiling_iterator implementation. This not supposed to be used
- * by end users.
- **/
-struct aml_tiling_iterator_data;
-
-/**
- * aml_tiling_iterator_ops contains the specific operations defined
- * by an aml_tiling_iterator.
- * Aware users may create or modify implementation by assembling
- * appropriate operations in such a structure.
- **/
-struct aml_tiling_iterator_ops;
-
-/**
- * \brief aml_tiling_iterator is a structure for iterating over
- * elements of an aml_tiling.
- * \todo Provide a detailed explanation of what is a tiling iterator.
- **/
-struct aml_tiling_iterator;
-
-/**
- * aml_tiling_ops is a structure containing a set of operation
- * over a tiling. These operation are the creation and destruction
- * of iterators, access to tiles indexing, size and tiling dimension.
- * Aware users may create or modify implementation by assembling
- * appropriate operations in such a structure.
- **/
-struct aml_tiling_ops {
-	/**
-	 * \todo Doc
-	 **/
-	int (*create_iterator)(struct aml_tiling_data *tiling,
-			       struct aml_tiling_iterator **iterator,
-			       int flags);
-	/**
-	 * \todo Doc
-	 **/
-	int (*destroy_iterator)(struct aml_tiling_data *tiling,
-				struct aml_tiling_iterator **iterator);
-	/**
-	 * \todo Doc
-	 **/
-	int (*tileid)(const struct aml_tiling_data *tiling, va_list coords);
-	/**
-	 * \todo Doc
-	 **/
-	size_t (*tilesize)(const struct aml_tiling_data *tiling, int tileid);
-	/**
-	 * \todo Doc
-	 **/
-	void* (*tilestart)(const struct aml_tiling_data *tiling,
-			   const void *ptr, int tileid);
-	/**
-	 * \todo Doc
-	 **/
-	int (*ndims)(const struct aml_tiling_data *tiling, va_list results);
-};
-
-/**
- * An aml_tiling is a multi-dimensional grid of data, e.g a matrix, a stencil
- * etc...
- * Tilings are used in AML as a description of a macro data structure that will
- * be used by a library for doing its own work. This structure is exploitable
- * by AML to perform optimized movement operations.
- **/
-struct aml_tiling {
-	/** @see aml_tiling_ops **/
-	struct aml_tiling_ops *ops;
-	/** @see aml_tiling_data **/
-	struct aml_tiling_data *data;
-};
-
-/**
- * Provides the tile id of a tile.
- * @param tiling: an initialized tiling structure.
- * @param coordinates: a list of size_t coordinates, one per dimension of the
- *        tiling.
- * @return -1 in case of invalid coordinates, else the id of the tile
- *         (that is, its order in memory), to use with other functions.
- **/
-int aml_tiling_tileid(const struct aml_tiling *tiling, ...);
-
-/**
- * Provides the information on the size of a tile.
- * @param tiling: an initialized tiling structure.
- * @param tileid: an identifier of a tile (a value between 0 and the number
- *        of tiles minus 1).
- * @return the size of a tile.
- **/
-size_t aml_tiling_tilesize(const struct aml_tiling *tiling, int tileid);
-
-/**
- * Provides the information on the location of a tile in memory.
- * @param tiling: an initialized tiling structure.
- * @param ptr: an address of the start of the complete user data structure
- *        that this tiling describes.
- * @param tileid: an identifier of a tile (a value between 0 and the number
- *        of tiles minus 1).
- * @return the address of the start of the tile identified by "tileid", within
- * the provided user data structure.
- **/
-void *aml_tiling_tilestart(const struct aml_tiling *tiling,
-			   const void *ptr,
-			   int tileid);
-
-/**
- * Provides the dimensions of the entire tiling in tiles.
- * @param tiling: an initialized tiling structure.
- * @param sizes: a list of output (size_t *), one per dimension of the tiling.
- *               Will contain the size of each dimension in tiles upon return.
- * @return 0 if successful, an error code otherwise.
- **/
-int aml_tiling_ndims(const struct aml_tiling *tiling, ...);
-
-/**
- * \todo Doc
- **/
-struct aml_tiling_iterator_ops {
-	/**
-	 * \todo Doc
-	 **/
-	int (*reset)(struct aml_tiling_iterator_data *iterator);
-	/**
-	 * \todo Doc
-	 **/
-	int (*next)(struct aml_tiling_iterator_data *iterator);
-	/**
-	 * \todo Doc
-	 **/
-	int (*end)(const struct aml_tiling_iterator_data *iterator);
-	/**
-	 * \todo Doc
-	 **/
-	int (*get)(const struct aml_tiling_iterator_data *iterator,
-		   va_list args);
-};
-
-/**
- * \todo Doc
- **/
-struct aml_tiling_iterator {
-	/** @see aml_tiling_iterator_ops **/
-	struct aml_tiling_iterator_ops *ops;
-	/** @see aml_tiling_iterator_data **/
-	struct aml_tiling_iterator_data *data;
-};
-
-/**
- * Allocates and initializes a new tiling iterator.
- * @param tiling: an initialized tiling structure.
- * @param iterator: an address where the pointer to the newly allocated iterator
- *        structure will be stored.
- * @param flags: reserved for future use; pass 0 for now.
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_tiling_create_iterator(struct aml_tiling *tiling,
-			       struct aml_tiling_iterator **iterator,
-			       int flags);
-/**
- * Tears down an initialized tiling iterator.
- * @param tiling: an initialized tiling structure.
- * @param iterator: an initialized tiling iterator structure.
- * @return 0 if successful; an error code otherwise.
- **/
-void aml_tiling_destroy_iterator(struct aml_tiling *tiling,
-				 struct aml_tiling_iterator **iterator);
-
-
-/**
- * Resets a tiling iterator to the first tile.
- * @param iterator: an initialized tiling iterator structure.
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_tiling_iterator_reset(struct aml_tiling_iterator *iterator);
-
-/**
- * Advances a tiling iterator to the next tile.
- * @param iterator: an initialized tiling iterator structure.
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_tiling_iterator_next(struct aml_tiling_iterator *iterator);
-
-/**
- * Checks whether the iterator is past the last tile.
- * @param iterator: an initialized tiling iterator structure.
- * @return 0 if the iterator points at a valid tile; 1 if it's past the last
- * tile.
- **/
-int aml_tiling_iterator_end(const struct aml_tiling_iterator *iterator);
-
-/**
- * Queries the iterator.
- * @param iterator: an initialized tiling iterator structure.
- * @param x: an argument of type unsigned long*; on return gets filled with the
- *        identifier of the tile currently pointed to.
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_tiling_iterator_get(const struct aml_tiling_iterator *iterator, ...);
-
-////////////////////////////////////////////////////////////////////////////////
-
-/**
- * @}
  * @defgroup aml_layout "AML Layout"
  * @brief Low level description of data orrganization at the byte granularity.
  *
@@ -796,6 +553,156 @@ int aml_layout_slice(const struct aml_layout *layout,
 		     const size_t *offsets,
 		     const size_t *strides);
 
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @}
+ * @defgroup aml_tiling "AML Tiling"
+ * @brief Tiling Data Structure High-Level API
+ *
+ * Tiling is a representation of the decomposition of data structures. It
+ * identifies ways a layout can be split into layouts of smaller size. As such,
+ * the main function of a tiling is to provide an index into subcomponents of a
+ * layout. Implementations focus on the ability to provide sublayouts of
+ * different sizes at the corners, and linearization of the index range.
+ * @{
+ **/
+
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Tag specifying user storage of dimensions inside a layout.
+ * Layout order is the first bit in an integer bitmask.
+ * @see AML_TILING_ORDER()
+ * This tag will store dimensions in the order provided by the user,
+ * i.e elements of the last dimension will be contiguous in memory.
+ **/
+#define AML_TILING_ORDER_C (0<<0)
+
+/**
+ * Tag specifying user storage of dimensions inside a layout.
+ * Layout order is the first bit in an integer bitmask.
+ * @see AML_TILING_ORDER()
+ * This tag will store dimensions in the reversed order provided
+ * by the user, i.e elements of the first dimension will be contiguous
+ * in memory. This storage is the actual storage used by the library
+ * inside the structure.
+ **/
+#define AML_TILING_ORDER_FORTRAN (1<<0)
+
+/**
+ * This is equivalent to AML_TILING_ORDER_C.
+ * @see AML_TILING_ORDER_C
+ **/
+#define AML_TILING_ORDER_COLUMN_MAJOR (0<<0)
+
+/**
+ * This is equivalent to AML_TILING_ORDER_FORTRAN.
+ * @see AML_TILING_ORDER_FORTRAN
+ **/
+#define AML_TILING_ORDER_ROW_MAJOR (1<<0)
+
+/**
+ * Get the order bit of an integer bitmask.
+ * The value can be further checked for equality
+ * with AML_TILING_ORDER_* values.
+ * @param x: An integer with the first bit set
+ * to the order value.
+ * @return An integer containing only the bit order.
+ **/
+#define AML_TILING_ORDER(x) ((x) & (1<<0))
+
+
+/**
+ * aml_tiling_data is an opaque handle defined by each aml_tiling
+ * implementation. This not supposed to be used by end users.
+ **/
+struct aml_tiling_data;
+
+/**
+ * aml_tiling_ops is a structure containing a set of operation
+ * over a tiling. These operations focus on:
+ * - retrieving a tile
+ * - getting information about the size of tiles and the tiling itself.
+ **/
+struct aml_tiling_ops {
+	/** retrieve a tile as a layout **/
+	struct aml_layout* (*index)(const struct aml_tiling_data *t,
+				    const size_t *coords);
+	/** retrieve a tile from linear index **/
+	struct aml_layout* (*index_linear)(const struct aml_tiling_data *t,
+					   const size_t uuid);
+	int (*order)(const struct aml_tiling_data *t);
+	int (*tile_dims)(const struct aml_tiling_data *t, size_t *dims);
+	int (*dims)(const struct aml_tiling_data *t, size_t *dims);
+	size_t (*ndims)(const struct aml_tiling_data *t);
+	size_t (*ntiles)(const struct aml_tiling_data *t);
+};
+
+/**
+ **/
+struct aml_tiling {
+	/** @see aml_tiling_ops **/
+	struct aml_tiling_ops *ops;
+	/** @see aml_tiling_data **/
+	struct aml_tiling_data *data;
+};
+
+/**
+ * Get the order in which dimensions of the tiling are supposed to be
+ * accessed by the user.
+ * @param tiling[in]: An initialized tiling.
+ * @return The order (>0) on success, an AML error (<0) on failure.
+ * @return On success, a bitmask with order bit set (or not set).
+ * Output value can be further checked against order AML_tiling_ORDER
+ * flags by using the macro AML_tiling_ORDER() on output value.
+ * @see AML_tiling_ORDER()
+ **/
+int aml_tiling_order(const struct aml_tiling *tiling);
+
+/**
+ * Return the tiling dimensions in the user order.
+ * @param tiling[in]: An initialized tiling.
+ * @param dims[out]: The non-NULL array of dimensions to fill. It is
+ * supposed to be large enough to contain ndims() elements.
+ * @return AML_SUCCESS on success, else an AML error code.
+ **/
+int aml_tiling_dims(const struct aml_tiling *tiling, size_t *dims);
+
+/**
+ * Return the dimensions of a tile in the tiling, in the user order.
+ * @param tiling[in]: An initialized tiling.
+ * @param dims[out]: The non-NULL array of dimensions to fill. It is
+ * supposed to be large enough to contain ndims() elements.
+ * @return AML_SUCCESS on success, else an AML error code.
+ **/
+int aml_tiling_tile_dims(const struct aml_tiling *tiling, size_t *dims);
+
+/**
+ * Provide the number of dimensions in a tiling.
+ * @param tiling: an initialized tiling structure.
+ * @return the number of dimensions in this tiling
+ **/
+size_t aml_tiling_ndims(const struct aml_tiling *tiling);
+
+/**
+ * Return the tile at specified coordinates in the tiling
+ * @param tiling: an initialized tiling
+ * @param coords: the coordinates for the tile
+ * @return the tile as a layout on success, NULL on error.
+ **/
+struct aml_layout *aml_tiling_index(const struct aml_tiling *t,
+				    const size_t *coords);
+/**
+ * Return the tile at specified coordinates in the tiling, using a linear index
+ * @param tiling: an initialized tiling
+ * @param uuid: the 1D coordinate for the tile
+ * @return the tile as a layout on success, NULL on error.
+ **/
+struct aml_layout *aml_tiling_index_linear(const struct aml_tiling *t,
+					   const size_t uuid);
+
+size_t aml_tiling_nbtiles(const struct aml_tiling *t);
 ////////////////////////////////////////////////////////////////////////////////
 
 /**

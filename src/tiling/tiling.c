@@ -9,101 +9,59 @@
 *******************************************************************************/
 
 #include "aml.h"
-#include "aml/tiling/1d.h"
-#include "aml/tiling/2d.h"
 #include <assert.h>
 
-/*******************************************************************************
- * Tiling functions
- ******************************************************************************/
-int aml_tiling_tileid(const struct aml_tiling *t, ...)
+int aml_tiling_order(const struct aml_tiling *t)
 {
-	assert(t != NULL);
-	va_list ap;
-	int ret;
+	if (t == NULL || t->ops == NULL)
+		return -AML_EINVAL;
 
-	va_start(ap, t);
-	ret = t->ops->tileid(t->data, ap);
-	va_end(ap);
-	return ret;
+	return t->ops->order(t->data);
 }
 
-size_t aml_tiling_tilesize(const struct aml_tiling *t, int tileid)
+int aml_tiling_tile_dims(const struct aml_tiling *t, size_t *dims)
 {
-	assert(t != NULL);
-	return t->ops->tilesize(t->data, tileid);
+	if (t == NULL || t->ops == NULL || dims == NULL)
+		return -AML_EINVAL;
+
+	return t->ops->tile_dims(t->data, dims);
 }
 
-void *aml_tiling_tilestart(const struct aml_tiling *t, const void *ptr,
-			   int tileid)
+int aml_tiling_dims(const struct aml_tiling *t, size_t *dims)
 {
-	assert(t != NULL);
-	return t->ops->tilestart(t->data, ptr, tileid);
+	if (t == NULL || t->ops == NULL || dims == NULL)
+		return -AML_EINVAL;
+
+	return t->ops->dims(t->data, dims);
 }
 
-int aml_tiling_ndims(const struct aml_tiling *t, ...)
+size_t aml_tiling_ndims(const struct aml_tiling *t)
 {
-	assert(t != NULL);
-	va_list ap;
-	int err;
-
-	va_start(ap, t);
-	err = t->ops->ndims(t->data, ap);
-	va_end(ap);
-	return err;
+	assert(t != NULL && t->ops != NULL);
+	return t->ops->ndims(t->data);
 }
 
-/*******************************************************************************
- * Tiling Iterator functions
- ******************************************************************************/
-
-int aml_tiling_iterator_reset(struct aml_tiling_iterator *it)
+size_t aml_tiling_ntiles(const struct aml_tiling *t)
 {
-	assert(it != NULL);
-	return it->ops->reset(it->data);
+	assert(t != NULL && t->ops != NULL);
+	return t->ops->ntiles(t->data);
 }
 
-int aml_tiling_iterator_next(struct aml_tiling_iterator *it)
+struct aml_layout *aml_tiling_index(const struct aml_tiling *t,
+				    const size_t *coords)
 {
-	assert(it != NULL);
-	return it->ops->next(it->data);
+	if (t == NULL || t->ops == NULL || coords == NULL)
+		return NULL;
+
+	return t->ops->index(t->data, coords);
 }
 
-int aml_tiling_iterator_end(const struct aml_tiling_iterator *it)
+struct aml_layout *aml_tiling_index_linear(const struct aml_tiling *t,
+					   size_t uuid)
 {
-	assert(it != NULL);
-	return it->ops->end(it->data);
+	if (t == NULL || t->ops == NULL)
+		return NULL;
+
+	return t->ops->index_linear(t->data, uuid);
 }
 
-int aml_tiling_iterator_get(const struct aml_tiling_iterator *it, ...)
-{
-	assert(it != NULL);
-	va_list ap;
-
-	va_start(ap, it);
-	it->ops->get(it->data, ap);
-	va_end(ap);
-	return 0;
-}
-
-/*******************************************************************************
- * Iterator Init
- * We can't do the allocation ourselves here, as we don't have the type of the
- * tiling.
- ******************************************************************************/
-
-int aml_tiling_create_iterator(struct aml_tiling *t,
-			       struct aml_tiling_iterator **it, int flags)
-{
-	assert(t != NULL);
-	assert(it != NULL);
-	return t->ops->create_iterator(t->data, it, flags);
-}
-
-void aml_tiling_destroy_iterator(struct aml_tiling *t,
-				struct aml_tiling_iterator **it)
-{
-	assert(t != NULL);
-	assert(it != NULL);
-	t->ops->destroy_iterator(t->data, it);
-}
