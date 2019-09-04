@@ -47,32 +47,74 @@ pictured in the figure below.
 Example
 -------
 
-Let's look at a problem where layouts can be quite useful: matrix
-multiplication, with DGEMM.
-Let's say you want to multiple matrix A (size [m, k]) with matrix B 
+Let's look at a problem where layouts can be quite useful: DGEMM in multiple
+levels.
+Let's say you want to multiply matrix A (size [m, k]) with matrix B 
 (size [k, n]) to get matrix C (size [m, n]).
 
-The first step is implementing an efficient micro-kernel. 
-The micro-kernel update a block of C of size [mr, nr] noted C_r using a block of
+The naive matrix multiplication algorithm should look something like:
+
+.. code:: c
+    for (i = 0; i < m; i++){
+        for (j = 0; j < n; j++){
+            cij = C[i*n + j];
+            for (l = 0; l < k; l++)
+                cij += A[i*n + l] * B[l*n + j];
+            C[i*n + j] = cij;
+        }
+    }
+
+Unfortunately this algorithm does not have a great runtime complexity...
+
+We can then have 3 nested loops running on blocks of the matrices. 
+With several sizes of memory, we want to lverage the power of using blocks of
+different sizes. 
+Let's take an algorithm with three levels of granularity.
+
+
+The first level is focused on fitting our blocks in the smallest cache. 
+We compute a block of C of size [mr, nr] noted C_r using a block of
 A of size [mr, kb] noted A_r, and a block of B of size [kb, nr] noted B_r.
 A_r is stored in column major order while C_r and B_r are stored in row major
-order.
+order, allowing us to read A_r row by row, and go with B_r and C_r column by
+column.
 
-The medium kernel works using blocks of intermediate size. 
-The medium kernel updates a block of C of size [kb, n] noted C_b using a block
+.. code:: c
+    for (i = 0; i < m_r; i++){
+        for (j = 0; j < n_r; j++){
+            for (l = 0; l < k_b; l++)
+                C_r[i][j] += A_r[i][l] + B_r[l][j];
+        }
+    }
+
+These are our smallest blocks. 
+The implementation at this level is simply doing the multiplication at a level
+where is fast enough.
+B_r blocks need to be transposed before they can be accessed column by column.
+
+The second level is when the matrices are so big that you need a second
+caching.
+We then use blocks of intermediate size. 
+We compute a block of C of size [mb, n] noted C_b using a block
 of A of size [mb, kb] noted A_b, and a block of B of size [kb, n] noted B_b.
-A_b is stored as mb/mr consecutive blocks of size [mr, kb] (A_r) in column major
-order while C_b is stored as (mb/mr)*(n/nr) blocks of size [mr, nr] (C_r) in row
-major order and B_b is stored as n/nr blocks of size [kb, nr] (B_r) in row major
-order.
+To be efficient, A_b is stored as mb/mr consecutive blocks of size [mr, kb]
+(A_r) in column major order while C_b is stored as (mb/mr)*(n/nr) blocks of
+size [mr, nr] (C_r) in row major order and B_b is stored as n/nr blocks of size
+[kb, nr] (B_r) in row major order.
 
-The large kernel uses matrices of any size.
-Let's say we consider the matrices already transformed.
+This means we need to have Ab laid out as a 3-dimensional array mr x kb x (mb/mr),
+B as nr x kb x (n/nr), C with 4 dimensions as nr x mr x (mb/mr) x (n/nr).
+
+The last level uses the actual matrices, of any size.
 The original matrices are C of size [m, n], A of size [m, k] and B of size 
 [k, n].
 The layout used here are: C is stored as m/mb blocks of C_b, A is stored as
 (k/kb) * (m/mb) blocks of A_b and B is stored as k/kb blocks of B_b.
 
+This means we need to rework A to be laid out in 5 dimensions as
+mr x kb x mb/mr x m/mb x k/kb,
+B in 4 dimensions as nr x kb x n/nr x k/kb,
+C in 5 dimensions as nr x mr x mb/mr x n/nr x m/mb
 
 High level API
 --------------
