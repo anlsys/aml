@@ -20,14 +20,14 @@ AREA_TESTS = \
 
 LAYOUT_TESTS = layout/test_layout
 
-TILING_TESTS = tiling/test_tiling \
-	       tiling/test_tiling_2d
+TILING_TESTS = tiling/test_tiling
 
 DMA_LINUX_TESTS = dma/test_dma_linux_seq \
 		  dma/test_dma_linux_par
 
 SCRATCH_TESTS = scratch/test_scratch_seq \
 		scratch/test_scratch_par
+
 
 if RUN_CUDA
 AREA_TESTS += area/test_cuda

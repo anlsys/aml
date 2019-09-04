@@ -28,8 +28,7 @@ SCRATCH_SOURCES = \
 
 TILING_SOURCES = \
 		 tiling/tiling.c \
-		 tiling/tiling_1d.c \
-		 tiling/tiling_2d.c
+		 tiling/tiling_resize.c
 
 UTILS_SOURCES = \
 		utils/bitmap.c \
