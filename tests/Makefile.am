@@ -36,6 +36,6 @@ UNIT_TESTS = $(UTILS_TESTS) \
 	     $(DMA_LINUX_TESTS)
 
 # all tests
-TST_PROGS = $(UNIT_TESTS)
+TST_PROGS = $(UNIT_TESTS) dgemm_tiling_noprefetch
 check_PROGRAMS = $(TST_PROGS)
 TESTS = $(TST_PROGS)
