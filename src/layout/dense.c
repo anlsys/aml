@@ -334,8 +334,8 @@ int aml_layout_column_reshape(const struct aml_layout_data *data,
 
 int aml_layout_column_slice(const struct aml_layout_data *data,
 			    struct aml_layout **output,
-			    const size_t *dims,
 			    const size_t *offsets,
+			    const size_t *dims,
 			    const size_t *strides)
 {
 	struct aml_layout *layout;
@@ -465,8 +465,8 @@ int aml_layout_row_reshape(const struct aml_layout_data *data,
 
 int aml_layout_row_slice(const struct aml_layout_data *data,
 			 struct aml_layout **output,
-			 const size_t *dims,
 			 const size_t *offsets,
+			 const size_t *dims,
 			 const size_t *strides)
 {
 	struct aml_layout *layout;
