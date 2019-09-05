@@ -10,7 +10,7 @@
 
 #include "aml.h"
 #include "aml/layout/native.h"
-
+#include "aml/layout/dense.h"
 #include <assert.h>
 
 /*******************************************************************************
@@ -66,6 +66,104 @@ int aml_copy_layout_generic(struct aml_layout *dst,
 	aml_copy_layout_generic_helper(d, dst, src, elem_number, elem_size,
 				       coords);
 	return 0;
+}
+
+static inline void aml_copy_shndstr_helper(size_t d, const size_t * target_dims,
+					   void *dst,
+					   const size_t * cumul_dst_pitch,
+					   const size_t * dst_stride,
+					   const void *src,
+					   const size_t * cumul_src_pitch,
+					   const size_t * src_stride,
+					   const size_t * elem_number,
+					   size_t elem_size)
+{
+	if (d == 1)
+		if (dst_stride[0] * cumul_dst_pitch[0] == elem_size
+		    && src_stride[target_dims[0]] *
+		    cumul_src_pitch[target_dims[0]] == elem_size)
+			memcpy(dst, src,
+			       elem_number[target_dims[0]] * elem_size);
+		else
+			for (size_t i = 0; i < elem_number[target_dims[0]];
+			     i += 1)
+				memcpy((void *)((intptr_t) dst +
+						i * (dst_stride[0] *
+						     cumul_dst_pitch[0])),
+				       (void *)((intptr_t) src +
+						i *
+						(src_stride[target_dims[0]] *
+						 cumul_src_pitch[target_dims
+								 [0]])),
+				       elem_size);
+	else
+		for (size_t i = 0; i < elem_number[target_dims[d - 1]]; i += 1) {
+			aml_copy_shndstr_helper(d - 1, target_dims, dst,
+						cumul_dst_pitch, dst_stride,
+						src, cumul_src_pitch,
+						src_stride, elem_number,
+						elem_size);
+			dst =
+			    (void *)((intptr_t) dst +
+				     dst_stride[d - 1] * cumul_dst_pitch[d -
+									 1]);
+			src =
+			    (void *)((intptr_t) src +
+				     src_stride[target_dims[d - 1]] *
+				     cumul_src_pitch[target_dims[d - 1]]);
+		}
+}
+
+int aml_copy_shndstr_c(size_t d, const size_t * target_dims, void *dst,
+		       const size_t * cumul_dst_pitch,
+		       const size_t * dst_stride, const void *src,
+		       const size_t * cumul_src_pitch,
+		       const size_t * src_stride, const size_t * elem_number,
+		       size_t elem_size)
+{
+	assert(d > 0);
+	size_t present_dims;
+	present_dims = 0;
+	for (size_t i = 0; i < d; i += 1) {
+		assert(target_dims[i] < d);
+		present_dims |= 1 << target_dims[i];
+	}
+	for (size_t i = 0; i < d; i += 1)
+		assert(present_dims & 1 << i);
+	for (size_t i = 0; i < d - 1; i += 1) {
+		assert(cumul_dst_pitch[i + 1] >=
+		       dst_stride[i] * cumul_dst_pitch[i] *
+		       elem_number[target_dims[i]]);
+		assert(cumul_src_pitch[i + 1] >=
+		       src_stride[i] * cumul_src_pitch[i] * elem_number[i]);
+	}
+	aml_copy_shndstr_helper(d, target_dims, dst, cumul_dst_pitch,
+				dst_stride, src, cumul_src_pitch, src_stride,
+				elem_number, elem_size);
+	return 0;
+}
+
+int aml_copy_layout_transform_native(struct aml_layout *dst,
+				     const struct aml_layout *src,
+				     void *arg)
+{
+	size_t d;
+	size_t elem_size;
+	struct aml_layout_dense *ddst;
+	struct aml_layout_dense *dsrc;
+	const size_t *target_dims = (const size_t *)arg;
+	ddst = (struct aml_layout_dense *)dst->data;
+	dsrc = (struct aml_layout_dense *)src->data;
+	d = dsrc->ndims;
+	assert(d > 0);
+	elem_size = dsrc->cpitch[0];
+	assert(d == ddst->ndims);
+	assert(elem_size == ddst->cpitch[0]);
+	for (size_t i = 0; i < d; i += 1)
+		assert(dsrc->dims[target_dims[i]] == ddst->dims[i]);
+	return aml_copy_shndstr_c(d, target_dims, ddst->ptr, ddst->cpitch,
+				  ddst->stride, dsrc->ptr, dsrc->cpitch,
+				  dsrc->stride, dsrc->dims, elem_size);
 }
 
 /*******************************************************************************

@@ -882,7 +882,8 @@ int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request **req);
 int aml_copy_layout_generic(struct aml_layout *dst,
 			    const struct aml_layout *src, void *arg);
 
-
+int aml_copy_layout_transform_native(struct aml_layout *dest,
+				     const struct aml_layout *src, void *arg);
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
