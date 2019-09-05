@@ -975,7 +975,8 @@ struct aml_scratch_ops {
 	 **/
 	int (*create_request)(struct aml_scratch_data *scratch,
 			      struct aml_scratch_request **req, int type,
-			      va_list args);
+			      struct aml_layout **dest, int *destid,
+			      struct aml_layout *src, int srcid);
 	/**
 	 * \todo Doc
 	 **/
@@ -986,10 +987,6 @@ struct aml_scratch_ops {
 	 **/
 	int (*wait_request)(struct aml_scratch_data *scratch,
 			    struct aml_scratch_request *req);
-	/**
-	 * \todo Doc
-	 **/
-	void *(*baseptr)(const struct aml_scratch_data *scratch);
 	/**
 	 * \todo Doc
 	 **/
@@ -1021,7 +1018,9 @@ struct aml_scratch {
  * @see aml_scratch_baseptr()
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_scratch_pull(struct aml_scratch *scratch, ...);
+int aml_scratch_pull(struct aml_scratch *scratch,
+		     struct aml_layout **dest, int *scratchid,
+		     struct aml_layout *src, int srcid);
 
 /**
  * Requests a pull from regular memory to the scratchpad. This is an
@@ -1034,7 +1033,9 @@ int aml_scratch_pull(struct aml_scratch *scratch, ...);
  * @see aml_scratch_pull()
  **/
 int aml_scratch_async_pull(struct aml_scratch *scratch,
-			   struct aml_scratch_request **req, ...);
+			   struct aml_scratch_request **req,
+			   struct aml_layout **scratch_layout, int *scratchid,
+			   struct aml_layout *src_layout, int srcid);
 /**
  * Requests a synchronous push from the scratchpad to regular memory.
  * @param scratch: an initialized scratchpad structure.
@@ -1048,7 +1049,9 @@ int aml_scratch_async_pull(struct aml_scratch *scratch,
  * @return 0 if successful; an error code otherwise.
  * @see aml_scratch_baseptr()
  **/
-int aml_scratch_push(struct aml_scratch *scratch, ...);
+int aml_scratch_push(struct aml_scratch *scratch,
+		     struct aml_layout **dest_layout, int *destid,
+		     struct aml_layout *scratch_layout, int scratchid);
 
 /**
  * Requests a push from the scratchpad to regular memory.  This is an
@@ -1061,7 +1064,9 @@ int aml_scratch_push(struct aml_scratch *scratch, ...);
  * @see aml_scratch_push()
  **/
 int aml_scratch_async_push(struct aml_scratch *scratch,
-			   struct aml_scratch_request **req, ...);
+			   struct aml_scratch_request **req,
+			   struct aml_layout **dest_layout, int *destid,
+			   struct aml_layout *scratch_layout, int scratchid);
 /**
  * Waits for an asynchronous scratch request to complete.
  * @param scratch: an initialized scratchpad structure.

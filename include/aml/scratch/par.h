@@ -51,21 +51,11 @@ struct aml_scratch_request_par {
  * \todo This is the same as struct aml_scratch_seq_data. Could be factorized
  **/
 struct aml_scratch_par_data {
-	/** The source area where data comes from **/
-	struct aml_area *src_area;
-	/** The destination area where data temporariliy goes to **/
-	struct aml_area *sch_area;
-	/**
-	 * The data organisation.
-	 * /todo why can't source and destination tiling vary?
-	 **/
-	struct aml_tiling *tiling;
-	/** \todo What is this? **/
-	size_t scratch_size;
+	struct aml_tiling *src_tiling;
+	struct aml_tiling *scratch_tiling;
+
 	/** The dma engine in charge of the transfer **/
 	struct aml_dma *dma;
-	/** Pointer to data in scratch destination **/
-	void *sch_ptr;
 	/** The tilings involved in ongoing scratch requests **/
 	struct aml_vector *tilemap;
 	/** The set of dma requests submitted to the dma to mode data  **/
@@ -110,10 +100,8 @@ struct aml_scratch_par {
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_scratch_par_create(struct aml_scratch **scratch,
-			   struct aml_area *scratch_area,
-			   struct aml_area *src_area,
-			   struct aml_dma *dma, struct aml_tiling *tiling,
-			   size_t nbtiles, size_t nbreqs);
+			   struct aml_dma *dma, struct aml_tiling *src_tiling,
+			   struct aml_tiling *scratch_tiling, size_t nbreqs);
 
 /**
  * Tears down an initialized parallel scratchpad.
