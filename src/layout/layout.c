@@ -173,8 +173,8 @@ static int
 aml_check_layout_slice(const struct aml_layout *layout,
 		       int (*get_dims)(const struct aml_layout_data *,
 				       size_t *),
-		       const size_t *dims,
 		       const size_t *offsets,
+		       const size_t *dims,
 		       const size_t *strides)
 {
 	assert(layout->ops->ndims != NULL &&
@@ -201,8 +201,8 @@ aml_check_layout_slice(const struct aml_layout *layout,
 
 int aml_layout_slice(const struct aml_layout *layout,
 		     struct aml_layout **reshaped_layout,
-		     const size_t *dims,
 		     const size_t *offsets,
+		     const size_t *dims,
 		     const size_t *strides)
 {
 	assert(layout != NULL &&
@@ -231,14 +231,14 @@ int aml_layout_slice(const struct aml_layout *layout,
 
 	assert(aml_check_layout_slice(layout,
 				      layout->ops->dims,
-				      dims,
 				      _offsets,
+				      dims,
 				      _strides) == AML_SUCCESS);
 
 	err = layout->ops->slice(layout->data,
 				 &result,
-				 dims,
 				 _offsets,
+				 dims,
 				 _strides);
 	if (err == AML_SUCCESS)
 		*reshaped_layout = result;
@@ -271,7 +271,7 @@ int aml_layout_slice_native(const struct aml_layout *layout,
 				      strides) == AML_SUCCESS);
 
 	err = layout->ops->slice_native(layout->data,
-					&result, dims, offsets, strides);
+					&result, offsets, dims, strides);
 	if (err == AML_SUCCESS)
 		*reshaped_layout = result;
 
