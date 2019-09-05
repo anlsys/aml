@@ -27,31 +27,23 @@
  ******************************************************************************/
 
 int aml_scratch_request_seq_init(struct aml_scratch_request_seq *req, int type,
-				 struct aml_tiling *t, void *dstptr, int dstid,
-				 void *srcptr, int srcid)
+				 struct aml_layout *dest, int destid,
+				 struct aml_layout *src, int srcid)
 
 {
 	assert(req != NULL);
-	void *dp, *sp;
-	size_t size;
 
 	req->type = type;
-	req->tiling = t;
+	req->src = src;
 	req->srcid = srcid;
-	req->dstid = dstid;
-	dp = aml_tiling_tilestart(req->tiling, dstptr, dstid);
-	sp = aml_tiling_tilestart(req->tiling, srcptr, srcid);
-	size = aml_tiling_tilesize(req->tiling, srcid);
-	aml_layout_dense_create(&req->dst, dp, 0, 1, 1, &size, NULL, NULL);
-	aml_layout_dense_create(&req->src, sp, 0, 1, 1, &size, NULL, NULL);
+	req->dst = dest;
+	req->dstid = destid;
 	return 0;
 }
 
 int aml_scratch_request_seq_destroy(struct aml_scratch_request_seq *r)
 {
 	assert(r != NULL);
-	aml_layout_dense_destroy(&r->dst);
-	aml_layout_dense_destroy(&r->src);
 	return 0;
 }
 
@@ -75,11 +67,11 @@ struct aml_scratch_seq_ops aml_scratch_seq_inner_ops = {
  * Public API
  ******************************************************************************/
 
-/* TODO: not thread-safe */
-
 int aml_scratch_seq_create_request(struct aml_scratch_data *d,
 				   struct aml_scratch_request **r,
-				   int type, va_list ap)
+				   int type,
+				   struct aml_layout **dest, int *destid,
+				   struct aml_layout *src, int srcid)
 {
 	assert(d != NULL);
 	assert(r != NULL);
@@ -92,45 +84,24 @@ int aml_scratch_seq_create_request(struct aml_scratch_data *d,
 	req = aml_vector_add(scratch->data.requests);
 	/* init the request */
 	if (type == AML_SCRATCH_REQUEST_TYPE_PUSH) {
-		int scratchid;
-		int *srcid;
-		void *srcptr;
-		void *scratchptr;
-
-		srcptr = va_arg(ap, void *);
-		srcid = va_arg(ap, int *);
-		scratchptr = va_arg(ap, void *);
-		scratchid = va_arg(ap, int);
 
 		/* find destination tile */
-		int *slot = aml_vector_get(scratch->data.tilemap, scratchid);
+		int *slot = aml_vector_get(scratch->data.tilemap, srcid);
 
 		assert(slot != NULL);
-		*srcid = *slot;
+		*destid = *slot;
+		*dest = aml_tiling_index_linear(scratch->data.src_tiling,
+						*destid);
 
 		/* init request */
-		aml_scratch_request_seq_init(req, type,
-					     scratch->data.tiling,
-					     srcptr, *srcid,
-					     scratchptr, scratchid);
+		aml_scratch_request_seq_init(req, type, *dest, *destid,
+					     src, srcid);
 	} else if (type == AML_SCRATCH_REQUEST_TYPE_PULL) {
-		int *scratchid;
-		int srcid;
-		void *srcptr;
-		void *scratchptr;
 		int slot, *tile;
-
-		scratchptr = va_arg(ap, void *);
-		scratchid = va_arg(ap, int *);
-		srcptr = va_arg(ap, void *);
-		srcid = va_arg(ap, int);
 
 		/* find destination tile
 		 * We don't use add here because adding a tile means allocating
 		 * new tiles on the sch_area too. */
-		/* TODO: this is kind of a bug: we reuse a tile, instead of
-		 * creating a no-op request
-		 */
 		slot = aml_vector_find(scratch->data.tilemap, srcid);
 		if (slot == -1) {
 			slot = aml_vector_find(scratch->data.tilemap, -1);
@@ -141,12 +112,13 @@ int aml_scratch_seq_create_request(struct aml_scratch_data *d,
 			type = AML_SCRATCH_REQUEST_TYPE_NOOP;
 
 		/* save the key */
-		*scratchid = slot;
+		*destid = slot;
+		*dest = aml_tiling_index_linear(scratch->data.scratch_tiling,
+						slot);
 
 		/* init request */
-		aml_scratch_request_seq_init(req, type, scratch->data.tiling,
-					     scratchptr, *scratchid,
-					     srcptr, srcid);
+		aml_scratch_request_seq_init(req, type, *dest, *destid,
+					     src, srcid);
 	}
 	pthread_mutex_unlock(&scratch->data.lock);
 	if (req->type != AML_SCRATCH_REQUEST_TYPE_NOOP)
@@ -210,15 +182,6 @@ int aml_scratch_seq_wait_request(struct aml_scratch_data *d,
 	return 0;
 }
 
-void *aml_scratch_seq_baseptr(const struct aml_scratch_data *d)
-{
-	assert(d != NULL);
-	const struct aml_scratch_seq *scratch =
-		(const struct aml_scratch_seq *)d;
-
-	return scratch->data.sch_ptr;
-}
-
 int aml_scratch_seq_release(struct aml_scratch_data *d, int scratchid)
 {
 	assert(d != NULL);
@@ -237,7 +200,6 @@ struct aml_scratch_ops aml_scratch_seq_ops = {
 	aml_scratch_seq_create_request,
 	aml_scratch_seq_destroy_request,
 	aml_scratch_seq_wait_request,
-	aml_scratch_seq_baseptr,
 	aml_scratch_seq_release,
 };
 
@@ -246,17 +208,14 @@ struct aml_scratch_ops aml_scratch_seq_ops = {
  ******************************************************************************/
 
 int aml_scratch_seq_create(struct aml_scratch **scratch,
-			   struct aml_area *scratch_area,
-			   struct aml_area *src_area,
-			   struct aml_dma *dma, struct aml_tiling *tiling,
-			   size_t nbtiles, size_t nbreqs)
+			   struct aml_dma *dma, struct aml_tiling *src_tiling,
+			   struct aml_tiling *scratch_tiling, size_t nbreqs)
 {
 	struct aml_scratch *ret = NULL;
 	struct aml_scratch_seq *s;
 
-	if (scratch == NULL
-	    || scratch_area == NULL || src_area == NULL
-	    || dma == NULL || tiling == NULL)
+	if (scratch == NULL || dma == NULL || src_tiling == NULL
+	    || scratch_tiling == NULL)
 		return -AML_EINVAL;
 
 	*scratch = NULL;
@@ -271,10 +230,9 @@ int aml_scratch_seq_create(struct aml_scratch **scratch,
 	s = (struct aml_scratch_seq *)ret->data;
 	s->ops = aml_scratch_seq_inner_ops;
 
-	s->data.sch_area = scratch_area;
-	s->data.src_area = src_area;
 	s->data.dma = dma;
-	s->data.tiling = tiling;
+	s->data.src_tiling = src_tiling;
+	s->data.scratch_tiling = scratch_tiling;
 
 	/* allocate request array */
 	aml_vector_create(&s->data.requests, nbreqs,
@@ -282,14 +240,9 @@ int aml_scratch_seq_create(struct aml_scratch **scratch,
 			  offsetof(struct aml_scratch_request_seq, type),
 			  AML_SCRATCH_REQUEST_TYPE_INVALID);
 
-	/* s init */
+	/* "hashmap for src to scratch tiles */
+	size_t nbtiles = aml_tiling_ntiles(scratch_tiling);
 	aml_vector_create(&s->data.tilemap, nbtiles, sizeof(int), 0, -1);
-	size_t tilesize = aml_tiling_tilesize(s->data.tiling, 0);
-
-	s->data.scratch_size = nbtiles * tilesize;
-	s->data.sch_ptr = aml_area_mmap(s->data.sch_area,
-					s->data.scratch_size,
-					NULL);
 	pthread_mutex_init(&s->data.lock, NULL);
 
 	*scratch = ret;
@@ -311,9 +264,6 @@ void aml_scratch_seq_destroy(struct aml_scratch **scratch)
 	inner = (struct aml_scratch_seq *)s->data;
 	aml_vector_destroy(&inner->data.requests);
 	aml_vector_destroy(&inner->data.tilemap);
-	aml_area_munmap(inner->data.sch_area,
-			inner->data.sch_ptr,
-			inner->data.scratch_size);
 	pthread_mutex_destroy(&inner->data.lock);
 	free(s);
 	*scratch = NULL;
