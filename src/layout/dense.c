@@ -556,7 +556,7 @@ struct aml_layout_ops aml_layout_row_ops = {
 	aml_layout_column_deref,
 	aml_layout_row_order,
 	aml_layout_row_dims,
-	aml_layout_row_dims,
+	aml_layout_column_dims,
 	aml_layout_dense_ndims,
 	aml_layout_dense_element_size,
 	aml_layout_row_reshape,
