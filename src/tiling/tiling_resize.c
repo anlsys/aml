@@ -48,6 +48,7 @@ static int aml_tiling_resize_alloc(struct aml_tiling **ret, size_t ndims)
 						    size_t, 2*ndims);
 	data->layout = NULL;
 	data->ndims = ndims;
+	*ret = tiling;
 	return 0;
 }
 
@@ -87,6 +88,7 @@ int aml_tiling_resize_create(struct aml_tiling **tiling,
 		*tiling = NULL;
 		return -AML_EINVAL;
 	}
+	*tiling = t;
 	data->tags = tags;
 	size_t target_dims[ndims];
 
