@@ -47,12 +47,12 @@ int main(int argc, char *argv[]) {
 	aml_area_linux_create(&fast, &fastb, AML_AREA_LINUX_POLICY_BIND);
 	assert(fast != NULL);
 
-	double *a = (double *)aml_area_mmap(slow, block_count*M*K, NULL);
-	double *b = (double *)aml_area_mmap(slow, block_count*K*N, NULL);
-        double *c = (double *)aml_area_mmap(slow, block_count*M*N, NULL);
-	double *a_fast = (double *)aml_area_mmap(fast, M*K, NULL);
-	double *b_fast = (double *)aml_area_mmap(fast, K*N, NULL);
-        double *c_fast = (double *)aml_area_mmap(fast, M*N, NULL);
+	double *a = (double *)aml_area_mmap(slow, sizeof(double)*block_count*M*K, NULL);
+	double *b = (double *)aml_area_mmap(slow, sizeof(double)*block_count*K*N, NULL);
+        double *c = (double *)aml_area_mmap(slow, sizeof(double)*block_count*M*N, NULL);
+	double *a_fast = (double *)aml_area_mmap(fast, sizeof(double)*M*K, NULL);
+	double *b_fast = (double *)aml_area_mmap(fast, sizeof(double)*K*N, NULL);
+        double *c_fast = (double *)aml_area_mmap(fast, sizeof(double)*M*N, NULL);
 
         size_t a_dims[] = {block_number*M, block_number*K};
         size_t b_dims[] = {block_number*K, block_number*N};
