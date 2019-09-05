@@ -36,18 +36,18 @@ void test_tiling_even_mixed(void)
 	}
 
 	struct aml_layout *a, *ares;
-	aml_layout_native_acreate(&a, AML_TYPE_LAYOUT_COLUMN_ORDER,
+	aml_layout_native_create(&a, AML_TYPE_LAYOUT_COLUMN_ORDER,
 				  (void *)memory, sizeof(int), 3, dims_col,
 				  stride, dims_col);
-	aml_layout_native_acreate(&ares, AML_TYPE_LAYOUT_ROW_ORDER,
+	aml_layout_native_create(&ares, AML_TYPE_LAYOUT_ROW_ORDER,
 				  (void *)memoryres, sizeof(int), 3, dims_row,
 				  stride, dims_row);
 
 
 	struct aml_tiling *t, *tres;
-	aml_tiling_resize_acreate(&t, AML_TYPE_TILING_COLUMN_ORDER,
+	aml_tiling_resize_create(&t, AML_TYPE_TILING_COLUMN_ORDER,
 				     a, 3, dims_tile_col);
-	aml_tiling_resize_acreate(&tres, AML_TYPE_TILING_ROW_ORDER,
+	aml_tiling_resize_create(&tres, AML_TYPE_TILING_ROW_ORDER,
 				     ares, 3, dims_tile_row);
 
 
@@ -68,17 +68,17 @@ void test_tiling_even_mixed(void)
 	free(t);
 	free(tres);
 
-	aml_layout_native_acreate(&a, AML_TYPE_LAYOUT_COLUMN_ORDER,
+	aml_layout_native_create(&a, AML_TYPE_LAYOUT_COLUMN_ORDER,
 				  (void *)memory, sizeof(int), 3, dims_col,
 				  stride, dims_col);
-	aml_layout_native_acreate(&ares, AML_TYPE_LAYOUT_ROW_ORDER,
+	aml_layout_native_create(&ares, AML_TYPE_LAYOUT_ROW_ORDER,
 				  (void *)memoryres, sizeof(int), 3, dims_row,
 				  stride, dims_row);
 
 
-	aml_tiling_resize_acreate(&t, AML_TYPE_TILING_ROW_ORDER,
+	aml_tiling_resize_create(&t, AML_TYPE_TILING_ROW_ORDER,
 				     a, 3, dims_tile_row);
-	aml_tiling_resize_acreate(&tres, AML_TYPE_TILING_COLUMN_ORDER,
+	aml_tiling_resize_create(&tres, AML_TYPE_TILING_COLUMN_ORDER,
 				     ares, 3, dims_tile_col);
 
 	for(size_t i = 0; i < 9; i++)
@@ -129,18 +129,18 @@ void test_tiling_even(void)
 	}
 
 	struct aml_layout *a, *ares;
-	aml_layout_native_acreate(&a, AML_TYPE_LAYOUT_COLUMN_ORDER,
+	aml_layout_native_create(&a, AML_TYPE_LAYOUT_COLUMN_ORDER,
 				  (void *)memory, sizeof(int), 3, dims_col,
 				  stride, dims_col);
-	aml_layout_native_acreate(&ares, AML_TYPE_LAYOUT_COLUMN_ORDER,
+	aml_layout_native_create(&ares, AML_TYPE_LAYOUT_COLUMN_ORDER,
 				  (void *)memoryres, sizeof(int), 3, dims_col,
 				  stride, dims_col);
 
 
 	struct aml_tiling *t, *tres;
-	aml_tiling_resize_acreate(&t, AML_TYPE_TILING_COLUMN_ORDER,
+	aml_tiling_resize_create(&t, AML_TYPE_TILING_COLUMN_ORDER,
 				     a, 3, dims_tile_col);
-	aml_tiling_resize_acreate(&tres, AML_TYPE_TILING_COLUMN_ORDER,
+	aml_tiling_resize_create(&tres, AML_TYPE_TILING_COLUMN_ORDER,
 				     ares, 3, dims_tile_col);
 
 
@@ -170,17 +170,17 @@ void test_tiling_even(void)
 	free(t);
 	free(tres);
 
-	aml_layout_native_acreate(&a, AML_TYPE_LAYOUT_ROW_ORDER,
+	aml_layout_native_create(&a, AML_TYPE_LAYOUT_ROW_ORDER,
 				  (void *)memory, sizeof(int), 3, dims_row,
 				  stride, dims_row);
-	aml_layout_native_acreate(&ares, AML_TYPE_LAYOUT_ROW_ORDER,
+	aml_layout_native_create(&ares, AML_TYPE_LAYOUT_ROW_ORDER,
 				  (void *)memoryres, sizeof(int), 3, dims_row,
 				  stride, dims_row);
 
 
-	aml_tiling_resize_acreate(&t, AML_TYPE_TILING_ROW_ORDER,
+	aml_tiling_resize_create(&t, AML_TYPE_TILING_ROW_ORDER,
 				     a, 3, dims_tile_row);
-	aml_tiling_resize_acreate(&tres, AML_TYPE_TILING_ROW_ORDER,
+	aml_tiling_resize_create(&tres, AML_TYPE_TILING_ROW_ORDER,
 				     ares, 3, dims_tile_row);
 
 	assert(aml_tiling_order(t) == AML_TYPE_TILING_ROW_ORDER);
@@ -240,18 +240,18 @@ void test_tiling_uneven(void)
 	}
 
 	struct aml_layout *a, *ares;
-	aml_layout_native_acreate(&a, AML_TYPE_LAYOUT_COLUMN_ORDER,
+	aml_layout_native_create(&a, AML_TYPE_LAYOUT_COLUMN_ORDER,
 				  (void *)memory, sizeof(int), 3, dims_col,
 				  stride, dims_col);
-	aml_layout_native_acreate(&ares, AML_TYPE_LAYOUT_COLUMN_ORDER,
+	aml_layout_native_create(&ares, AML_TYPE_LAYOUT_COLUMN_ORDER,
 				  (void *)memoryres, sizeof(int), 3, dims_col,
 				  stride, dims_col);
 
 
 	struct aml_tiling *t, *tres;
-	aml_tiling_resize_acreate(&t, AML_TYPE_TILING_COLUMN_ORDER,
+	aml_tiling_resize_create(&t, AML_TYPE_TILING_COLUMN_ORDER,
 				     a, 3, dims_tile_col);
-	aml_tiling_resize_acreate(&tres, AML_TYPE_TILING_COLUMN_ORDER,
+	aml_tiling_resize_create(&tres, AML_TYPE_TILING_COLUMN_ORDER,
 				     ares, 3, dims_tile_col);
 
 
@@ -281,16 +281,16 @@ void test_tiling_uneven(void)
 	free(t);
 	free(tres);
 
-	aml_layout_native_acreate(&a, AML_TYPE_LAYOUT_ROW_ORDER,
+	aml_layout_native_create(&a, AML_TYPE_LAYOUT_ROW_ORDER,
 				  (void *)memory, sizeof(int), 3, dims_row,
 				  stride, dims_row);
-	aml_layout_native_acreate(&ares, AML_TYPE_LAYOUT_ROW_ORDER,
+	aml_layout_native_create(&ares, AML_TYPE_LAYOUT_ROW_ORDER,
 				  (void *)memoryres, sizeof(int), 3, dims_row,
 				  stride, dims_row);
 
-	aml_tiling_resize_acreate(&t, AML_TYPE_TILING_ROW_ORDER,
+	aml_tiling_resize_create(&t, AML_TYPE_TILING_ROW_ORDER,
 				     a, 3, dims_tile_row);
-	aml_tiling_resize_acreate(&tres, AML_TYPE_TILING_ROW_ORDER,
+	aml_tiling_resize_create(&tres, AML_TYPE_TILING_ROW_ORDER,
 				     ares, 3, dims_tile_row);
 
 	assert(aml_tiling_order(t) == AML_TYPE_TILING_ROW_ORDER);

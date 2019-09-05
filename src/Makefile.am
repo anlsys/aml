@@ -21,11 +21,6 @@ DMA_SOURCES = \
 	      dma/dma_linux_par.c \
 	      dma/dma_linux_seq.c
 
-SCRATCH_SOURCES = \
-		  scratch/scratch.c \
-		  scratch/scratch_par.c \
-		  scratch/scratch_seq.c
-
 TILING_SOURCES = \
 		 tiling/tiling.c \
 		 tiling/tiling_resize.c
@@ -38,7 +33,6 @@ UTILS_SOURCES = \
 LIB_SOURCES = \
 	      $(AREA_SOURCES) \
 	      $(DMA_SOURCES) \
-	      $(SCRATCH_SOURCES) \
 	      $(TILING_SOURCES) \
 	      $(LAYOUT_SOURCES) \
 	      $(UTILS_SOURCES) \

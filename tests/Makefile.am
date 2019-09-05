@@ -20,13 +20,9 @@ AREA_TESTS = \
 
 LAYOUT_TESTS = layout/test_layout
 
-TILING_TESTS = tiling/test_tiling
 
 DMA_LINUX_TESTS = dma/test_dma_linux_seq \
 		  dma/test_dma_linux_par
-
-SCRATCH_TESTS = scratch/test_scratch_seq \
-		scratch/test_scratch_par
 
 if RUN_CUDA
 AREA_TESTS += area/test_cuda
@@ -34,12 +30,10 @@ endif
 
 # unit tests
 UNIT_TESTS = $(UTILS_TESTS) \
-	     $(TILING_TESTS) \
 	     $(LAYOUT_TESTS) \
 	     $(BINDING_TESTS) \
 	     $(AREA_TESTS) \
-	     $(DMA_LINUX_TESTS) \
-	     $(SCRATCH_TESTS)
+	     $(DMA_LINUX_TESTS)
 
 # all tests
 TST_PROGS = $(UNIT_TESTS)

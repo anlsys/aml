@@ -138,11 +138,14 @@ struct aml_layout*
 aml_tiling_resize_column_index_linear(const struct aml_tiling_data *t,
 				      const size_t uuid)
 {
+	(void)t;
+	(void)uuid;
 	return NULL;
 }
 
 int aml_tiling_resize_column_order(const struct aml_tiling_data *t)
 {
+	(void)t;
 	return AML_TILING_ORDER_COLUMN_MAJOR;
 }
 
@@ -231,11 +234,14 @@ struct aml_layout*
 aml_tiling_resize_row_index_linear(const struct aml_tiling_data *t,
 				   const size_t uuid)
 {
+	(void)t;
+	(void)uuid;
 	return NULL;
 }
 
 int aml_tiling_resize_row_order(const struct aml_tiling_data *t)
 {
+	(void)t;
 	return AML_TILING_ORDER_ROW_MAJOR;
 }
 
