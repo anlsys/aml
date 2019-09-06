@@ -38,8 +38,9 @@ UNIT_TESTS = $(UTILS_TESTS) \
 	     $(AREA_TESTS) \
 	     $(DMA_LINUX_TESTS)
 
-OTHERS = dgemm_tiling_noprefetch
-dgemm_tiling_noprefetch_LDADD = larp_1860_2352_1908.o
+OTHERS = dgemm_tiling_noprefetch dgemm_tiling_prefetch
+dgemm_tiling_noprefetch_LDADD = $(top_srcdir)/tests/larp_1860_2352_1908.o -lblas -liomp5
+dgemm_tiling_prefetch_LDADD = $(top_srcdir)/tests/larp_1860_2352_1908.o -lblas -liomp5
 
 # all tests
 TST_PROGS = $(UNIT_TESTS) $(OTHERS)
