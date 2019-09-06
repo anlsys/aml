@@ -567,12 +567,17 @@ struct aml_layout_ops aml_layout_row_ops = {
 void aml_layout_dense_print(FILE *stream, char *prefix,
 		      const struct aml_layout_dense *layout)
 {
+	fprintf(stream, "%s: layout-dense: %p\n", prefix, layout);
+	if(layout == NULL)
+		return;
+
 	fprintf(stream, "%s: ptr: %p\n", prefix, layout->ptr);
+	fprintf(stream, "%s: ndims: %zu\n", prefix, layout->ndims);
 	for(size_t i = 0; i < layout->ndims; i++) {
-		fprintf(stream, "%s: %8zu: %8zu %8zu %8zu %8zu\n", prefix,
+		fprintf(stream, "%s: %16zu: %16zu %16zu %16zu %16zu\n", prefix,
 			i, layout->dims[i], layout->stride[i],
 			layout->pitch[i], layout->cpitch[i]);
 	}
-	fprintf(stream, "%s: %8zu: %8s %8s %8s %8zu\n", prefix, layout->ndims,
+	fprintf(stream, "%s: %16zu: %16s %16s %16s %16zu\n", prefix, layout->ndims,
 		"NA", "NA", "NA", layout->cpitch[layout->ndims]);
 }

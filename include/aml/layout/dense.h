@@ -224,6 +224,8 @@ int aml_layout_row_slice_native(const struct aml_layout_data *data,
 				const size_t *dims,
 				const size_t *strides);
 
+void aml_layout_dense_print(FILE *stream, char *prefix,
+			    const struct aml_layout_dense *);
 /**
  * Pre-existing operators for dense layout
  * with AML_LAYOUT_ORDER_COLUMN_MAJOR order.
