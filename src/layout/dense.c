@@ -359,7 +359,7 @@ int aml_layout_column_slice(const struct aml_layout_data *data,
 	for (size_t i = 0; i < d->ndims; i++) {
 		cpitch[i] = d->cpitch[i];
 		new_strides[i] = strides[i] * d->stride[i];
-		cpitch[d->ndims] -= cpitch[i] * offsets[i] * d->stride[i];
+		//cpitch[d->ndims] -= cpitch[i] * offsets[i] * d->stride[i];
 	}
 
 	aml_layout_dense_init_cpitch(layout,
@@ -495,7 +495,7 @@ int aml_layout_row_slice(const struct aml_layout_data *data,
 	for (size_t i = 0; i < d->ndims; i++) {
 		cpitch[i] = d->cpitch[i];
 		n_strides[i] *= d->stride[i];
-		cpitch[d->ndims] -= cpitch[i] * n_offsets[i] * d->stride[i];
+		//cpitch[d->ndims] -= cpitch[i] * n_offsets[i] * d->stride[i];
 	}
 
 	ptr = aml_layout_column_deref(data, n_offsets);
@@ -535,7 +535,7 @@ int aml_layout_row_slice_native(const struct aml_layout_data *data,
 	for (size_t i = 0; i < d->ndims; i++) {
 		cpitch[i] = d->cpitch[i];
 		new_strides[i] = strides[i] * d->stride[i];
-		cpitch[d->ndims] -= cpitch[i] * offsets[i] * d->stride[i];
+		//cpitch[d->ndims] -= cpitch[i] * offsets[i] * d->stride[i];
 	}
 
 	ptr = aml_layout_column_deref(data, offsets);
