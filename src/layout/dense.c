@@ -564,3 +564,15 @@ struct aml_layout_ops aml_layout_row_ops = {
 	aml_layout_row_slice_native
 };
 
+void aml_layout_dense(FILE *stream, char *prefix,
+		      const struct aml_layout_dense *layout)
+{
+	fprintf(stream, "%s: ptr: %p\n", prefix, layout->ptr);
+	for(size_t i = 0; i < layout->ndims; i++) {
+		fprintf(stream, "%s: %8zu: %8zu %8zu %8zu %8zu\n", prefix,
+			i, layout->dims[i], layout->stride[i],
+			layout->pitch[i], layout->cpitch[i]);
+	}
+	fprintf(stream, "%s: %8zu: %8s %8s %8s %8zu\n", prefix, layout->ndims,
+		"NA", "NA", "NA", layout->cpitch[layout->ndims]);
+}
