@@ -56,7 +56,7 @@ void transform_a(size_t block_number, double * restrict dst, const double * rest
 		src[m + l*PITCH_A_0_S + (k*PITCH_A_1_S + j*PITCH_A_2_S + i*PITCH_A_3_S)*block_number];
 }
 
-void dma_transform_a(struct aml_layout *dest, struct aml_layout *src, void *arg)
+int dma_transform_a(struct aml_layout *dest, const struct aml_layout *src, void *arg)
 {
 	struct aml_layout_dense *d;
 	struct aml_layout_dense *s;
@@ -69,6 +69,7 @@ void dma_transform_a(struct aml_layout *dest, struct aml_layout *src, void *arg)
 	s = (struct aml_layout_dense *)src->data;
 	ss = (double * restrict)s->ptr;
 	transform_a(*nb, dd, ss);
+	return 0;
 }
 
 #define PITCH_B_0_S	NR
@@ -87,7 +88,7 @@ void transform_b(size_t block_number, double * restrict dst, const double * rest
 		src[l + k*PITCH_B_0_S + (j*PITCH_B_1_S + i*PITCH_B_2_S)*block_number];
 }
 
-void dma_transform_b(struct aml_layout *dest, struct aml_layout *src, void *arg)
+int dma_transform_b(struct aml_layout *dest, const struct aml_layout *src, void *arg)
 {
 	struct aml_layout_dense *d;
 	struct aml_layout_dense *s;
@@ -100,6 +101,7 @@ void dma_transform_b(struct aml_layout *dest, struct aml_layout *src, void *arg)
 	s = (struct aml_layout_dense *)src->data;
 	ss = (double * restrict)s->ptr;
 	transform_b(*nb, dd, ss);
+	return 0;
 }
 
 
@@ -123,7 +125,7 @@ void transform_c(size_t block_number, double * restrict dst, const double * rest
 		src[m + l*PITCH_C_0_S + (k*PITCH_C_1_S + j*PITCH_C_2_S + i*PITCH_C_3_S)*block_number];
 }
 
-void dma_transform_c(struct aml_layout *dest, struct aml_layout *src, void *arg)
+int dma_transform_c(struct aml_layout *dest, const struct aml_layout *src, void *arg)
 {
 	struct aml_layout_dense *d;
 	struct aml_layout_dense *s;
@@ -136,6 +138,7 @@ void dma_transform_c(struct aml_layout *dest, struct aml_layout *src, void *arg)
 	s = (struct aml_layout_dense *)src->data;
 	ss = (double * restrict)s->ptr;
 	transform_c(*nb, dd, ss);
+	return 0;
 }
 
 
@@ -149,7 +152,7 @@ void transform_c_reverse(size_t block_number, double * restrict dst, const doubl
 		src[m + l*PITCH_C_0_D + k*PITCH_C_1_D + j*PITCH_C_2_D + i*PITCH_C_3_D];
 }
 
-void dma_transform_c_reverse(struct aml_layout *dest, struct aml_layout *src, void *arg)
+int dma_transform_c_reverse(struct aml_layout *dest, const struct aml_layout *src, void *arg)
 {
 	struct aml_layout_dense *d;
 	struct aml_layout_dense *s;
@@ -162,6 +165,7 @@ void dma_transform_c_reverse(struct aml_layout *dest, struct aml_layout *src, vo
 	s = (struct aml_layout_dense *)src->data;
 	ss = (double * restrict)s->ptr;
 	transform_c_reverse(*nb, dd, ss);
+	return 0;
 }
 
 void larp_layout(struct aml_layout *a, struct aml_layout *b, struct aml_layout *c)
@@ -267,7 +271,7 @@ int flipflop(int i, int b)
 
 int main(int argc, char *argv[]) {
 	aml_init(&argc, &argv);
-	int block_number;
+	size_t block_number;
         int block_count;
 	int do_test = 0;
 
