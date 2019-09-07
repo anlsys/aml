@@ -7,11 +7,14 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
 *******************************************************************************/
+#define _GNU_SOURCE
 
 #include "aml.h"
 #include "aml/layout/dense.h"
 #include "aml/dma/linux-spin.h"
 #include <assert.h>
+#include <sched.h>
+
 
 int main(int argc, char *argv[])
 {
@@ -34,10 +37,15 @@ int main(int argc, char *argv[])
 		isrc[i] = 24;
 	}
 	/* invalid create input */
-	assert(aml_dma_linux_spin_create(NULL, NULL, NULL) == -AML_EINVAL);
+	assert(aml_dma_linux_spin_create(NULL, NULL, NULL, NULL) == -AML_EINVAL);
+
+	cpu_set_t cpuset;
+	CPU_ZERO(&cpuset);
+	CPU_SET(3, &cpuset);
 
 	/* invalid requests */
-	assert(!aml_dma_linux_spin_create(&dma, NULL, NULL));
+	assert(!aml_dma_linux_spin_create(&dma, &cpuset, NULL, NULL));
+	sleep(1);
 	assert(aml_dma_copy(dma, NULL, isl) == -AML_EINVAL);
 	assert(aml_dma_copy(dma, idl, NULL) == -AML_EINVAL);
 
@@ -53,7 +61,7 @@ int main(int argc, char *argv[])
 	aml_dma_linux_spin_destroy(&dma);
 
 	/* destroy a running dma */
-	assert(!aml_dma_linux_spin_create(&dma, NULL, NULL));
+	assert(!aml_dma_linux_spin_create(&dma, &cpuset, NULL, NULL));
 	assert(!aml_dma_async_copy(dma, &r1, idl, isl));
 	aml_dma_linux_spin_destroy(&dma);
 

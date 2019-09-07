@@ -84,7 +84,7 @@ struct aml_dma_linux_spin {
  * @param op: default operator
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_dma_linux_spin_create(struct aml_dma **dma,
+int aml_dma_linux_spin_create(struct aml_dma **dma, const cpu_set_t *cpuset,
 			     aml_dma_operator op, void *op_arg);
 
 /**

@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
 *******************************************************************************/
 
+#include "config.h"
 #include "aml.h"
 #include "aml/dma/linux-spin.h"
 #include "aml/layout/dense.h"
@@ -153,7 +154,7 @@ struct aml_dma_ops aml_dma_linux_spin_ops = {
  * Init functions:
  ******************************************************************************/
 
-int aml_dma_linux_spin_create(struct aml_dma **dma,
+int aml_dma_linux_spin_create(struct aml_dma **dma, const cpu_set_t *cpuset,
 			     aml_dma_operator op, void *op_arg)
 {
 	struct aml_dma *ret = NULL;
@@ -186,6 +187,8 @@ int aml_dma_linux_spin_create(struct aml_dma **dma,
 	pthread_spin_init(&d->data.req.lock, PTHREAD_PROCESS_PRIVATE);
 
 	pthread_create(&d->data.req.thread, NULL, d->ops.do_thread, &d->data.req);
+	if (cpuset)
+		pthread_setaffinity_np(d->data.req.thread, sizeof(cpu_set_t), cpuset);
 
 	*dma = ret;
 	return 0;
