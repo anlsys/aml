@@ -19,6 +19,7 @@ LAYOUT_SOURCES = \
 DMA_SOURCES = \
 	      dma/dma.c \
 	      dma/dma_linux_par.c \
+	      dma/dma_linux_spin.c \
 	      dma/dma_linux_seq.c
 
 TILING_SOURCES = \
