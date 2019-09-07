@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <cblas.h>
 #include <sched.h>
+#include <math.h>
 
 void larp_8_62_8_31_477(const int32_t nblockm, const int32_t nblockn, const int32_t nblockk, const double *a, const double*b, double *c);
 
@@ -19,21 +20,25 @@ void larp_8_62_8_31_477(const int32_t nblockm, const int32_t nblockn, const int3
 #define NUM_INNER_TH	2
 #define NUM_OUTER_TH	(USED_TH/NUM_INNER_TH)
 
+#define BLOCKMULTIPLIER 3
 #define MR 31
 #define NR 8
 #define KB 477
 #define NBLOCKA 2
-#define NBLOCKM NUM_OUTER_TH*2
-#define NBLOCKN 294*2
-#define NBLOCKK 4*2
+#define NBLOCKM NUM_OUTER_TH*BLOCKMULTIPLIER
+#define NBLOCKN 294*BLOCKMULTIPLIER
+#define NBLOCKK 4*BLOCKMULTIPLIER
 #define M (MR*NBLOCKA*NBLOCKM)
 #define N (NR*NBLOCKN)
 #define K (KB*NBLOCKK)
 
 
 void init_matrix(double *ptr, size_t size) {
+	double f = ((double)random()*2/(double)RAND_MAX)-1.0;
+	#pragma omp parallel for
 	for(size_t i = 0; i < size; i++) {
-		ptr[i] = ((double)random()*2/(double)RAND_MAX)-1.0;
+		//ptr[i] = ((double)random()*2/(double)RAND_MAX)-1.0;
+		ptr[i] = sin(i*f);
 	}
 }
 
@@ -383,13 +388,13 @@ int main(int argc, char *argv[]) {
         assert( !aml_tiling_resize_create(&c_t, AML_LAYOUT_ORDER_ROW_MAJOR, c_l, 2, c_tile_dims) );
 
 	struct timespec start, stop;
-	clock_gettime(CLOCK_REALTIME, &start);
 	int ri = 0, rj = 0, rk = 0;
 	int aindex = -1, bindex = -1, cindex = -1;
 	int oldaindex = -1, oldbindex = -1, oldcindex = -1;
 	aindex = flipflop(aindex, 2);
 	bindex = flipflop(bindex, 2);
 	cindex = flipflop(cindex, 3);
+	clock_gettime(CLOCK_REALTIME, &start);
 	launch_dma(dma_a, ar, a_l_fast[aindex], a_t, 0, 0, 5, a_reshape_tile_dims, dma_transform_a); 
 	launch_dma(dma_b, br, b_l_fast[bindex], b_t, 0, 0, 4, b_reshape_tile_dims, dma_transform_b); 
 	launch_dma(dma_cr, crr, c_l_fast[cindex], c_t, 0, 0, 5, c_reshape_tile_dims, dma_transform_c); 
@@ -429,19 +434,20 @@ int main(int argc, char *argv[]) {
 
 	printf("dgemm        : %lf ms %f GFlops/s\n", time/1e6, flops/1e9);
 
-	clock_gettime(CLOCK_REALTIME, &start);
-	cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, big_m, big_n, big_k, 1.0, a, big_k, b, big_n, 1.0, c_ref, big_n);
-	clock_gettime(CLOCK_REALTIME, &stop);
-        cblas_daxpy(big_n*big_m, -1.0, c, 1, c_ref, 1);
-        double max_error;
-	size_t max_error_index;
-        max_error_index = cblas_idamax(big_n*big_m, c_ref, 1);
-        max_error = c_ref[max_error_index];
-	time =  (stop.tv_nsec - start.tv_nsec) +
-                1e9* (stop.tv_sec - start.tv_sec);
-	flops = (2.0*big_n*big_m*big_k)/(time/1e9);
-	/* print the flops in GFLOPS */
-	printf("dgemm-vanilla: %lf ms %f GFlops/s %le max error\n", time/1e6, flops/1e9, max_error);
-
+	if (do_test) {
+		clock_gettime(CLOCK_REALTIME, &start);
+		cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, big_m, big_n, big_k, 1.0, a, big_k, b, big_n, 1.0, c_ref, big_n);
+		clock_gettime(CLOCK_REALTIME, &stop);
+		cblas_daxpy(big_n*big_m, -1.0, c, 1, c_ref, 1);
+		double max_error;
+		size_t max_error_index;
+		max_error_index = cblas_idamax(big_n*big_m, c_ref, 1);
+		max_error = c_ref[max_error_index];
+		time =  (stop.tv_nsec - start.tv_nsec) +
+			1e9* (stop.tv_sec - start.tv_sec);
+		flops = (2.0*big_n*big_m*big_k)/(time/1e9);
+		/* print the flops in GFLOPS */
+		printf("dgemm-vanilla: %lf ms %f GFlops/s %le max error\n", time/1e6, flops/1e9, max_error);
+	}
 	return 0;
 }
