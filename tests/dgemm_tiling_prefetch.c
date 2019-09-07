@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <aml.h>
 #include <aml/area/linux.h>
 #include <aml/layout/dense.h>
@@ -5,10 +6,11 @@
 #include <aml/layout/native.h>
 #include <aml/layout/pad.h>
 #include <aml/tiling/resize.h>
-#include <aml/dma/linux-par.h>
+#include <aml/dma/linux-spin.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <cblas.h>
+#include <sched.h>
 
 void larp_8_62_8_31_477(const int32_t nblockm, const int32_t nblockn, const int32_t nblockk, const double *a, const double*b, double *c);
 
@@ -255,14 +257,14 @@ int flipflop(int i, int b)
 	return (i+1)%b;
 }
 
-#define launch_dma(request, layout, tiling, i, j, ndims, shape, transform) {\
+#define launch_dma(dma, request, layout, tiling, i, j, ndims, shape, transform) {\
 			struct aml_layout *tile; \
 			struct aml_layout *reshape_tile; \
 			tile = aml_tiling_index(tiling, (size_t[]){i, j}); \
 			aml_layout_reshape(tile, &reshape_tile, ndims, shape); \
 			aml_dma_async_copy_custom(dma, &request, layout, reshape_tile, transform, &block_number);}
 
-#define launch_reverse_dma(request, layout, tiling, i, j, ndims, shape, transform) {\
+#define launch_reverse_dma(dma, request, layout, tiling, i, j, ndims, shape, transform) {\
 			struct aml_layout *tile; \
 			struct aml_layout *reshape_tile; \
 			tile = aml_tiling_index(tiling, (size_t[]){i, j}); \
@@ -280,7 +282,7 @@ int main(int argc, char *argv[]) {
 	struct aml_layout *a_l, *b_l, *c_l;
 	struct aml_layout *a_l_fast[2], *b_l_fast[2], *c_l_fast[3];
 	struct aml_tiling *a_t, *b_t, *c_t;
-	struct aml_dma *dma;
+	struct aml_dma *dma_a, *dma_b, *dma_cr, *dma_cw;
 	struct aml_dma_request *ar, *br, *crr, *crw;
 
 	assert(aml_bitmap_from_string(&fastb, "1") == 0);
@@ -298,6 +300,19 @@ int main(int argc, char *argv[]) {
 	assert(slow != NULL);
 	aml_area_linux_create(&fast, &fastb, AML_AREA_LINUX_POLICY_BIND);
 	assert(fast != NULL);
+	cpu_set_t cpuset;
+	CPU_ZERO(&cpuset);
+	CPU_SET(60, &cpuset);
+	assert( !aml_dma_linux_spin_create(&dma_a, &cpuset, NULL, NULL));
+	CPU_ZERO(&cpuset);
+	CPU_SET(61, &cpuset);
+	assert( !aml_dma_linux_spin_create(&dma_b, &cpuset, NULL, NULL));
+	CPU_ZERO(&cpuset);
+	CPU_SET(62, &cpuset);
+	assert( !aml_dma_linux_spin_create(&dma_cr, &cpuset, NULL, NULL));
+	CPU_ZERO(&cpuset);
+	CPU_SET(63, &cpuset);
+	assert( !aml_dma_linux_spin_create(&dma_cw, &cpuset, NULL, NULL));
 
 	size_t big_m = block_number * M;
 	size_t big_n = block_number * N;
@@ -367,8 +382,6 @@ int main(int argc, char *argv[]) {
         assert( !aml_tiling_resize_create(&b_t, AML_LAYOUT_ORDER_ROW_MAJOR, b_l, 2, b_tile_dims) );
         assert( !aml_tiling_resize_create(&c_t, AML_LAYOUT_ORDER_ROW_MAJOR, c_l, 2, c_tile_dims) );
 
-	assert( !aml_dma_linux_par_create(&dma, 4, NULL, NULL));
-        
 	struct timespec start, stop;
 	clock_gettime(CLOCK_REALTIME, &start);
 	int ri = 0, rj = 0, rk = 0;
@@ -377,35 +390,37 @@ int main(int argc, char *argv[]) {
 	aindex = flipflop(aindex, 2);
 	bindex = flipflop(bindex, 2);
 	cindex = flipflop(cindex, 3);
-	launch_dma(ar, a_l_fast[aindex], a_t, 0, 0, 5, a_reshape_tile_dims, dma_transform_a); 
-	launch_dma(br, b_l_fast[bindex], b_t, 0, 0, 4, b_reshape_tile_dims, dma_transform_b); 
-	launch_dma(crr, c_l_fast[cindex], c_t, 0, 0, 5, c_reshape_tile_dims, dma_transform_c); 
+	launch_dma(dma_a, ar, a_l_fast[aindex], a_t, 0, 0, 5, a_reshape_tile_dims, dma_transform_a); 
+	launch_dma(dma_b, br, b_l_fast[bindex], b_t, 0, 0, 4, b_reshape_tile_dims, dma_transform_b); 
+	launch_dma(dma_cr, crr, c_l_fast[cindex], c_t, 0, 0, 5, c_reshape_tile_dims, dma_transform_c); 
 	for (int i = 0; i < block_number; i++) {
 		for (int j = 0; j < block_number; j++) {
-			aml_dma_wait(dma, &crr);
+			aml_dma_wait(dma_cr, &crr);
 			oldcindex = cindex;
 			cindex = flipflop(cindex, 3);
 			if(nextci(i, j, block_number, &ri, &rj) != -1) {
-				launch_dma(crr, c_l_fast[cindex], c_t, ri, rj, 5, c_reshape_tile_dims, dma_transform_c); 
+				launch_dma(dma_cr, crr, c_l_fast[cindex], c_t, ri, rj, 5, c_reshape_tile_dims, dma_transform_c); 
 			}	
 			for (int k = 0; k < block_number; k++) {
-				aml_dma_wait(dma, &ar);
-				aml_dma_wait(dma, &br);
+				aml_dma_wait(dma_a, &ar);
+				aml_dma_wait(dma_b, &br);
 				oldaindex = aindex;
 				aindex = flipflop(aindex, 2);
 				if(nextai(i, j, k, block_number, &ri, &rk) != -1) {
-					launch_dma(ar, a_l_fast[aindex], a_t, ri, rk, 5, a_reshape_tile_dims, dma_transform_a);
+					launch_dma(dma_a, ar, a_l_fast[aindex], a_t, ri, rk, 5, a_reshape_tile_dims, dma_transform_a);
 				}
 				oldbindex = bindex;
 				bindex = flipflop(bindex, 2);
 				if(nextbi(i, j, k, block_number, &rk, &rj) != -1) {
-					launch_dma(br, b_l_fast[bindex], b_t, rk, rj, 4, b_reshape_tile_dims, dma_transform_b);
+					launch_dma(dma_b, br, b_l_fast[bindex], b_t, rk, rj, 4, b_reshape_tile_dims, dma_transform_b);
 				}
 				larp_layout(a_l_fast[oldaindex], b_l_fast[oldbindex], c_l_fast[oldcindex]);
 			}
-			launch_reverse_dma(crw, c_l_fast[oldcindex], c_t, i, j, 5, c_reshape_tile_dims, dma_transform_c_reverse); 
+			if (i != 0 && j != 0) aml_dma_wait(dma_cw, &crw);
+			launch_reverse_dma(dma_cw, crw, c_l_fast[oldcindex], c_t, i, j, 5, c_reshape_tile_dims, dma_transform_c_reverse); 
 		}
 	}
+	aml_dma_wait(dma_cw, &crw);
 	clock_gettime(CLOCK_REALTIME, &stop);
 	double time = 0;
 	time =  (stop.tv_nsec - start.tv_nsec) +
