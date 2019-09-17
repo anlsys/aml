@@ -38,7 +38,7 @@ void test_slice_contiguous(void)
 				       NULL,
 				       dims_col) == AML_SUCCESS);
 
-	assert(aml_layout_slice(a, &b, new_dims_col, offsets_col, NULL) == AML_SUCCESS);	
+	assert(aml_layout_slice(a, &b, offsets_col, new_dims_col, NULL) == AML_SUCCESS);
 	assert(AML_LAYOUT_ORDER_COLUMN_MAJOR == aml_layout_order(b));
 
 	
@@ -67,8 +67,8 @@ void test_slice_contiguous(void)
 				       dims_row,
 				       NULL,
 				       dims_row) == AML_SUCCESS);
-	
-	assert(aml_layout_slice(a, &b, new_dims_row, offsets_row, NULL) == AML_SUCCESS);
+
+	assert(aml_layout_slice(a, &b, offsets_row, new_dims_row, NULL) == AML_SUCCESS);
 	assert(AML_LAYOUT_ORDER_ROW_MAJOR == aml_layout_order(b));
 
 	for(size_t i = 0; i < new_dims_row[0]; i++)
@@ -128,8 +128,8 @@ void test_slice_strided(void)
 				       stride,
 				       pitch_col) == AML_SUCCESS);
 
-	assert(aml_layout_slice(a, &b, new_dims_col, offsets_col, new_stride_col) == AML_SUCCESS);
-	
+	assert(aml_layout_slice(a, &b, offsets_col, new_dims_col, new_stride_col) == AML_SUCCESS);
+
 	for(size_t i = 0; i < 3; i++)
 	for(size_t j = 0; j < 3; j++)
 	for(size_t k = 0; k < 2; k++){
@@ -152,8 +152,8 @@ void test_slice_strided(void)
 				       dims_row,
 				       stride,
 				       pitch_row) == AML_SUCCESS);
-	
-	assert(aml_layout_slice(a, &b, new_dims_row, offsets_row, new_stride_row) == AML_SUCCESS);
+
+	assert(aml_layout_slice(a, &b, offsets_row, new_dims_row, new_stride_row) == AML_SUCCESS);
 
 	for(size_t i = 0; i < 3; i++)
 	for(size_t j = 0; j < 3; j++)

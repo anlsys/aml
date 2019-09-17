@@ -9,60 +9,336 @@
 *******************************************************************************/
 
 #include "aml.h"
-#include "aml/tiling/1d.h"
-#include "aml/tiling/2d.h"
+#include "aml/layout/dense.h"
+#include "aml/layout/native.h"
+#include "aml/tiling/resize.h"
 #include <assert.h>
 
-#define TILESIZE 8192
-#define NBTILES 4
-
-int doit(struct aml_tiling *t, struct aml_tiling_iterator *it)
+void test_tiling_even_mixed(void)
 {
-	size_t tilesize;
-	unsigned long i;
-	intptr_t ptr;
-	tilesize = aml_tiling_tilesize(t, 0);
-	assert(tilesize == TILESIZE);
+	int memory[9][10][8];
+	int memoryres[9][10][8];
+	size_t dims_col[3] = {8, 10, 9};
+	size_t dims_row[3] = {9, 10, 8};
 
-	/* actualy use the iterators */
-	for(aml_tiling_iterator_reset(it);
-	    !aml_tiling_iterator_end(it);
-	    aml_tiling_iterator_next(it))
-	{
-		aml_tiling_iterator_get(it, &i);
-	}
-	assert(i == NBTILES -1);
+	size_t stride[3] = {1, 1, 1};
 
-	for(i = 0; i < NBTILES; i++)
-	{
-		ptr = (intptr_t) aml_tiling_tilestart(t, NULL, i);
-		assert(ptr == (intptr_t)i*TILESIZE);
+	size_t dims_tile_col[3] = {4, 10, 3};
+	size_t dims_tile_row[3] = {3, 10, 4};
+
+	size_t expected_dims_col[3] = {2, 1, 3};
+
+        int l = 0;
+	for(size_t i = 0; i < 9; i++)
+	for(size_t j = 0; j < 10; j++)
+	for(size_t k = 0; k < 8; k++, l++) {
+		memory[i][j][k] = l;
+		memoryres[i][j][k] = 0;
 	}
-	return 0;
+
+	struct aml_layout *a, *ares;
+	aml_layout_dense_create(&a, (void *)memory,
+				  AML_LAYOUT_ORDER_COLUMN_MAJOR,
+				  sizeof(int), 3, dims_col,
+				  stride, dims_col);
+	aml_layout_dense_create(&ares, (void *)memoryres,
+				AML_LAYOUT_ORDER_ROW_MAJOR,
+				sizeof(int), 3, dims_row,
+				stride, dims_row);
+
+
+	struct aml_tiling *t, *tres;
+	aml_tiling_resize_create(&t, AML_TILING_ORDER_COLUMN_MAJOR,
+				     a, 3, dims_tile_col);
+	aml_tiling_resize_create(&tres, AML_TILING_ORDER_ROW_MAJOR,
+				     ares, 3, dims_tile_row);
+
+
+	for(size_t i = 0; i < expected_dims_col[2]; i++)
+	for(size_t j = 0; j < expected_dims_col[1]; j++)
+	for(size_t k = 0; k < expected_dims_col[0]; k++) {
+		struct aml_layout *b, *bres;
+		b = aml_tiling_index(t, (size_t[]){k, j, i});
+		bres = aml_tiling_index(tres, (size_t[]){i, j, k});
+		aml_copy_layout_generic(bres, b, NULL);
+		free(b);
+		free(bres);
+	}
+	assert(memcmp(memory, memoryres, 8 * 10 * 9 *sizeof(int)) == 0);
+
+	aml_layout_dense_destroy(&a);
+	aml_layout_dense_destroy(&ares);
+	aml_tiling_resize_destroy(&t);
+	aml_tiling_resize_destroy(&tres);
+
+	aml_layout_dense_create(&a, memory, AML_LAYOUT_ORDER_COLUMN_MAJOR,
+				sizeof(int), 3, dims_col,
+				  stride, dims_col);
+	aml_layout_dense_create(&ares, memoryres, AML_LAYOUT_ORDER_ROW_MAJOR,
+				sizeof(int), 3, dims_row,
+				  stride, dims_row);
+
+
+	aml_tiling_resize_create(&t, AML_TILING_ORDER_ROW_MAJOR,
+				     a, 3, dims_tile_row);
+	aml_tiling_resize_create(&tres, AML_TILING_ORDER_COLUMN_MAJOR,
+				     ares, 3, dims_tile_col);
+
+	for(size_t i = 0; i < 9; i++)
+	for(size_t j = 0; j < 10; j++)
+	for(size_t k = 0; k < 8; k++, l++)
+		memoryres[i][j][k] = 0.0;
+
+	for(size_t i = 0; i < expected_dims_col[2]; i++)
+	for(size_t j = 0; j < expected_dims_col[1]; j++)
+	for(size_t k = 0; k < expected_dims_col[0]; k++) {
+		struct aml_layout *b, *bres;
+		b = aml_tiling_index(t, (size_t[]){i, j, k});
+		bres = aml_tiling_index(tres, (size_t[]){k, j, i});
+		aml_copy_layout_generic(bres, b, NULL);
+		free(b);
+		free(bres);
+	}
+	assert(memcmp(memory, memoryres, 8 * 10 * 9 *sizeof(int)) == 0);
+
+	aml_layout_dense_destroy(&a);
+	aml_layout_dense_destroy(&ares);
+	aml_tiling_resize_destroy(&t);
+	aml_tiling_resize_destroy(&tres);
+
+}
+
+void test_tiling_even(void)
+{
+	int memory[9][10][8];
+	int memoryres[9][10][8];
+	size_t dims_col[3] = {8, 10, 9};
+	size_t dims_row[3] = {9, 10, 8};
+
+	size_t stride[3] = {1, 1, 1};
+
+	size_t dims_tile_col[3] = {4, 10, 3};
+	size_t dims_tile_row[3] = {3, 10, 4};
+
+	size_t expected_dims_col[3] = {2, 1, 3};
+	size_t expected_dims_row[3] = {3, 1, 2};
+
+        int l = 0;
+	for(size_t i = 0; i < 9; i++)
+	for(size_t j = 0; j < 10; j++)
+	for(size_t k = 0; k < 8; k++, l++) {
+		memory[i][j][k] = l;
+		memoryres[i][j][k] = 0.0;
+	}
+
+	struct aml_layout *a, *ares;
+	aml_layout_dense_create(&a, memory, AML_LAYOUT_ORDER_COLUMN_MAJOR,
+				sizeof(int), 3, dims_col,
+				  stride, dims_col);
+	aml_layout_dense_create(&ares, memoryres, AML_LAYOUT_ORDER_COLUMN_MAJOR,
+				sizeof(int), 3, dims_col,
+				  stride, dims_col);
+
+
+	struct aml_tiling *t, *tres;
+	aml_tiling_resize_create(&t, AML_TILING_ORDER_COLUMN_MAJOR,
+				     a, 3, dims_tile_col);
+	aml_tiling_resize_create(&tres, AML_TILING_ORDER_COLUMN_MAJOR,
+				     ares, 3, dims_tile_col);
+
+
+	assert(aml_tiling_order(t) == AML_TILING_ORDER_COLUMN_MAJOR);
+	assert(aml_tiling_ndims(t) == 3);
+
+        size_t dims[3];
+	aml_tiling_tile_dims(t, dims);
+	assert(memcmp(dims, dims_tile_col, 3*sizeof(size_t)) == 0);
+	aml_tiling_dims(t, dims);
+	assert(memcmp(dims, expected_dims_col, 3*sizeof(size_t)) == 0);
+
+	for(size_t i = 0; i < expected_dims_col[2]; i++)
+	for(size_t j = 0; j < expected_dims_col[1]; j++)
+	for(size_t k = 0; k < expected_dims_col[0]; k++) {
+		struct aml_layout *b, *bres;
+		b = aml_tiling_index(t, (size_t[]){k, j, i});
+		bres = aml_tiling_index(tres, (size_t[]){k, j, i});
+		aml_copy_layout_generic(bres, b, NULL);
+		free(b);
+		free(bres);
+	}
+	assert(memcmp(memory, memoryres, 8 * 10 * 9 *sizeof(int)) == 0);
+
+	aml_layout_dense_destroy(&a);
+	aml_layout_dense_destroy(&ares);
+	aml_tiling_resize_destroy(&t);
+	aml_tiling_resize_destroy(&tres);
+
+	aml_layout_dense_create(&a, memory, AML_LAYOUT_ORDER_ROW_MAJOR,
+				sizeof(int), 3, dims_row,
+				  stride, dims_row);
+	aml_layout_dense_create(&ares, memoryres, AML_LAYOUT_ORDER_ROW_MAJOR,
+				sizeof(int), 3, dims_row,
+				  stride, dims_row);
+
+
+	aml_tiling_resize_create(&t, AML_TILING_ORDER_ROW_MAJOR,
+				     a, 3, dims_tile_row);
+	aml_tiling_resize_create(&tres, AML_TILING_ORDER_ROW_MAJOR,
+				     ares, 3, dims_tile_row);
+
+	assert(aml_tiling_order(t) == AML_TILING_ORDER_ROW_MAJOR);
+	assert(aml_tiling_ndims(t) == 3);
+
+	aml_tiling_tile_dims(t, dims);
+	assert(memcmp(dims, dims_tile_row, 3*sizeof(size_t)) == 0);
+	aml_tiling_dims(t, dims);
+	assert(memcmp(dims, expected_dims_row, 3*sizeof(size_t)) == 0);
+
+	for(size_t i = 0; i < 9; i++)
+	for(size_t j = 0; j < 10; j++)
+	for(size_t k = 0; k < 8; k++, l++)
+		memoryres[i][j][k] = 0.0;
+
+	for(size_t i = 0; i < expected_dims_col[2]; i++)
+	for(size_t j = 0; j < expected_dims_col[1]; j++)
+	for(size_t k = 0; k < expected_dims_col[0]; k++) {
+		struct aml_layout *b, *bres;
+		b = aml_tiling_index(t, (size_t[]){i, j, k});
+		bres = aml_tiling_index(tres, (size_t[]){i, j, k});
+		assert(b != NULL && bres != NULL);
+		aml_copy_layout_generic(bres, b, NULL);
+		free(b);
+		free(bres);
+	}
+	assert(memcmp(memory, memoryres, 8 * 10 * 9 *sizeof(int)) == 0);
+
+	aml_layout_dense_destroy(&a);
+	aml_layout_dense_destroy(&ares);
+	aml_tiling_resize_destroy(&t);
+	aml_tiling_resize_destroy(&tres);
+
+}
+
+void test_tiling_uneven(void)
+{
+
+	int memory[8][10][7];
+	int memoryres[8][10][7];
+	size_t dims_col[3] = {7, 10, 8};
+	size_t dims_row[3] = {8, 10, 7};
+
+	size_t stride[3] = {1, 1, 1};
+
+	size_t dims_tile_col[3] = {4, 10, 3};
+	size_t dims_tile_row[3] = {3, 10, 4};
+
+	size_t expected_dims_col[3] = {2, 1, 3};
+	size_t expected_dims_row[3] = {3, 1, 2};
+
+        int l = 0;
+	for(size_t i = 0; i < 8; i++)
+	for(size_t j = 0; j < 10; j++)
+	for(size_t k = 0; k < 7; k++, l++) {
+		memory[i][j][k] = l;
+		memoryres[i][j][k] = 0.0;
+	}
+
+	struct aml_layout *a, *ares;
+	aml_layout_dense_create(&a, memory, AML_LAYOUT_ORDER_COLUMN_MAJOR,
+				sizeof(int), 3, dims_col,
+				  stride, dims_col);
+	aml_layout_dense_create(&ares, memoryres, AML_LAYOUT_ORDER_COLUMN_MAJOR,
+				sizeof(int), 3, dims_col,
+				  stride, dims_col);
+
+
+	struct aml_tiling *t, *tres;
+	aml_tiling_resize_create(&t, AML_TILING_ORDER_COLUMN_MAJOR,
+				     a, 3, dims_tile_col);
+	aml_tiling_resize_create(&tres, AML_TILING_ORDER_COLUMN_MAJOR,
+				     ares, 3, dims_tile_col);
+
+
+	assert(aml_tiling_order(t) == AML_TILING_ORDER_COLUMN_MAJOR);
+	assert(aml_tiling_ndims(t) == 3);
+
+        size_t dims[3];
+	aml_tiling_tile_dims(t, dims);
+	assert(memcmp(dims, dims_tile_col, 3*sizeof(size_t)) == 0);
+	aml_tiling_dims(t, dims);
+	assert(memcmp(dims, expected_dims_col, 3*sizeof(size_t)) == 0);
+
+	for(size_t i = 0; i < expected_dims_col[2]; i++)
+	for(size_t j = 0; j < expected_dims_col[1]; j++)
+	for(size_t k = 0; k < expected_dims_col[0]; k++) {
+		struct aml_layout *b, *bres;
+		b = aml_tiling_index(t, (size_t[]){k, j, i});
+		bres = aml_tiling_index(tres, (size_t[]){k, j, i});
+		aml_copy_layout_generic(bres, b, NULL);
+		free(b);
+		free(bres);
+	}
+	assert(memcmp(memory, memoryres, 7 * 10 * 8 *sizeof(int)) == 0);
+
+	aml_layout_dense_destroy(&a);
+	aml_layout_dense_destroy(&ares);
+	aml_tiling_resize_destroy(&t);
+	aml_tiling_resize_destroy(&tres);
+
+	aml_layout_dense_create(&a, memory, AML_LAYOUT_ORDER_ROW_MAJOR,
+				sizeof(int), 3, dims_row,
+				  stride, dims_row);
+	aml_layout_dense_create(&ares, memoryres, AML_LAYOUT_ORDER_ROW_MAJOR,
+				sizeof(int), 3, dims_row,
+				  stride, dims_row);
+
+	aml_tiling_resize_create(&t, AML_TILING_ORDER_ROW_MAJOR,
+				     a, 3, dims_tile_row);
+	aml_tiling_resize_create(&tres, AML_TILING_ORDER_ROW_MAJOR,
+				     ares, 3, dims_tile_row);
+
+	assert(aml_tiling_order(t) == AML_TILING_ORDER_ROW_MAJOR);
+	assert(aml_tiling_ndims(t) == 3);
+
+	aml_tiling_tile_dims(t, dims);
+	assert(memcmp(dims, dims_tile_row, 3*sizeof(size_t)) == 0);
+	aml_tiling_dims(t, dims);
+	assert(memcmp(dims, expected_dims_row, 3*sizeof(size_t)) == 0);
+
+	for(size_t i = 0; i < 8; i++)
+	for(size_t j = 0; j < 10; j++)
+	for(size_t k = 0; k < 7; k++, l++) {
+		memory[i][j][k] = l;
+		memoryres[i][j][k] = 0.0;
+	}
+
+	for(size_t i = 0; i < expected_dims_col[2]; i++)
+	for(size_t j = 0; j < expected_dims_col[1]; j++)
+	for(size_t k = 0; k < expected_dims_col[0]; k++) {
+		struct aml_layout *b, *bres;
+		b = aml_tiling_index(t, (size_t[]){i, j, k});
+		bres = aml_tiling_index(tres, (size_t[]){i, j, k});
+		aml_copy_layout_generic(bres, b, NULL);
+		free(b);
+		free(bres);
+	}
+	assert(memcmp(memory, memoryres, 7 * 10 * 8 *sizeof(int)) == 0);
+
+	aml_layout_dense_destroy(&a);
+	aml_layout_dense_destroy(&ares);
+	aml_tiling_resize_destroy(&t);
+	aml_tiling_resize_destroy(&tres);
 }
 
 int main(int argc, char *argv[])
 {
-	struct aml_tiling *a;
-	struct aml_tiling_iterator *it;
-
 	/* library initialization */
 	aml_init(&argc, &argv);
 
-	/* initialize the tilings */
-	aml_tiling_1d_create(&a, TILESIZE, TILESIZE*NBTILES);
+	test_tiling_even();
+	test_tiling_uneven();
+	test_tiling_even_mixed();
 
-	/* initialize the iterators */
-	aml_tiling_create_iterator(a, &it, 0);
-
-	doit(a, it);
-
-	/* delete the iterators */
-	aml_tiling_destroy_iterator(a, &it);
-
-	/* delete the tilings */
-	aml_tiling_1d_destroy(&a);
-
-	aml_finalize();
 	return 0;
 }
+
