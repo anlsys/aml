@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
 	/* initialize all the supporting struct */
 	size_t size = TILESIZE*_SC_PAGE_SIZE*NBTILES;
 	size_t tsize = TILESIZE*_SC_PAGE_SIZE;
+
 	src = aml_area_mmap(&aml_area_linux, size, NULL);
 	dst = aml_area_mmap(&aml_area_linux, size, NULL);
 	assert(src != NULL && dst != NULL);
@@ -52,11 +53,13 @@ int main(int argc, char *argv[])
 					 AML_TILING_ORDER_COLUMN_MAJOR,
 					 scratch_layout, 1, &tsize));
 	size_t maxrequests = NBTILES;
+
 	assert(!aml_dma_linux_par_create(&dma, maxrequests, NULL, NULL));
 
 	/* setup some initial values in the memory */
 	for (size_t i = 0; i < NBTILES; i++) {
 		char *s, *d;
+
 		s = &((char *)src)[i * tsize];
 		d = &((char *)dst)[i * tsize];
 		memset((void *)s, (char)i, TILESIZE*_SC_PAGE_SIZE);
@@ -67,7 +70,7 @@ int main(int argc, char *argv[])
 	assert(!aml_scratch_seq_create(&scratch, dma, src_tiling,
 				       scratch_tiling, maxrequests));
 	/* move some stuff */
-	for(size_t i = 0; i < NBTILES; i++) {
+	for (size_t i = 0; i < NBTILES; i++) {
 		int di, si;
 		void *dp, *sp;
 		struct aml_layout *sl, *dl;

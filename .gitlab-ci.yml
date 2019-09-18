@@ -25,7 +25,7 @@ checkpatch:
   tags:
     - integration
   script:
-    - git ls-files *.c *.h | grep -v -e tests -e benchmarks >> .checkpatch.conf
+    - git ls-files *.c *.h | grep -v -e benchmarks >> .checkpatch.conf
     - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl
 
 make:generic:

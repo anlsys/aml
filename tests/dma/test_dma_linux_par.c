@@ -65,11 +65,13 @@ int main(int argc, char *argv[])
 	assert(!aml_dma_linux_par_create(&dma, 1, NULL, NULL));
 	struct aml_dma_request *requests[16];
 	struct aml_layout *layouts[16][2];
+
 	for (int i = 0; i < 16; i++) {
 		size_t sz = isz/16;
 		size_t off = i*sz;
 		void *dptr = (void *)&(idest[off]);
 		void *sptr = (void *)&(isrc[off]);
+
 		aml_layout_dense_create(&layouts[i][0], dptr, 0, sizeof(int),
 					1, &sz, NULL, NULL);
 		aml_layout_dense_create(&layouts[i][1], sptr, 0, sizeof(int),
@@ -78,7 +80,7 @@ int main(int argc, char *argv[])
 					   layouts[i][0], layouts[i][1]));
 		assert(requests[i] != NULL);
 	}
-	for(int i = 0; i < 16; i++) {
+	for (int i = 0; i < 16; i++) {
 		assert(!aml_dma_wait(dma, &requests[i]));
 		aml_layout_dense_destroy(&layouts[i][0]);
 		aml_layout_dense_destroy(&layouts[i][1]);

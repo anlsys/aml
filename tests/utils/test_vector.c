@@ -23,6 +23,7 @@ int main(void)
 		unsigned long unused;
 		int key;
 	};
+
 	assert(!aml_vector_create(&v, 1, sizeof(struct test),
 				offsetof(struct test, key), -1));
 
@@ -31,6 +32,7 @@ int main(void)
 
 	/* add an element and look for some */
 	struct test *e = aml_vector_get(v, 0);
+
 	assert(e != NULL);
 	e->unused = 42;
 	e->key = 24;
@@ -39,6 +41,7 @@ int main(void)
 
 	/* add a second element, trigger a resize, and check it */
 	struct test *f = aml_vector_add(v);
+
 	assert(f != NULL && f->key == -1);
 	assert(aml_vector_find(v, 42) == -1);
 	assert(aml_vector_find(v, -1) == 1);
