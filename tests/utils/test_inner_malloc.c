@@ -14,8 +14,10 @@
 int main(void)
 {
 	intptr_t *ptr = AML_INNER_MALLOC_2(void *, void *);
+
 	assert(ptr != NULL);
 	void *b = AML_INNER_MALLOC_NEXTPTR(ptr, void *, void *);
+
 	assert(b == &ptr[1]);
 	free(ptr);
 	return 0;
