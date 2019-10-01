@@ -13,6 +13,7 @@ repoquality:
     - /^wip.*/
     - /^WIP.*/
   script:
+    - git ls-files *.c *.h | grep -v -e benchmarks > .repoquality
     - nix run -f "$ARGOPKGS" repoquality --command repoquality
   tags:
     - integration
