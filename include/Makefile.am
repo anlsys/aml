@@ -24,6 +24,7 @@ include_aml_scratch_HEADERS = \
 include_aml_tilingdir=$(includedir)/aml/tiling
 include_aml_tiling_HEADERS = \
 			     aml/tiling/native.h \
+			     aml/tiling/pad.h \
 			     aml/tiling/resize.h
 
 
