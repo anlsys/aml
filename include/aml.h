@@ -79,17 +79,17 @@ int aml_finalize(void);
  * @defgroup aml_area "AML Area"
  * @brief Area High-Level API
  *
- * AML areas represent places where data can belong.
+ * AML areas represent places where data can be stored.
  * In shared memory systems, locality is a major concern for performance.
- * Beeing able to query memory from specific places is of a major interest
- * two achieve this goal. AML Areas provide mmap / munmap low level functions
+ * Being able to query memory from specific places is of major interest
+ * to achieve this goal. AML areas provide low-level mmap() / munmap() functions
  * to query memory from specific places materialized as areas. Available area
- * implementations dictate the way such places can be arranged and with which
- * properties. It is important to notice that function provided through Area API
- * are low-level functions and are not optimized for performance as allocator
+ * implementations dictate the way such places can be arranged and their
+ * properties. It is important to note that the functions provided through the
+ * Area API are low-level and are not optimized for performance as allocators
  * are.
  *
- * @image html area.png "Illustration of areas on a copmlex system." width=700cm
+ * @image html area.png "Illustration of areas in a complex system." width=700cm
  *
  * @see aml_area_linux
  *
@@ -114,8 +114,8 @@ struct aml_area_mmap_options;
 
 /**
  * aml_area_ops is a structure containing implementations
- * of an area operations.
- * Aware users may create or modify implementation by assembling
+ * of area operations.
+ * Users may create or modify implementations by assembling
  * appropriate operations in such a structure.
  **/
 struct aml_area_ops {
@@ -154,10 +154,10 @@ struct aml_area_ops {
 };
 
 /**
- * An AML area is an implementation of memory operations for several type
+ * An AML area is an implementation of memory operations for several types
  * of devices through a consistent abstraction.
- * This abstraction is meant to be implemented for several kind of devices,
- * i.e the same function calls allocate different kinds of devices depending
+ * This abstraction is meant to be implemented for several kinds of devices,
+ * i.e., the same function calls allocate different kinds of devices depending
  * on the area implementation provided.
  **/
 struct aml_area {
@@ -168,11 +168,12 @@ struct aml_area {
 };
 
 /**
- * Low-level function for getting memory from an area.
- * @param[in] area: A valid area implementing access to target memory.
- * @param[in] size: The usable size of memory returned.
- * @param[in, out] opts: Opaque handle to pass additional options to area
- * @return virtual memory from this area with at least queried size bytes.
+ * Low-level function for obtaining memory from an area.
+ * @param[in] area: A valid area implementing access to the target memory.
+ * @param[in] size: The usable size of memory to obtain.
+ * @param[in, out] opts: Opaque handle to pass additional options to the area.
+ * @return a pointer to the memory range of the requested size allocated
+ * within the area.
  * @return NULL on failure, with aml_errno set to the appropriate error
  * code.
  **/
@@ -181,12 +182,12 @@ void *aml_area_mmap(const struct aml_area        *area,
 		    struct aml_area_mmap_options *opts);
 
 /**
- * Release data provided with aml_area_mmap() and the same area.
- * @param area: A valid area implementing access to target memory.
- * @param ptr: A pointer to memory address provided with aml_area_mmap()
- *        by same area and size.
- * @param size: The size of memory region pointed by "ptr".
- * @return an AML error code on operation success.
+ * Releases memory region obtained with aml_area_mmap().
+ * @param area: A valid area implementing access to the target memory.
+ * @param ptr: A pointer to the memory obtained with aml_area_mmap()
+ *        using the same "area" and "size" parameters.
+ * @param size: The size of the memory region pointed to by "ptr".
+ * @return 0 if successful, an error code otherwise.
  * @see aml_area_mmap()
  **/
 int
@@ -238,7 +239,7 @@ aml_area_munmap(const struct aml_area *area,
  *
  * The layout abstraction also provides a function to reshape data
  * with a different set of dimensions. A reshaped layout will access
- * the same data but with different coordinates as pictured in the
+ * the same data but with different coordinates as depicted in the
  * figure below.
  * @see aml_layout_reshape()
  *
@@ -411,7 +412,7 @@ struct aml_layout_ops {
  * Layout order is the first bit in an integer bitmask.
  * @see AML_LAYOUT_ORDER()
  * This tag will store dimensions in the order provided by the user,
- * i.e elements of the last dimension will be contiguous in memory.
+ * i.e., elements of the last dimension will be contiguous in memory.
  **/
 #define AML_LAYOUT_ORDER_C (0<<0)
 
@@ -419,8 +420,8 @@ struct aml_layout_ops {
  * Tag specifying user storage of dimensions inside a layout.
  * Layout order is the first bit in an integer bitmask.
  * @see AML_LAYOUT_ORDER()
- * This tag will store dimensions in the reversed order provided
- * by the user, i.e elements of the first dimension will be contiguous
+ * This tag will store dimensions in the reverse order to the one provided
+ * by the user, i.e., elements of the first dimension will be contiguous
  * in memory. This storage is the actual storage used by the library
  * inside the structure.
  **/
@@ -476,7 +477,7 @@ void *aml_layout_deref_safe(const struct aml_layout *layout,
  * @return The order (>0) on success, an AML error (<0) on failure.
  * @return On success, a bitmask with order bit set (or not set).
  * Output value can be further checked against order AML_LAYOUT_ORDER
- * flags by using the macro AML_LAYOUT_ORDER() on output value.
+ * flags by using the macro AML_LAYOUT_ORDER() on the output value.
  * @see AML_LAYOUT_ORDER()
  **/
 int aml_layout_order(const struct aml_layout *layout);
@@ -484,8 +485,8 @@ int aml_layout_order(const struct aml_layout *layout);
 /**
  * Return the layout dimensions in the user order.
  * @param layout[in]: An initialized layout.
- * @param dims[out]: The non-NULL array of dimensions to fill. It is
- * supposed to be large enough to contain ndims() elements.
+ * @param dims[out]: A non-NULL array of dimensions to fill. It is
+ * supposed to be large enough to contain aml_layout_ndims() elements.
  * @return AML_SUCCESS on success, else an AML error code.
  **/
 int aml_layout_dims(const struct aml_layout *layout, size_t *dims);
@@ -532,15 +533,15 @@ int aml_layout_reshape(const struct aml_layout *layout,
  * Return a layout that is a subset of another layout.
  * The number of elements to subset along each dimension
  * must be compatible with offsets and strides.
- * This function checks that the amount of elements along
- * each dimensions of the slice actually fits in the original
+ * This function checks that the number of elements along
+ * each dimension of the slice actually fits in the original
  * layout.
  * @param layout[in]: An initialized layout.
- * @param reshaped_layout[out]: a pointer where to store a
+ * @param reshaped_layout[out]: a pointer where to store the address of a
  * newly allocated layout with the queried subset of the
  * original layout on succes.
  * @param dims[in]: The number of elements of the slice along each
- * dimension .
+ * dimension.
  * @param offsets[in]: The index of the first element of the slice
  * in each dimension. If NULL, offset is set to 0.
  * @param strides[in]: The displacement (in number of elements) between
@@ -612,7 +613,6 @@ int aml_layout_slice(const struct aml_layout *layout,
  **/
 #define AML_TILING_ORDER(x) ((x) & (1<<0))
 
-
 /**
  * aml_tiling_data is an opaque handle defined by each aml_tiling
  * implementation. This not supposed to be used by end users.
@@ -656,17 +656,17 @@ struct aml_tiling {
  * @param tiling[in]: An initialized tiling.
  * @return The order (>0) on success, an AML error (<0) on failure.
  * @return On success, a bitmask with order bit set (or not set).
- * Output value can be further checked against order AML_tiling_ORDER
- * flags by using the macro AML_tiling_ORDER() on output value.
- * @see AML_tiling_ORDER()
+ * Output value can be further checked against order AML_TILING_ORDER
+ * flags by using the macro AML_TILING_ORDER() on the output value.
+ * @see AML_TILING_ORDER()
  **/
 int aml_tiling_order(const struct aml_tiling *tiling);
 
 /**
  * Return the tiling dimensions in the user order.
  * @param tiling[in]: An initialized tiling.
- * @param dims[out]: The non-NULL array of dimensions to fill. It is
- * supposed to be large enough to contain ndims() elements.
+ * @param dims[out]: A non-NULL array of dimensions to fill. It is
+ * supposed to be large enough to contain aml_tiling_ndims() elements.
  * @return AML_SUCCESS on success, else an AML error code.
  **/
 int aml_tiling_dims(const struct aml_tiling *tiling, size_t *dims);
@@ -674,8 +674,8 @@ int aml_tiling_dims(const struct aml_tiling *tiling, size_t *dims);
 /**
  * Return the dimensions of a tile in the tiling, in the user order.
  * @param tiling[in]: An initialized tiling.
- * @param dims[out]: The non-NULL array of dimensions to fill. It is
- * supposed to be large enough to contain ndims() elements.
+ * @param dims[out]: A non-NULL array of dimensions to fill. It is
+ * supposed to be large enough to contain aml_tiling_ndims() elements.
  * @return AML_SUCCESS on success, else an AML error code.
  **/
 int aml_tiling_tile_dims(const struct aml_tiling *tiling, size_t *dims);
@@ -683,14 +683,14 @@ int aml_tiling_tile_dims(const struct aml_tiling *tiling, size_t *dims);
 /**
  * Provide the number of dimensions in a tiling.
  * @param tiling: an initialized tiling structure.
- * @return the number of dimensions in this tiling
+ * @return the number of dimensions in the tiling.
  **/
 size_t aml_tiling_ndims(const struct aml_tiling *tiling);
 
 /**
  * Provide the number of tiles in a tiling.
  * @param tiling: an initialized tiling structure.
- * @return the number of tiles in this tiling
+ * @return the number of tiles in the tiling.
  **/
 size_t aml_tiling_ntiles(const struct aml_tiling *t);
 
