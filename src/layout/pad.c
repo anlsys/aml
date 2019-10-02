@@ -43,6 +43,7 @@ static int aml_layout_pad_alloc(struct aml_layout **ret,
 						       size_t, 2*ndims);
 	data->target = NULL;
 	data->ndims = ndims;
+	data->element_size = element_size;
 	*ret = layout;
 	return AML_SUCCESS;
 }
@@ -222,10 +223,10 @@ int aml_layout_pad_row_dims(const struct aml_layout_data *data, size_t *dims)
 
 struct aml_layout_ops aml_layout_pad_row_ops = {
 	aml_layout_pad_row_deref,
-	aml_layout_pad_row_deref,
+	aml_layout_pad_column_deref,
 	aml_layout_pad_row_order,
 	aml_layout_pad_row_dims,
-	aml_layout_pad_row_dims,
+	aml_layout_pad_column_dims,
 	aml_layout_pad_ndims,
 	aml_layout_pad_element_size,
 	NULL,
