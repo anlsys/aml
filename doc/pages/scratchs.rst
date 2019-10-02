@@ -1,4 +1,4 @@
-Scratchpads: Staging in and out data
+Scratchpads: Staging data in and out
 ====================================
 
 .. doxygengroup:: aml_scratch
