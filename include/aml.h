@@ -129,7 +129,7 @@ struct aml_area_ops {
 	 *        suitable address.
 	 *        In case of failure, aml_errno must be set to an appropriate
 	 *        value.
-	 * @param[in/out] opts: Opaque handle to pass additional options to area
+	 * @param opts: Opaque handle to pass additional options to area
 	 *        mmap hook. Can be NULL and must work with NULL opts.
 	 * @return a pointer to allocated memory object.
 	 **/
