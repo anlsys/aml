@@ -63,7 +63,7 @@ int aml_dma_linux_seq_do_copy(struct aml_dma_linux_seq_data *dma,
 	return req->op(req->dest, req->src, req->op_arg);
 }
 
-struct aml_dma_linux_seq_ops aml_dma_linux_seq_inner_ops = {
+struct aml_dma_linux_seq_inner_ops aml_dma_linux_seq_inner_ops = {
 	aml_dma_linux_seq_do_copy,
 };
 

@@ -15,7 +15,9 @@
  * @defgroup aml_tiling_native "AML Tiling Internal API"
  * @brief API for internal management of tilings.
  *
+ * @code
  * #include <aml/tiling/native.h>
+ * @endcode
  * @{
  **/
 

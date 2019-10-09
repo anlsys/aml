@@ -18,7 +18,9 @@
  * Layout for reshaping dense layouts when reshape method
  * on dense layouts fails.
  *
+ * @code
  * #include <aml/layout/reshape.h>
+ * @endcode
  * @see aml_layout
  * @{
  **/
@@ -45,5 +47,9 @@ void aml_layout_reshape_destroy(struct aml_layout **l);
 
 extern struct aml_layout_ops aml_layout_reshape_row_ops;
 extern struct aml_layout_ops aml_layout_reshape_column_ops;
+
+/**
+ * @}
+ **/
 
 #endif

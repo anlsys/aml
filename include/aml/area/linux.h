@@ -23,7 +23,9 @@
  * a default initialized area that can be used out-of-the-box with
  * the abstract area API.
  *
+ * @code
  * #include <aml/area/linux.h>
+ * @endcode
  * @{
  **/
 
@@ -114,7 +116,7 @@ int aml_area_linux_create(struct aml_area **area,
  * Destroys (finalizes and frees resources) struct aml_area created by
  * aml_area_linux_create().
  *
- * @param address of an initialized struct aml_area pointer, which will be
+ * @param area address of an initialized struct aml_area pointer, which will be
  * reset to NULL on return from this call.
  **/
 void aml_area_linux_destroy(struct aml_area **area);

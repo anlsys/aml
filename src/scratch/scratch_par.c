@@ -62,7 +62,7 @@ void *aml_scratch_par_do_thread(void *arg)
 	return NULL;
 }
 
-struct aml_scratch_par_ops aml_scratch_par_inner_ops = {
+struct aml_scratch_par_inner_ops aml_scratch_par_inner_ops = {
 	aml_scratch_par_do_thread,
 };
 

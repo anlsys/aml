@@ -64,7 +64,7 @@ void *aml_dma_linux_par_do_thread(void *arg)
 	return NULL;
 }
 
-struct aml_dma_linux_par_ops aml_dma_linux_par_inner_ops = {
+struct aml_dma_linux_par_inner_ops aml_dma_linux_par_inner_ops = {
 	aml_dma_linux_par_do_thread,
 };
 

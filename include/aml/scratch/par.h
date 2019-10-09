@@ -65,7 +65,7 @@ struct aml_scratch_par_data {
 };
 
 /** The set of operation embeded in the parallel scratchpad **/
-struct aml_scratch_par_ops {
+struct aml_scratch_par_inner_ops {
 	/**
 	 * Function to submit asynchronously scratchpad request.
 	 * @param data: Argument of the thread starting the request,
@@ -78,7 +78,7 @@ struct aml_scratch_par_ops {
 /** Parallel implementation of a scratchpad **/
 struct aml_scratch_par {
 	/** Set of operations embeded in the scratchpad **/
-	struct aml_scratch_par_ops ops;
+	struct aml_scratch_par_inner_ops ops;
 	/** Data embeded in the scratchpad **/
 	struct aml_scratch_par_data data;
 };
@@ -89,12 +89,10 @@ struct aml_scratch_par {
  * @param scratch an address where the pointer to the newly allocated scratchpad
  * structure will be stored.
  *
- * @param scratch_area the memory area where the scratchpad will be allocated.
- * @param source_area the memory area containing the user data structure.
  * @param dma the DMA that will be used for migrating data to and from
  * the scratchpad.
- * @param tiling the tiling to use on the user data structure and the scratch.
- * @param nbtiles number of tiles to divide the scratchpad into.
+ * @param src_tiling the tiling to use on the source data structure
+ * @param scratch_tiling the tiling to use on the scratch
  * @param nbreqs the initial number of slots for asynchronous request that
  * are in-flight (will be increased automatically if necessary).
  * @return 0 if successful; an error code otherwise.
@@ -109,5 +107,9 @@ int aml_scratch_par_create(struct aml_scratch **scratch,
  * @param scratch an initialized scratchpad structure. NULL on return.
  */
 void aml_scratch_par_destroy(struct aml_scratch **scratch);
+
+/**
+ * @}
+ **/
 
 #endif // AML_SCRATCH_PAR_H

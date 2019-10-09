@@ -21,7 +21,9 @@
  * on the virtual address space, and a pitch (distance between contiguous
  * elements of the same dimension).
  *
+ * @code
  * #include <aml/layout/dense.h>
+ * @endcode
  * @see aml_layout
  * @{
  **/
@@ -58,17 +60,17 @@ struct aml_layout_dense {
 
 /**
  * Dense layout constructor.
- * @param layout[out]: A pointer where to store a newly allocated layout.
- * @param ptr[in]: The pointer to the data structure described by this layout.
- * @param order[in]: The order in which dimensions are organized.
+ * @param[out] layout: A pointer where to store a newly allocated layout.
+ * @param[in] ptr: The pointer to the data structure described by this layout.
+ * @param[in] order: The order in which dimensions are organized.
  * Can be AML_LAYOUT_ORDER_COLUMN_MAJOR or AML_LAYOUT_ORDER_ROW_MAJOR.
- * @param element_size[in]: The size of each element in layout.
- * @param ndims[in]: The number of dimensions of the layout.
- * @param dims[in]: The number of elements along each dimension of the layout.
- * @param stride[in]: The space between elements (in number of elements),
+ * @param[in] element_size: The size of each element in layout.
+ * @param[in] ndims: The number of dimensions of the layout.
+ * @param[in] dims: The number of elements along each dimension of the layout.
+ * @param[in] stride: The space between elements (in number of elements),
  * along each dimension. If NULL then the stride is set to one for each
  * dimension.
- * @param pitch[in]: The space between consecutive elements of the same
+ * @param[in] pitch: The space between consecutive elements of the same
  * dimension. If NULL, pitch is set to the number of elements in each dimension.
  * @return -AML_ENOMEM if layout allocation failed.
  * @return -AML_EINVAL if layout is NULL.
@@ -86,7 +88,7 @@ int aml_layout_dense_create(struct aml_layout **layout,
 
 /**
  * Function to free a dense layout.
- * @param layout[inout]: The layout to deallocate. NULL on return.
+ * @param[in,out] layout: The layout to deallocate. NULL on return.
  **/
 void aml_layout_dense_destroy(struct aml_layout **layout);
 
@@ -235,5 +237,9 @@ extern struct aml_layout_ops aml_layout_column_ops;
  * with AML_LAYOUT_ORDER_ROW_MAJOR order.
  **/
 extern struct aml_layout_ops aml_layout_row_ops;
+
+/**
+ * @}
+ **/
 
 #endif

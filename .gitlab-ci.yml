@@ -29,6 +29,26 @@ checkpatch:
     - git ls-files *.c *.h | grep -v -e benchmarks >> .checkpatch.conf
     - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl
 
+style:docs:
+  stage: style
+  except:
+    - /^wip.*/
+    - /^WIP.*/
+  tags:
+    - integration
+  script:
+    - |
+      nix-shell "$ARGOPKGS" -A aml-dist --arg aml-src ./. --run bash << EOF
+      ./autogen.sh
+      mkdir build
+      ./configure --prefix=`pwd`/build --enable-docs
+      make install-data
+      EOF
+  artifacts:
+    when: on_failure
+    paths:
+      - config.log
+
 make:generic:
   stage: build
   except:
@@ -93,9 +113,6 @@ make:knl:
 
 readthedocs:
   stage: docs
-  except:
-    - /^wip.*/
-    - /^WIP.*/
   when: on_success
   only:
     - master

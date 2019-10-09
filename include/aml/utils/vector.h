@@ -76,7 +76,7 @@ int aml_vector_getid(struct aml_vector *vector, void *elem);
 int aml_vector_find(const struct aml_vector *vector, int key);
 /**
  * Resizes the vector.  The keys of the newly allocated elements are set to the
- * @param na value.
+ * na value.
  * @param vector: an initialized vector structure.
  * @param newsize: a new vector size.  Only sizes greater than the current one
  *        will be honored; smaller sizes will result in a no-op.

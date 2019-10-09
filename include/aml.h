@@ -451,8 +451,8 @@ struct aml_layout_ops {
 
 /**
  * Dereference an element of a layout by its coordinates.
- * @param layout[in]: An initialized layout.
- * @param coords[in]: The coordinates on which to access data.
+ * @param[in] layout: An initialized layout.
+ * @param[in] coords: The coordinates on which to access data.
  * @return A pointer to the dereferenced element on success.
  * @return NULL on failure with aml_errno set to the error reason:
  * * AML_EINVAL if coordinate are out of bound
@@ -473,7 +473,7 @@ void *aml_layout_deref_safe(const struct aml_layout *layout,
 /**
  * Get the order in which dimensions of the layout are supposed to be
  * accessed by the user.
- * @param layout[in]: An initialized layout.
+ * @param[in] layout: An initialized layout.
  * @return The order (>0) on success, an AML error (<0) on failure.
  * @return On success, a bitmask with order bit set (or not set).
  * Output value can be further checked against order AML_LAYOUT_ORDER
@@ -484,8 +484,8 @@ int aml_layout_order(const struct aml_layout *layout);
 
 /**
  * Return the layout dimensions in the user order.
- * @param layout[in]: An initialized layout.
- * @param dims[out]: A non-NULL array of dimensions to fill. It is
+ * @param[in] layout: An initialized layout.
+ * @param[out] dims: A non-NULL array of dimensions to fill. It is
  * supposed to be large enough to contain aml_layout_ndims() elements.
  * @return AML_SUCCESS on success, else an AML error code.
  **/
@@ -493,14 +493,14 @@ int aml_layout_dims(const struct aml_layout *layout, size_t *dims);
 
 /**
  * Return the number of dimensions in a layout.
- * @param layout[in]: An initialized layout.
+ * @param[in] layout: An initialized layout.
  * @return The number of dimensions in the layout.
  **/
 size_t aml_layout_ndims(const struct aml_layout *layout);
 
 /**
  * @brief Return the size of layout elements.
- * @param layout[in]: An initialized layout.
+ * @param[in] layout: An initialized layout.
  * @return The size of elements stored with this layout.
  **/
 size_t aml_layout_element_size(const struct aml_layout *layout);
@@ -511,11 +511,11 @@ size_t aml_layout_element_size(const struct aml_layout *layout);
  * the reshaped layout matches the number of elements
  * in the original layout. Additional constraint may apply
  * depending on the layout implementation.
- * @param layout[in]: An initialized layout.
- * @param reshaped_layout[out]: A newly allocated layout
+ * @param[in] layout: An initialized layout.
+ * @param[out] reshaped_layout: A newly allocated layout
  * with the queried shape on succes.
- * @param ndims[in]: The number of dimensions of the new layout.
- * @param dims[in]: The number of elements along each dimension of
+ * @param[in] ndims: The number of dimensions of the new layout.
+ * @param[in] dims: The number of elements along each dimension of
  * the new layout.
  * @return AML_SUCCESS on success.
  * @return AML_EINVAL if reshape dimensions are not compatible
@@ -536,15 +536,15 @@ int aml_layout_reshape(const struct aml_layout *layout,
  * This function checks that the number of elements along
  * each dimension of the slice actually fits in the original
  * layout.
- * @param layout[in]: An initialized layout.
- * @param reshaped_layout[out]: a pointer where to store the address of a
+ * @param[in] layout: An initialized layout.
+ * @param[out] reshaped_layout: a pointer where to store the address of a
  * newly allocated layout with the queried subset of the
  * original layout on succes.
- * @param dims[in]: The number of elements of the slice along each
+ * @param[in] dims: The number of elements of the slice along each
  * dimension.
- * @param offsets[in]: The index of the first element of the slice
+ * @param[in] offsets: The index of the first element of the slice
  * in each dimension. If NULL, offset is set to 0.
- * @param strides[in]: The displacement (in number of elements) between
+ * @param[in] strides: The displacement (in number of elements) between
  * elements of the slice. If NULL, stride is set to 1.
  * @return AML_SUCCESS on success, else an AML error code (<0).
  **/
@@ -653,7 +653,7 @@ struct aml_tiling {
 /**
  * Get the order in which dimensions of the tiling are supposed to be
  * accessed by the user.
- * @param tiling[in]: An initialized tiling.
+ * @param[in] tiling: An initialized tiling.
  * @return The order (>0) on success, an AML error (<0) on failure.
  * @return On success, a bitmask with order bit set (or not set).
  * Output value can be further checked against order AML_TILING_ORDER
@@ -664,8 +664,8 @@ int aml_tiling_order(const struct aml_tiling *tiling);
 
 /**
  * Return the tiling dimensions in the user order.
- * @param tiling[in]: An initialized tiling.
- * @param dims[out]: A non-NULL array of dimensions to fill. It is
+ * @param[in] tiling: An initialized tiling.
+ * @param[out] dims: A non-NULL array of dimensions to fill. It is
  * supposed to be large enough to contain aml_tiling_ndims() elements.
  * @return AML_SUCCESS on success, else an AML error code.
  **/
@@ -673,8 +673,8 @@ int aml_tiling_dims(const struct aml_tiling *tiling, size_t *dims);
 
 /**
  * Return the dimensions of a tile in the tiling, in the user order.
- * @param tiling[in]: An initialized tiling.
- * @param dims[out]: A non-NULL array of dimensions to fill. It is
+ * @param[in] tiling: An initialized tiling.
+ * @param[out] dims: A non-NULL array of dimensions to fill. It is
  * supposed to be large enough to contain aml_tiling_ndims() elements.
  * @return AML_SUCCESS on success, else an AML error code.
  **/
@@ -692,7 +692,7 @@ size_t aml_tiling_ndims(const struct aml_tiling *tiling);
  * @param tiling: an initialized tiling structure.
  * @return the number of tiles in the tiling.
  **/
-size_t aml_tiling_ntiles(const struct aml_tiling *t);
+size_t aml_tiling_ntiles(const struct aml_tiling *tiling);
 
 /**
  * Return the tile at specified coordinates in the tiling
@@ -700,7 +700,7 @@ size_t aml_tiling_ntiles(const struct aml_tiling *t);
  * @param coords: the coordinates for the tile
  * @return the tile as a layout on success, NULL on error.
  **/
-struct aml_layout *aml_tiling_index(const struct aml_tiling *t,
+struct aml_layout *aml_tiling_index(const struct aml_tiling *tiling,
 				    const size_t *coords);
 
 /**
@@ -709,7 +709,7 @@ struct aml_layout *aml_tiling_index(const struct aml_tiling *t,
  * @param coords: the coordinates for the tile
  * @return a uuid for the tile.
  */
-int aml_tiling_tileid(const struct aml_tiling *t, const size_t *coords);
+int aml_tiling_tileid(const struct aml_tiling *tiling, const size_t *coords);
 
 /**
  * Return the tile with this identifier
@@ -717,8 +717,8 @@ int aml_tiling_tileid(const struct aml_tiling *t, const size_t *coords);
  * @param uuid: a unique identifier for this tile
  * @return the tiling as a layout on success, NULL on error.
  */
-struct aml_layout *aml_tiling_index_byid(const struct aml_tiling *t, const
-					 int uuid);
+struct aml_layout *aml_tiling_index_byid(const struct aml_tiling *tiling,
+					 const int uuid);
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -850,6 +850,7 @@ struct aml_dma {
  * @param dest: layout describing the destination.
  * @param src: layout describing the source.
  * @param op: optional custom operator for this dma
+ * @param op_arg: optional argument to the operator
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_copy_custom(struct aml_dma *dma, struct aml_layout *dest,
@@ -864,6 +865,7 @@ int aml_dma_copy_custom(struct aml_dma *dma, struct aml_layout *dest,
  * @param dest: layout describing the destination.
  * @param src: layout describing the source.
  * @param op: optional custom operator for this dma
+ * @param op_arg: optional argument to the operator
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_async_copy_custom(struct aml_dma *dma, struct aml_dma_request **req,
@@ -893,9 +895,9 @@ int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request **req);
 
 /**
  * Generic helper to copy from one layout to another.
- * @param dst[out]: destination layout
- * @param src[in]: source layout
- * @param arg: unused
+ * @param[out] dst: destination layout
+ * @param[in] src: source layout
+ * @param[in] arg: unused (should be NULL)
  */
 int aml_copy_layout_generic(struct aml_layout *dst,
 			    const struct aml_layout *src, void *arg);
@@ -1009,11 +1011,10 @@ struct aml_scratch {
 /**
  * Requests a synchronous pull from regular memory to the scratchpad.
  * @param scratch: an initialized scratchpad structure.
- * @param scratchptr: an argument of type void*; the scratchpad base pointer.
+ * @param dest: destination layout (on the scratch)
  * @param scratchid: an argument of type int*; gets filled with the scratch tile
  *        identifier where the data will be pulled into.
- * @param srcptr: an argument of type void*; the start address of the complete
- *             source user data structure.
+ * @param src: the source layout.
  * @param srcid: an argument of type int; the source tile identifier.
  * @see aml_scratch_baseptr()
  * @return 0 if successful; an error code otherwise.
@@ -1028,7 +1029,11 @@ int aml_scratch_pull(struct aml_scratch *scratch,
  * @param scratch: an initialized scratchpad structure.
  * @param req: an address where the pointer to the newly assigned scratch
  *        request will be stored.
- * @param variadic arguments: see aml_scratch_pull().
+ * @param scratch_layout: the layout on the scratch
+ * @param scratchid: an argument of type int*; gets filled with the scratch tile
+ *        identifier where the data will be pulled into.
+ * @param src_layout: the source layout to pull.
+ * @param srcid: an argument of type int; the source tile identifier.
  * @return 0 if successful; an error code otherwise.
  * @see aml_scratch_pull()
  **/
@@ -1039,12 +1044,11 @@ int aml_scratch_async_pull(struct aml_scratch *scratch,
 /**
  * Requests a synchronous push from the scratchpad to regular memory.
  * @param scratch: an initialized scratchpad structure.
- * @param dstptr: an argument of type void*; the start address of the complete
- *        destination user data structure.
- * @param dstid: an argument of type int*; gets filled with the destination tile
- *        identifier where the data will be pushed into (and where it was
- *        pulled from in the first place).
- * @param scratchptr: an argument of type void*; the scratchpad base pointer.
+ * @param dest_layout: the destination layout
+ * @param destid: an argument of type int*; gets filled with the destination
+ * tile identifier where the data will be pushed into (and where it was pulled
+ * from in the first place).
+ * @param scratch_layout: the source layout on the scratch
  * @param scratchid: an argument of type int; the scratchpad tile identifier.
  * @return 0 if successful; an error code otherwise.
  * @see aml_scratch_baseptr()
@@ -1059,7 +1063,12 @@ int aml_scratch_push(struct aml_scratch *scratch,
  * @param scratch: an initialized scratchpad structure.
  * @param req: an address where the pointer to the newly assigned scratch
  *        request will be stored.
- * Variadic arguments: see aml_scratch_push().
+ * @param dest_layout: the destination layout
+ * @param destid: an argument of type int*; gets filled with the destination
+ * tile identifier where the data will be pushed into (and where it was pulled
+ * from in the first place).
+ * @param scratch_layout: the source layout on the scratch
+ * @param scratchid: an argument of type int; the scratchpad tile identifier.
  * @return 0 if successful; an error code otherwise.
  * @see aml_scratch_push()
  **/

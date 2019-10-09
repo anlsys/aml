@@ -61,7 +61,7 @@ struct aml_dma_linux_seq_data {
 };
 
 /** Declaration of available linux sequential dma operations **/
-struct aml_dma_linux_seq_ops {
+struct aml_dma_linux_seq_inner_ops {
 	/**
 	 * Perform a sequential copy between source and destination
 	 * pointers allocated with an aml_area_linux.
@@ -77,7 +77,7 @@ struct aml_dma_linux_seq_ops {
  * Can be passed to generic aml_dma_*() functions.
  **/
 struct aml_dma_linux_seq {
-	struct aml_dma_linux_seq_ops ops;
+	struct aml_dma_linux_seq_inner_ops ops;
 	struct aml_dma_linux_seq_data data;
 };
 
@@ -90,6 +90,7 @@ struct aml_dma_linux_seq {
  * @param nbreqs the initial number of slots for asynchronous requests that are
  * in-flight (will be increased automatically if necessary).
  * @param op: default operator
+ * @param op_arg: default argument to the operator
  *
  * @return 0 if successful; an error code otherwise.
  **/

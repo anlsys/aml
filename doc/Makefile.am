@@ -5,7 +5,7 @@ SPHINX_BUILD_DIR=./build-sphinx
 if BUILD_DOCS
 build-docs:
 	$(DOXYGEN) aml.doxy
-	$(SPHINXBUILD) -b html -a . $(SPHINX_BUILD_DIR)
+	$(SPHINXBUILD) -v -W -b html -a . $(SPHINX_BUILD_DIR)
 
 dist-hook: build-docs
 	cp -r $(SPHINX_BUILD_DIR) $(distdir)

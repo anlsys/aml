@@ -60,7 +60,7 @@ int aml_scratch_seq_doit(struct aml_scratch_seq_data *scratch,
 				  req->dst, req->src);
 }
 
-struct aml_scratch_seq_ops aml_scratch_seq_inner_ops = {
+struct aml_scratch_seq_inner_ops aml_scratch_seq_inner_ops = {
 	aml_scratch_seq_doit,
 };
 

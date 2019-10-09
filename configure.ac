@@ -86,21 +86,23 @@ AC_CHECK_LIB(numa, mbind,,[AC_MSG_ERROR([AML requires libnuma.])])
 # check doxygen + sphinx for documentation build
 ################################################
 
-AC_CHECK_PROG([DOXYGEN], [doxygen], [doxygen], [no])
-AC_CHECK_PROG([SPHINXBUILD], [sphinx-build], [sphinx-build], [no])
-if [[ "x$DOXYGEN" != xno ]]; then
-	if [[ "x$SPHINXBUILD" != xno ]]; then
-		AC_MSG_NOTICE([Doxygen and Sphinx found, documentation will be build])
-		BUILD_DOCS=yes
-	else
-		AC_MSG_NOTICE([Sphinx not found, cannot build documentation])
-		BUILD_DOCS=no
+AC_ARG_ENABLE(docs,
+[AS_HELP_STRING([--enable-docs],
+		[Generate full html documentation (default is no).])],
+[docs=true],[docs=false])
+
+if [[ "x$docs" = xtrue ]]; then
+	AC_CHECK_PROG([DOXYGEN], [doxygen], [doxygen], [no])
+	if [[ "x$DOXYGEN" == xno ]]; then
+		AC_MSG_ERROR([Doxygen not found])
 	fi
-else
-	AC_MSG_NOTICE([Doxygen not found, cannot build documentation])
-	BUILD_DOCS=no
+
+	AC_CHECK_PROG([SPHINXBUILD], [sphinx-build], [sphinx-build], [no])
+	if [[ "x$SPHINXBUILD" == xno ]]; then
+		AC_MSG_ERROR([Sphinx not found])
+	fi
 fi
-AM_CONDITIONAL([BUILD_DOCS],[ test "x$BUILD_DOCS" = xyes ])
+AM_CONDITIONAL([BUILD_DOCS],[ test "x$docs" == xtrue ])
 
 # check nvidia compiler and libraries
 #####################################
