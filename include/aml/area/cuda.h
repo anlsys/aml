@@ -11,7 +11,9 @@
 /**
  * @defgroup aml_area_cuda "AML Cuda Areas"
  * @brief Cuda Implementation of Areas.
+ * @code
  * #include <aml/area/cuda.h>
+ * @endcode
  *
  * Cuda implementation of AML areas.
  * This building block relies on Cuda implementation of

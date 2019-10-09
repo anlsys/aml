@@ -8,5 +8,5 @@ Implementations
 
 .. toctree::
    
-   tiling_1d_api
-   tiling_2d_api
+   tiling_resize_api
+   tiling_pad_api

@@ -59,7 +59,7 @@ struct aml_dma_linux_par_data {
 };
 
 /** Declaration of linux parallel dma operations **/
-struct aml_dma_linux_par_ops {
+struct aml_dma_linux_par_inner_ops {
 	void *(*do_thread)(void *data);
 };
 
@@ -69,7 +69,7 @@ struct aml_dma_linux_par_ops {
  * Can be passed to generic aml_dma_*() functions.
  **/
 struct aml_dma_linux_par {
-	struct aml_dma_linux_par_ops ops;
+	struct aml_dma_linux_par_inner_ops ops;
 	struct aml_dma_linux_par_data data;
 };
 
@@ -80,8 +80,8 @@ struct aml_dma_linux_par {
  * will be stored.
  * @param nbreqs the initial number of slots for asynchronous requests that are
  * in-flight (will be increased automatically if necessary).
- * @param nbthreads the number of threads to launch for each request.
  * @param op: default operator
+ * @param op_arg: default argument to the operator
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs,

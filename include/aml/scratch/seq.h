@@ -57,7 +57,7 @@ struct aml_scratch_seq_data {
 };
 
 /** The set of operation embeded in the sequential scratchpad **/
-struct aml_scratch_seq_ops {
+struct aml_scratch_seq_inner_ops {
 	/**
 	 * Function to submit a scratchpad request.
 	 * @param scratch: The scratchpad used for the request
@@ -70,7 +70,7 @@ struct aml_scratch_seq_ops {
 /** Sequential implementation of a scratchpad **/
 struct aml_scratch_seq {
 	/** Set of operations embeded in the scratchpad **/
-	struct aml_scratch_seq_ops ops;
+	struct aml_scratch_seq_inner_ops ops;
 	/** Data embeded in the scratchpad **/
 	struct aml_scratch_seq_data data;
 };

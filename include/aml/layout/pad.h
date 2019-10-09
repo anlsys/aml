@@ -18,7 +18,9 @@
  * Padded layouts describe layouts that have been padded with neutral elements
  * along one or several of their dimensions.
  *
+ * @code
  * #include <aml/layout/pad.h>
+ * @endcode
  * @see aml_layout
  * @{
  **/
@@ -60,5 +62,9 @@ extern struct aml_layout_ops aml_layout_pad_column_ops;
  * with AML_LAYOUT_ORDER_COLUMN_MAJOR order.
  **/
 extern struct aml_layout_ops aml_layout_pad_row_ops;
+
+/**
+ * @}
+ **/
 
 #endif

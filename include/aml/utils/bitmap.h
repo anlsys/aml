@@ -150,7 +150,7 @@ void aml_bitmap_copy_from_ulong(struct aml_bitmap *bitmap,
 /**
  * Copy a bitmap into an unsigned long array.
  * @param bitmap: The bitmap to copy.
- * @param src: An array of unsigned long storing bits to write.
+ * @param dst: An array of unsigned long storing bits to write.
  *        Bits are copied as is, i.e in the same order.
  * @param size: The maximum number of bits in "src".
  **/

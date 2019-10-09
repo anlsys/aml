@@ -12,7 +12,7 @@
 #define AML_TILING_RESIZE_H 1
 
 /**
- * @defgroup aml_tiling_1d "AML Resizable Tiling"
+ * @defgroup aml_tiling_resize "AML Resizable Tiling"
  * @brief tiling with not homogeneous tiles
  *
  * Implementation of a tiling for which the border tiles have the exact size of
