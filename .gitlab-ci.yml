@@ -17,6 +17,10 @@ repoquality:
     - nix run -f "$ARGOPKGS" repoquality --command repoquality
   tags:
     - integration
+  artifacts:
+    when: on_failure
+    paths:
+      - .repoquality
 
 checkpatch:
   stage: style
