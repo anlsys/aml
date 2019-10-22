@@ -29,7 +29,11 @@ SCRATCH_TESTS = scratch/test_scratch_seq \
 		scratch/test_scratch_par
 
 
-if RUN_CUDA
+if HAVE_CUDA
+
+AM_CFLAGS += $(CUDA_CFLAGS)
+AM_LDFLAGS += $(CUDA_LIBS)
+
 AREA_TESTS += area/test_cuda
 endif
 
