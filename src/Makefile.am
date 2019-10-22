@@ -54,11 +54,13 @@ libaml_la_SOURCES=$(LIB_SOURCES)
 #############################################
 # Cuda sources
 
-if BUILD_CUDA
+if HAVE_CUDA
+
+AM_CPPFLAGS += $(CUDA_CFLAGS)
+AM_LDFLAGS += $(CUDA_LIBS)
 
 # Build .c sources using cuda runtime library.
 libaml_la_SOURCES+=area/cuda.c
-libaml_la_LDFLAGS+=-lcudart
 
 # Build .cu sources containing device code.
 #

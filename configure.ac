@@ -104,46 +104,80 @@ if [[ "x$docs" = xtrue ]]; then
 fi
 AM_CONDITIONAL([BUILD_DOCS],[ test "x$docs" == xtrue ])
 
-# check nvidia compiler and libraries
+# check CUDA compiler and libraries
 #####################################
 
-BUILD_CUDA=no
-AC_DEFINE([HAVE_CUDA], [0], [Whether aml support cuda library calls.])
-AC_DEFINE([RUN_CUDA], [0], [Whether the machine on which aml is compiled can run cuda code.])
+AC_ARG_WITH([cuda],
+	[AS_HELP_STRING([--with-cuda@<:@=yes|no|DIR@:>@],
+		[support cuda inside the library (default is check)])],
+	[
+	if [[ "x$withval" = xno ]]; then
+		want_cuda="no"
+	elif [[ "x$withval" = xyes ]]; then
+		want_cuda="yes"
+		cuda_home_path="$CUDA_HOME"
+	else
+		want_cuda="yes"
+		cuda_home_path=$withval
+	fi
+	],
+	[
+		want_cuda="check"
+		cuda_home_path="$CUDA_HOME"
+	])
 
-# Check compilation features
-AC_CHECK_PROG([NVCC], [nvcc], [nvcc], [no])
-AC_CHECK_LIB(cudart, cudaMalloc, [CUDART=yes], [CUDART=no])
-AC_CHECK_HEADERS([cuda.h], [CUDA_H=yes], [CUDA_H=no])
-AC_CHECK_HEADERS([cuda_runtime.h], [CUDA_RUNTIME_H=yes], [CUDA_RUNTIME_H=no])
+if [[ "x$want_cuda" != xno ]]; then
 
-if [[ "x$NVCC"                != xno ]] && \
-   [[ "x$CUDART"              = xyes ]] && \
-   [[ "x$CUDA_H"              = xyes ]] && \
-   [[ "x$CUDA_RUNTIME_H"      = xyes ]]
-then
-   BUILD_CUDA=yes
-   AC_DEFINE([HAVE_CUDA], [1], [Whether aml support cuda library calls.])
+	AC_MSG_NOTICE([starting checks for CUDA])
+	if [[ -n "$cuda_home_path" ]]; then
+		nvcc_search_dirs="$PATH$PATH_SEPARATOR$cuda_home_path/bin"
+	else
+		nvcc_search_dirs="$PATH"
+	fi
+
+	AC_PATH_PROG([NVCC], [nvcc], [], [$nvcc_search_dirs])
+	if [[ -n "$NVCC" ]]; then
+		have_nvcc="yes"
+	fi
+else
+	AC_MSG_NOTICE([will not check for CUDA])
 fi
 
-AM_CONDITIONAL([BUILD_CUDA],[ test "x$BUILD_CUDA" = xyes ])
+if [[ "x$have_nvcc" = xyes ]]; then
 
-# Check runtime features
-if [[ "x$BUILD_CUDA" = xyes ]]; then
-   LIBS="$LIBS -lcudart"
-   RUN_CUDA=no
-   AC_MSG_CHECKING([that cudart code runs without error])
-   AC_RUN_IFELSE(
-       [AC_LANG_PROGRAM([[
-#include <cuda.h>
-#include <cuda_runtime.h>]],
-	 [int device; return cudaGetDevice(&device) == cudaSuccess ? 0 : 1;])],
-	 [AC_DEFINE([RUN_CUDA], [1], [Whether the machine on which aml is compiled can run cuda code.])
-         RUN_CUDA=yes],[])
-   AC_MSG_RESULT($RUN_CUDA)
+	if [[ -n "$cuda_home_path" ]]; then
+		CUDA_CFLAGS="-I$cuda_home_path/include"
+		CUDA_LIBS="-L$cuda_home_path/lib64 -lcudart"
+	else
+		CUDA_CFLAGS="-I/usr/local/cuda/include"
+		CUDA_LIBS="-L/usr/local/cuda/lib64 -lcudart"
+	fi
+	saved_LIBS=$LIBS
+	saved_CFLAGS=$CFLAGS
+	LIBS="$LIBS $CUDA_LIBS"
+	CFLAGS="$CFLAGS $CUDA_CFLAGS"
+	AC_CHECK_HEADER([cuda.h],,
+			[AC_MSG_ERROR([could not find cuda.h])])
+	AC_CHECK_HEADER([cuda_runtime.h],,
+			[AC_MSG_ERROR([could not find cuda_runtime.h])])
+	AC_CHECK_LIB(cudart, cudaMalloc,,
+		     AC_MSG_ERROR([could not find cudart library]))
+	LIBS=$saved_LIBS
+	CFLAGS=$saved_CFLAGS
 fi
 
-AM_CONDITIONAL([RUN_CUDA],[ test "x$RUN_CUDA" = xyes ])
+if [[ "x$have_nvcc" = xyes ]]; then
+	# we only get there if every test worked
+	AC_DEFINE([HAVE_CUDA], [1], [Whether aml support cuda library calls.])
+	have_cuda="yes"
+else
+	have_cuda="no"
+fi
+
+AM_CONDITIONAL([HAVE_CUDA], [ test "x$have_cuda" = xyes ])
+AC_SUBST(CUDA_CFLAGS)
+AC_SUBST(CUDA_LIBS)
+AC_SUBST(NVCC)
 
 # Output
 ########
@@ -156,7 +190,7 @@ AC_CONFIG_FILES([Makefile
 		 tests/Makefile
 		 doc/Makefile
 		 benchmarks/Makefile
-		 o2lo
 		 aml.pc
-		 include/aml/utils/version.h], [chmod +x o2lo])
+		 include/aml/utils/version.h])
+AC_CONFIG_FILES([o2lo], [chmod +x o2lo])
 AC_OUTPUT
