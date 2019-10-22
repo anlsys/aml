@@ -1,0 +1,67 @@
+variables:
+  NMC_FE1_SLURM_PARAMETERS: "--nodes=1 --partition=ecp-p9-4v100"
+
+stages:
+  - build
+
+nmc:batch:env:
+  stage: build
+  tags:
+    - nmc
+  only:
+    - master
+    - staging
+  script:
+    - uname -a
+    - module avail
+    - lspci
+    - module load hwloc numactl cuda
+    - module avail
+    - lstopo
+    - env
+    - which gcc
+    - gcc --version
+    - compgen -c gcc
+
+make:nmc-cuda-check:
+  stage: build
+  variables:
+  tags:
+    - nmc
+  only:
+    - master
+    - staging
+  script:
+    - module load numactl hwloc cuda
+    - env | grep -i cuda
+    - cat /proc/self/status
+    - ./autogen.sh
+    - ./configure
+    - make -j
+    - make check VERBOSE=1
+  artifacts:
+    when: on_failure
+    paths:
+      - tests/test-suite.log
+      - config.log
+
+make:nmc-cuda-home:
+  stage: build
+  variables:
+  tags:
+    - nmc
+  only:
+    - master
+    - staging
+  script:
+    - module load numactl hwloc cuda
+    - env | grep -i cuda
+    - ./autogen.sh
+    - ./configure --with-cuda=$CUDA_HOME
+    - make -j
+    - make check VERBOSE=1
+  artifacts:
+    when: on_failure
+    paths:
+      - tests/test-suite.log
+      - config.log
