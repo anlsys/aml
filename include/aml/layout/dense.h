@@ -32,6 +32,10 @@
  * Structure of a dense layout.
  **/
 struct aml_layout_dense {
+	/** base pointer of the address range **/
+	void *ptr;
+	/** number of dimensions **/
+	size_t ndims;
 	/**
 	 * dimensions, in element size, of the data structure,
 	 * by order of appearance in memory.
@@ -43,19 +47,10 @@ struct aml_layout_dense {
 	 **/
 	size_t *stride;
 	/**
-	 * distances between two elements of the next dimension
-	 * (or total dimension of the layout in this dimension).
-	 **/
-	size_t *pitch;
-	/**
 	 * cumulative distances between two elements in the same
 	 * dimension (pitch[0] is the element size in bytes).
 	 **/
 	size_t *cpitch;
-	/** base pointer of the address range **/
-	void *ptr;
-	/** number of dimensions **/
-	size_t ndims;
 };
 
 /**
