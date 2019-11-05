@@ -498,8 +498,7 @@ void test_base(void)
 
 	/* padd the dims to the closest multiple of 2 */
 	float memory[16][12][8][8][4];
-	size_t pitch[5] = {4, 8, 8, 12, 16};
-	size_t cpitch[6] = {4, 4*4, 4*4*8, 4*4*8*8, 4*4*8*8*12, 4*4*8*8*12*16};
+	size_t cpitch[5] = {4, 4*4, 4*4*8, 4*4*8*8, 4*4*8*8*12};
 	size_t dims[5] = {2, 3, 7, 11, 13};
 	size_t stride[5] = {1, 2, 1, 1, 1};
 
@@ -582,22 +581,14 @@ void test_base(void)
 
 	adataptr = (struct aml_layout_dense *)a->data;
 	bdataptr = (struct aml_layout_dense *)b->data;
-	assert((intptr_t)(adataptr->stride) - (intptr_t)(adataptr->dims)
-		== 5*sizeof(size_t));
-	assert((intptr_t)(adataptr->pitch) - (intptr_t)(adataptr->dims)
-		== 10*sizeof(size_t));
-	assert((intptr_t)(adataptr->cpitch) - (intptr_t)(adataptr->dims)
-		== 15*sizeof(size_t));
 
 	/* some simple checks */
 	assert(!memcmp(adataptr->dims, dims, sizeof(size_t)*5));
 	assert(!memcmp(adataptr->stride, stride, sizeof(size_t)*5));
-	assert(!memcmp(adataptr->pitch, pitch, sizeof(size_t)*5));
-	assert(!memcmp(adataptr->cpitch, cpitch, sizeof(size_t)*6));
+	assert(!memcmp(adataptr->cpitch, cpitch, sizeof(size_t)*5));
 	assert(!memcmp(bdataptr->dims, dims, sizeof(size_t)*5));
 	assert(!memcmp(bdataptr->stride, stride, sizeof(size_t)*5));
-	assert(!memcmp(bdataptr->pitch, pitch, sizeof(size_t)*5));
-	assert(!memcmp(bdataptr->cpitch, cpitch, sizeof(size_t)*6));
+	assert(!memcmp(bdataptr->cpitch, cpitch, sizeof(size_t)*5));
 
 	/* test column major subroutines */
 	size_t dims_res[5];
@@ -640,22 +631,14 @@ void test_base(void)
 
 	adataptr = (struct aml_layout_dense *)a->data;
 	bdataptr = (struct aml_layout_dense *)b->data;
-	assert((intptr_t)(adataptr->stride) - (intptr_t)(adataptr->dims)
-	       == 5*sizeof(size_t));
-	assert((intptr_t)(adataptr->pitch) - (intptr_t)(adataptr->dims)
-	       == 10*sizeof(size_t));
-	assert((intptr_t)(adataptr->cpitch) - (intptr_t)(adataptr->dims)
-	       == 15*sizeof(size_t));
 
 	/* some simple checks */
 	assert(!memcmp(adataptr->dims, dims, sizeof(size_t)*5));
 	assert(!memcmp(adataptr->stride, stride, sizeof(size_t)*5));
-	assert(!memcmp(adataptr->pitch, pitch, sizeof(size_t)*5));
-	assert(!memcmp(adataptr->cpitch, cpitch, sizeof(size_t)*6));
+	assert(!memcmp(adataptr->cpitch, cpitch, sizeof(size_t)*5));
 	assert(!memcmp(bdataptr->dims, dims, sizeof(size_t)*5));
 	assert(!memcmp(bdataptr->stride, stride, sizeof(size_t)*5));
-	assert(!memcmp(bdataptr->pitch, pitch, sizeof(size_t)*5));
-	assert(!memcmp(bdataptr->cpitch, cpitch, sizeof(size_t)*6));
+	assert(!memcmp(bdataptr->cpitch, cpitch, sizeof(size_t)*5));
 
 	/* test row major subroutines */
 	size_t coords_test_row[5] = { 5, 4, 3, 2, 1 };
