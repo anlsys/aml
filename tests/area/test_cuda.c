@@ -10,6 +10,7 @@
 #include "aml.h"
 #include "config.h"
 #include "aml/area/cuda.h"
+#include "aml/utils/features.h"
 #include <stdlib.h>
 #include <string.h>
 #include <cuda.h>
@@ -208,6 +209,9 @@ int main(void)
 	int has_unified_mem;
 	int has_register_ptr;
 	int current_device;
+
+	if (!aml_support_backends(AML_BACKEND_CUDA))
+		return 77;
 
 	assert(cudaGetDeviceCount(&num_devices) == cudaSuccess);
 	assert(cudaGetDevice(&current_device) == cudaSuccess);

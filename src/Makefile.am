@@ -34,7 +34,8 @@ TILING_SOURCES = \
 UTILS_SOURCES = \
 		utils/bitmap.c \
 		utils/error.c \
-		utils/vector.c
+		utils/vector.c \
+		utils/features.c
 
 LIB_SOURCES = \
 	      $(AREA_SOURCES) \

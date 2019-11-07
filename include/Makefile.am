@@ -34,5 +34,6 @@ include_amlutils_HEADERS = \
 			   aml/utils/error.h \
 			   aml/utils/inner-malloc.h \
 			   aml/utils/vector.h \
-			   aml/utils/version.h
+			   aml/utils/version.h \
+			   aml/utils/features.h
 
