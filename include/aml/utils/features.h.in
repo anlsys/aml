@@ -1,0 +1,53 @@
+/*******************************************************************************
+ * Copyright 2019 UChicago Argonne, LLC.
+ * (c.f. AUTHORS, LICENSE)
+ *
+ * This file is part of the AML project.
+ * For more info, see https://xgitlab.cels.anl.gov/argo/aml
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+*******************************************************************************/
+
+#ifndef AML_FEATURES_H
+#define AML_FEATURES_H
+
+/**
+ * @defgroup aml_features "AML Features Detection API"
+ * @brief AML Features Detection API
+ *
+ * This module provides the compile time and runtime detection of backends
+ * used in AML.
+ * This feature is usefull for instance when testing AML. When AML is compiled
+ * with cuda backend support but runs on a machine without cuda devices, we can
+ * disable cuda tests.
+ * @{
+ **/
+
+/** Whether aml had libnuma at compile time. (always true) **/
+#define AML_HAVE_BACKEND_LIBNUMA 1
+/** Whether aml had cuda capabilities at compile time **/
+#define AML_HAVE_BACKEND_CUDA @HAVE_CUDA@
+
+/** Flag for checking runtime suport for libnuma **/
+#define AML_BACKEND_LIBNUMA (1UL<<1)
+/** Flag for checking runtime suport for cuda **/
+#define AML_BACKEND_CUDA (1UL<<2)
+
+/**
+ * Check if a set of backends can be used at runtime.
+ *
+ * Checking for cuda and libnuma support at runtime:
+ * ```
+ * if (aml_support_backend(AML_BACKEND_LIBNUMA_FLAG | AML_BACKEND_CUDA_FLAG)
+ * { ... }
+ * ```
+ * @param[in] backends: The backend to check.
+ * @return 1 if the backend works, else 0.
+ **/
+int aml_support_backends(const unsigned long backends);
+
+/**
+ * @}
+ **/
+
+#endif // AML_FEATURES_H

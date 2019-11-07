@@ -107,6 +107,8 @@ AM_CONDITIONAL([BUILD_DOCS],[ test "x$docs" == xtrue ])
 # check CUDA compiler and libraries
 #####################################
 
+have_cuda=0
+
 AC_ARG_WITH([cuda],
 	[AS_HELP_STRING([--with-cuda@<:@=yes|no|DIR@:>@],
 		[support cuda inside the library (default is check)])],
@@ -164,17 +166,12 @@ if [[ "x$have_nvcc" = xyes ]]; then
 		     AC_MSG_ERROR([could not find cudart library]))
 	LIBS=$saved_LIBS
 	CFLAGS=$saved_CFLAGS
+	have_cuda=1
 fi
 
-if [[ "x$have_nvcc" = xyes ]]; then
-	# we only get there if every test worked
-	AC_DEFINE([HAVE_CUDA], [1], [Whether aml support cuda library calls.])
-	have_cuda="yes"
-else
-	have_cuda="no"
-fi
-
-AM_CONDITIONAL([HAVE_CUDA], [ test "x$have_cuda" = xyes ])
+AC_DEFINE_UNQUOTED([HAVE_CUDA], [$have_cuda], [Whether aml support cuda library calls.])
+AC_SUBST([HAVE_CUDA],[$have_cuda])
+AM_CONDITIONAL([HAVE_CUDA], [ test "$have_cuda" == "1" ])
 AC_SUBST(CUDA_CFLAGS)
 AC_SUBST(CUDA_LIBS)
 AC_SUBST(NVCC)
@@ -191,6 +188,7 @@ AC_CONFIG_FILES([Makefile
 		 doc/Makefile
 		 benchmarks/Makefile
 		 aml.pc
-		 include/aml/utils/version.h])
+		 include/aml/utils/version.h
+		 include/aml/utils/features.h])
 AC_CONFIG_FILES([o2lo], [chmod +x o2lo])
 AC_OUTPUT
