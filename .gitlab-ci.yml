@@ -16,7 +16,8 @@ repoquality:
     - git ls-files *.c *.h | grep -v -e benchmarks > .repoquality
     - nix run -f "$ARGOPKGS" repoquality --command repoquality
   tags:
-    - integration
+    - nix
+    - kvm
   artifacts:
     when: on_failure
     paths:
@@ -28,7 +29,8 @@ checkpatch:
     - /^wip.*/
     - /^WIP.*/
   tags:
-    - integration
+    - nix
+    - kvm
   script:
     - git ls-files *.c *.h | grep -v -e benchmarks >> .checkpatch.conf
     - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl
@@ -39,7 +41,8 @@ style:docs:
     - /^wip.*/
     - /^WIP.*/
   tags:
-    - integration
+    - nix
+    - kvm
   script:
     - |
       nix-shell "$ARGOPKGS" -A aml-dist --arg aml-src ./. --run bash << EOF
@@ -54,6 +57,8 @@ style:docs:
       - config.log
 
 make:generic:
+  tags:
+    - knl
   stage: build
   except:
     - /^wip.*/
@@ -74,6 +79,8 @@ make:generic:
       - tests/*.log
 
 make:out-of-tree:
+  tags:
+    - knl
   stage: build
   except:
     - /^wip.*/
@@ -123,7 +130,8 @@ readthedocs:
     - master
     - /v[0-9]+\.[0-9]+\.x/
   tags:
-    - integration
+    - nix
+    - kvm
   environment:
     name: rtd/$CI_COMMIT_REF_NAME
     url: https://argo-aml.readthedocs.io/en/$CI_COMMIT_REF_NAME
