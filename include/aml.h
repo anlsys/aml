@@ -379,8 +379,8 @@ struct aml_layout_ops {
 	 **/
 	int (*slice)(const struct aml_layout_data *data,
 		     struct aml_layout **output,
-		     const size_t *dims,
 		     const size_t *offsets,
+		     const size_t *dims,
 		     const size_t *strides);
 
 	/**
@@ -403,8 +403,8 @@ struct aml_layout_ops {
 	 **/
 	int (*slice_native)(const struct aml_layout_data *data,
 			    struct aml_layout **output,
-			    const size_t *dims,
 			    const size_t *offsets,
+			    const size_t *dims,
 			    const size_t *strides);
 };
 
@@ -551,8 +551,8 @@ int aml_layout_reshape(const struct aml_layout *layout,
  **/
 int aml_layout_slice(const struct aml_layout *layout,
 		     struct aml_layout **reshaped_layout,
-		     const size_t *dims,
 		     const size_t *offsets,
+		     const size_t *dims,
 		     const size_t *strides);
 
 ////////////////////////////////////////////////////////////////////////////////
