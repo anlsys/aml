@@ -275,8 +275,8 @@ int aml_layout_slice_native(const struct aml_layout *layout,
 
 	assert(aml_check_layout_slice(layout,
 				      layout->ops->dims_native,
-				      dims,
 				      offsets,
+				      dims,
 				      strides) == AML_SUCCESS);
 
 	err = layout->ops->slice_native(layout->data,
