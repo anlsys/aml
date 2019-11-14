@@ -18,9 +18,10 @@ static int aml_layout_dense_alloc(struct aml_layout **ret,
 	struct aml_layout *layout;
 	struct aml_layout_dense *data;
 
+	assert(sizeof(size_t) == sizeof(ssize_t));
 	layout = AML_INNER_MALLOC_EXTRA(struct aml_layout,
 					struct aml_layout_dense,
-					size_t, 3*ndims);
+					size_t, 4*ndims);
 	if (layout == NULL) {
 		*ret = NULL;
 		return -AML_ENOMEM;
@@ -33,22 +34,27 @@ static int aml_layout_dense_alloc(struct aml_layout **ret,
 
 	data->ptr = NULL;
 	data->ndims = ndims;
+	data->bases = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
+						      struct aml_layout,
+						      struct aml_layout_dense,
+						      size_t, 0);
 
 	data->dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
 						    struct aml_layout,
 						    struct aml_layout_dense,
-						    size_t, 0);
+						    size_t, ndims);
+
 	data->stride = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
 						      struct aml_layout,
 						      struct aml_layout_dense,
-						      size_t, ndims);
+						      size_t, ndims*2);
 	for (size_t i = 0; i < ndims; i++)
 		data->stride[i] = 1;
 
 	data->cpitch = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
 						      struct aml_layout,
 						      struct aml_layout_dense,
-						      size_t, ndims*2);
+						      size_t, ndims*3);
 	*ret = layout;
 	return AML_SUCCESS;
 }
@@ -64,6 +70,7 @@ void aml_layout_dense_init_cpitch(struct aml_layout *layout,
 	struct aml_layout_dense *data =
 		(struct aml_layout_dense *)layout->data;
 	data->ptr = ptr;
+	memset(data->bases, 0, ndims * sizeof(ssize_t));
 	memcpy(data->dims, dims, ndims * sizeof(size_t));
 	memcpy(data->stride, stride, ndims * sizeof(size_t));
 	memcpy(data->cpitch, cpitch, ndims * sizeof(size_t));
@@ -76,7 +83,8 @@ int aml_layout_dense_create(struct aml_layout **layout,
 			    const size_t ndims,
 			    const size_t *dims,
 			    const size_t *stride,
-			    const size_t *pitch)
+			    const size_t *pitch,
+			    const ssize_t *bases)
 {
 
 	struct aml_layout *l;
@@ -108,6 +116,10 @@ int aml_layout_dense_create(struct aml_layout **layout,
 				_pitch[i] = pitch[ndims-i-1];
 			else
 				_pitch[i] = dims[ndims-i-1];
+			if (bases)
+				data->bases[i] = bases[i];
+			else
+				data->bases[i] = 0;
 		}
 		break;
 
@@ -120,6 +132,10 @@ int aml_layout_dense_create(struct aml_layout **layout,
 			memcpy(_pitch, pitch, ndims * sizeof(size_t));
 		else
 			memcpy(_pitch, dims, ndims * sizeof(size_t));
+		if (bases)
+			memcpy(data->bases, bases, ndims * sizeof(ssize_t));
+		else
+			memset(data->bases, 0, ndims * sizeof(ssize_t));
 		break;
 	default:
 		free(l);
@@ -146,7 +162,20 @@ void aml_layout_dense_destroy(struct aml_layout **l)
  ******************************************************************************/
 
 void *aml_layout_column_deref(const struct aml_layout_data *data,
-			      const size_t *coords)
+			      const ssize_t *coords)
+{
+	char *ptr;
+	const struct aml_layout_dense *d;
+
+	d = (const struct aml_layout_dense *) data;
+	ptr = (char *) d->ptr;
+	for (size_t i = 0; i < d->ndims; i++)
+		ptr += (coords[i]-d->bases[i])*d->cpitch[i]*d->stride[i];
+	return (void *)ptr;
+}
+
+void *aml_layout_column_deref_nobase(const struct aml_layout_data *data,
+				      const ssize_t *coords)
 {
 	char *ptr;
 	const struct aml_layout_dense *d;
@@ -162,6 +191,18 @@ int aml_layout_column_order(const struct aml_layout_data *data)
 {
 	(void)data;
 	return AML_LAYOUT_ORDER_COLUMN_MAJOR;
+}
+
+int aml_layout_column_bases(const struct aml_layout_data *data,
+			     ssize_t *bases)
+{
+	const struct aml_layout_dense *d;
+
+	d = (const struct aml_layout_dense *) data;
+	assert(d != NULL);
+	assert(bases != NULL);
+	memcpy((void *)bases, (void *)d->bases, sizeof(ssize_t)*d->ndims);
+	return 0;
 }
 
 int aml_layout_column_dims(const struct aml_layout_data *data, size_t *dims)
@@ -190,6 +231,16 @@ size_t aml_layout_dense_element_size(const struct aml_layout_data *data)
 	d = (const struct aml_layout_dense *)data;
 	// element size is the pitch along the 1st dim.
 	return d->cpitch[0];
+}
+
+int aml_layout_column_shift(const struct aml_layout_data *data,
+			    const ssize_t *shifts)
+{
+	const struct aml_layout_dense *d;
+	d = (const struct aml_layout_dense *)data;
+	for(size_t i = 0; i < d->ndims; i++)
+		d->bases[i] += shifts[i];
+	return AML_SUCCESS;
 }
 
 
@@ -333,7 +384,7 @@ int aml_layout_column_reshape(const struct aml_layout_data *data,
 
 int aml_layout_column_slice(const struct aml_layout_data *data,
 			    struct aml_layout **output,
-			    const size_t *offsets,
+			    const ssize_t *offsets,
 			    const size_t *dims,
 			    const size_t *strides)
 {
@@ -372,11 +423,16 @@ int aml_layout_column_slice(const struct aml_layout_data *data,
 struct aml_layout_ops aml_layout_column_ops = {
 	aml_layout_column_deref,
 	aml_layout_column_deref,
+	aml_layout_column_deref_nobase,
 	aml_layout_column_order,
+	aml_layout_column_bases,
+	aml_layout_column_bases,
 	aml_layout_column_dims,
 	aml_layout_column_dims,
 	aml_layout_dense_ndims,
 	aml_layout_dense_element_size,
+	aml_layout_column_shift,
+	aml_layout_column_shift,
 	aml_layout_column_reshape,
 	aml_layout_column_slice,
 	aml_layout_column_slice,
@@ -387,7 +443,7 @@ struct aml_layout_ops aml_layout_column_ops = {
  ******************************************************************************/
 
 void *aml_layout_row_deref(const struct aml_layout_data *data,
-			   const size_t *coords)
+			   const ssize_t *coords)
 {
 	const struct aml_layout_dense *d;
 	char *ptr;
@@ -396,8 +452,7 @@ void *aml_layout_row_deref(const struct aml_layout_data *data,
 	ptr = (char *) d->ptr;
 
 	for (size_t i = 0; i < d->ndims; i++) {
-		ptr +=
-			coords[i] *
+		ptr += (coords[i]-d->bases[d->ndims - i - 1]) *
 			d->cpitch[d->ndims - i - 1] *
 			d->stride[d->ndims - i - 1];
 	}
@@ -410,6 +465,17 @@ int aml_layout_row_order(const struct aml_layout_data *data)
 	return AML_LAYOUT_ORDER_ROW_MAJOR;
 }
 
+int aml_layout_row_bases(const struct aml_layout_data *data,
+			     ssize_t *bases)
+{
+	const struct aml_layout_dense *d;
+
+	d = (const struct aml_layout_dense *) data;
+	for (size_t i = 0; i < d->ndims; i++)
+		bases[i] = d->bases[d->ndims - i - 1];
+	return 0;
+}
+
 int aml_layout_row_dims(const struct aml_layout_data *data, size_t *dims)
 {
 	const struct aml_layout_dense *d;
@@ -418,6 +484,16 @@ int aml_layout_row_dims(const struct aml_layout_data *data, size_t *dims)
 	for (size_t i = 0; i < d->ndims; i++)
 		dims[i] = d->dims[d->ndims - i - 1];
 	return 0;
+}
+
+int aml_layout_row_shift(const struct aml_layout_data *data,
+			 const ssize_t *shifts)
+{
+	const struct aml_layout_dense *d;
+	d = (const struct aml_layout_dense *)data;
+	for(size_t i = 0; i < d->ndims; i++)
+		d->bases[i] = d->bases[i] + shifts[d->ndims - i - 1];
+	return AML_SUCCESS;
 }
 
 int aml_layout_row_reshape(const struct aml_layout_data *data,
@@ -461,7 +537,7 @@ int aml_layout_row_reshape(const struct aml_layout_data *data,
 
 int aml_layout_row_slice(const struct aml_layout_data *data,
 			 struct aml_layout **output,
-			 const size_t *offsets,
+			 const ssize_t *offsets,
 			 const size_t *dims,
 			 const size_t *strides)
 {
@@ -472,8 +548,8 @@ int aml_layout_row_slice(const struct aml_layout_data *data,
 
 	d = (const struct aml_layout_dense *)data;
 
-	size_t cpitch[d->ndims];
-	size_t n_offsets[d->ndims];
+	size_t cpitch[d->ndims + 1];
+	ssize_t n_offsets[d->ndims];
 	size_t n_dims[d->ndims];
 	size_t n_strides[d->ndims];
 
@@ -507,7 +583,7 @@ int aml_layout_row_slice(const struct aml_layout_data *data,
 
 int aml_layout_row_slice_native(const struct aml_layout_data *data,
 				struct aml_layout **output,
-				const size_t *offsets,
+				const ssize_t *offsets,
 				const size_t *dims,
 				const size_t *strides)
 {
@@ -546,11 +622,16 @@ int aml_layout_row_slice_native(const struct aml_layout_data *data,
 struct aml_layout_ops aml_layout_row_ops = {
 	aml_layout_row_deref,
 	aml_layout_column_deref,
+	aml_layout_column_deref_nobase,
 	aml_layout_row_order,
+	aml_layout_row_bases,
+	aml_layout_column_bases,
 	aml_layout_row_dims,
 	aml_layout_column_dims,
 	aml_layout_dense_ndims,
 	aml_layout_dense_element_size,
+	aml_layout_row_shift,
+	aml_layout_column_shift,
 	aml_layout_row_reshape,
 	aml_layout_row_slice,
 	aml_layout_row_slice_native

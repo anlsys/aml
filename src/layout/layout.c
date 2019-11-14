@@ -11,26 +11,30 @@
 #include "aml.h"
 
 static int
-aml_check_layout_coords(const struct aml_layout *layout,
-			int (*get_dims)(const struct aml_layout_data *,
-					size_t *), const size_t *coords)
+aml_check_layout_coords(const struct aml_layout *layout, const ssize_t *coords)
 {
 	size_t ndims = layout->ops->ndims(layout->data);
 	size_t dims[ndims];
+	ssize_t bases[ndims];
 	int err = AML_SUCCESS;
 
-	err = get_dims(layout->data, dims);
+	err = layout->ops->dims(layout->data, dims);
+	if (err != AML_SUCCESS)
+		return err;
+	err = layout->ops->bases(layout->data, bases);
 	if (err != AML_SUCCESS)
 		return err;
 
-	while (ndims--)
-		if (coords[ndims] >= dims[ndims])
+	for(size_t i = 0; i < ndims; i++) {
+		ssize_t max = bases[i] + dims[i];
+		if (coords[i] < bases[i] || coords[i] >= max)
 			return -AML_EINVAL;
+	}
 
 	return AML_SUCCESS;
 }
 
-void *aml_layout_deref(const struct aml_layout *layout, const size_t *coords)
+void *aml_layout_deref(const struct aml_layout *layout, const ssize_t *coords)
 {
 	assert(layout != NULL &&
 	       layout->ops != NULL &&
@@ -40,23 +44,22 @@ void *aml_layout_deref(const struct aml_layout *layout, const size_t *coords)
 }
 
 void *aml_layout_deref_safe(const struct aml_layout *layout,
-			    const size_t *coords)
+			    const ssize_t *coords)
 {
 	assert(layout != NULL &&
 	       layout->ops != NULL &&
 	       layout->ops->deref != NULL &&
 	       layout->ops->ndims != NULL &&
+	       layout->ops->bases != NULL &&
 	       layout->ops->dims != NULL);
 
-	assert(aml_check_layout_coords(layout,
-				       layout->ops->dims,
-				       coords) == AML_SUCCESS);
+	assert(aml_check_layout_coords(layout, coords) == AML_SUCCESS);
 
 	return layout->ops->deref(layout->data, coords);
 }
 
 void *aml_layout_deref_native(const struct aml_layout *layout,
-			      const size_t *coords)
+			      const ssize_t *coords)
 {
 	assert(layout != NULL &&
 	       layout->ops != NULL &&
@@ -67,6 +70,18 @@ void *aml_layout_deref_native(const struct aml_layout *layout,
 	return layout->ops->deref_native(layout->data, coords);
 }
 
+void *aml_layout_deref_nobase_native(const struct aml_layout *layout,
+			      const ssize_t *coords)
+{
+	assert(layout != NULL &&
+	       layout->ops != NULL &&
+	       layout->ops->deref_native != NULL &&
+	       layout->ops->ndims != NULL &&
+	       layout->ops->dims_native != NULL);
+
+	return layout->ops->deref_nobase_native(layout->data, coords);
+}
+
 int aml_layout_order(const struct aml_layout *layout)
 {
 	assert(layout != NULL &&
@@ -74,6 +89,24 @@ int aml_layout_order(const struct aml_layout *layout)
 	       layout->ops->order != NULL);
 
 	return layout->ops->order(layout->data);
+}
+
+int aml_layout_bases(const struct aml_layout *layout, ssize_t *bases)
+{
+	assert(layout != NULL &&
+	       layout->ops != NULL &&
+	       layout->ops->bases != NULL);
+
+	return layout->ops->bases(layout->data, bases);
+}
+
+int aml_layout_bases_native(const struct aml_layout *layout, ssize_t *bases)
+{
+	assert(layout != NULL &&
+	       layout->ops != NULL &&
+	       layout->ops->bases_native != NULL);
+
+	return layout->ops->bases_native(layout->data, bases);
 }
 
 int aml_layout_dims(const struct aml_layout *layout, size_t *dims)
@@ -165,63 +198,57 @@ int aml_layout_reshape(const struct aml_layout *layout,
 	return err;
 }
 
-/**
- * This function will collect the layout dimensions and check that
- * the slice queried will fit into the layout.
- **/
+/* Checks that the offsets don't make the slice overflow out of the layout */
 static int
-aml_check_layout_slice(const struct aml_layout *layout,
-		       int (*get_dims)(const struct aml_layout_data *,
-				       size_t *),
-		       const size_t *offsets,
-		       const size_t *dims,
-		       const size_t *strides)
+aml_check_layout_slice(const size_t ndims, const size_t *src_dims,
+		       const ssize_t *offsets, const size_t *dims,
+		       const size_t *strides, const ssize_t *bases)
 {
-	assert(layout->ops->ndims != NULL &&
-	       layout->ops->dims != NULL);
-
-	int err = AML_SUCCESS;
-	size_t ndims = layout->ops->ndims(layout->data);
-	size_t n_elements;
-	size_t layout_dims[ndims];
-
-	err = get_dims(layout->data, layout_dims);
-	if (err != AML_SUCCESS)
-		return err;
-
 	for (size_t i = 0; i < ndims; i++) {
-		n_elements = offsets[i] + (dims[i]-1) * strides[i];
+		if (offsets[i] < bases[i])
+			return -AML_EINVAL;
 
-		if (n_elements > layout_dims[i])
+		ssize_t max = bases[i] + src_dims[i];
+		ssize_t last_in_slice = offsets[i] + (dims[i]-1) * strides[i];
+
+		if (last_in_slice >= max)
 			return -AML_EINVAL;
 	}
-
 	return AML_SUCCESS;
 }
 
+
+
 int aml_layout_slice(const struct aml_layout *layout,
 		     struct aml_layout **reshaped_layout,
-		     const size_t *offsets,
+		     const ssize_t *offsets,
 		     const size_t *dims,
 		     const size_t *strides)
 {
-	assert(layout != NULL &&
-	       layout->ops != NULL);
+	assert(layout != NULL && layout->ops != NULL);
 
 	if (layout->ops->slice == NULL)
 		return -AML_ENOTSUP;
 
+	if (reshaped_layout == NULL)
+		return -AML_EINVAL;
+
 	size_t ndims = aml_layout_ndims(layout);
 	struct aml_layout *result;
 	int err;
-	size_t _offsets[ndims];
+	ssize_t _offsets[ndims];
+	size_t _dims[ndims];
 	size_t _strides[ndims];
+	ssize_t bases[ndims];
+
+	assert(layout->ops->bases(layout->data, bases) == AML_SUCCESS);
+	assert(layout->ops->dims(layout->data, _dims) == AML_SUCCESS);
 
 	if (offsets)
 		memcpy(_offsets, offsets, ndims * sizeof(*offsets));
 	else
 		for (size_t i = 0; i < ndims; i++)
-			_offsets[i] = 0;
+			_offsets[i] = bases[i];
 
 	if (strides)
 		memcpy(_strides, strides, ndims * sizeof(*strides));
@@ -229,11 +256,10 @@ int aml_layout_slice(const struct aml_layout *layout,
 		for (size_t i = 0; i < ndims; i++)
 			_strides[i] = 1;
 
-	assert(aml_check_layout_slice(layout,
-				      layout->ops->dims,
-				      _offsets,
-				      dims,
-				      _strides) == AML_SUCCESS);
+	err = aml_check_layout_slice(ndims, _dims, _offsets, dims, _strides,
+				      bases);
+	if (err != AML_SUCCESS)
+		return err;
 
 	err = layout->ops->slice(layout->data,
 				 &result,
@@ -248,27 +274,45 @@ int aml_layout_slice(const struct aml_layout *layout,
 
 int aml_layout_slice_native(const struct aml_layout *layout,
 			    struct aml_layout **reshaped_layout,
-			    const size_t *offsets,
+			    const ssize_t *offsets,
 			    const size_t *dims,
 			    const size_t *strides)
 {
-	assert(layout != NULL &&
-	       layout->ops != NULL);
+	assert(layout != NULL && layout->ops != NULL);
 
 	if (layout->ops->slice_native == NULL)
 		return -AML_ENOTSUP;
 
-	assert(layout->ops->ndims != NULL &&
-	       layout->ops->dims_native != NULL);
+	assert(layout->ops->ndims != NULL && layout->ops->dims_native != NULL);
 
+	size_t ndims = aml_layout_ndims(layout);
 	struct aml_layout *result;
 	int err;
+	ssize_t _offsets[ndims];
+	size_t _dims[ndims];
+	size_t _strides[ndims];
+	ssize_t bases[ndims];
 
-	assert(aml_check_layout_slice(layout,
-				      layout->ops->dims_native,
-				      offsets,
-				      dims,
-				      strides) == AML_SUCCESS);
+	assert(layout->ops->bases_native(layout->data, bases) == AML_SUCCESS);
+	assert(layout->ops->dims_native(layout->data, _dims) == AML_SUCCESS);
+
+	if (offsets)
+		memcpy(_offsets, offsets, ndims * sizeof(*offsets));
+	else
+		for (size_t i = 0; i < ndims; i++)
+			_offsets[i] = bases[i];
+
+	if (strides)
+		memcpy(_strides, strides, ndims * sizeof(*strides));
+	else
+		for (size_t i = 0; i < ndims; i++)
+			_strides[i] = 1;
+
+
+	err = aml_check_layout_slice(ndims, _dims, _offsets, _dims, _strides,
+				     bases);
+	if (err != AML_SUCCESS)
+		return err;
 
 	err = layout->ops->slice_native(layout->data,
 					&result, offsets, dims, strides);

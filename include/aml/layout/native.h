@@ -34,7 +34,30 @@
  * @return NULL on failure with aml_errno set to the error reason.
  **/
 void *aml_layout_deref_native(const struct aml_layout *layout,
-			      const size_t *coords);
+			      const ssize_t *coords);
+
+/**
+ * Function for dereferencing elements of a layout inside the library.
+ * Layout assumes data is always stored in AML_LAYOUT_ORDER_FORTRAN order.
+ * Coordinates provided by the library will match the same order, i.e
+ * last dimension first. Coordinates are assumed to be for a zero-based layout.
+ * @param[in] layout: An initialized layout.
+ * @param[in] coords: The coordinates on which to access data.
+ * The first coordinate should be the last dimensions and so on to the last,
+ * coordinate, last dimension. Coordinates must be positive.
+ * @return A pointer to the dereferenced element on success.
+ * @return NULL on failure with aml_errno set to the error reason.
+ **/
+void *aml_layout_deref_nobase_native(const struct aml_layout *layout,
+				      const ssize_t *coords);
+/**
+ * Return the layout starting indices in the user order.
+ * @param[in] layout: An initialized layout.
+ * @param[out] bases: A non-NULL array of indices to fill. It must be large
+ * enough to contain aml_layout_ndims() elements.
+ * @return AML_SUCCESS on success, else an AML error code.
+ **/
+int aml_layout_bases_native(const struct aml_layout *layout, ssize_t *bases);
 
 /**
  * Return the layout dimensions in the order they are actually stored
@@ -69,7 +92,7 @@ int aml_layout_dims_native(const struct aml_layout *layout,
  **/
 int aml_layout_slice_native(const struct aml_layout *layout,
 			    struct aml_layout **reshaped_layout,
-			    const size_t *offsets,
+			    const ssize_t *offsets,
 			    const size_t *dims,
 			    const size_t *strides);
 

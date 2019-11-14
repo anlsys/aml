@@ -37,6 +37,10 @@ struct aml_layout_dense {
 	/** number of dimensions **/
 	size_t ndims;
 	/**
+	 * starting index for each dimension, can be negative.
+	 **/
+	ssize_t *bases;
+	/**
 	 * dimensions, in element size, of the data structure,
 	 * by order of appearance in memory.
 	 **/
@@ -67,6 +71,7 @@ struct aml_layout_dense {
  * dimension.
  * @param[in] pitch: The space between consecutive elements of the same
  * dimension. If NULL, pitch is set to the number of elements in each dimension.
+ * @param[in] bases: the starting index of each dimension. If NULL, set to 0.
  * @return -AML_ENOMEM if layout allocation failed.
  * @return -AML_EINVAL if layout is NULL.
  * @return AML_SUCCESS if creation succeeded.
@@ -79,7 +84,8 @@ int aml_layout_dense_create(struct aml_layout **layout,
 			    const size_t ndims,
 			    const size_t *dims,
 			    const size_t *stride,
-			    const size_t *pitch);
+			    const size_t *pitch,
+			    const ssize_t *bases);
 
 /**
  * Function to free a dense layout.
@@ -96,7 +102,19 @@ void aml_layout_dense_destroy(struct aml_layout **layout);
  * @see aml_layout_deref_native()
  **/
 void *aml_layout_column_deref(const struct aml_layout_data *data,
-			      const size_t *coords);
+			      const ssize_t *coords);
+
+/**
+ * Deref operator for dense layout in AML_ORDER_COLUMN_MAJOR.
+ * Also used as the deref operator for this type of layout.
+ * Does not check its argument. If data is NULL, or coords are out
+ * of bounds, the behaviour of aml_layout_column_deref() is undefined.
+ * Coords are assumed to be for an access on a zero-based layout.
+ * @see aml_layout_deref()
+ * @see aml_layout_deref_native()
+ **/
+void *aml_layout_column_deref_nobase(const struct aml_layout_data *data,
+				      const ssize_t *coords);
 
 /**
  * Layout operator for retrieving order of dimension storage.
@@ -121,11 +139,30 @@ size_t aml_layout_dense_ndims(const struct aml_layout_data *data);
 size_t aml_layout_dense_element_size(const struct aml_layout_data *data);
 
 /**
+ * Operator for retrieving the starting indexes of each dimension of the layout,
+ * in column major order.
+ * Does not check data is not NULL. If data is NULL or not the good
+ * pointer type, the behaviour is undefined.
+ * Arguments are supposed to be checked in aml_layout_bases().
+ * @see aml_layout_bases()
+ **/
+int aml_layout_column_bases(const struct aml_layout_data *data, ssize_t *bases);
+
+/**
+ * Operator for retrieving dimensions size of a layout with column major order.
+ * Does not check data is not NULL. If data is NULL or not the good
+ * pointer type, the behaviour is undefined.
+ * Arguments are supposed to be checked in aml_layout_dims().
+ * @see aml_layout_dims()
+ **/
+int aml_layout_column_dims(const struct aml_layout_data *data, size_t *dims);
+
+/**
  * Operator for reshaping dense layouts with column major order.
  * Does not check if the number of elements match.
  * This should be done in aml_layout_reshape().
  * @return -AML_EINVAL if merge then split of dimensions
- * cannot be done appropriatly.
+ * cannot be done appropriately.
  * @return -AML_ENOMEM if the resulting layout cannot be allocated.
  * @return AML_SUCCESS on successful reshape.
  * @see aml_layout_reshape()
@@ -145,7 +182,7 @@ int aml_layout_column_reshape(const struct aml_layout_data *data,
  **/
 int aml_layout_column_slice(const struct aml_layout_data *data,
 			    struct aml_layout **output,
-			    const size_t *offsets,
+			    const ssize_t *offsets,
 			    const size_t *dims,
 			    const size_t *strides);
 
@@ -158,7 +195,7 @@ int aml_layout_column_slice(const struct aml_layout_data *data,
  * @see aml_layout_deref()
  **/
 void *aml_layout_row_deref(const struct aml_layout_data *data,
-			   const size_t *coords);
+			   const ssize_t *coords);
 
 /**
  * Operator for retrieving layout order of a row major layout.
@@ -166,6 +203,16 @@ void *aml_layout_row_deref(const struct aml_layout_data *data,
  * @see aml_layout_order()
  **/
 int aml_layout_row_order(const struct aml_layout_data *data);
+
+/**
+ * Operator for retrieving the starting indexes of each dimension of the layout,
+ * in row major order.
+ * Does not check data is not NULL. If data is NULL or not the good
+ * pointer type, the behaviour is undefined.
+ * Arguments are supposed to be checked in aml_layout_bases().
+ * @see aml_layout_bases()
+ **/
+int aml_layout_row_bases(const struct aml_layout_data *data, ssize_t *bases);
 
 /**
  * Operator for retrieving dimensions size of a layout with row major order.
@@ -201,7 +248,7 @@ int aml_layout_row_reshape(const struct aml_layout_data *data,
  **/
 int aml_layout_row_slice(const struct aml_layout_data *data,
 			 struct aml_layout **output,
-			 const size_t *offsets,
+			 const ssize_t *offsets,
 			 const size_t *dims,
 			 const size_t *strides);
 
@@ -217,7 +264,7 @@ int aml_layout_row_slice(const struct aml_layout_data *data,
  **/
 int aml_layout_row_slice_native(const struct aml_layout_data *data,
 				struct aml_layout **output,
-				const size_t *offsets,
+				const ssize_t *offsets,
 				const size_t *dims,
 				const size_t *strides);
 

@@ -281,7 +281,7 @@ struct aml_layout_ops {
 	 * @return NULL on failure with aml_errno set to the error reason.
 	 **/
 	void *(*deref)(const struct aml_layout_data *data,
-		       const size_t *coords);
+		       const ssize_t *coords);
 
 	/**
 	 * Function for derefencing elements of a layout inside the library.
@@ -296,8 +296,23 @@ struct aml_layout_ops {
 	 * @return NULL on failure with aml_errno set to the error reason.
 	 **/
 	void *(*deref_native)(const struct aml_layout_data *data,
-			      const size_t *coords);
+			      const ssize_t *coords);
 
+	/**
+	 * Function for dereferencing elements of a layout inside the library.
+	 * Layout assumes data is always stored in AML_LAYOUT_ORDER_FORTRAN
+	 * order. Coordinates provided by the library will match the same
+	 * order, i.e last dimension first. Coordinates are interpreted as for a
+	 * zero-based layout.
+	 * @param data[in]: The non-NULL handle to layout internal data.
+	 * @param coords[in]: The non-NULL coordinates on which to access data.
+	 * The first coordinate should be the last dimensions and so on to the
+	 * last, coordinate, last dimension. All coordinates should be positive.
+	 * @return A pointer to the dereferenced element on success.
+	 * @return NULL on failure with aml_errno set to the error reason.
+	 **/
+	void *(*deref_nobase_native)(const struct aml_layout_data *data,
+					const ssize_t *coords);
 	/**
 	 * Get the order in which dimensions of the layout are
 	 * supposed to be accessed by the user.
@@ -308,6 +323,27 @@ struct aml_layout_ops {
 	 * @see AML_LAYOUT_ORDER()
 	 **/
 	int (*order)(const struct aml_layout_data *data);
+
+	/**
+	 * Get the starting index for each dimension of the layout, in the user
+	 * order.
+	 * @param[in] data: layout-internal data
+	 * @param[out] bases: the non-NULL array of starting indices to fill. Must be
+	 * large enough to contain ndims() elements.
+	 * @return AML_SUCCESS on success, else an AML error code.
+	 */
+	int (*bases)(const struct aml_layout_data *data, ssize_t *bases);
+
+	/**
+	 * Get the starting index for each dimension of the layout, in the order
+	 * it is stored inside the library.
+	 * @param[in] data: layout-internal data
+	 * @param[out] bases: the non-NULL array of starting indices to fill. Must be
+	 * large enough to contain ndims() elements.
+	 * @return AML_SUCCESS on success, else an AML error code.
+	 */
+	int (*bases_native)(const struct aml_layout_data *data,
+			     ssize_t *bases);
 
 	/**
 	 * Return the layout dimensions in the user order.
@@ -342,6 +378,31 @@ struct aml_layout_ops {
 	 * @return The size of elements stored with this layout.
 	 **/
 	size_t (*element_size)(const struct aml_layout_data *data);
+
+	/**
+	 * Shift the starting index of each dimension of the layout.
+	 * @param[in] data the non-NULL handle to layout internal data.
+	 * @param[out] output a non-NULL pointer to a new layout with shifted
+	 * starting indices.
+	 * @param[in] shift an array of shift to apply to the starting index of
+	 * each dimension. shift(-starts()) should result in a zero-starting
+	 * layout.
+	 * @return AML_SUCCESS on success, else an AML error code (<0).
+	 **/
+	int (*shift)(const struct aml_layout_data *data, const ssize_t *shift);
+
+	/**
+	 * Shift the starting index of each dimension of the layout, using the
+	 * dimension order internal to the library (AML_LAYOUT_ORDER_FORTRAN).
+	 * @param[in] data the non-NULL handle to layout internal data.
+	 * @param[in] shift an array of shift to apply to the starting index of
+	 * each dimension. shift(-starts()) should result in a zero-starting
+	 * layout.
+	 * @return AML_SUCCESS on success, else an AML error code (<0).
+	 **/
+	int (*shift_native)(const struct aml_layout_data *data,
+				const ssize_t *shift);
+
 
 	/**
 	 * Reshape the layout with different dimensions.
@@ -379,7 +440,7 @@ struct aml_layout_ops {
 	 **/
 	int (*slice)(const struct aml_layout_data *data,
 		     struct aml_layout **output,
-		     const size_t *offsets,
+		     const ssize_t *offsets,
 		     const size_t *dims,
 		     const size_t *strides);
 
@@ -403,7 +464,7 @@ struct aml_layout_ops {
 	 **/
 	int (*slice_native)(const struct aml_layout_data *data,
 			    struct aml_layout **output,
-			    const size_t *offsets,
+			    const ssize_t *offsets,
 			    const size_t *dims,
 			    const size_t *strides);
 };
@@ -461,7 +522,7 @@ struct aml_layout_ops {
  * on possible error codes.
  **/
 void *aml_layout_deref(const struct aml_layout *layout,
-		       const size_t *coords);
+		       const ssize_t *coords);
 
 /**
  * Equivalent to aml_layout_deref() but with bound checking
@@ -469,7 +530,7 @@ void *aml_layout_deref(const struct aml_layout *layout,
  * @see aml_layout_deref()
  **/
 void *aml_layout_deref_safe(const struct aml_layout *layout,
-			    const size_t *coords);
+			    const ssize_t *coords);
 
 /**
  * Get the order in which dimensions of the layout are supposed to be
@@ -482,6 +543,15 @@ void *aml_layout_deref_safe(const struct aml_layout *layout,
  * @see AML_LAYOUT_ORDER()
  **/
 int aml_layout_order(const struct aml_layout *layout);
+
+/**
+ * Return the layout starting indices in the user order.
+ * @param[in] layout: An initialized layout.
+ * @param[out] bases: A non-NULL array of indices to fill. It is
+ * supposed to be large enough to contain aml_layout_ndims() elements.
+ * @return AML_SUCCESS on success, else an AML error code.
+ **/
+int aml_layout_bases(const struct aml_layout *layout, ssize_t *bases);
 
 /**
  * Return the layout dimensions in the user order.
@@ -505,6 +575,16 @@ size_t aml_layout_ndims(const struct aml_layout *layout);
  * @return The size of elements stored with this layout.
  **/
 size_t aml_layout_element_size(const struct aml_layout *layout);
+
+/**
+ * Shift the starting indices of each dimension.
+ * @param[in] layout the layout to shift
+ * @param[in] shifts an array of size ndims() indicating the shift to perform on
+ * each dimension. shift(-starts()) should result in a zero-starting layout.
+ * @return AML_SUCCESS on success.
+ * @return AML_EINVAL if any of the pointers are NULL.
+ **/
+int aml_layout_shift(const struct aml_layout *layout, const ssize_t *shifts);
 
 /**
  * @brief Reshape the layout with different dimensions.
@@ -551,7 +631,7 @@ int aml_layout_reshape(const struct aml_layout *layout,
  **/
 int aml_layout_slice(const struct aml_layout *layout,
 		     struct aml_layout **reshaped_layout,
-		     const size_t *offsets,
+		     const ssize_t *offsets,
 		     const size_t *dims,
 		     const size_t *strides);
 

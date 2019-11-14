@@ -24,13 +24,13 @@ static inline void aml_copy_layout_generic_helper(size_t d,
 						  const struct aml_layout *src,
 						  const size_t *elem_number,
 						  size_t elem_size,
-						  size_t *coords)
+						  ssize_t *coords)
 {
 	if (d == 1) {
 		for (size_t i = 0; i < elem_number[0]; i += 1) {
 			coords[0] = i;
-			memcpy(aml_layout_deref_native(dst, coords),
-			       aml_layout_deref_native(src, coords),
+			memcpy(aml_layout_deref_nobase_native(dst, coords),
+			       aml_layout_deref_nobase_native(src, coords),
 			       elem_size);
 		}
 	} else {
@@ -55,7 +55,7 @@ int aml_copy_layout_generic(struct aml_layout *dst,
 	assert(aml_layout_element_size(dst) == aml_layout_element_size(src));
 	elem_size = aml_layout_element_size(dst);
 
-	size_t coords[d];
+	ssize_t coords[d];
 	size_t elem_number[d];
 	size_t elem_number2[d];
 

@@ -119,7 +119,7 @@ void aml_layout_pad_destroy(struct aml_layout **l)
  ******************************************************************************/
 
 void *aml_layout_pad_column_deref(const struct aml_layout_data *data,
-				   const size_t *coords)
+				   const ssize_t *coords)
 {
 	assert(data != NULL);
 	const struct aml_layout_pad *d = (const struct aml_layout_pad *)data;
@@ -167,10 +167,14 @@ struct aml_layout_ops aml_layout_pad_column_ops = {
 	aml_layout_pad_column_deref,
 	aml_layout_pad_column_deref,
 	aml_layout_pad_column_order,
+	NULL,
+	NULL,
 	aml_layout_pad_column_dims,
 	aml_layout_pad_column_dims,
 	aml_layout_pad_ndims,
 	aml_layout_pad_element_size,
+	NULL,
+	NULL,
 	NULL,
 	NULL,
 	NULL,
@@ -181,7 +185,7 @@ struct aml_layout_ops aml_layout_pad_column_ops = {
  ******************************************************************************/
 
 void *aml_layout_pad_row_deref(const struct aml_layout_data *data,
-				  const size_t *coords)
+				const ssize_t *coords)
 {
 	assert(data != NULL);
 	const struct aml_layout_pad *d = (const struct aml_layout_pad *)data;
@@ -189,14 +193,14 @@ void *aml_layout_pad_row_deref(const struct aml_layout_data *data,
 	int type;
 
 	for (size_t i = 0; i < ndims; i++) {
-		if (coords[ndims - i - 1] >= d->target_dims[i])
+		if (coords[ndims - i - 1]  >= d->target_dims[i])
 			return d->neutral;
 	}
 	type = aml_layout_order(d->target);
 	if (AML_LAYOUT_ORDER(type) == AML_LAYOUT_ORDER_ROW_MAJOR) {
 		return aml_layout_deref(d->target, coords);
 	} else if (AML_LAYOUT_ORDER(type) == AML_LAYOUT_ORDER_COLUMN_MAJOR) {
-		size_t target_coords[ndims];
+		ssize_t target_coords[ndims];
 
 		for (size_t i = 0; i < ndims; i++)
 			target_coords[i] = coords[ndims - i - 1];
@@ -225,10 +229,14 @@ struct aml_layout_ops aml_layout_pad_row_ops = {
 	aml_layout_pad_row_deref,
 	aml_layout_pad_column_deref,
 	aml_layout_pad_row_order,
+	NULL,
+	NULL,
 	aml_layout_pad_row_dims,
 	aml_layout_pad_column_dims,
 	aml_layout_pad_ndims,
 	aml_layout_pad_element_size,
+	NULL,
+	NULL,
 	NULL,
 	NULL,
 	NULL,

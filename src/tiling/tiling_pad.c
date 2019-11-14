@@ -142,7 +142,7 @@ aml_tiling_pad_column_index(const struct aml_tiling_data *t,
 
 	assert(d != NULL);
 	size_t ndims = d->ndims;
-	size_t offsets[ndims];
+	ssize_t offsets[ndims];
 	size_t dims[ndims];
 	size_t strides[ndims];
 
@@ -275,7 +275,7 @@ aml_tiling_pad_row_index(const struct aml_tiling_data *t, const size_t *coords)
 
 	assert(d != NULL);
 	size_t ndims = d->ndims;
-	size_t offsets[ndims];
+	ssize_t offsets[ndims];
 	size_t dims[ndims];
 	size_t strides[ndims];
 

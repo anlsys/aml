@@ -125,7 +125,7 @@ aml_tiling_resize_column_index(const struct aml_tiling_data *t,
 
 	assert(d != NULL);
 	size_t ndims = d->ndims;
-	size_t offsets[ndims];
+	ssize_t offsets[ndims];
 	size_t dims[ndims];
 	size_t strides[ndims];
 
@@ -238,7 +238,7 @@ aml_tiling_resize_row_index(const struct aml_tiling_data *t,
 	assert(d != NULL);
 
 	size_t ndims = d->ndims;
-	size_t offsets[ndims];
+	ssize_t offsets[ndims];
 	size_t dims[ndims];
 	size_t strides[ndims];
 

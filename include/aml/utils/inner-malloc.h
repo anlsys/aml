@@ -24,6 +24,7 @@
  * This code is all macros to handle the type specific logic we need.
  **/
 
+
 /** Returns the allocation size required to handle two objects side-by-side.
  *
  * Use an anonymous struct to ask the compiler what size an allocation should be
