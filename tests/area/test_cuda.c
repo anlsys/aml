@@ -10,6 +10,7 @@
 #include "aml.h"
 #include "config.h"
 #include "aml/area/cuda.h"
+#include "aml/utils/features.h"
 #include <stdlib.h>
 #include <string.h>
 #include <cuda.h>
@@ -23,7 +24,7 @@ void test_device_mmap(const int device)
 	void *host_copy;
 	void *device_data;
 	struct aml_area *area;
-	int ns = sizeof(sizes) / sizeof(*sizes);
+	size_t ns = sizeof(sizes) / sizeof(*sizes);
 	int err;
 	size_t size;
 
@@ -62,7 +63,7 @@ void test_host_mmap(const int device)
 	void *host_data;
 	void *host_copy;
 	struct aml_area *area;
-	int ns = sizeof(sizes) / sizeof(*sizes);
+	size_t ns = sizeof(sizes) / sizeof(*sizes);
 	size_t size;
 
 	assert(!aml_area_cuda_create(&area, device,
@@ -90,7 +91,7 @@ void test_mapped_mmap(const int device)
 	void *host_copy;
 	void *device_data;
 	struct aml_area *area;
-	int ns = sizeof(sizes) / sizeof(*sizes);
+	size_t ns = sizeof(sizes) / sizeof(*sizes);
 	size_t size;
 	struct aml_area_cuda_mmap_options options = {.device = device,
 							.ptr = NULL, };
@@ -166,7 +167,7 @@ void test_unified_mmap(const int device)
 	void *unified_data;
 	void *host_copy;
 	struct aml_area *area;
-	int ns = sizeof(sizes) / sizeof(*sizes);
+	size_t ns = sizeof(sizes) / sizeof(*sizes);
 	size_t size;
 
 	// Data initialization
@@ -203,11 +204,14 @@ void test_unified_mmap(const int device)
 int main(void)
 {
 	int num_devices;
-	int flags;
+	unsigned int flags;
 	int has_device_map;
 	int has_unified_mem;
 	int has_register_ptr;
 	int current_device;
+
+	if (!aml_support_backends(AML_BACKEND_CUDA))
+		return 77;
 
 	assert(cudaGetDeviceCount(&num_devices) == cudaSuccess);
 	assert(cudaGetDevice(&current_device) == cudaSuccess);

@@ -1,0 +1,106 @@
+variables:
+  NMC_FE1_SLURM_PARAMETERS: "--nodes=1 --partition=ecp-p9-4v100"
+  ANL_THETA_PROJECT_SERVICE_USER: "cscstss"
+  ANL_THETA_SCHEDULER_PARAMETERS: "-A CSC250STPR19 -n 1 -t 20 -q debug-flat-quad"
+
+stages:
+  - build
+
+nmc:batch:env:
+  stage: build
+  tags:
+    - nmc
+  only:
+    refs:
+      - master
+      - staging
+    variables:
+      - $ECP_MIRROR == "NMC"
+  script:
+    - uname -a
+    - module avail
+    - lspci
+    - module load hwloc numactl cuda
+    - module avail
+    - lstopo
+    - env
+    - which gcc
+    - gcc --version
+    - compgen -c gcc
+
+make:nmc-cuda-check:
+  stage: build
+  tags:
+    - nmc
+  only:
+    refs:
+      - master
+      - staging
+    variables:
+      - $ECP_MIRROR == "NMC"
+  script:
+    - module load numactl hwloc cuda
+    - env | grep -i cuda
+    - cat /proc/self/status
+    - ./autogen.sh
+    - ./configure
+    - make -j
+    - make check VERBOSE=1
+  artifacts:
+    when: on_failure
+    paths:
+      - tests/test-suite.log
+      - config.log
+
+make:nmc-cuda-home:
+  stage: build
+  tags:
+    - nmc
+  only:
+    refs:
+      - master
+      - staging
+    variables:
+      - $ECP_MIRROR == "NMC"
+  script:
+    - module load numactl hwloc cuda
+    - env | grep -i cuda
+    - ./autogen.sh
+    - ./configure --with-cuda=$CUDA_HOME
+    - make -j
+    - make check VERBOSE=1
+  artifacts:
+    when: on_failure
+    paths:
+      - tests/test-suite.log
+      - config.log
+
+make:theta-batch:
+  stage: build
+  tags:
+    - ecp-theta
+    - batch
+  only:
+    refs:
+      - master
+      - staging
+    variables:
+      - $ECP_MIRROR == "THETA"
+  script:
+    - |
+      cat > aml-ci-script.sh << EOF
+      #!/bin/bash
+      module list
+      ./autogen.sh
+      ./configure
+      make -j63
+      make check VERBOSE=1
+      EOF
+    - cat aml-ci-script.sh
+    - chmod +x aml-ci-script.sh
+    - aprun aml-ci-script.sh
+  artifacts:
+    when: on_failure
+    paths:
+      - tests/*.log
+      - config.log

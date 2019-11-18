@@ -217,15 +217,16 @@ int aml_area_linux_create(struct aml_area **area,
 
 	/* check if the nodemask is compatible with the nodeset */
 	if (nodemask != NULL) {
-		int aml_last = aml_bitmap_last(nodemask);
-		int allowed_last = numa_bitmask_weight(data->nodeset);
+		for (int i = 0; i < AML_BITMAP_MAX; i++) {
+			int ours, theirs;
 
-		while (!numa_bitmask_isbitset(data->nodeset, --allowed_last))
-			;
+			ours = aml_bitmap_isset(nodemask, i);
+			theirs = numa_bitmask_isbitset(data->nodeset, i);
 
-		if (aml_last > allowed_last) {
-			err = -AML_EDOM;
-			goto err_f_node;
+			if (ours && !theirs) {
+				err = -AML_EDOM;
+				goto err_f_node;
+			}
 		}
 		aml_bitmap_copy_to_ulong(nodemask,
 					 data->nodeset->maskp,

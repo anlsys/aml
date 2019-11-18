@@ -24,7 +24,8 @@ int fd;
 
 const size_t sizes[3] = { 1, 1 << 12, 1 << 20 };
 
-int num_nodes;
+struct aml_bitmap mems_allowed;
+int last_node;
 
 void test_area(struct aml_area *area, struct aml_area_mmap_options *options)
 {
@@ -53,13 +54,9 @@ void test_case(const struct aml_bitmap *nodemask,
 
 	struct aml_area *area;
 
-	if (aml_bitmap_last(nodemask) >= num_nodes) {
-		assert(aml_area_linux_create(&area, nodemask, policy)
-		       == -AML_EDOM);
-		return;
-	}
+	int err = aml_area_linux_create(&area, nodemask, policy);
 
-	assert(!aml_area_linux_create(&area, nodemask, policy));
+	assert(err == AML_SUCCESS);
 
 	// Map anonymous test.
 	test_area(area, (struct aml_area_mmap_options *)(&options));
@@ -90,24 +87,30 @@ void test_single_node(void)
 	struct aml_bitmap bitmap;
 
 	aml_bitmap_zero(&bitmap);
-	for (int i = 0; i <= num_nodes; i++) {
-		aml_bitmap_set(&bitmap, i);
-		test_flags(&bitmap);
-		aml_bitmap_clear(&bitmap, i);
+	for (int i = 0; i <= last_node; i++) {
+		if (aml_bitmap_isset(&mems_allowed, i)) {
+			aml_bitmap_set(&bitmap, i);
+			test_flags(&bitmap);
+			aml_bitmap_clear(&bitmap, i);
+		}
 	}
 }
 
 void test_multiple_nodes(void)
 {
 	struct aml_bitmap bitmap;
+	int first;
 
 	aml_bitmap_zero(&bitmap);
-	aml_bitmap_set(&bitmap, 0);
+	first = aml_bitmap_first(&mems_allowed);
+	aml_bitmap_set(&bitmap, first);
 
-	for (int i = 1; i <= num_nodes; i++) {
-		aml_bitmap_set(&bitmap, i);
-		test_flags(&bitmap);
-		aml_bitmap_clear(&bitmap, i-1);
+	for (int i = first+1; i <= last_node; i++) {
+		if (aml_bitmap_isset(&mems_allowed, i)) {
+			aml_bitmap_set(&bitmap, i);
+			test_flags(&bitmap);
+			aml_bitmap_clear(&bitmap, i);
+		}
 	}
 }
 
@@ -124,6 +127,10 @@ int main(void)
 
 	fd = mkstemp(tmp_name);
 	assert(fd > 1);
+	/* unlink right away to avoid leaving the file on the system after an
+	 * error. The file will only disappear after close.
+	 */
+	unlink(tmp_name);
 
 	nw = write(fd, buf, size);
 	assert(nw == (ssize_t)size);
@@ -131,12 +138,13 @@ int main(void)
 
 	struct bitmask *nodeset = numa_get_mems_allowed();
 
-	num_nodes = numa_bitmask_weight(nodeset);
+	aml_bitmap_copy_from_ulong(&mems_allowed,
+				   nodeset->maskp, nodeset->size);
+	last_node = aml_bitmap_last(&mems_allowed);
 
 	test_single_node();
 	test_multiple_nodes();
 
 	close(fd);
-	unlink(tmp_name);
 	return 0;
 }
