@@ -21,30 +21,27 @@ static int aml_layout_reshape_alloc(struct aml_layout **ret,
 	struct aml_layout *layout;
 	struct aml_layout_data_reshape *data;
 
-	layout = AML_INNER_MALLOC_EXTRA(struct aml_layout,
-					struct aml_layout_data_reshape,
-					size_t, (2*ndims)+target_ndims);
+	layout = AML_INNER_MALLOC_ARRAY(2*ndims + target_ndims, size_t,
+					struct aml_layout,
+					struct aml_layout_data_reshape);
 	if (layout == NULL) {
 		*ret = NULL;
 		return -AML_ENOMEM;
 	}
 
-	data = AML_INNER_MALLOC_NEXTPTR(layout,
-					struct aml_layout,
-					struct aml_layout_data_reshape);
+	data = AML_INNER_MALLOC_GET_FIELD(layout, 2,
+					  struct aml_layout,
+					  struct aml_layout_data_reshape);
+
 	layout->data = (struct aml_layout_data *)data;
-	data->dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
-					    struct aml_layout,
-					    struct aml_layout_data_reshape,
-					    size_t, 0);
-	data->coffsets = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
-					    struct aml_layout,
-					    struct aml_layout_data_reshape,
-					    size_t, ndims);
-	data->target_dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
-					    struct aml_layout,
-					    struct aml_layout_data_reshape,
-					    size_t, 2*ndims);
+
+	data->dims = AML_INNER_MALLOC_GET_ARRAY(layout,
+						size_t,
+						struct aml_layout,
+						struct aml_layout_data_reshape);
+
+	data->coffsets = data->dims + ndims;
+	data->target_dims = data->coffsets + ndims;
 
 	data->target = NULL;
 	data->target_ndims = target_ndims;

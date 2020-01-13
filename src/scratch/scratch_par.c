@@ -227,13 +227,15 @@ int aml_scratch_par_create(struct aml_scratch **scratch,
 
 	*scratch = NULL;
 
-	ret = AML_INNER_MALLOC_2(struct aml_scratch, struct aml_scratch_par);
+	ret = AML_INNER_MALLOC(struct aml_scratch,
+				      struct aml_scratch_par);
 	if (ret == NULL)
 		return -AML_ENOMEM;
 
 	ret->ops = &aml_scratch_par_ops;
-	ret->data = AML_INNER_MALLOC_NEXTPTR(ret, struct aml_scratch,
-					     struct aml_scratch_par);
+	ret->data = AML_INNER_MALLOC_GET_FIELD(ret, 2,
+					       struct aml_scratch,
+					       struct aml_scratch_par);
 	s = (struct aml_scratch_par *)ret->data;
 	s->ops = aml_scratch_par_inner_ops;
 

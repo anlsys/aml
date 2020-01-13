@@ -196,12 +196,14 @@ int aml_area_linux_create(struct aml_area **area,
 
 	*area = NULL;
 
-	ret = AML_INNER_MALLOC_2(struct aml_area, struct aml_area_linux_data);
+	ret = AML_INNER_MALLOC(struct aml_area,
+				      struct aml_area_linux_data);
 	if (ret == NULL)
 		return -AML_ENOMEM;
 
-	ret->data = AML_INNER_MALLOC_NEXTPTR(ret, struct aml_area,
-					     struct aml_area_linux_data);
+	ret->data = AML_INNER_MALLOC_GET_FIELD(ret, 2,
+					       struct aml_area,
+					       struct aml_area_linux_data);
 	ret->ops = &aml_area_linux_ops;
 	data = (struct aml_area_linux_data *)ret->data;
 
