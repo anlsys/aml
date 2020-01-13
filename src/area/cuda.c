@@ -223,12 +223,13 @@ int aml_area_cuda_create(struct aml_area **area,
 	if (device >= max_devices)
 		return -AML_EINVAL;
 
-	ret = AML_INNER_MALLOC_2(struct aml_area, struct aml_area_cuda_data);
+	ret = AML_INNER_MALLOC(struct aml_area,
+				      struct aml_area_cuda_data);
 	if (ret == NULL)
 		return -AML_ENOMEM;
 
-	data = AML_INNER_MALLOC_NEXTPTR(ret, struct aml_area,
-					struct aml_area_cuda_data);
+	data = AML_INNER_MALLOC_GET_FIELD(ret, 2, struct aml_area,
+					  struct aml_area_cuda_data);
 
 	ret->ops = &aml_area_cuda_ops;
 	ret->data = (struct aml_area_data *)data;

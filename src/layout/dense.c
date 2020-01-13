@@ -18,37 +18,32 @@ static int aml_layout_dense_alloc(struct aml_layout **ret,
 	struct aml_layout *layout;
 	struct aml_layout_dense *data;
 
-	layout = AML_INNER_MALLOC_EXTRA(struct aml_layout,
-					struct aml_layout_dense,
-					size_t, 3*ndims);
+	layout = AML_INNER_MALLOC_ARRAY(3*ndims, size_t,
+					struct aml_layout,
+					struct aml_layout_dense);
 	if (layout == NULL) {
 		*ret = NULL;
 		return -AML_ENOMEM;
 	}
 
-	data = AML_INNER_MALLOC_NEXTPTR(layout,
-					struct aml_layout,
-					struct aml_layout_dense);
+	data = AML_INNER_MALLOC_GET_FIELD(layout, 2,
+					  struct aml_layout,
+					  struct aml_layout_dense);
 	layout->data = (struct aml_layout_data *) data;
 
 	data->ptr = NULL;
 	data->ndims = ndims;
 
-	data->dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
-						    struct aml_layout,
-						    struct aml_layout_dense,
-						    size_t, 0);
-	data->stride = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
-						      struct aml_layout,
-						      struct aml_layout_dense,
-						      size_t, ndims);
+	data->dims = AML_INNER_MALLOC_GET_ARRAY(layout,
+						size_t,
+						struct aml_layout,
+						struct aml_layout_dense);
+
+	data->stride = data->dims + ndims;
 	for (size_t i = 0; i < ndims; i++)
 		data->stride[i] = 1;
 
-	data->cpitch = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
-						      struct aml_layout,
-						      struct aml_layout_dense,
-						      size_t, ndims*2);
+	data->cpitch =  data->stride + ndims;
 	*ret = layout;
 	return AML_SUCCESS;
 }

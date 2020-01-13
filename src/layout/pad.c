@@ -17,30 +17,30 @@ static int aml_layout_pad_alloc(struct aml_layout **ret,
 	struct aml_layout *layout;
 	struct aml_layout_pad *data;
 
-	layout = AML_INNER_MALLOC_4(struct aml_layout,
-				    struct aml_layout_pad,
-				    size_t, 2*ndims, element_size);
+	layout = AML_INNER_MALLOC_EXTRA(2*ndims, size_t,
+					element_size,
+					struct aml_layout,
+					struct aml_layout_pad);
 	if (layout == NULL) {
 		*ret = NULL;
 		return -AML_ENOMEM;
 	}
 
-	data = AML_INNER_MALLOC_NEXTPTR(layout,
-					struct aml_layout,
-					struct aml_layout_pad);
+	data = AML_INNER_MALLOC_GET_FIELD(layout, 2,
+					  struct aml_layout,
+					  struct aml_layout_pad);
 	layout->data = (struct aml_layout_data *) data;
-	data->dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
-						    struct aml_layout,
-						    struct aml_layout_pad,
-						    size_t, 0);
-	data->target_dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
-							struct aml_layout,
-							struct aml_layout_pad,
-							size_t, ndims);
-	data->neutral = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
-						       struct aml_layout,
-						       struct aml_layout_pad,
-						       size_t, 2*ndims);
+
+	data->dims = AML_INNER_MALLOC_GET_ARRAY(layout,
+						size_t,
+						struct aml_layout,
+						struct aml_layout_pad);
+	data->target_dims = data->dims + ndims;
+
+	data->neutral = AML_INNER_MALLOC_GET_EXTRA(layout,
+						   2*ndims, size_t,
+						   struct aml_layout,
+						   struct aml_layout_pad);
 	data->target = NULL;
 	data->ndims = ndims;
 	data->element_size = element_size;

@@ -21,31 +21,29 @@ static int aml_tiling_resize_alloc(struct aml_tiling **ret, size_t ndims)
 	struct aml_tiling *tiling;
 	struct aml_tiling_resize *data;
 
-	tiling = AML_INNER_MALLOC_EXTRA(struct aml_tiling,
-					struct aml_tiling_resize,
-					size_t, 3*ndims);
+	tiling = AML_INNER_MALLOC_ARRAY(3*ndims, size_t,
+					struct aml_tiling,
+					struct aml_tiling_resize);
 
 	if (tiling == NULL) {
 		*ret = NULL;
 		return -AML_ENOMEM;
 	}
 
-	data = AML_INNER_MALLOC_NEXTPTR(tiling,
-					struct aml_tiling,
-					struct aml_tiling_resize);
+	data = AML_INNER_MALLOC_GET_FIELD(tiling,
+					  2,
+					  struct aml_tiling,
+					  struct aml_tiling_resize);
 	tiling->data = (struct aml_tiling_data *)data;
-	data->tile_dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(tiling,
-						 struct aml_tiling,
-						 struct aml_tiling_resize,
-						 size_t, 0);
-	data->dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(tiling,
-						    struct aml_tiling,
-						    struct aml_tiling_resize,
-						    size_t, ndims);
-	data->border_tile_dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(tiling,
-						    struct aml_tiling,
-						    struct aml_tiling_resize,
-						    size_t, 2*ndims);
+
+	data->tile_dims = AML_INNER_MALLOC_GET_ARRAY(tiling,
+						     size_t,
+						     struct aml_tiling,
+						     struct aml_tiling_resize);
+
+	data->dims = data->tile_dims + ndims;
+	data->border_tile_dims = data->dims + ndims;
+
 	data->layout = NULL;
 	data->ndims = ndims;
 	*ret = tiling;

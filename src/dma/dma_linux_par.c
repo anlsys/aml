@@ -175,12 +175,13 @@ int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs,
 
 	*dma = NULL;
 
-	ret = AML_INNER_MALLOC_2(struct aml_dma, struct aml_dma_linux_par);
+	ret = AML_INNER_MALLOC(struct aml_dma, struct aml_dma_linux_par);
 	if (ret == NULL)
 		return -AML_ENOMEM;
 
-	ret->data = AML_INNER_MALLOC_NEXTPTR(ret, struct aml_dma,
-					     struct aml_dma_linux_par);
+	ret->data = AML_INNER_MALLOC_GET_FIELD(ret, 2,
+					       struct aml_dma,
+					       struct aml_dma_linux_par);
 	ret->ops = &aml_dma_linux_par_ops;
 	d = (struct aml_dma_linux_par *)ret->data;
 	d->ops = aml_dma_linux_par_inner_ops;
