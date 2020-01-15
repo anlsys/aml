@@ -46,12 +46,12 @@ style:docs:
     - kvm
   script:
     - |
-      nix-shell "$ARGOPKGS" -A aml-dist --arg aml-src ./. --run bash << EOF
-      ./autogen.sh
-      mkdir build
-      ./configure --prefix=`pwd`/build --enable-docs
-      make install-data
-      EOF
+      nix-shell "$ARGOPKGS" -A aml-dist --arg aml-src ./. --run bash <<< '
+        ./autogen.sh
+        mkdir build
+        ./configure --prefix=`pwd`/build --enable-docs
+        make install-data
+      '
   artifacts:
     when: on_failure
     paths:
@@ -59,7 +59,8 @@ style:docs:
 
 make:generic:
   tags:
-    - knl
+    - nix
+    - kvm
   stage: build
   except:
     - /^wip.*/
@@ -67,12 +68,15 @@ make:generic:
   variables:
     CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter"
   script:
-    - ./autogen.sh
-    - mkdir build
-    - ./configure --prefix=`pwd`/build
-    - make
-    - make check
-    - make install
+    - |
+      nix-shell "$ARGOPKGS" -A aml --arg aml-src ./. --run bash <<< '
+        ./autogen.sh
+        mkdir build
+        ./configure --prefix=`pwd`/build
+        make
+        make check
+        make install
+      '
   artifacts:
     when: on_failure
     paths:
@@ -81,7 +85,8 @@ make:generic:
 
 make:out-of-tree:
   tags:
-    - knl
+    - nix
+    - kvm
   stage: build
   except:
     - /^wip.*/
@@ -89,13 +94,16 @@ make:out-of-tree:
   variables:
     CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter"
   script:
-    - ./autogen.sh
-    - mkdir out
-    - cd out
-    - mkdir build
-    - ../configure --prefix=`pwd`/build
-    - make
-    - make check
+    - |
+      nix-shell "$ARGOPKGS" -A aml --arg aml-src ./. --run bash <<< '
+        ./autogen.sh
+        mkdir out
+        cd out
+        mkdir build
+        ../configure --prefix=`pwd`/build
+        make
+        make check
+      '
   artifacts:
     when: on_failure
     paths:
