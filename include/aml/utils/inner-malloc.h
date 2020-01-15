@@ -126,7 +126,6 @@
 #define AML_INNER_MALLOC_ARRAY(n, type, ...) \
 	calloc(1, AML_SIZEOF_ALIGNED_ARRAY(n, type, __VA_ARGS__))
 
-
 /**
  * Allocate space aligned on a page boundary. It may contain up to 7 fields
  * aligned as in a struct, one aligned array and arbitrary extra space.
