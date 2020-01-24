@@ -13,7 +13,7 @@ repoquality:
     - /^wip.*/
     - /^WIP.*/
   script:
-    - git ls-files *.c *.h | grep -v -e benchmarks > .repoquality
+    - git ls-files '*.c' '*.h' | grep -v -e benchmarks > .repoquality
     - nix run -f "$ARGOPKGS" repoquality --command repoquality
   tags:
     - nix
@@ -33,7 +33,7 @@ checkpatch:
     - kvm
   script:
     - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl --ignore TRAILING_SEMICOLON --ignore MULTISTATEMENT_MACRO_USE_DO_WHILE include/aml/utils/inner-malloc.h
-    - git ls-files *.c *.h | grep -v -e benchmarks | grep -v -e inner-malloc >> .checkpatch.conf
+    - git ls-files '*.c' '*.h' | grep -v -e benchmarks | grep -v -e inner-malloc >> .checkpatch.conf
     - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl
 
 style:docs:
