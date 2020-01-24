@@ -158,6 +158,15 @@ void *aml_layout_reshape_column_deref(const struct aml_layout_data *data,
 	return d->target->ops->deref_native(d->target->data, target_coords);
 }
 
+void *aml_layout_reshape_rawptr(const struct aml_layout_data *data)
+{
+	const struct aml_layout_data_reshape *d;
+
+	d = (const struct aml_layout_data_reshape *)data;
+
+	return d->target->ops->rawptr(d->target->data);
+}
+
 int aml_layout_reshape_column_order(const struct aml_layout_data *data)
 {
 	(void) data;
@@ -197,6 +206,7 @@ size_t aml_layout_reshape_element_size(const struct aml_layout_data *data)
 struct aml_layout_ops aml_layout_reshape_column_ops = {
 	aml_layout_reshape_column_deref,
 	aml_layout_reshape_column_deref,
+	aml_layout_reshape_rawptr,
 	aml_layout_reshape_column_order,
 	aml_layout_reshape_column_dims,
 	aml_layout_reshape_column_dims,
@@ -254,6 +264,7 @@ int aml_layout_reshape_row_dims(const struct aml_layout_data *data,
 struct aml_layout_ops aml_layout_reshape_row_ops = {
 	aml_layout_reshape_row_deref,
 	aml_layout_reshape_column_deref,
+	aml_layout_reshape_rawptr,
 	aml_layout_reshape_row_order,
 	aml_layout_reshape_row_dims,
 	aml_layout_reshape_column_dims,

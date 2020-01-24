@@ -65,6 +65,14 @@ struct aml_layout *aml_tiling_index(const struct aml_tiling *t,
 	return t->ops->index(t->data, coords);
 }
 
+void *aml_tiling_rawptr(const struct aml_tiling *t, const size_t *coords)
+{
+	if (t == NULL || t->ops == NULL || coords == NULL)
+		return NULL;
+
+	return t->ops->rawptr(t->data, coords);
+}
+
 int aml_tiling_tileid(const struct aml_tiling *t,
 		      const size_t *coords)
 {

@@ -301,6 +301,15 @@ struct aml_layout_ops {
 			      const size_t *coords);
 
 	/**
+	 * Function to retrieve a pointer to the start of the actual memory
+	 * buffer under this layout.
+	 * @param data[in] the non-NULL handle to layout internal data.
+	 * @return a pointer to the buffer on success
+	 * @return NULL on failure, with aml_errno set to the error reason.
+	 **/
+	void *(*rawptr)(const struct aml_layout_data *data);
+
+	/**
 	 * Get the order in which dimensions of the layout are
 	 * supposed to be accessed by the user.
 	 * @param data[in]: The non-NULL handle to layout internal data.
@@ -474,6 +483,13 @@ void *aml_layout_deref_safe(const struct aml_layout *layout,
 			    const size_t *coords);
 
 /**
+ * Return a pointer to the first byte of the buffer this layout maps to.
+ * @param layout an initialized layout
+ * @return a raw pointer to the start of the layout, NULL on error.
+ */
+void *aml_layout_rawptr(const struct aml_layout *layout);
+
+/**
  * Get the order in which dimensions of the layout are supposed to be
  * accessed by the user.
  * @param[in] layout: An initialized layout.
@@ -635,6 +651,8 @@ struct aml_tiling_ops {
 	/** retrieve a tile as a layout with coordinates in native order  **/
 	struct aml_layout* (*index_native)(const struct aml_tiling_data *t,
 					   const size_t *coords);
+	void *(*rawptr)(const struct aml_tiling_data *t,
+			const size_t *coords);
 	int (*tileid)(const struct aml_tiling_data *t, const size_t *coords);
 	int (*order)(const struct aml_tiling_data *t);
 	int (*tile_dims)(const struct aml_tiling_data *t, size_t *dims);
@@ -705,6 +723,14 @@ size_t aml_tiling_ntiles(const struct aml_tiling *tiling);
  **/
 struct aml_layout *aml_tiling_index(const struct aml_tiling *tiling,
 				    const size_t *coords);
+
+/**
+ * Return a pointer to the first valid coordinate in the underlying tile.
+ * @param tiling an initialized tiling
+ * @param coords the coordinates for the tile
+ * @return a raw pointer to the start of the buffer for a tile, NULL on error.
+ */
+void *aml_tiling_rawptr(const struct aml_tiling *tiling, const size_t *coords);
 
 /**
  * Return a unique identifier for a tile based on coordinates in the tiling
