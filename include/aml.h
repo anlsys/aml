@@ -301,6 +301,15 @@ struct aml_layout_ops {
 			      const size_t *coords);
 
 	/**
+	 * Function to retrieve a pointer to the start of the actual memory
+	 * buffer under this layout.
+	 * @param data[in] the non-NULL handle to layout internal data.
+	 * @return a pointer to the buffer on success
+	 * @return NULL on failure, with aml_errno set to the error reason.
+	 **/
+	void *(*rawptr)(const struct aml_layout_data *data);
+
+	/**
 	 * Get the order in which dimensions of the layout are
 	 * supposed to be accessed by the user.
 	 * @param data[in]: The non-NULL handle to layout internal data.
@@ -472,6 +481,13 @@ void *aml_layout_deref(const struct aml_layout *layout,
  **/
 void *aml_layout_deref_safe(const struct aml_layout *layout,
 			    const size_t *coords);
+
+/**
+ * Return a pointer to the first byte of the buffer this layout maps to.
+ * @param layout an initialized layout
+ * @return a raw pointer to the start of the layout, NULL on error.
+ */
+void *aml_layout_rawptr(const struct aml_layout *layout);
 
 /**
  * Get the order in which dimensions of the layout are supposed to be

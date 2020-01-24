@@ -55,6 +55,15 @@ void *aml_layout_deref_safe(const struct aml_layout *layout,
 	return layout->ops->deref(layout->data, coords);
 }
 
+void *aml_layout_rawptr(const struct aml_layout *layout)
+{
+	assert(layout != NULL &&
+	       layout->ops != NULL &&
+	       layout->ops->rawptr != NULL);
+
+	return layout->ops->rawptr(layout->data);
+}
+
 void *aml_layout_deref_native(const struct aml_layout *layout,
 			      const size_t *coords)
 {
