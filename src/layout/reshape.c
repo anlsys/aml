@@ -203,6 +203,30 @@ size_t aml_layout_reshape_element_size(const struct aml_layout_data *data)
 	return aml_layout_element_size(d->target);
 }
 
+int aml_layout_reshape_column_fprintf(const struct aml_layout_data *data,
+				      FILE *stream, const char *prefix)
+{
+	const struct aml_layout_data_reshape *d;
+
+	fprintf(stream, "%s: layout-reshape: %p: column-major\n", prefix,
+		(void *)data);
+	if (data == NULL)
+		return AML_SUCCESS;
+
+	d = (const struct aml_layout_data_reshape *)data;
+
+	fprintf(stream, "%s: ndims: %zu\n", prefix, d->ndims);
+	fprintf(stream, "%s: target-ndims: %zu\n", prefix, d->target_ndims);
+	for (size_t i = 0; i < d->ndims; i++) {
+		fprintf(stream, "%s: %16zu: %16zu %16zu %16zu\n", prefix,
+			i, d->dims[i], d->coffsets[i], d->target_dims[i]);
+	}
+	fprintf(stream, "%s: target: begin\n", prefix);
+	aml_layout_fprintf(stream, prefix, d->target);
+	fprintf(stream, "%s: target: end\n", prefix);
+	return AML_SUCCESS;
+}
+
 struct aml_layout_ops aml_layout_reshape_column_ops = {
 	aml_layout_reshape_column_deref,
 	aml_layout_reshape_column_deref,
@@ -215,6 +239,7 @@ struct aml_layout_ops aml_layout_reshape_column_ops = {
 	NULL,
 	NULL,
 	NULL,
+	aml_layout_reshape_column_fprintf,
 };
 
 /*******************************************************************************
@@ -261,6 +286,32 @@ int aml_layout_reshape_row_dims(const struct aml_layout_data *data,
 	return 0;
 }
 
+int aml_layout_reshape_row_fprintf(const struct aml_layout_data *data,
+				   FILE *stream, const char *prefix)
+{
+	const struct aml_layout_data_reshape *d;
+
+	fprintf(stream, "%s: layout-reshape: %p: row-major\n", prefix,
+		(void *)data);
+	if (data == NULL)
+		return AML_SUCCESS;
+
+	d = (const struct aml_layout_data_reshape *)data;
+
+	fprintf(stream, "%s: ndims: %zu\n", prefix, d->ndims);
+	fprintf(stream, "%s: target-ndims: %zu\n", prefix, d->target_ndims);
+	for (size_t i = 0; i < d->ndims; i++) {
+		size_t j = d->ndims - i - 1;
+
+		fprintf(stream, "%s: %16zu: %16zu %16zu %16zu\n", prefix,
+			i, d->dims[j], d->coffsets[j], d->target_dims[j]);
+	}
+	fprintf(stream, "%s: target: begin\n", prefix);
+	aml_layout_fprintf(stream, prefix, d->target);
+	fprintf(stream, "%s: target: end\n", prefix);
+	return AML_SUCCESS;
+}
+
 struct aml_layout_ops aml_layout_reshape_row_ops = {
 	aml_layout_reshape_row_deref,
 	aml_layout_reshape_column_deref,
@@ -273,4 +324,5 @@ struct aml_layout_ops aml_layout_reshape_row_ops = {
 	NULL,
 	NULL,
 	NULL,
+	aml_layout_reshape_row_fprintf,
 };

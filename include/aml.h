@@ -417,6 +417,16 @@ struct aml_layout_ops {
 			    const size_t *offsets,
 			    const size_t *dims,
 			    const size_t *strides);
+	/**
+	 * Print the implementation-specific information available on a layout,
+	 * content excluded.
+	 * @param stream the stream to print to
+	 * @param prefix a prefix string to use on all lines
+	 * @param data non-NULL handle to layout internal data.
+	 * @return 0 if successful, an error code otherwise.
+	 **/
+	int (*fprintf)(const struct aml_layout_data *data,
+		       FILE *stream, const char *prefix);
 };
 
 /**
@@ -572,6 +582,17 @@ int aml_layout_slice(const struct aml_layout *layout,
 		     const size_t *offsets,
 		     const size_t *dims,
 		     const size_t *strides);
+
+/**
+ * Print on the file handle the metadata associated with this layout.
+ * @param stream the stream to print on
+ * @param prefix prefix to use on all lines
+ * @param layout layout to print
+ * @return 0 if successful, an error code otherwise.
+ */
+int aml_layout_fprintf(FILE *stream, const char *prefix,
+		       const struct aml_layout *layout);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -748,7 +769,6 @@ int aml_tiling_tileid(const struct aml_tiling *tiling, const size_t *coords);
  */
 struct aml_layout *aml_tiling_index_byid(const struct aml_tiling *tiling,
 					 const int uuid);
-
 
 ////////////////////////////////////////////////////////////////////////////////
 

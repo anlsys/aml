@@ -373,6 +373,28 @@ int aml_layout_column_slice(const struct aml_layout_data *data,
 	return AML_SUCCESS;
 }
 
+int aml_layout_column_fprintf(const struct aml_layout_data *data,
+			      FILE *stream, const char *prefix)
+{
+	const struct aml_layout_dense *d;
+
+	fprintf(stream, "%s: layout-dense: %p: column-major\n", prefix,
+		(void *)data);
+	if (data == NULL)
+		return AML_SUCCESS;
+
+	d = (const struct aml_layout_dense *)data;
+
+	fprintf(stream, "%s: ptr: %p\n", prefix, d->ptr);
+	fprintf(stream, "%s: ndims: %zu\n", prefix, d->ndims);
+	for (size_t i = 0; i < d->ndims; i++) {
+		fprintf(stream, "%s: %16zu: %16zu %16zu %16zu\n", prefix,
+			i, d->dims[i], d->stride[i], d->cpitch[i]);
+	}
+	return AML_SUCCESS;
+}
+
+
 struct aml_layout_ops aml_layout_column_ops = {
 	aml_layout_column_deref,
 	aml_layout_column_deref,
@@ -385,6 +407,7 @@ struct aml_layout_ops aml_layout_column_ops = {
 	aml_layout_column_reshape,
 	aml_layout_column_slice,
 	aml_layout_column_slice,
+	aml_layout_column_fprintf,
 };
 
 /*******************************************************************************
@@ -548,6 +571,29 @@ int aml_layout_row_slice_native(const struct aml_layout_data *data,
 	return AML_SUCCESS;
 }
 
+int aml_layout_row_fprintf(const struct aml_layout_data *data,
+			   FILE *stream, const char *prefix)
+{
+	const struct aml_layout_dense *d;
+
+	fprintf(stream, "%s: layout-dense: %p: row-major\n", prefix,
+		(void *)data);
+	if (data == NULL)
+		return AML_SUCCESS;
+
+	d = (const struct aml_layout_dense *)data;
+
+	fprintf(stream, "%s: ptr: %p\n", prefix, d->ptr);
+	fprintf(stream, "%s: ndims: %zu\n", prefix, d->ndims);
+	for (size_t i = 0; i < d->ndims; i++) {
+		size_t j = d->ndims - i - 1;
+
+		fprintf(stream, "%s: %16zu: %16zu %16zu %16zu\n", prefix,
+			i, d->dims[j], d->stride[j], d->cpitch[j]);
+	}
+	return AML_SUCCESS;
+}
+
 struct aml_layout_ops aml_layout_row_ops = {
 	aml_layout_row_deref,
 	aml_layout_column_deref,
@@ -559,6 +605,7 @@ struct aml_layout_ops aml_layout_row_ops = {
 	aml_layout_dense_element_size,
 	aml_layout_row_reshape,
 	aml_layout_row_slice,
-	aml_layout_row_slice_native
+	aml_layout_row_slice_native,
+	aml_layout_row_fprintf,
 };
 
