@@ -2,13 +2,6 @@ AM_COLOR_TESTS = yes
 
 AM_CFLAGS = -I$(top_srcdir)/include $(PTHREAD_CFLAGS)
 AM_LDFLAGS = ../src/libaml.la $(PTHREAD_LIBS)
-if HAVE_CUDA
-# LIBS is used instead of AM_LDFLAGS on purpose
-# AM_LDFLAGS appends flags before libraries added before LDADD.
-# Thus, when linking with libaml.la, linking with cuda is not done.
-LIBS += $(CUDA_CFLAGS)
-LIBS += $(CUDA_LIBS)
-endif
 
 if HAVE_CUDA
 # LIBS is used instead of AM_LDFLAGS on purpose
