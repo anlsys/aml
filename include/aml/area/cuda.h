@@ -45,6 +45,17 @@
 #define AML_AREA_CUDA_FLAG_ALLOC_HOST (1 << 0)
 
 /**
+ * Unified memory flag.
+ * If this flag is set, then allocation will create
+ * a unified memory pointer usable on host and device.
+ * Additionally, AML_AREA_CUDA_FLAG_ALLOC_HOST and
+ * AML_AREA_CUDA_FLAG_ALLOC_MAPPED will be ignored.
+ *
+ * @see cudaMallocManaged()
+ **/
+#define	AML_AREA_CUDA_FLAG_ALLOC_UNIFIED (1 << 1)
+
+/**
  * Mapping flag.
  * Default behaviour is allocation not mapped.
  * If set, the pointer returned by mmap function
@@ -58,23 +69,12 @@
  *
  * @see cudaHostRegister(), cudaHostAlloc().
  **/
-#define AML_AREA_CUDA_FLAG_ALLOC_MAPPED (1 << 1)
-
-/**
- * Unified memory flag.
- * If this flag is set, then allocation will create
- * a unified memory pointer usable on host and device.
- * Additionally, AML_AREA_CUDA_FLAG_ALLOC_HOST and
- * AML_AREA_CUDA_FLAG_ALLOC_MAPPED will be ignored.
- *
- * @see cudaMallocManaged()
- **/
-#define	AML_AREA_CUDA_FLAG_ALLOC_UNIFIED (1 << 2)
+#define AML_AREA_CUDA_FLAG_ALLOC_MAPPED (1 << 2)
 
 /**
  * Unified memory setting flag.
  * If AML_AREA_CUDA_FLAG_ALLOC_UNIFIED is set,
- * then this flagged is looked to set
+ * then this flag is looked to set
  * cudaMallocManaged() flag cudaAttachGlobal.
  * Else if AML_AREA_CUDA_FLAG_ALLOC_MAPPED is set,
  * or AML_AREA_CUDA_FLAG_ALLOC_HOST flag is set,

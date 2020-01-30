@@ -154,6 +154,16 @@ struct aml_area_ops {
 	int (*munmap)(const struct aml_area_data *data,
 		      void                       *ptr,
 		      size_t                      size);
+
+	/**
+	 * Print the implementation-specific information available
+	 * @param stream the stream to print to
+	 * @param prefix a prefix string to use on all lines
+	 * @param data non-NULL handle to area internal data.
+	 * @return 0 if successful, an error code otherwise.
+	 **/
+	int (*fprintf)(const struct aml_area_data *data,
+		       FILE *stream, const char *prefix);
 };
 
 /**
@@ -197,6 +207,16 @@ int
 aml_area_munmap(const struct aml_area *area,
 		void                  *ptr,
 		size_t                 size);
+
+/**
+ * Print on the file handle the metadata associated with this area.
+ * @param stream the stream to print on
+ * @param prefix prefix to use on all lines
+ * @param area area to print
+ * @return 0 if successful, an error code otherwise.
+ */
+int aml_area_fprintf(FILE *stream, const char *prefix,
+		     const struct aml_area *area);
 
 ////////////////////////////////////////////////////////////////////////////////
 

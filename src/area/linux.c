@@ -178,6 +178,37 @@ void *aml_area_linux_mmap_mbind(const struct aml_area_data  *area_data,
 	return out;
 }
 
+int aml_area_linux_fprintf(const struct aml_area_data *data,
+			   FILE *stream, const char *prefix)
+{
+	const struct aml_area_linux_data *d;
+
+	static const char * const policies[] = {
+		[AML_AREA_LINUX_POLICY_DEFAULT] = "default",
+		[AML_AREA_LINUX_POLICY_BIND] = "bind",
+		[AML_AREA_LINUX_POLICY_PREFERRED] = "preferred",
+		[AML_AREA_LINUX_POLICY_INTERLEAVE] = "interleave"
+	};
+
+	fprintf(stream, "%s: area-linux: %p\n", prefix, (void *)data);
+	if (data == NULL)
+		return AML_SUCCESS;
+
+	d = (const struct aml_area_linux_data *)data;
+
+	if (d->nodeset == NULL)
+		fprintf(stream, "%s: bitmask: 0x0\n", prefix);
+	else {
+		fprintf(stream, "%s: bitmask: size: %zu", prefix,
+			d->nodeset->size);
+		fprintf(stream, "%s: bitmask: maskp: ", prefix);
+		for (size_t i = 0; i < d->nodeset->size; i++)
+			fprintf(stream, "%8lx", d->nodeset->maskp[i]);
+		fprintf(stream, "\n");
+	}
+	fprintf(stream, "%s: policy: %s\n", prefix, policies[d->policy]);
+	return AML_SUCCESS;
+}
 
 /*******************************************************************************
  * Areas Initialization
@@ -274,7 +305,8 @@ struct aml_area_linux_data aml_area_linux_data_default = {
 
 struct aml_area_ops aml_area_linux_ops = {
 	.mmap = aml_area_linux_mmap_mbind,
-	.munmap = aml_area_linux_munmap
+	.munmap = aml_area_linux_munmap,
+	.fprintf = aml_area_linux_fprintf,
 };
 
 struct aml_area aml_area_linux = {
