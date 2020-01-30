@@ -1,5 +1,5 @@
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = src include tests doc
+SUBDIRS = src include tests tutorials doc
 
 #if ADD_BENCHMARKS
 #SUBDIRS += benchmarks

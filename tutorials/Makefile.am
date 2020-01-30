@@ -1,0 +1,34 @@
+AM_COLOR_TESTS = yes
+
+AM_CFLAGS = -I$(top_srcdir)/include $(PTHREAD_CFLAGS)
+AM_LDFLAGS = ../src/libaml.la $(PTHREAD_LIBS)
+
+if HAVE_CUDA
+# LIBS is used instead of AM_LDFLAGS on purpose
+# AM_LDFLAGS appends flags before libraries added before LDADD.
+# Thus, when linking with libaml.la, linking with cuda is not done.
+LIBS += $(CUDA_CFLAGS)
+LIBS += $(CUDA_LIBS)
+AM_CFLAGS += $(CUDA_CFLAGS)
+AM_LDFLAGS += $(CUDA_LIBS)
+endif
+
+HELLO_TESTS = \
+	      hello_world/0_hello
+
+AREA_TESTS = \
+	      area/0_isInterleaved \
+	      area/1_aml_area_linux \
+	      area/2_custom_interleave_area
+
+LAYOUT_TESTS = \
+	       layouts/0_dense_layout
+
+if HAVE_CUDA
+AREA_TESTS += area/3_aml_area_cuda
+endif
+
+UNIT_TESTS = $(HELLO_TESTS) $(AREA_TESTS) $(LAYOUT_TESTS)
+
+check_PROGRAMS = $(UNIT_TESTS)
+TESTS = $(UNIT_TESTS)

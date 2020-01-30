@@ -185,6 +185,7 @@ AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 include/Makefile
 		 tests/Makefile
+		 tutorials/Makefile		 
 		 doc/Makefile
 		 benchmarks/Makefile
 		 aml.pc
