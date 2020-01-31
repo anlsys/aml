@@ -918,6 +918,16 @@ struct aml_dma_ops {
 	 **/
 	int (*wait_request)(struct aml_dma_data *dma,
 			    struct aml_dma_request **req);
+
+	/**
+	 * Print the implementation-specific information available on a dma.
+	 * @param stream the stream to print to
+	 * @param prefix a prefix string to use on all lines
+	 * @param data non-NULL handle to dma internal data.
+	 * @return 0 if successful, an error code otherwise.
+	 **/
+	int (*fprintf)(const struct aml_dma_data *data,
+		       FILE *stream, const char *prefix);
 };
 
 /**
@@ -982,6 +992,16 @@ int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request **req);
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request **req);
+
+/**
+ * Print on the file handle the metadata associated with this dma.
+ * @param stream the stream to print on
+ * @param prefix prefix to use on all lines
+ * @param dma dma to print
+ * @return 0 if successful, an error code otherwise.
+ */
+int aml_dma_fprintf(FILE *stream, const char *prefix,
+		    const struct aml_dma *dma);
 
 /**
  * Generic helper to copy from one layout to another.
