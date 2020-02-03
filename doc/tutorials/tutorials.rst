@@ -10,4 +10,4 @@ to better understand each abstraction.
 
    getting_started
    hello_world/hello_world
-
+   area/areas
