@@ -205,6 +205,37 @@ int aml_area_cuda_munmap(const struct aml_area_data *area_data,
 	return cuda_to_aml_alloc_error(error);
 }
 
+int aml_area_cuda_fprintf(const struct aml_area_data *data,
+			  FILE *stream, const char *prefix)
+{
+	const struct aml_area_cuda_data *d;
+
+	/* the fields are in an order that allows us to only test those three,
+	 * and threat mapped and global as special.
+	 */
+	static const char * const flags[] = {
+		[AML_AREA_CUDA_FLAG_DEFAULT] = "default",
+		[AML_AREA_CUDA_FLAG_ALLOC_HOST] = "host",
+		[AML_AREA_CUDA_FLAG_ALLOC_UNIFIED] = "unified",
+	};
+
+	fprintf(stream, "%s: area-cuda: %p\n", prefix, (void *)data);
+	if (data == NULL)
+		return AML_SUCCESS;
+
+	d = (const struct aml_area_cuda_data *)data;
+
+	fprintf(stream, "%s: device: %i", prefix, d->device);
+	fprintf(stream, "%s: flags: %s\n", prefix, flags[d->flags & 3]);
+	fprintf(stream, "%s: mapped: %s\n", prefix,
+		(d->flags & AML_AREA_CUDA_FLAG_ALLOC_MAPPED) ? "yes" : "no");
+	fprintf(stream, "%s: global: %s\n", prefix,
+		(d->flags & AML_AREA_CUDA_FLAG_ALLOC_GLOBAL) ? "yes" : "no");
+	return AML_SUCCESS;
+}
+
+
+
 /*******************************************************************************
  * Areas Initialization
  ******************************************************************************/
@@ -261,7 +292,8 @@ struct aml_area_cuda_data aml_area_cuda_data_default = {
 
 struct aml_area_ops aml_area_cuda_ops = {
 	.mmap = aml_area_cuda_mmap,
-	.munmap = aml_area_cuda_munmap
+	.munmap = aml_area_cuda_munmap,
+	.fprintf = aml_area_cuda_fprintf,
 };
 
 struct aml_area aml_area_cuda = {

@@ -154,6 +154,16 @@ struct aml_area_ops {
 	int (*munmap)(const struct aml_area_data *data,
 		      void                       *ptr,
 		      size_t                      size);
+
+	/**
+	 * Print the implementation-specific information available
+	 * @param stream the stream to print to
+	 * @param prefix a prefix string to use on all lines
+	 * @param data non-NULL handle to area internal data.
+	 * @return 0 if successful, an error code otherwise.
+	 **/
+	int (*fprintf)(const struct aml_area_data *data,
+		       FILE *stream, const char *prefix);
 };
 
 /**
@@ -197,6 +207,16 @@ int
 aml_area_munmap(const struct aml_area *area,
 		void                  *ptr,
 		size_t                 size);
+
+/**
+ * Print on the file handle the metadata associated with this area.
+ * @param stream the stream to print on
+ * @param prefix prefix to use on all lines
+ * @param area area to print
+ * @return 0 if successful, an error code otherwise.
+ */
+int aml_area_fprintf(FILE *stream, const char *prefix,
+		     const struct aml_area *area);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -417,6 +437,16 @@ struct aml_layout_ops {
 			    const size_t *offsets,
 			    const size_t *dims,
 			    const size_t *strides);
+	/**
+	 * Print the implementation-specific information available on a layout,
+	 * content excluded.
+	 * @param stream the stream to print to
+	 * @param prefix a prefix string to use on all lines
+	 * @param data non-NULL handle to layout internal data.
+	 * @return 0 if successful, an error code otherwise.
+	 **/
+	int (*fprintf)(const struct aml_layout_data *data,
+		       FILE *stream, const char *prefix);
 };
 
 /**
@@ -573,6 +603,17 @@ int aml_layout_slice(const struct aml_layout *layout,
 		     const size_t *dims,
 		     const size_t *strides);
 
+/**
+ * Print on the file handle the metadata associated with this layout.
+ * @param stream the stream to print on
+ * @param prefix prefix to use on all lines
+ * @param layout layout to print
+ * @return 0 if successful, an error code otherwise.
+ */
+int aml_layout_fprintf(FILE *stream, const char *prefix,
+		       const struct aml_layout *layout);
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -660,6 +701,17 @@ struct aml_tiling_ops {
 	int (*dims_native)(const struct aml_tiling_data *t, size_t *dims);
 	size_t (*ndims)(const struct aml_tiling_data *t);
 	size_t (*ntiles)(const struct aml_tiling_data *t);
+
+	/**
+	 * Print the implementation-specific information available on a tiling,
+	 * content excluded.
+	 * @param stream the stream to print to
+	 * @param prefix a prefix string to use on all lines
+	 * @param data non-NULL handle to tiling internal data.
+	 * @return 0 if successful, an error code otherwise.
+	 **/
+	int (*fprintf)(const struct aml_tiling_data *data,
+		       FILE *stream, const char *prefix);
 };
 
 /**
@@ -749,6 +801,15 @@ int aml_tiling_tileid(const struct aml_tiling *tiling, const size_t *coords);
 struct aml_layout *aml_tiling_index_byid(const struct aml_tiling *tiling,
 					 const int uuid);
 
+/**
+ * Print on the file handle the metadata associated with this tiling.
+ * @param stream the stream to print on
+ * @param prefix prefix to use on all lines
+ * @param tiling tiling to print
+ * @return 0 if successful, an error code otherwise.
+ */
+int aml_tiling_fprintf(FILE *stream, const char *prefix,
+		       const struct aml_tiling *tiling);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -857,6 +918,16 @@ struct aml_dma_ops {
 	 **/
 	int (*wait_request)(struct aml_dma_data *dma,
 			    struct aml_dma_request **req);
+
+	/**
+	 * Print the implementation-specific information available on a dma.
+	 * @param stream the stream to print to
+	 * @param prefix a prefix string to use on all lines
+	 * @param data non-NULL handle to dma internal data.
+	 * @return 0 if successful, an error code otherwise.
+	 **/
+	int (*fprintf)(const struct aml_dma_data *data,
+		       FILE *stream, const char *prefix);
 };
 
 /**
@@ -921,6 +992,16 @@ int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request **req);
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request **req);
+
+/**
+ * Print on the file handle the metadata associated with this dma.
+ * @param stream the stream to print on
+ * @param prefix prefix to use on all lines
+ * @param dma dma to print
+ * @return 0 if successful, an error code otherwise.
+ */
+int aml_dma_fprintf(FILE *stream, const char *prefix,
+		    const struct aml_dma *dma);
 
 /**
  * Generic helper to copy from one layout to another.

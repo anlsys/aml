@@ -79,12 +79,15 @@ int main(int argc, char *argv[])
 					   layouts[i][0], layouts[i][1]));
 		assert(requests[i] != NULL);
 	}
+	assert(!aml_dma_fprintf(stderr, "test", dma));
 	for (int i = 0; i < 16; i++) {
 		assert(!aml_dma_wait(dma, &requests[i]));
 		aml_layout_dense_destroy(&layouts[i][0]);
 		aml_layout_dense_destroy(&layouts[i][1]);
 	}
 	assert(!memcmp(isrc, idest, isz*sizeof(int)));
+
+	assert(!aml_dma_fprintf(stderr, "test", dma));
 
 	/* delete everything */
 	aml_dma_linux_seq_destroy(&dma);

@@ -286,3 +286,13 @@ int aml_layout_slice_native(const struct aml_layout *layout,
 
 	return err;
 }
+
+int aml_layout_fprintf(FILE *stream, const char *prefix,
+		       const struct aml_layout *layout)
+{
+	assert(layout != NULL && layout->ops != NULL && stream != NULL);
+
+	const char *p = (prefix == NULL) ? "" : prefix;
+
+	return layout->ops->fprintf(layout->data, stream, p);
+}

@@ -116,3 +116,13 @@ int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request **req)
 		return -AML_EINVAL;
 	return dma->ops->wait_request(dma->data, req);
 }
+
+int aml_dma_fprintf(FILE *stream, const char *prefix,
+		    const struct aml_dma *dma)
+{
+	assert(dma != NULL && dma->ops != NULL && stream != NULL);
+
+	const char *p = (prefix == NULL) ? "" : prefix;
+
+	return dma->ops->fprintf(dma->data, stream, p);
+}

@@ -128,3 +128,9 @@ void test_layout_base(struct aml_layout *layout)
 		increment_coords(ndims, dims, coords, 1);
 	}
 }
+
+void test_layout_fprintf(FILE *stream, const char *prefix,
+			 struct aml_layout *layout)
+{
+	assert(!aml_layout_fprintf(stream, prefix, layout));
+}

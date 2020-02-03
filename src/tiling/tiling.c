@@ -110,3 +110,12 @@ struct aml_layout *aml_tiling_index_byid(const struct aml_tiling *t,
 	return aml_tiling_index_native(t, coords);
 }
 
+int aml_tiling_fprintf(FILE *stream, const char *prefix,
+		       const struct aml_tiling *tiling)
+{
+	assert(tiling != NULL && tiling->ops != NULL && stream != NULL);
+
+	const char *p = (prefix == NULL) ? "" : prefix;
+
+	return tiling->ops->fprintf(tiling->data, stream, p);
+}

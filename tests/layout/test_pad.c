@@ -13,6 +13,8 @@
 #include "aml/layout/dense.h"
 #include "aml/layout/pad.h"
 
+#include "test_layout.h"
+
 void test_pad(int (*layout_create) (struct aml_layout **layout,
 				    void *ptr,
 				    const int order,
@@ -40,6 +42,7 @@ void test_pad(int (*layout_create) (struct aml_layout **layout,
 	ret_dims[0] = 10;
 	ret_dims[1] = 12;
 	assert(*(float *)aml_layout_deref(b, ret_dims) == one);
+	test_layout_fprintf(stderr, "test-pad", b);
 	aml_layout_pad_destroy(&b);
 	free(a);
 }

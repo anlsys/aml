@@ -46,3 +46,12 @@ int aml_area_munmap(const struct aml_area *area, void *ptr, size_t size)
 	return area->ops->munmap(area->data, ptr, size);
 }
 
+int aml_area_fprintf(FILE *stream, const char *prefix,
+		     const struct aml_area *area)
+{
+	assert(area != NULL && area->ops != NULL && stream != NULL);
+
+	const char *p = (prefix == NULL) ? "" : prefix;
+
+	return area->ops->fprintf(area->data, stream, p);
+}

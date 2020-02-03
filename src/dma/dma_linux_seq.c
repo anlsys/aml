@@ -140,10 +140,49 @@ int aml_dma_linux_seq_wait_request(struct aml_dma_data *d,
 	return 0;
 }
 
+int aml_dma_linux_seq_fprintf(const struct aml_dma_data *data,
+			      FILE *stream, const char *prefix)
+{
+	const struct aml_dma_linux_seq *d;
+	size_t vsize;
+
+	fprintf(stream, "%s: dma-linux-seq: %p:\n", prefix, (void *)data);
+	if (data == NULL)
+		return AML_SUCCESS;
+
+	d = (const struct aml_dma_linux_seq *)data;
+
+	vsize = aml_vector_size(d->data.requests);
+	/* ugly cast because ISO C forbids function pointer to void * */
+	fprintf(stream, "%s: op: %p\n", prefix,
+		(void *) (intptr_t) d->data.default_op);
+	fprintf(stream, "%s: op-arg: %p\n", prefix, d->data.default_op_arg);
+	fprintf(stream, "%s: requests: %zu\n", prefix, vsize);
+	for (size_t i = 0; i < vsize; i++) {
+		const struct aml_dma_request_linux_seq *r;
+
+		r = aml_vector_get(d->data.requests, i);
+		fprintf(stream, "%s: type: %d\n", prefix, r->type);
+		if (r->type == AML_DMA_REQUEST_TYPE_INVALID)
+			continue;
+
+		fprintf(stream, "%s: layout-dest: %p\n", prefix,
+			(void *)r->dest);
+		aml_layout_fprintf(stream, prefix, r->dest);
+		fprintf(stream, "%s: layout-src: %p\n", prefix, (void *)r->src);
+		aml_layout_fprintf(stream, prefix, r->src);
+		fprintf(stream, "%s: op: %p\n", prefix,
+			(void *) (intptr_t)r->op);
+		fprintf(stream, "%s: op-arg: %p\n", prefix, (void *)r->op_arg);
+	}
+	return AML_SUCCESS;
+}
+
 struct aml_dma_ops aml_dma_linux_seq_ops = {
 	aml_dma_linux_seq_create_request,
 	aml_dma_linux_seq_destroy_request,
 	aml_dma_linux_seq_wait_request,
+	aml_dma_linux_seq_fprintf,
 };
 
 /*******************************************************************************
