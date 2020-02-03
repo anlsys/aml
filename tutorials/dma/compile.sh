@@ -15,21 +15,12 @@ LDFLAGS="-lnuma -laml -lpthread -lcudart"
 
 if [ "x$1" == "xclean" ]; then
 		rm -f \
-			 0_isInterleaved \
-			 1_aml_area_linux \
-			 2_custom_interleave_area \
-			 3_aml_area_cuda
-
+			 0_example \
+			 1_reduction
 else
 # Compile tutorial 0
-gcc $CFLAGS 0_isInterleaved.c -o 0_isInterleaved $LDFLAGS
+gcc $CFLAGS 0_example.c -o 0_example $LDFLAGS
 
 # Compile tutorial 1
-gcc $CFLAGS 1_aml_area_linux.c -o 1_aml_area_linux $LDFLAGS
-
-# Compile tutorial 2
-gcc $CFLAGS 2_custom_interleave_area.c -o 2_custom_interleave_area $LDFLAGS
-
-# Compile tutorial 3
-gcc $CFLAGS 3_aml_area_cuda.c -o 3_aml_area_cuda $LDFLAGS
+gcc $CFLAGS 1_reduction.c -o 1_reduction $LDFLAGS
 fi
