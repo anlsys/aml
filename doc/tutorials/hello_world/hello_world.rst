@@ -59,7 +59,13 @@ Exercise
 Write a "hello world" code that checks both major and minor versions of the
 code.
 
-You can find the solution in *doc/tutorials/hello_world*.
+.. container:: toggle
 
-.. literalinclude:: 0_hello.c
-   :language: c
+   .. container:: header
+
+      **Click Here to Show/Hide Code**
+
+   .. literalinclude:: 0_hello.c
+      :language: c
+
+You can find this solution in *doc/tutorials/hello_world*.
