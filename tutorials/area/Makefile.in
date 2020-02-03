@@ -1,0 +1,21 @@
+CC=@CC@
+CFLAGS=-Wall -Wextra -Werror -pedantic -g -O0
+LDFLAGS=-L@prefix@/lib -laml -lnuma -lpthread
+
+SRC=0_isInterleaved.c 1_aml_area_linux.c 2_custom_interleave_area.c
+BIN=$(patsubst %.c, %, $(SRC))
+
+HAVE_CUDA=@HAVE_CUDA@
+ifeq ($(HAVE_CUDA), 1)
+SRC+=3_aml_area_cuda.c
+LDFLAGS+=@CUDA_LIBS@
+CFLAGS+=@CUDA_CFLAGS@
+endif
+
+all: $(BIN)
+
+%: %.c
+	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
+
+clean:
+	rm -rf $(BIN)

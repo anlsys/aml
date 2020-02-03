@@ -188,6 +188,9 @@ AC_CONFIG_FILES([Makefile
 		 tutorials/Makefile		 
 		 doc/Makefile
 		 benchmarks/Makefile
+		 tutorials/area/Makefile
+		 tutorials/dma/Makefile
+		 tutorials/layouts/Makefile
 		 aml.pc
 		 include/aml/utils/version.h
 		 include/aml/utils/features.h])
