@@ -57,8 +57,8 @@ master_doc = 'index'
 # -- Project information -----------------------------------------------------
 
 project   = 'AML'
-copyright = 'Copyright 2019 UChicago Argonne, LLC'
-author    = 'Swann Perarnau, Kamil Iskra, Brian Suchy, Valentin Reis, Nicolas Denoyelle'
+copyright = '2019-2020 UChicago Argonne, LLC'
+author    = 'Argo @ Argonne National Laboratory'
 release   = '0.1.0'
 
 # -- Options for HTML output -------------------------------------------------
