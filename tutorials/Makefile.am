@@ -24,11 +24,15 @@ AREA_TESTS = \
 LAYOUT_TESTS = \
 	       layouts/0_dense_layout
 
+DMA_TESTS = \
+	      dma/0_example \
+	      dma/1_reduction
+
 if HAVE_CUDA
 AREA_TESTS += area/3_aml_area_cuda
 endif
 
-UNIT_TESTS = $(HELLO_TESTS) $(AREA_TESTS) $(LAYOUT_TESTS)
+UNIT_TESTS = $(HELLO_TESTS) $(AREA_TESTS) $(LAYOUT_TESTS) $(DMA_TESTS)
 
 check_PROGRAMS = $(UNIT_TESTS)
 TESTS = $(UNIT_TESTS)
