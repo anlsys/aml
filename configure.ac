@@ -185,12 +185,13 @@ AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 include/Makefile
 		 tests/Makefile
-		 tutorials/Makefile		 
+		 doc/tutorials/Makefile
 		 doc/Makefile
+		 doc/tutorials/hello_world/Makefile
+		 doc/tutorials/area/Makefile
+		 doc/tutorials/dma/Makefile
+		 doc/tutorials/layouts/Makefile
 		 benchmarks/Makefile
-		 tutorials/area/Makefile
-		 tutorials/dma/Makefile
-		 tutorials/layouts/Makefile
 		 aml.pc
 		 include/aml/utils/version.h
 		 include/aml/utils/features.h])

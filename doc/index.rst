@@ -131,6 +131,7 @@ for more info.
    :maxdepth: 2
    :caption: Table of Contents
 
+   tutorials/tutorials
    pages/areas
    pages/tilings
    pages/layout

@@ -1,7 +1,7 @@
 AM_COLOR_TESTS = yes
 
 AM_CFLAGS = -I$(top_srcdir)/include $(PTHREAD_CFLAGS)
-AM_LDFLAGS = ../src/libaml.la $(PTHREAD_LIBS)
+AM_LDFLAGS = $(top_builddir)/src/libaml.la $(PTHREAD_LIBS)
 
 if HAVE_CUDA
 # LIBS is used instead of AM_LDFLAGS on purpose

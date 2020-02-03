@@ -2,6 +2,10 @@ DATA_INSTALL_DIR=$(datadir)/aml
 DOXYGEN_BUILD_DIR=./build-doxygen
 SPHINX_BUILD_DIR=./build-sphinx
 
+
+SUBDIRS = tutorials
+
+
 if BUILD_DOCS
 build-docs:
 	$(DOXYGEN) aml.doxy
