@@ -1012,6 +1012,9 @@ int aml_dma_fprintf(FILE *stream, const char *prefix,
 int aml_copy_layout_generic(struct aml_layout *dst,
 			    const struct aml_layout *src, void *arg);
 
+int aml_copy_layout_transform_generic(struct aml_layout *dst,
+				      const struct aml_layout *src,
+				      const size_t *target_dims);
 
 ////////////////////////////////////////////////////////////////////////////////
 
