@@ -30,11 +30,15 @@ DMA_TESTS = \
 	      dma/0_example \
 	      dma/1_reduction
 
+TILING_TESTS = \
+	       tiling/0_generic_resize_tiling \
+	       tiling/1_dgemm
+
 if HAVE_CUDA
 AREA_TESTS += area/3_aml_area_cuda
 endif
 
-UNIT_TESTS = $(HELLO_TESTS) $(AREA_TESTS) $(LAYOUT_TESTS) $(DMA_TESTS)
+UNIT_TESTS = $(HELLO_TESTS) $(AREA_TESTS) $(LAYOUT_TESTS) $(DMA_TESTS) $(TILING_TESTS)
 
 check_PROGRAMS = $(UNIT_TESTS)
 TESTS = $(UNIT_TESTS)
