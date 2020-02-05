@@ -22,7 +22,9 @@ AREA_TESTS = \
 	      area/2_custom_interleave_area
 
 LAYOUT_TESTS = \
-	       layouts/0_dense_layout
+	       layouts/0_dense_layout \
+	       layouts/1_layout_reshape \
+	       layouts/2_aos_soa
 
 DMA_TESTS = \
 	      dma/0_example \
