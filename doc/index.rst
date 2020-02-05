@@ -128,9 +128,10 @@ well as code contributions. See the
 for more info.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Table of Contents
 
+   tutorials/tutorials
    pages/areas
    pages/tilings
    pages/layout

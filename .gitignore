@@ -64,6 +64,8 @@ features.h
 tests/**/*.trs
 tests/**/*.log
 *.test.*
+doc/tutorials/**/*.trs
+doc/tutorials/**/*.log
 
 # libtool
 /libtool
