@@ -9,6 +9,7 @@ SUBDIRS = tutorials
 if BUILD_DOCS
 build-docs:
 	$(DOXYGEN) aml.doxy
+	cp img/*png build-doxygen/xml
 	$(SPHINXBUILD) -v -W -b html -a . $(SPHINX_BUILD_DIR)
 
 dist-hook: build-docs
