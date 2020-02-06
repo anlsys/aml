@@ -91,7 +91,7 @@ in a very similar way to the Linux implementation.
 .. code-block:: c
 
   #include <aml.h> // General high level API
-  #include <aml/cuda/linux.h> // CUDA area implementation.
+  #include <aml/area/cuda.h> // CUDA area implementation.
   void *data = aml_area_mmap(&aml_area_cuda, 4096, NULL);
 
 The pointer obtained from this allocation is a device-side pointer.
