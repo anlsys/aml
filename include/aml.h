@@ -236,6 +236,9 @@ int aml_area_fprintf(FILE *stream, const char *prefix,
  * * A stride in between elements of a dimension.
  * * A pitch indicating the space between contiguous elements of a dimension.
  *
+ * For a definition of row and columns of matrices see :
+ * https://en.wikipedia.org/wiki/Matrix_(mathematics)
+ *
  * The figure below describes a 2D layout with a sub-layout
  * (obtained with aml_layout_slice()) operation. The sub-layout has a stride
  * of 1 element along the second dimension. The slice has an offset of 1 element
@@ -249,12 +252,13 @@ int aml_area_fprintf(FILE *stream, const char *prefix,
  * Access to specific elements of a layout can be done with
  * the aml_layout_deref() function. Access to an element is always done
  * relatively to the dimensions order set by at creation time.
- * However, internally, the library will store dimensions from the last
- * dimension to the first dimension such that elements along the first dimension
- * are contiguous in memory. This order is defined called with the value
- * AML_LAYOUT_ORDER_FORTRAN. Therefore, AML provides access to elements
- * without the overhead of user order choice through function suffixed
- * with "native".
+ * However, internally, the library will always store dimensions in such a way
+ * that elements along the first dimension
+ * are contiguous in memory. This order is defined with the value
+ * AML_LAYOUT_ORDER_COLUMN_MAJOR (AML_LAYOUT_ORDER_FORTRAN). See:
+ * https://en.wikipedia.org/wiki/Row-_and_column-major_order
+ * Additionally, AML provides access to elements without the overhead of user
+ * order choice through function suffixed with "native".
  * @see aml_layout_deref()
  * @see aml_layout_deref_native()
  * @see aml_layout_dims_native()
@@ -456,7 +460,7 @@ struct aml_layout_ops {
  * This tag will store dimensions in the order provided by the user,
  * i.e., elements of the last dimension will be contiguous in memory.
  **/
-#define AML_LAYOUT_ORDER_C (0<<0)
+#define AML_LAYOUT_ORDER_FORTRAN (0<<0)
 
 /**
  * Tag specifying user storage of dimensions inside a layout.
@@ -467,17 +471,17 @@ struct aml_layout_ops {
  * in memory. This storage is the actual storage used by the library
  * inside the structure.
  **/
-#define AML_LAYOUT_ORDER_FORTRAN (1<<0)
-
-/**
- * This is equivalent to AML_LAYOUT_ORDER_C.
- * @see AML_LAYOUT_ORDER_C
- **/
-#define AML_LAYOUT_ORDER_COLUMN_MAJOR (0<<0)
+#define AML_LAYOUT_ORDER_C (1<<0)
 
 /**
  * This is equivalent to AML_LAYOUT_ORDER_FORTRAN.
  * @see AML_LAYOUT_ORDER_FORTRAN
+ **/
+#define AML_LAYOUT_ORDER_COLUMN_MAJOR (0<<0)
+
+/**
+ * This is equivalent to AML_LAYOUT_ORDER_C.
+ * @see AML_LAYOUT_ORDER_C
  **/
 #define AML_LAYOUT_ORDER_ROW_MAJOR (1<<0)
 
@@ -638,7 +642,7 @@ int aml_layout_fprintf(FILE *stream, const char *prefix,
  * This tag will store dimensions in the order provided by the user,
  * i.e elements of the last dimension will be contiguous in memory.
  **/
-#define AML_TILING_ORDER_C (0<<0)
+#define AML_TILING_ORDER_FORTRAN (0<<0)
 
 /**
  * Tag specifying user storage of dimensions inside a layout.
@@ -649,17 +653,17 @@ int aml_layout_fprintf(FILE *stream, const char *prefix,
  * in memory. This storage is the actual storage used by the library
  * inside the structure.
  **/
-#define AML_TILING_ORDER_FORTRAN (1<<0)
-
-/**
- * This is equivalent to AML_TILING_ORDER_C.
- * @see AML_TILING_ORDER_C
- **/
-#define AML_TILING_ORDER_COLUMN_MAJOR (0<<0)
+#define AML_TILING_ORDER_C (1<<0)
 
 /**
  * This is equivalent to AML_TILING_ORDER_FORTRAN.
  * @see AML_TILING_ORDER_FORTRAN
+ **/
+#define AML_TILING_ORDER_COLUMN_MAJOR (0<<0)
+
+/**
+ * This is equivalent to AML_TILING_ORDER_C.
+ * @see AML_TILING_ORDER_C
  **/
 #define AML_TILING_ORDER_ROW_MAJOR (1<<0)
 

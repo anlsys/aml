@@ -96,8 +96,8 @@ Layout API:
    aml_layout_order(layout_f));
 
 The order of the first layout is `AML_LAYOUT_ORDER_C`, which in AML is
-represented by the value 0, and the order of the second layout is
-`AML_LAYOUT_ORDER_FORTRAN`, and the above function would return 1.
+represented by the value 1, and the order of the second layout is
+`AML_LAYOUT_ORDER_FORTRAN`, and the above function would return 0.
 
 Destroying an AML layout 
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -179,7 +179,7 @@ Changing the shape of a layout
 You can also change the shape of your layout, creating a new layout with a
 different number of dimensions.
 
-Let's take the previous layout `layout_c`, that had two dimensions `{x, y}`,
+Let's take the previous layout `layout_f`, that had two dimensions `{x, y}`,
 and create a new layout with three dimensions, basically splitting the first
 dimension in two:
 
@@ -187,10 +187,10 @@ dimension in two:
 
    size_t new_dims[3] = { x/2, x/2, y };
    struct aml_layout *reshape_layout;
-   aml_layout_reshape(layout_c, &reshape_layout, 3, new_dims));
+   aml_layout_reshape(layout_f, &reshape_layout, 3, new_dims));
 
 The new layout is ordered in the same order as the previous layout, in this
-case `AML_LAYOUT_ORDER_C`.
+case `AML_LAYOUT_ORDER_FORTRAN`.
 
 You can also want to mix up the order of the dimensions of your layout.
 This cannot be done with the `reshape` function. You need to allocate a new
@@ -211,9 +211,9 @@ right dimensions, we would use `aml_copy_layout_transform_generic`
    array_2 = (double *)aml_area_mmap(area, sizeof(double) * size_0 * size_1 * size_2, NULL);
 
    struct aml_layout *layout_3, *new_layout;
-   aml_layout_dense_create(&layout_3, array_1, AML_LAYOUT_ORDER_C, sizeof(size_t), 3, (size_t[]){size_0, size_1, size_2}, NULL, NULL));
+   aml_layout_dense_create(&layout_3, array_1, AML_LAYOUT_ORDER_FORTRAN, sizeof(size_t), 3, (size_t[]){size_0, size_1, size_2}, NULL, NULL));
 
-   aml_layout_dense_create(&new_layout, array_2, AML_LAYOUT_ORDER_C, sizeof(size_t), 3, (size_t[]){size_1, size_2, size_0}, NULL, NULL));
+   aml_layout_dense_create(&new_layout, array_2, AML_LAYOUT_ORDER_FORTRAN, sizeof(size_t), 3, (size_t[]){size_1, size_2, size_0}, NULL, NULL));
 
    aml_copy_layout_transform_generic(new_layout, layout_3, (size_t[]){1, 2, 0}));
 
@@ -245,7 +245,7 @@ Based on the above layout, a straightforward layout on this array could be:
 .. code-block:: c
 
    struct aml_layout *layout_part;
-   aml_layout_dense_create(&layout_part, particles, AML_LAYOUT_ORDER_C, sizeof(struct particle), 2, (size_t[]){size_1, size_2}, NULL, NULL));
+   aml_layout_dense_create(&layout_part, particles, AML_LAYOUT_ORDER_FORTRAN, sizeof(struct particle), 2, (size_t[]){size_1, size_2}, NULL, NULL));
 
 The issue with this layout is that it does not give us a fine enough control on
 the attributes of the particles. We need to be able to index each field of the
@@ -256,7 +256,7 @@ all fields have the same storage size here):
 
    struct aml_layout *layout_elements;
 
-   aml_layout_dense_create(&layout_elements, particles, AML_LAYOUT_ORDER_C, sizeof(size_t), 3, (size_t[]){4, size_1, size_2}, NULL, NULL));
+   aml_layout_dense_create(&layout_elements, particles, AML_LAYOUT_ORDER_FORTRAN, sizeof(size_t), 3, (size_t[]){4, size_1, size_2}, NULL, NULL));
 
 Now we can create another layout, with a similar granularity, but with the
 dimensions flipped so that we have one array for each attribute of all the

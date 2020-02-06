@@ -12,8 +12,9 @@ As such, the main function of a tiling is to provide an index into
 subcomponents of a layout.
 
 As for the layouts, both the C and Fortran indexing orders are available for
-the tilings, with similar names: `AML_TILING_ORDER_C` and
-`AML_TILING_ORDER_FORTRAN`.
+the tilings, with similar names: `AML_TILING_ORDER_C`
+(`AML_TILING_ORDER_ROW_MAJOR`) and `AML_TILING_ORDER_FORTRAN`
+(`AML_TILING_ORDER_COLUMN_MAJOR`).
 
 Creating an AML tiling
 ~~~~~~~~~~~~~~~~~~~~~~

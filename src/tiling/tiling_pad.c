@@ -173,7 +173,7 @@ aml_tiling_pad_column_index(const struct aml_tiling_data *t,
 			size_t row_dims[ndims];
 
 			for (size_t i = 0; i < ndims; i++)
-				row_dims[i] = d->tile_dims[i];
+				row_dims[i] = d->tile_dims[ndims - i - 1];
 			/* WARNING: OWNERSHIP!!! */
 			aml_layout_pad_create(&p_layout,
 					      AML_LAYOUT_ORDER_ROW_MAJOR,
