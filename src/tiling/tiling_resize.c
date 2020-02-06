@@ -266,7 +266,7 @@ struct aml_tiling_ops aml_tiling_resize_column_ops = {
 };
 
 /*******************************************************************************
- * Column Implementation
+ * Row Implementation
  ******************************************************************************/
 
 struct aml_layout*

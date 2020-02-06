@@ -31,9 +31,9 @@ void test_pad(int (*layout_create) (struct aml_layout **layout,
 	float one = 1.0;
 	size_t ret_dims[2];
 
-	assert(!layout_create(&a, (void *)memory, AML_LAYOUT_ORDER_C,
+	assert(!layout_create(&a, (void *)memory, AML_LAYOUT_ORDER_ROW_MAJOR,
 			      sizeof(float), 2, dims, NULL, NULL));
-	assert(!aml_layout_pad_create(&b, AML_LAYOUT_ORDER_C, a,
+	assert(!aml_layout_pad_create(&b, AML_LAYOUT_ORDER_ROW_MAJOR, a,
 				      dims_pad, &one));
 
 	assert(aml_layout_ndims(b) == 2);
