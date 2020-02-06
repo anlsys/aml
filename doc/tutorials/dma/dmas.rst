@@ -4,7 +4,7 @@ DMAs
 What is an AML DMA ?
 --------------------
 
-In computer science, DMA (Direct Memory Access) is an hardware accelerated
+In computer science, DMA (Direct Memory Access) is a hardware-accelerated
 method for moving data across memory regions without the intervention of a
 compute unit.
 
@@ -13,41 +13,42 @@ generally moved between two `areas <../../pages/areas.html>`_,
 between two virtual memory ranges represented by a pointer.
 
 Data is moved from one `layout <../../pages/layout.html>`_ to another.
-When performing a dma, layout coordinates are walked element by element in
-post-order and matched to translate source coordinates into destination
+When performing a DMA operation, layout coordinates are walked element by
+element in
+post order and matched to translate source coordinates into destination
 coordinates.
 
-Depending on the dma implementation, this operation can be
-optimized or offloaded to a dma accelerator.
-Data can thus be moved asynchronously by the DMA engine, e.g pthreads on a CPU
-and cuda streams on cuda accelerators.
+Depending on the DMA implementation, this operation can be
+optimized or offloaded to a DMA accelerator.
+Data can thus be moved asynchronously by the DMA engine, e.g., pthreads on a CPU
+and CUDA streams on CUDA accelerators.
 
-The API for using AML DMA is broke down into two levels.
-- The `high-level API <../../pages/dmas.html>`_ provides generic functions that
-can be applied on all DMAs. It also describes the general structure of a DMA
-for implementers.
-- Implementations specific methods, constructors and static DMAs declarations
-stand in the second level of headers `<aml/dma/\*.h> <https://xgitlab.cels.anl.gov/argo/aml/tree/master/include/aml/dma>`_.
+The API for using AML DMA is broken down into two levels.
+
+- The `high-level API <../../pages/dmas.html>`_ provides generic functions that can be applied on all DMAs. It also describes the general structure of a DMA for implementers.
+- Implementation-specific methods, constructors, and static DMAs declarations reside in the second level of headers `<aml/dma/\*.h> <https://xgitlab.cels.anl.gov/argo/aml/tree/master/include/aml/dma>`_.
 
 Examples of AML DMA Use Cases
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - `Prefetching <https://doi.org/10.1109/MCHPC49590.2019.00015>`_:
-	Writing an efficient matrix multiplication routine requires many architecture
-	specific optimizations such as vectorization, and cache blocking.
-	On hardware with software managed side memory cache (e.g MCDRAM on Intel
-	Knights Landing) manual prefetch of blocks in the side cache helps improving
-	performance on large problem sizes. AML DMA can help making the code
+	Writing an efficient matrix multiplication routine requires many
+        architecture-specific optimizations such as vectorization and cache
+        blocking.
+	On hardware with software-managed side memory cache (e.g., MCDRAM on Intel
+	Knights Landing), manual prefetch of blocks in the side cache helps improve
+	performance for large problem sizes. AML DMA can help make the code
 	more compact by abstracting asynchronous memory movements. Moreover,
 	AML is also able to benefit from the prefetch time to reorganize data
 	such that matrix multiplication on the prefetched blocks will be vectorized.
 	See linked `publication <https://doi.org/10.1109/MCHPC49590.2019.00015>`_
 	for more details.
 
-- Replication: `Some applications <https://github.com/ANL-CESAR/XSBench>`_
-	will have a memory access pattern such that all threads will access one data
+- Replication:
+	`Some applications <https://github.com/ANL-CESAR/XSBench>`_
+	will have a memory access pattern such that all threads will access same data
 	in a read-only and latency-bound fashion. On NUMA computing systems, accessing
-	distant memories will imply a penalty that translates in a penalty for
+	distant memories will imply a penalty that results in an increased
 	application execution time. In such a scenario (application + NUMA),
 	replicating data on memories in order to avoid NUMA penalties can result in
 	significant performance improvements. AML DMA is the building block to go when
@@ -62,42 +63,42 @@ First, include the good headers.
 .. code-block:: c
   
   #include <aml.h>
-  #include <aml/dma/linux-par.h> // one dma implementation.
+  #include <aml/dma/linux-par.h> // one DMA implementation.
   #include <aml/layout/dense.h> // one layout implementation.
 
 First header contains `DMA generic API <../../pages/dmas.html>`_ and AML utils.
-`Second header <../../pages/dma_linux_par_api.html>`_ will help building a dma
-performing data transfer in the background with pthreads.
-`Third header <../../pages/layout_dense.html>`_ will help describing source and
+`Second header <../../pages/dma_linux_par_api.html>`_ will help build a
+DMA-performing data transfer in the background with pthreads.
+`Third header <../../pages/layout_dense.html>`_ will help describe source and
 destination data to transfer.
 
-In order to perform a DMA request, you will need to set up a DMA, i.e
-the engine that perform requests, then perform the request.
+In order to perform a DMA request, you will need to set up a DMA, i.e.,
+the engine that performs requests, then perform the request itself.
 
 .. code-block:: c
 								
   struct aml_dma *dma;
   aml_dma_linux_par_create(&dma, 128, NULL, NULL);
 
-We created a dma that has 128 slots available off the shelf to
-handle asycnhronous data transfer requests.
+We created a DMA that has 128 slots available off-the-shelf to
+handle asynchronous data transfer requests.
 
-The requests happen in between two layouts, therefore you will have
-to setup layouts has well. Let suppose we want to copy `src` to `dst`
+The requests happen in-between two layouts, therefore you will have
+to set up layouts as well. Let's suppose we want to copy `src` to `dst`
 
 .. code-block:: c
 								
   double src[8] = {1, 2, 3, 4, 5, 6, 7, 8};
   double dst[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-The simplest copy requires that both `src` and `dst` are one dimensional
+The simplest copy requires that both `src` and `dst` are one-dimensional
 layouts of 8 elements.
 
 .. code-block:: c
 								
   size_t dims[1] = {8};
 
-For a one dimension layout, dimensions order does not matter, so let's pick
+For a one-dimension layout, dimension order does not matter, so let's pick
 `AML_LAYOUT_ORDER_COLUMN_MAJOR`. Now we can initialize layouts.
 
 .. code-block:: c
@@ -107,14 +108,14 @@ For a one dimension layout, dimensions order does not matter, so let's pick
   aml_layout_dense_create(&src_layout, src, AML_LAYOUT_ORDER_COLUMN_MAJOR, sizeof(*src), 1, dims, NULL, NULL);
 
 We have created a DMA engine and described our source and destination data.
-We are all set to schedule a copy dma request.
+We are all set to schedule a copy DMA request.
 
 .. code-block:: c
 
   struct aml_dma_request *request;
   aml_dma_async_copy_custom(dma, &request, dst_layout, src_layout, NULL, NULL);
 
-Now the dma request is on flight.
+Now the DMA request is in-flight.
 When we are ready to access data in dst, we can wait for it.
 	
 .. code-block:: c
@@ -124,9 +125,9 @@ When we are ready to access data in dst, we can wait for it.
 Exercise
 --------
 
-Let `a` a strided vector where contiguous elements are separated by a blank.
-Let `b` a strided vector where contiguous elements are separated by 2 blanks.
-Let `ddot` a function operating on two continuous vectors to perform a dot
+Let `a` be a strided vector where contiguous elements are separated by a blank.
+Let `b` be a strided vector where contiguous elements are separated by 2 blanks.
+Let `ddot` be a function operating on two continuous vectors to perform a dot
 product.
 The goal is to transform `a` into `continuous_a` and `b` into `continuous_b`
 in order to perform the dot product.
@@ -178,5 +179,5 @@ Solution
    .. literalinclude:: 1_reduction.c
       :language: c
 
-You can find this solution in *doc/tutorials/dma*.								 
+You can find this solution in *doc/tutorials/dma/*.								 
 

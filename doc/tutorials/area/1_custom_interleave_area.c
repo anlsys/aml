@@ -84,7 +84,7 @@ is_interleaved(void *data, const size_t size, const size_t page_size)
 // Custom area attributes.
 struct area_data {
 	unsigned long nid;  // Current node id;
-	unsigned long nmax; // maximum amount of numa nodes in this system.
+	unsigned long nmax; // highest node number on this system.
 	int page_size;      // Size of a page;
 };
 

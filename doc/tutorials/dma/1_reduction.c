@@ -137,7 +137,7 @@ main(void)
 	    aml_dma_async_copy(dma, &b_request, b_continuous_layout, b_layout);
 	CHK_ABORT(err, "aml_dma_async_copy_custom:");
 
-	// Wait requests
+	// Wait for the requests to complete
 	err = aml_dma_wait(dma, &a_request);
 	CHK_ABORT(err, "aml_dma_wait:");
 	err = aml_dma_wait(dma, &b_request);

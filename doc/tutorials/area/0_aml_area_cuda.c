@@ -25,7 +25,7 @@ void test_default_area(const size_t size, void *host_buf)
 		aml_perror("aml_area_cuda");
 		exit(1);
 	}
-	// Check we can perform a data transfert to mapped device memory.
+	// Check we can perform a data transfer to mapped device memory.
 	assert(cudaMemcpy(device_buf,
 			  host_buf,
 			  size, cudaMemcpyHostToDevice) == cudaSuccess);
@@ -71,7 +71,7 @@ void test_custom_area(const size_t size, void *host_buf)
 	memset(host_buf, '#', size);
 
 	// Check that data on device has been set to the same value,
-	// i.e mapping works.
+	// i.e., mapping works.
 	assert(cudaMemcpy(host_buf,
 			  device_buf,
 			  size, cudaMemcpyDeviceToHost) == cudaSuccess);
