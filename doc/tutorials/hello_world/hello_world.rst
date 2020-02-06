@@ -1,9 +1,9 @@
 Hello World: Init and Version Check
 ===================================
 
-A first and easy test that AML is setup properly and can be linked with a user
-program is to try to check that headers and library version are matching.  All
-AML programs must also start by initializing the library, and must end with a
+A first and easy test that AML is set up properly and can be linked with a user
+program is to try to check that the headers and the library version match.  All
+AML programs must also start by initializing the library and must end with a
 call to the cleanup function.
 
 APIs
@@ -24,13 +24,14 @@ Version API
 Usage
 -----
 
-Both setup and version APIs is available directly from the main AML header.
+Both the setup and the version APIs are available directly from the main AML
+header.
 
 .. code-block:: c
   
   #include <aml.h>
 
-Initialization is done by passing pointers to the command line arguments of
+Initialization is done by passing pointers to the command-line arguments of
 the program to the library.
 
 
@@ -68,4 +69,4 @@ code.
    .. literalinclude:: 0_hello.c
       :language: c
 
-You can find this solution in *doc/tutorials/hello_world*.
+You can find this solution in *doc/tutorials/hello_world/*.
