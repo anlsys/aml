@@ -12,4 +12,5 @@ to better understand each abstraction.
    hello_world/hello_world
    area/areas
    layouts/layouts
+   tiling/tilings
    dma/dmas
