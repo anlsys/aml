@@ -17,9 +17,7 @@ HELLO_TESTS = \
 	      hello_world/0_hello
 
 AREA_TESTS = \
-	      area/0_isInterleaved \
-	      area/1_aml_area_linux \
-	      area/2_custom_interleave_area
+	      area/1_custom_interleave_area
 
 LAYOUT_TESTS = \
 	       layouts/0_dense_layout \
@@ -35,7 +33,7 @@ TILING_TESTS = \
 	       tiling/1_dgemm
 
 if HAVE_CUDA
-AREA_TESTS += area/3_aml_area_cuda
+AREA_TESTS += area/0_aml_area_cuda
 endif
 
 UNIT_TESTS = $(HELLO_TESTS) $(AREA_TESTS) $(LAYOUT_TESTS) $(DMA_TESTS) $(TILING_TESTS)
