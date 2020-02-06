@@ -18,7 +18,7 @@ void print_matrix(double *mat, size_t rows, size_t cols)
 {
 	for (size_t i = 0; i < rows; i++) {
 		for (size_t j = 0; j < cols; j++)
-			fprintf(stderr, "%f ", mat[i * rows + j]);
+			fprintf(stderr, "%f ", mat[i * cols + j]);
 		fprintf(stderr, "\n");
 	}
 	fprintf(stderr, "\n");
@@ -95,60 +95,59 @@ int main(int argc, char **argv)
 	fprintf(stderr, "Creating layouts...\n");
 
 	// Layout ordered columns first
-	struct aml_layout *layout_c, *layout_r;
-	size_t dims_col[3] = { x, y };
+	struct aml_layout *layout_c, *layout_f;
+	size_t dims[3] = { x, y };
 
 	assert(!aml_layout_dense_create(&layout_c, mat,
-					AML_LAYOUT_ORDER_COLUMN_MAJOR,
-					sizeof(double), 2, dims_col, NULL,
+					AML_LAYOUT_ORDER_C,
+					sizeof(double), 2, dims, NULL,
 					NULL));
 
 	// Layout ordered rows first, on the same area
-	size_t dims_row[3] = { y, x };
 
-	assert(!aml_layout_dense_create(&layout_r, mat,
-					AML_LAYOUT_ORDER_ROW_MAJOR,
-					sizeof(double), 2, dims_row, NULL,
+	assert(!aml_layout_dense_create(&layout_f, mat,
+					AML_LAYOUT_ORDER_FORTRAN,
+					sizeof(double), 2, dims, NULL,
 					NULL));
 
-	assert(layout_c != NULL && layout_r != NULL);
+	assert(layout_c != NULL && layout_f != NULL);
 
 	/* Tilings, both orders */
 	fprintf(stderr, "Creating tilings...\n");
 
-	struct aml_tiling *tiling_c, *tiling_r;
+	struct aml_tiling *tiling_c, *tiling_f;
 	size_t tile_x = 2, tile_y = 3;
 
 	assert(!aml_tiling_resize_create(&tiling_c,
-					 AML_TILING_ORDER_COLUMN_MAJOR,
+					 AML_TILING_ORDER_C,
 					 layout_c, 2,
 					 (size_t[]){tile_x, tile_y}));
-	assert(!aml_tiling_resize_create(&tiling_r,
-					 AML_TILING_ORDER_ROW_MAJOR,
-					 layout_r, 2,
-					 (size_t[]){tile_y, tile_x}));
+	assert(!aml_tiling_resize_create(&tiling_f,
+					 AML_TILING_ORDER_FORTRAN,
+					 layout_f, 2,
+					 (size_t[]){tile_x, tile_y}));
 
-	assert(tiling_c != NULL && tiling_r != NULL);
+	assert(tiling_c != NULL && tiling_f != NULL);
 
 	/* Check the difference with aml_tiling_order */
-	fprintf(stderr, "The first tiling has order %d: column major, ",
+	fprintf(stderr, "The first tiling has order %d: c, ",
 		aml_tiling_order(tiling_c));
-	fprintf(stderr, "the second tiling has order %d: row major.\n",
-		aml_tiling_order(tiling_r));
+	fprintf(stderr, "the second tiling has order %d: fortran.\n",
+		aml_tiling_order(tiling_f));
 
 	/* Fill them in order */
 	fprintf(stderr, "Going through the tilings...\n");
 	fill_tiling(tiling_c);
 	print_matrix(mat, x, y);
 	fprintf(stderr, "\n");
-	fill_tiling(tiling_r);
+	fill_tiling(tiling_f);
 	print_matrix(mat, x, y);
 
 	/* Destroy everything */
 	aml_tiling_resize_destroy(&tiling_c);
-	aml_tiling_resize_destroy(&tiling_r);
+	aml_tiling_resize_destroy(&tiling_f);
 	aml_layout_dense_destroy(&layout_c);
-	aml_layout_dense_destroy(&layout_r);
+	aml_layout_dense_destroy(&layout_f);
 	aml_area_munmap(area, mat, sizeof(double) * x * y);
 
 	aml_finalize();

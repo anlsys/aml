@@ -139,15 +139,15 @@ int main(int argc, char **argv)
 	size_t dims_c[2] = { m, n };
 
 	assert(!aml_layout_dense_create(&layout_a, a,
-					AML_LAYOUT_ORDER_COLUMN_MAJOR,
+					AML_LAYOUT_ORDER_C,
 					sizeof(double), 2, dims_a, NULL,
 					NULL));
 	assert(!aml_layout_dense_create(&layout_b, b,
-					AML_LAYOUT_ORDER_COLUMN_MAJOR,
+					AML_LAYOUT_ORDER_C,
 					sizeof(double), 2, dims_b, NULL,
 					NULL));
 	assert(!aml_layout_dense_create(&layout_c, c,
-					AML_LAYOUT_ORDER_COLUMN_MAJOR,
+					AML_LAYOUT_ORDER_C,
 					sizeof(double), 2, dims_c, NULL,
 					NULL));
 
@@ -160,13 +160,13 @@ int main(int argc, char **argv)
 	size_t tile_c_dims[2] = { 2, 4 };
 
 	assert(!aml_tiling_resize_create(&tiling_a,
-					 AML_TILING_ORDER_COLUMN_MAJOR,
+					 AML_TILING_ORDER_C,
 					 layout_a, 2, tile_a_dims));
 	assert(!aml_tiling_resize_create(&tiling_b,
-					 AML_TILING_ORDER_COLUMN_MAJOR,
+					 AML_TILING_ORDER_C,
 					 layout_b, 2, tile_b_dims));
 	assert(!aml_tiling_resize_create(&tiling_c,
-					 AML_TILING_ORDER_COLUMN_MAJOR,
+					 AML_TILING_ORDER_C,
 					 layout_c, 2, tile_c_dims));
 
 	// Do the matrix multiplication
