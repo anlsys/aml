@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 
 	// We start with a straighforward layout
 	assert(!aml_layout_dense_create(&lay_part, particles,
-					AML_LAYOUT_ORDER_COLUMN_MAJOR,
+					AML_LAYOUT_ORDER_C,
 					sizeof(struct particle), 2,
 					(size_t[]){size_1, size_2}, NULL,
 					NULL));
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 
 	// We need a finer layout
 	assert(!aml_layout_dense_create(&layout_elements, particles,
-					AML_LAYOUT_ORDER_COLUMN_MAJOR,
+					AML_LAYOUT_ORDER_C,
 					sizeof(size_t), 3,
 					(size_t[]){4, size_1, size_2},
 					NULL, NULL));
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 	array_coords = malloc(sizeof(struct particle) * size);
 
 	assert(!aml_layout_dense_create(&new_layout, array_coords,
-					AML_LAYOUT_ORDER_COLUMN_MAJOR,
+					AML_LAYOUT_ORDER_C,
 					sizeof(size_t), 3,
 					(size_t[]){size_1, size_2, 4},
 					NULL, NULL));
