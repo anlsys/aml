@@ -14,9 +14,7 @@ AM_LDFLAGS += $(CUDA_LIBS)
 endif
 
 # valgrind support
-if TEST_VALGRIND
-TESTS_ENVIRONMENT= @LIBTOOL@ --mode=execute @VALGRIND@ --tool=memcheck -q --leak-check=full
-endif
+@VALGRIND_CHECK_RULES@
 
 UTILS_TESTS = \
 	      utils/test_bitmap \

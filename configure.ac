@@ -42,17 +42,10 @@ AC_SUBST([PACKAGE_VERSION_PATCH],[VERSION_PATCH])
 # support for testing with valgrind
 ###################################
 
-AC_ARG_ENABLE(valgrind,
-[AS_HELP_STRING([--enable-valgrind],[Also valgrind on checks (default is no).])],
-[valgrind=true],[valgrind=false])
-
-if [[ "x$valgrind" = xtrue ]]; then
-	AC_PATH_PROG(VALGRIND, valgrind, no)
-	if [[  "x$VALGRIND" = xno ]]; then
-		AC_MSG_ERROR([Valgrind not found in PATH. ])
-	fi
-fi
-AM_CONDITIONAL([TEST_VALGRIND],[test "x$valgrind" = xtrue])
+AX_VALGRIND_DFLT([helgrind], [off])
+AX_VALGRIND_DFLT([drd], [off])
+AX_VALGRIND_DFLT([sgcheck], [off])
+AX_VALGRIND_CHECK
 
 # support for compiling benchmarks
 ##################################
