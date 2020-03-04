@@ -13,6 +13,9 @@ AM_CFLAGS += $(CUDA_CFLAGS)
 AM_LDFLAGS += $(CUDA_LIBS)
 endif
 
+# valgrind support
+@VALGRIND_CHECK_RULES@
+
 HELLO_TESTS = \
 	      hello_world/0_hello
 
