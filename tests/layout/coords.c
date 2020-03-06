@@ -69,18 +69,3 @@ void unpack_coords(uint64_t coords,
 		coords = coords >> bits[i];
 	}
 }
-
-void increment_coords(const size_t ndims,
-		      const size_t *dims,
-		      size_t *coords,
-		      size_t n)
-{
-	for (size_t c, j = ndims - 1; j < ndims && n > 0; j--) {
-		// Save the value of current coordinate.
-		c = coords[j];
-		// Update value in current coordinate.
-		coords[j] = (c + n) % dims[j];
-		// How much do we increment next coordinate.
-		n = (c + n) / dims[j];
-	}
-}
