@@ -129,8 +129,50 @@ void test_layout_base(struct aml_layout *layout)
 	}
 }
 
-void test_layout_fprintf(FILE *stream, const char *prefix,
-			 struct aml_layout *layout)
+int
+test_layout_dense_copy(const struct aml_layout *in,	struct aml_layout **out)
 {
-	assert(!aml_layout_fprintf(stream, prefix, layout));
+	if (in == NULL || out == NULL)
+		return -AML_EINVAL;
+
+	int err;
+	int order    = aml_layout_order(in);
+	size_t size  = 1;
+	size_t esize = aml_layout_element_size(in);
+	size_t ndims = aml_layout_ndims(in);
+	size_t dims[ndims];
+	size_t coords[ndims];
+	void *ptr, *src, *dst;
+
+	err = aml_layout_dims(in, dims);
+	if (err != AML_SUCCESS)
+		return err;
+
+	for (size_t i = 0; i < ndims; i++)
+		size *= dims[i];
+
+	ptr = malloc(size * esize);
+	if (ptr == NULL)
+		return -AML_ENOMEM;
+
+	err = aml_layout_dense_create(
+		out, ptr, order, esize, ndims, dims, NULL, NULL);
+	if (err != AML_SUCCESS) {
+		free(ptr);
+		return err;
+	}
+
+	// init coords
+	for (size_t i = 0; i < ndims; i++)
+		coords[i] = 0;
+
+	// copy layout elements.
+	for (size_t i = 0; i < size; i++) {
+		increment_coords(ndims, dims, coords, 1);
+		src = aml_layout_deref(in, coords);
+		dst = aml_layout_deref(*out, coords);
+		memcpy(dst, src, esize);
+	}
+
+	return AML_SUCCESS;
 }

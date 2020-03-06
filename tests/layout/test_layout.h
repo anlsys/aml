@@ -100,8 +100,8 @@ void test_layout_base(struct aml_layout *layout);
 /**
  * Print test for layouts. Check that we can print the layout.
  **/
-void test_layout_fprintf(FILE *stream, const char *prefix,
-			 struct aml_layout *layout);
+int
+test_layout_dense_copy(const struct aml_layout *in, struct aml_layout **out);
 
 //------------------------------------------------------------------------------
 // Testing a dense layout.

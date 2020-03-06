@@ -40,20 +40,20 @@ void test_increment_coords(const size_t ndims, const size_t *dims)
 	for (size_t i = 0; i < num; i++) {
 		increment_coords(ndims, dims, coords, 1);
 
-		assert((coords[ndims - 1] == 0 &&
-			(prev[ndims - 1] == 0 ||
-			 prev[ndims - 1] == dims[ndims - 1] - 1)) ||
-		       coords[ndims - 1] == prev[ndims - 1] ||
-		       coords[ndims - 1] == prev[ndims - 1] + 1);
-		prev[ndims - 1] = coords[ndims - 1];
+		assert((coords[0] == 0 &&
+			(prev[0] == 0 ||
+			 prev[0] == dims[0] - 1)) ||
+		       coords[0] == prev[0] ||
+		       coords[0] == prev[0] + 1);
+		prev[0] = coords[0];
 
-		for (size_t j = 0; j < ndims - 1; j++) {
+		for (size_t j = ndims - 1; j < ndims; j--) {
 			assert((coords[j] == 0 &&
 				(prev[j] == 0 ||
 				 prev[j] == dims[j] - 1)) ||
 			       coords[j] == prev[j] ||
 			       (coords[j] == prev[j] + 1 &&
-				coords[j + 1] == 0));
+				coords[j - 1] == 0));
 			prev[j] = coords[j];
 		}
 	}

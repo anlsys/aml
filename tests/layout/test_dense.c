@@ -197,7 +197,7 @@ void test_generics(void)
 		pitch_col) == AML_SUCCESS);
 	test_slice_dense(layout);
 	test_layout_reshape(layout, 2, new_dims_col);
-	test_layout_fprintf(stderr, "test-dense", layout);
+	aml_layout_fprintf(stderr, "test-dense", layout);
 	free(layout);
 
 	// Test slice and reshape layout row major.
@@ -206,7 +206,7 @@ void test_generics(void)
 		sizeof(*memory), 3, dims_row, NULL, NULL) == AML_SUCCESS);
 	test_slice_dense(layout);
 	test_layout_reshape(layout, 2, new_dims_row);
-	test_layout_fprintf(stderr, "test-dense", layout);
+	aml_layout_fprintf(stderr, "test-dense", layout);
 	free(layout);
 }
 
