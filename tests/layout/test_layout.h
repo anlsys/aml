@@ -12,6 +12,7 @@
 #define AML_LAYOUT_TEST_H
 
 #include "aml.h"
+#include "aml/layout/dense.h"
 
 //------------------------------------------------------------------------------
 // Packing/Unpacking/Incrementing layout coordinates
@@ -90,6 +91,17 @@ int aml_layout_fill_with_coords(struct aml_layout *layout);
  **/
 int aml_layout_isequal(const struct aml_layout *a,
 		       const struct aml_layout *b);
+/**
+ * Check if:
+ * - order are equal
+ * - ndims are equal
+ * - dims are equal
+ * - deref all elements have the same value.
+ * @param a[in]: Left hand side to check.
+ * @param b[in]: Right hand side to check.
+ **/
+int
+aml_layout_isequivalent(const struct aml_layout *a, const struct aml_layout *b);
 
 /**
  * Base test for layouts. Check that most API methods work.
@@ -98,7 +110,11 @@ int aml_layout_isequal(const struct aml_layout *a,
 void test_layout_base(struct aml_layout *layout);
 
 /**
- * Print test for layouts. Check that we can print the layout.
+ * Create a layout dense that copy dimensions of a layout in a dense layout.
+ * aml_layout_isequal(in, out) returns true.
+ * @param in[in]: The layout to copy.
+ * @param out[out]: The dense copy.
+ * @param ptr[out]: The pointer inside layout to free.
  **/
 int
 test_layout_dense_copy(const struct aml_layout *in, struct aml_layout **out);
@@ -113,6 +129,38 @@ test_layout_dense_copy(const struct aml_layout *in, struct aml_layout **out);
  * !Use only on dense layout.
  **/
 void test_slice_dense(struct aml_layout *layout);
+
+//------------------------------------------------------------------------------
+// Initializing some test layouts
+//------------------------------------------------------------------------------
+
+/** Declare and implement a function for initializing a dense layout. **/
+#define LAYOUT_DENSE_CREATE_DECL(name, ndims, ...)\
+static struct aml_layout *name()\
+{\
+	struct aml_layout *l = NULL;\
+	STATIC_ARRAY_DECL(size_t, dims, ndims, __VA_ARGS__, 0);\
+	STATIC_ARRAY_DECL(size_t, stride, ndims, SKIP(ndims, __VA_ARGS__, 0));\
+	size_t n_elems = 1;\
+	uint64_t *memory;\
+	size_t elem_size = sizeof(*memory);\
+	for (size_t i = 0; i < ndims; i++) \
+		n_elems *= (stride[i] * dims[i]); \
+	memory = malloc(elem_size * n_elems);\
+	if (memory == NULL)\
+		return NULL;\
+	if (aml_layout_dense_create(&l,\
+		(void *)memory, AML_LAYOUT_ORDER_COLUMN_MAJOR,\
+		sizeof(*memory), ndims, dims,\
+		stride, NULL) != AML_SUCCESS) { \
+		free(memory);\
+		return NULL;\
+	} \
+	return l;\
+}
+
+/** Free a dense layout and its inner data. **/
+void layout_dense_free(struct aml_layout *l);
 
 //------------------------------------------------------------------------------
 // Testing a layout reshape method against struct aml_layout_reshape.

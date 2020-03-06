@@ -124,3 +124,12 @@ void test_slice_dense(struct aml_layout *layout)
 	for (size_t c = 0; c < 9; c++)
 		test_slice_hyperplan(layout, cases[c][0], cases[c][1]);
 }
+
+/** Free a dense layout and its inner data. **/
+void layout_dense_free(struct aml_layout *l)
+{
+	if (l == NULL)
+		return;
+	free(aml_layout_rawptr(l));
+	aml_layout_dense_destroy(&l);
+}

@@ -12,8 +12,10 @@
  * This file contains helper functions on layouts.
  **/
 
-#include "test_layout.h"
+#include "aml.h"
+#include "aml/layout/dense.h"
 #include "aml/layout/native.h"
+#include "test_layout.h"
 
 int aml_layout_fill_with_coords(struct aml_layout *layout)
 {
@@ -76,15 +78,29 @@ int aml_layout_isequal(const struct aml_layout *a,
 			return 0;
 		nelem *= dims_a[i];
 	}
+	return nelem;
+}
 
-	// Check elements equality
+int
+aml_layout_isequivalent(const struct aml_layout *a, const struct aml_layout *b)
+{
+	size_t esize   = aml_layout_element_size(a);
+	size_t nelem   = aml_layout_isequal(a, b);
+	size_t ndims_a = aml_layout_ndims(a);
+	size_t dims_a[ndims_a];
 	size_t coords[ndims_a];
 
+	// first check did not pass.
+	if (nelem == 0)
+		return 0;
+
+	assert(aml_layout_dims(a, dims_a) == AML_SUCCESS);
 	for (size_t i = 0; i < ndims_a; i++)
 		coords[i] = 0;
-
 	for (size_t i = 0; i < nelem; i++) {
-		if (aml_layout_deref(a, coords) != aml_layout_deref(b, coords))
+		if (memcmp(aml_layout_deref(a, coords),
+			   aml_layout_deref(b, coords),
+			   esize))
 			return 0;
 		increment_coords(ndims_a, dims_a, coords, 1);
 	}
