@@ -11,6 +11,8 @@
 #ifndef AML_INNER_MALLOC_H
 #define AML_INNER_MALLOC_H
 
+#include "aml/utils/macros.h"
+
 /**
  * @defgroup aml_inner_malloc "AML Internal Allocation Management"
  * @brief AML helper functions to handle inner allocations
@@ -23,70 +25,6 @@
  *
  * This code is all macros to handle the type specific logic we need.
  **/
-
-//---------------------------------------------------------------------------//
-// Inner utils
-//---------------------------------------------------------------------------//
-
-// Stringify macro
-#define STRINGIFY(a) STRINGIFY_(a)
-#define STRINGIFY_(a) #a
-
-// Concatenate two arguments into a macro name
-#define CONCATENATE(arg1, arg2)   CONCATENATE1(arg1, arg2)
-#define CONCATENATE1(arg1, arg2)  CONCATENATE2(arg1, arg2)
-#define CONCATENATE2(arg1, arg2)  arg1##arg2
-
-// Expand to number of variadic arguments for up to 8 args.
-// VA_NARG(a,b,c)
-// PP_ARG_N(a,b,c,8,7,6,5,4,3,2,1,0)
-// 3
-#define VA_NARG(...) PP_ARG_N(__VA_ARGS__, 8, 7, 6, 5, 4, 3, 2, 1, 0)
-#define VA_NARG(...) PP_ARG_N(__VA_ARGS__, 8, 7, 6, 5, 4, 3, 2, 1, 0)
-#define PP_ARG_N(_1, _2, _3, _4, _5, _6, _7, _8, N, ...) N
-
-// Arithmetic
-#define PLUS_1_1 2
-#define PLUS_1_2 3
-#define PLUS_1_3 4
-#define PLUS_1_4 5
-#define PLUS_1_5 6
-#define PLUS_1_6 7
-#define PLUS_1_7 8
-#define PLUS_1(N) CONCATENATE(PLUS_1_, N)
-
-// Field name in struct: __f1 for N = 1
-#define AML_FIELD(N) CONCATENATE(__f, N)
-
-// struct fields declaration.
-// one field: f1 __f1;
-// two fields: f2 __f1; f1 __f2;
-// three fields: f3 __f1; f2 __f2; f1 __f3;
-// We want fx fields to appear in the order of types provided by users.
-// We want __fx names to appear in the reverse order, such that if the user
-// wants the second fields it can name it with __f2.
-#define AML_DECL_1(N, f1, ...) f1 AML_FIELD(N);
-#define AML_DECL_2(N, f2, ...)					\
-	f2 AML_FIELD(N); AML_DECL_1(PLUS_1(N), __VA_ARGS__)
-#define AML_DECL_3(N, f3, ...)					\
-	f3 AML_FIELD(N); AML_DECL_2(PLUS_1(N), __VA_ARGS__)
-#define AML_DECL_4(N, f4, ...)					\
-	f4 AML_FIELD(N); AML_DECL_3(PLUS_1(N), __VA_ARGS__)
-#define AML_DECL_5(N, f5, ...)					\
-	f5 AML_FIELD(N); AML_DECL_4(PLUS_1(N), __VA_ARGS__)
-#define AML_DECL_6(N, f6, ...)					\
-	f6 AML_FIELD(N); AML_DECL_5(PLUS_1(N), __VA_ARGS__)
-#define AML_DECL_7(N, f7, ...)					\
-	f7 AML_FIELD(N); AML_DECL_6(PLUS_1(N), __VA_ARGS__)
-#define AML_DECL_8(N, f8, ...)					\
-	f8 AML_FIELD(N); AML_DECL_7(PLUS_1(N), __VA_ARGS__)
-
-// Declare a structure with up to 8 fields.
-// (Pick the adequate AML_DECL_ macro and call it.)
-#define AML_STRUCT_DECL(...)						\
-	struct {							\
-	CONCATENATE(AML_DECL_, VA_NARG(__VA_ARGS__))(1, __VA_ARGS__, 0) \
-	}
 
 /** Returns the size required for allocation of up to 8 types **/
 #define AML_SIZEOF_ALIGNED(...) sizeof(AML_STRUCT_DECL(__VA_ARGS__))

@@ -32,6 +32,7 @@ include_amlutilsdir=$(includedir)/aml/utils
 include_amlutils_HEADERS = \
 			   aml/utils/bitmap.h \
 			   aml/utils/error.h \
+			   aml/utils/macros.h \
 			   aml/utils/inner-malloc.h \
 			   aml/utils/vector.h \
 			   aml/utils/queue.h \

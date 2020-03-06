@@ -32,8 +32,8 @@ checkpatch:
     - nix
     - kvm
   script:
-    - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl --ignore TRAILING_SEMICOLON --ignore MULTISTATEMENT_MACRO_USE_DO_WHILE include/aml/utils/inner-malloc.h
-    - git ls-files '*.c' '*.h' | grep -vE "benchmarks|inner-malloc" >> .checkpatch.conf
+    - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl --ignore TRAILING_SEMICOLON --ignore MULTISTATEMENT_MACRO_USE_DO_WHILE include/aml/utils/inner-malloc.h include/aml/utils/macros.h
+    - git ls-files '*.c' '*.h' | grep -vE "benchmarks|inner-malloc|macros" >> .checkpatch.conf
     - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl
 
 style:docs:
