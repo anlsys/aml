@@ -1008,19 +1008,6 @@ int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request **req);
 int aml_dma_fprintf(FILE *stream, const char *prefix,
 		    const struct aml_dma *dma);
 
-/**
- * Generic helper to copy from one layout to another.
- * @param[out] dst: destination layout
- * @param[in] src: source layout
- * @param[in] arg: unused (should be NULL)
- */
-int aml_copy_layout_generic(struct aml_layout *dst,
-			    const struct aml_layout *src, void *arg);
-
-int aml_copy_layout_transform_generic(struct aml_layout *dst,
-				      const struct aml_layout *src,
-				      const size_t *target_dims);
-
 ////////////////////////////////////////////////////////////////////////////////
 
 /**

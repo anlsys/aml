@@ -9,9 +9,10 @@
 *******************************************************************************/
 
 #include "aml.h"
+#include "aml/dma/linux-seq.h"
 #include "aml/dma/linux-par.h"
 #include "aml/layout/dense.h"
-
+#include "aml/layout/transform.h"
 #include <assert.h>
 #include <errno.h>
 #include <sys/mman.h>
@@ -226,7 +227,7 @@ int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs,
 	d->ops = aml_dma_linux_par_inner_ops;
 
 	if (op == NULL) {
-		op = aml_copy_layout_generic;
+		op = aml_dma_linux_transform_generic;
 		op_arg = NULL;
 	}
 	d->data.default_op = op;

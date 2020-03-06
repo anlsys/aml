@@ -43,6 +43,7 @@ LAYOUT_TESTS = \
 	layout/test_coords \
 	layout/test_dense \
 	layout/test_reshape \
+	layout/test_transform \
 	layout/test_pad
 
 TILING_TESTS = tiling/test_tiling

@@ -12,6 +12,7 @@ AREA_SOURCES = \
 
 LAYOUT_SOURCES = \
 	       layout/layout.c \
+	       layout/transform.c \
 	       layout/dense.c \
 	       layout/pad.c \
 	       layout/reshape.c

@@ -21,11 +21,36 @@
  * @{
  **/
 
+//------------------------------------------------------------------------------
+// User blocks
+//------------------------------------------------------------------------------
+
+/**
+ * aml_dma_operator implementation for transferring data from linux
+ * area layout to linux area layout.
+ **/
+int
+aml_dma_linux_transform_generic(struct aml_layout *dst,
+	const struct aml_layout *src,
+	void *arg);
+
+/**
+ * aml_dma_operator implementation for doing a contiguous copy of data from
+ * linux area layout to linux area layout.
+ **/
+int aml_dma_linux_copy_generic(struct aml_layout *dst,
+		const struct aml_layout *src,
+		void *arg);
+
 /**
  * Default table of dma request operations for linux
  * sequential dma.
  **/
 extern struct aml_dma_ops aml_dma_linux_seq_ops;
+
+//------------------------------------------------------------------------------
+// Building blocks
+//------------------------------------------------------------------------------
 
 /** Inside of a sequential request for linux movement. **/
 struct aml_dma_request_linux_seq {

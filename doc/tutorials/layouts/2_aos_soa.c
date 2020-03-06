@@ -11,6 +11,7 @@
 #include "aml.h"
 #include "aml/area/linux.h"
 #include "aml/layout/dense.h"
+#include "aml/dma/linux-seq.h"
 #include <stdio.h>
 
 struct particle {
@@ -94,8 +95,8 @@ int main(int argc, char **argv)
 					(size_t[]){size_1, size_2, 4},
 					NULL, NULL));
 
-	assert(!aml_copy_layout_transform_generic(new_layout, layout_elements,
-						  (size_t[]){1, 2, 0}));
+	assert(!aml_dma_linux_transform_generic(new_layout,
+		layout_elements, NULL));
 
 	/* Let's check we now have a struct of arrays by looking at the first
 	 * elements */

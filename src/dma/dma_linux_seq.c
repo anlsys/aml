@@ -11,6 +11,7 @@
 #include "aml.h"
 #include "aml/dma/linux-seq.h"
 #include "aml/layout/dense.h"
+#include "aml/layout/transform.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -24,6 +25,36 @@
  * - user API (i.e. generic request creation and call)
  * - how to init the dma
  ******************************************************************************/
+
+// DMA transform operator implementation.
+int aml_dma_linux_transform_generic(struct aml_layout *dst,
+		const struct aml_layout *src,
+		void *arg)
+{
+	(void)arg;
+	struct aml_transform_args args = {
+		.memcpy = aml_linux_memcpy,
+		.data = NULL,
+	};
+	if (aml_layout_transform(dst, src, &args) == -AML_FAILURE)
+		return aml_errno;
+	return AML_SUCCESS;
+}
+
+// DMA copy operator implementation.
+int aml_dma_linux_copy_generic(struct aml_layout *dst,
+		const struct aml_layout *src,
+		void *arg)
+{
+	(void)arg;
+	struct aml_transform_args args = {
+		.memcpy = aml_linux_memcpy,
+		.data = NULL,
+	};
+	if (aml_layout_copy(dst, src, &args) == -AML_FAILURE)
+		return aml_errno;
+	return AML_SUCCESS;
+}
 
 /*******************************************************************************
  * Requests:
@@ -213,7 +244,7 @@ int aml_dma_linux_seq_create(struct aml_dma **dma, size_t nbreqs,
 	d->ops = aml_dma_linux_seq_inner_ops;
 
 	if (op == NULL) {
-		op = aml_copy_layout_generic;
+		op = aml_dma_linux_transform_generic;
 		op_arg = NULL;
 	}
 	d->data.default_op = op;
