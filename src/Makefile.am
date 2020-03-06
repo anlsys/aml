@@ -4,6 +4,10 @@ AM_LDFLAGS = $(PTHREAD_LIBS)
 noinst_LTLIBRARIES=
 
 #############################################
+# valgrind support
+@VALGRIND_CHECK_RULES@
+
+#############################################
 # .C sources
 
 AREA_SOURCES = \

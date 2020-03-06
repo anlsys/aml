@@ -207,7 +207,7 @@ VALGRIND_LOG_COMPILER = \
 	$(VALGRIND) $(VALGRIND_SUPPRESSIONS) --error-exitcode=1 $(VALGRIND_FLAGS)
 
 define valgrind_tool_rule
-check-valgrind-$(1)-am:
+check-valgrind-$(1)-am: all-am
 ifeq ($$(VALGRIND_ENABLED)-$$(ENABLE_VALGRIND_$(1)),yes-yes)
 ifneq ($$(TESTS),)
 	$$(valgrind_v_use)$$(MAKE) check-TESTS \
