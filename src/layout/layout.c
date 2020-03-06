@@ -58,10 +58,17 @@ void *aml_layout_deref_safe(const struct aml_layout *layout,
 void *aml_layout_rawptr(const struct aml_layout *layout)
 {
 	assert(layout != NULL &&
-	       layout->ops != NULL &&
-	       layout->ops->rawptr != NULL);
+	       layout->ops != NULL);
+	if (layout->ops->rawptr != NULL)
+		return layout->ops->rawptr(layout->data);
 
-	return layout->ops->rawptr(layout->data);
+	// Default implementation.
+	size_t ndims = aml_layout_ndims(layout);
+	size_t coords[ndims];
+
+	for (size_t i = 0; i < ndims; i++)
+		coords[i] = 0;
+	return aml_layout_deref(layout, coords);
 }
 
 void *aml_layout_deref_native(const struct aml_layout *layout,
