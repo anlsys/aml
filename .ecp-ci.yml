@@ -98,7 +98,7 @@ make:theta-batch:
       EOF
     - cat aml-ci-script.sh
     - chmod +x aml-ci-script.sh
-    - aprun aml-ci-script.sh
+    - aprun ./aml-ci-script.sh
   artifacts:
     when: on_failure
     paths:
