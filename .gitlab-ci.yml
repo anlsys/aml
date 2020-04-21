@@ -1,5 +1,6 @@
 variables:
   ARGOPKGS : "https://xgitlab.cels.anl.gov/argo/argopkgs/-/archive/master/argopkgs-master.tar.gz"
+  DEFAULT_MERGE_TARGET: "origin/staging"
 
 stages:
   - style
@@ -23,7 +24,7 @@ repoquality:
     paths:
       - .repoquality
 
-checkpatch:
+clang-format:
   stage: style
   except:
     - /^wip.*/
@@ -32,9 +33,16 @@ checkpatch:
     - nix
     - kvm
   script:
-    - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl --ignore TRAILING_SEMICOLON --ignore MULTISTATEMENT_MACRO_USE_DO_WHILE include/aml/utils/inner-malloc.h
-    - git ls-files '*.c' '*.h' | grep -vE "benchmarks|inner-malloc" >> .checkpatch.conf
-    - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl
+    - rm -f clang-format-diff
+    - target=$(git rev-parse $DEFAULT_MERGE_TARGET)
+    - nix-shell "$ARGOPKGS" -A ci.aml-format --run "git-clang-format --diff $target > clang-format-diff"
+    - lint=$(grep -v --color=never "did not modify any files" || true)
+    - if [ ! -z "$lint" ]; then exit 1; else exit 0; fi
+  artifacts:
+    when: on_failure
+    paths:
+      - ./clang-format-diff
+    expire_in: 1 week
 
 style:docs:
   stage: style
