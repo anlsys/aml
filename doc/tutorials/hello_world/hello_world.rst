@@ -19,7 +19,30 @@ Setup/Teardown API
 Version API
 ~~~~~~~~~~~
 
-.. doxygengroup:: aml_version
+AML defines its version using semantic versioning, with a macro and variable
+for each subcomponent of the version number:
+
+- **Version major**: denotes ABI changes which prevent compatibility with previous
+  major version ABI.
+- **Version minor**: denotes new features or improvement without breaking the old
+  ABI.
+- **Patch version**: patch and fix releases only.
+
+The full version string is also available directly.
+
+.. code-block:: c
+
+  /* see aml/utils/version.h for details */
+  #define AML_VERSION_MAJOR  ...
+  #define AML_VERSION_MINOR  ...
+  #define AML_VERSION_PATCH  ...
+  #define AML_VERSION_STRING ...
+
+  extern const int aml_version_major    = ...;
+  extern const int aml_version_minor    = ...;
+  extern const int aml_version_patch    = ...;
+  extern const char *aml_version_string = ...;
+
 
 Usage
 -----
@@ -34,7 +57,6 @@ header.
 Initialization is done by passing pointers to the command-line arguments of
 the program to the library.
 
-
 .. code-block:: c
   
   int main(int argc, char **argv){
@@ -44,7 +66,8 @@ the program to the library.
     return 1;
   }
 
-Checking the version is as easy as comparing the header version
+Checking that the program is linked against the same version as the one used
+during compilation is as easy as comparing the header version
 *AML_VERSION_MAJOR* and the library-embedded version *aml_version_major*.
 
 .. code-block:: c
