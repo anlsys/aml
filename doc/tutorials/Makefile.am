@@ -13,6 +13,12 @@ AM_CFLAGS += $(CUDA_CFLAGS)
 AM_LDFLAGS += $(CUDA_LIBS)
 endif
 
+if HAVE_HWLOC
+LIBS += $(HWLOC_LIBS)
+AM_CFLAGS += $(HWLOC_CFLAGS)
+AM_LDFLAGS += $(HWLOC_LIBS)
+endif
+
 # valgrind support
 @VALGRIND_CHECK_RULES@
 
@@ -37,6 +43,10 @@ TILING_TESTS = \
 
 if HAVE_CUDA
 AREA_TESTS += area/0_aml_area_cuda
+endif
+
+if HAVE_HWLOC
+AREA_TESTS += area/2_aml_area_hwloc
 endif
 
 UNIT_TESTS = $(HELLO_TESTS) $(AREA_TESTS) $(LAYOUT_TESTS) $(DMA_TESTS) $(TILING_TESTS)

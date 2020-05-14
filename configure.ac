@@ -76,6 +76,20 @@ AC_CHECK_HEADERS([numa.h],,[AC_MSG_ERROR([AML requires libnuma headers.])])
 AC_CHECK_HEADERS([numaif.h],,[AC_MSG_ERROR([AML requires libnuma headers.])])
 AC_CHECK_LIB(numa, mbind,,[AC_MSG_ERROR([AML requires libnuma.])])
 
+# Hwloc support
+###############
+
+PKG_CHECK_MODULES([HWLOC], \
+                  [hwloc >= 2.0],   \
+                  [have_hwloc=1], \
+                  [have_hwloc=0])
+if test "$have_hwloc" == "1"; then
+   AC_DEFINE([HAVE_HWLOC], [1], "hwloc library with ABI > 2.0 is installed.")
+fi
+AM_CONDITIONAL([HAVE_HWLOC], [test "$have_hwloc" = "1"])
+AC_DEFINE_UNQUOTED([HAVE_HWLOC], [$have_hwloc], [Whether aml support hwloc library calls.])
+AC_SUBST([HAVE_HWLOC],[$have_hwloc])
+
 # check doxygen + sphinx for documentation build
 ################################################
 

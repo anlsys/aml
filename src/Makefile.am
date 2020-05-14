@@ -85,3 +85,13 @@ libaml_la_SOURCES+=area/cuda.c
 # libaml_la_LIBADD+=libamlcuda.la
 
 endif
+
+#############################################
+# hwloc sources
+
+if HAVE_HWLOC
+AM_CPPFLAGS += $(HWLOC_CFLAGS)
+AM_LDFLAGS += $(HWLOC_LIBS)
+
+libaml_la_SOURCES+=area/hwloc.c
+endif
