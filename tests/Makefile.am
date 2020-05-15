@@ -13,6 +13,12 @@ AM_CFLAGS += $(CUDA_CFLAGS)
 AM_LDFLAGS += $(CUDA_LIBS)
 endif
 
+if HAVE_HWLOC
+LIBS += $(HWLOC_LIBS)
+AM_CFLAGS += $(HWLOC_CFLAGS)
+AM_LDFLAGS += $(HWLOC_LIBS)
+endif
+
 # valgrind support
 @VALGRIND_CHECK_RULES@
 
@@ -55,6 +61,10 @@ SCRATCH_TESTS = scratch/test_scratch_seq \
 
 if HAVE_CUDA
 AREA_TESTS += area/test_cuda
+endif
+
+if HAVE_HWLOC
+AREA_TESTS += area/test_hwloc
 endif
 
 # unit tests

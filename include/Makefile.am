@@ -5,6 +5,10 @@ include_aml_area_HEADERS = \
 			      aml/area/linux.h \
 			      aml/area/cuda.h
 
+if HAVE_HWLOC
+include_aml_area_HEADERS+= aml/area/hwloc.h
+endif
+
 include_aml_layoutdir=$(includedir)/aml/layout
 include_aml_layout_HEADERS = \
 			      aml/layout/native.h \

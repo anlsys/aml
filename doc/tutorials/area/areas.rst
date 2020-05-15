@@ -80,6 +80,34 @@ Now we have an "allocator" of interleaved data.
 
 Here we have allocated 8*4096 bytes of data across system memories.
 
+Hwloc Area
+----------
+
+If you compiled AML with hwloc backend support and the supports hwloc library
+at runtime, then you can use aml area features built on top of hwloc.
+
+.. code-block:: c
+
+	#include <aml/utils/features.h>
+	#if AML_HAVE_BACKEND_HWLOC == 1
+	#include <aml/area/hwloc.h>
+	...
+	if (aml_support_backends(AML_BACKEND_HWLOC)) {
+	...
+	}
+	...
+	#endif
+
+The backend provides static areas, e.g for interleaving data on all NUMA nodes:
+
+.. code-block:: c
+
+	void *data = aml_area_mmap(&aml_area_hwloc_interleave, size, NULL);
+
+and areas constructor based on hwloc memory binding policies and nodeset.
+The backend may require that you provide objects from the current system
+topology. Such a topology may be obtained through hwloc API.
+	
 CUDA Area
 ---------
 
