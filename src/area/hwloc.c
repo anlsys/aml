@@ -24,6 +24,7 @@
  **/
 extern hwloc_topology_t aml_topology;
 extern hwloc_const_bitmap_t allowed_nodeset;
+typedef const struct hwloc_obj *hwloc_const_obj_t;
 
 /**************************************************************************/
 /* aml_area_hwloc                                                         */
@@ -207,3 +208,402 @@ AML_AREA_HWLOC_DECL(aml_area_hwloc_default, NULL, HWLOC_MEMBIND_DEFAULT);
 AML_AREA_HWLOC_DECL(aml_area_hwloc_interleave, NULL, HWLOC_MEMBIND_INTERLEAVE);
 
 AML_AREA_HWLOC_DECL(aml_area_hwloc_firsttouch, NULL, HWLOC_MEMBIND_FIRSTTOUCH);
+
+/**************************************************************************/
+/* aml_hwloc_preferred_policy                                             */
+/**************************************************************************/
+
+static int aml_area_hwloc_preferred_alloc(struct aml_area **area)
+{
+	if (area == NULL)
+		return -AML_EINVAL;
+	int num_nodes =
+	        hwloc_get_nbobjs_by_type(aml_topology, HWLOC_OBJ_NUMANODE);
+	if (num_nodes <= 0)
+		return -AML_ENOTSUP;
+
+	struct aml_area *a =
+	        AML_INNER_MALLOC_ARRAY(num_nodes, hwloc_obj_t, struct aml_area,
+	                               struct aml_area_hwloc_preferred_data);
+
+	if (a == NULL)
+		return -AML_ENOMEM;
+
+	struct aml_area_hwloc_preferred_data *policy =
+	        AML_INNER_MALLOC_GET_FIELD(
+	                a, 2, struct aml_area,
+	                struct aml_area_hwloc_preferred_data);
+
+	policy->numanodes = AML_INNER_MALLOC_GET_ARRAY(
+	        policy, hwloc_obj_t, struct aml_area,
+	        struct aml_area_hwloc_preferred_data);
+	policy->num_nodes = (unsigned)num_nodes;
+
+	for (int i = 0; i < num_nodes; i++)
+		policy->numanodes[i] = NULL;
+
+	a->data = (struct aml_area_data *)policy;
+	a->ops = &aml_area_hwloc_preferred_ops;
+	*area = a;
+	return AML_SUCCESS;
+}
+
+int aml_area_hwloc_preferred_destroy(struct aml_area **area)
+{
+	if (area != NULL && *area != NULL) {
+		free(*area);
+		*area = NULL;
+	}
+	return AML_SUCCESS;
+}
+
+void *aml_area_hwloc_preferred_mmap(const struct aml_area_data *area_data,
+                                    size_t size,
+                                    struct aml_area_mmap_options *opts)
+
+{
+
+	struct aml_area_hwloc_options *options =
+	        (struct aml_area_hwloc_options *)opts;
+	struct aml_area_hwloc_preferred_data *data =
+	        (struct aml_area_hwloc_preferred_data *)area_data;
+
+	// Allocate data
+	void *ptr =
+	        mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, -1, 0);
+
+	if (ptr == NULL) {
+		aml_errno = AML_ENOMEM;
+		return NULL;
+	}
+
+	int err;
+	intptr_t offset = 0;
+	hwloc_obj_t *numanode = data->numanodes;
+	size_t block_size;
+
+	// Map block per block. Stop if we reached beyond last numanode.
+	while ((size_t)offset < size &&
+	       numanode < (data->numanodes + data->num_nodes)) {
+		// Compute block size based on numanode page size and options.
+		block_size = (*numanode)->attr->numanode.page_types->size;
+		if (options != NULL)
+			block_size = options->min_size -
+			             (options->min_size % block_size) +
+			             block_size;
+
+		// Apply membind
+		err = hwloc_set_area_membind(
+		        aml_topology, (void *)((intptr_t)ptr + offset),
+		        block_size, (*numanode)->nodeset, HWLOC_MEMBIND_BIND,
+		        HWLOC_MEMBIND_STRICT | HWLOC_MEMBIND_BYNODESET);
+
+		// If not possible then try next numanode.
+		if (err < 0) {
+			numanode++;
+		} else {
+			offset += block_size;
+		}
+	}
+
+	return ptr;
+}
+
+int aml_area_hwloc_preferred_munmap(const struct aml_area_data *data,
+                                    void *ptr,
+                                    size_t size)
+{
+	(void)data;
+	munmap(ptr, size);
+	return AML_SUCCESS;
+}
+
+// Struct for sorting (distance) and reordering (index)
+struct aml_area_hwloc_distance {
+	unsigned index;
+	hwloc_uint64_t distance;
+};
+
+/**
+ * Get distance in hops between two objects of the same topology.
+ * @param a: An hwloc object with positive depth or NUMANODE.
+ * @param b: An hwloc object with positive depth or NUMANODE.
+ * @return the distance in hops between two objects.
+ * @return -1 if distance cannot be computed.
+ **/
+static int aml_area_hwloc_hwloc_lt(const void *a_ptr, const void *b_ptr)
+{
+	struct aml_area_hwloc_distance *a =
+	        (struct aml_area_hwloc_distance *)a_ptr;
+	struct aml_area_hwloc_distance *b =
+	        (struct aml_area_hwloc_distance *)b_ptr;
+	return a->distance < b->distance;
+}
+
+/**
+ * Get distance matrix in hops between two types of objects.
+ * Distance matrix comes in the format used in <hwloc/distance.h>.
+ * [ objs_a , objs_b ] * [ objs_a , objs_b ] such that element
+ * matrix [ i, j ] =  i * (nbobj_a + nbobj_b)  + j
+ * @param[in] ta: An hwloc object type with positive depth or NUMANODE.
+ * @param[in] tb: An hwloc object type with positive depth or NUMANODE.
+ * @param[out] distances: A pointer to a distance struct that will be
+ * populated with hop distances and that can be freed with
+ * hwloc_distances_release.
+ * @return 0 on success.
+ * @return -1 on failure.
+ **/
+static int aml_hwloc_distance_hop(hwloc_const_obj_t a, hwloc_const_obj_t b)
+{
+	int dist = 0;
+
+	if (a == b)
+		return 0;
+	if (a->type == HWLOC_OBJ_NUMANODE) {
+		a = a->parent;
+		dist += 1;
+	}
+	if (b->type == HWLOC_OBJ_NUMANODE) {
+		b = b->parent;
+		dist += 1;
+	}
+	if (a->depth < 0)
+		return -1;
+	if (b->depth < 0)
+		return -1;
+
+	// Go up from a until b cpuset is included into a
+	while (a != NULL && !hwloc_bitmap_isincluded(b->cpuset, a->cpuset)) {
+		dist++;
+		a = a->parent;
+	}
+
+	if (a == NULL)
+		return -1;
+
+	// Go up from b until a cpuset is equal to a cpuset
+	while (b != NULL && !hwloc_bitmap_isequal(b->cpuset, a->cpuset)) {
+		dist++;
+		b = b->parent;
+	}
+
+	if (b == NULL)
+		return -1;
+	return dist;
+}
+
+int aml_hwloc_distance_hop_matrix(const hwloc_obj_type_t ta,
+                                  const hwloc_obj_type_t tb,
+                                  struct hwloc_distances_s *s)
+{
+	const unsigned na = hwloc_get_nbobjs_by_type(aml_topology, ta);
+	const unsigned nb =
+	        ta == tb ? 0 : hwloc_get_nbobjs_by_type(aml_topology, tb);
+	const unsigned n = na + nb;
+	hwloc_obj_t *o;
+	hwloc_uint64_t d, *v;
+
+	// Allocation
+	o = malloc(n * sizeof(*o));
+	if (o == NULL)
+		return -1;
+	v = malloc(n * n * sizeof(*v));
+	if (v == NULL) {
+		free(o);
+		return -1;
+	}
+
+	s->nbobjs = n;
+	s->objs = o;
+	s->values = v;
+	s->kind = HWLOC_DISTANCES_KIND_FROM_USER |
+	          HWLOC_DISTANCES_KIND_MEANS_LATENCY;
+
+	// Store objects a
+	for (unsigned i = 0; i < na; i++)
+		o[i] = hwloc_get_obj_by_type(aml_topology, ta, i);
+
+	// Store distances of same type a
+	for (unsigned i = 0; i < na; i++)
+		for (unsigned j = i; j < na; j++) {
+			d = aml_hwloc_distance_hop(
+			        hwloc_get_obj_by_type(aml_topology, ta, i),
+			        hwloc_get_obj_by_type(aml_topology, ta, j));
+			v[i * n + j] = d;
+			v[j * n + i] = d;
+		}
+
+	// If both types are equal, then we stored everything
+	if (ta == tb)
+		return 0;
+	else
+		s->kind |= HWLOC_DISTANCES_KIND_HETEROGENEOUS_TYPES;
+
+	// Store objects b
+	for (unsigned i = 0; i < nb; i++)
+		o[i + na] = hwloc_get_obj_by_type(aml_topology, tb, i);
+
+	// Store distances of same type b
+	for (unsigned i = 0; i < nb; i++)
+		for (unsigned j = i; j < nb; j++) {
+			d = aml_hwloc_distance_hop(
+			        hwloc_get_obj_by_type(aml_topology, tb, i),
+			        hwloc_get_obj_by_type(aml_topology, tb, j));
+			v[(na + i) * n + (j + na)] = d;
+			v[(na + j) * n + (i + na)] = d;
+		}
+
+	// Store distances  ab, ba
+	for (unsigned i = 0; i < na; i++)
+		for (unsigned j = 0; j < nb; j++) {
+			d = aml_hwloc_distance_hop(
+			        hwloc_get_obj_by_type(aml_topology, ta, i),
+			        hwloc_get_obj_by_type(aml_topology, tb, j));
+			v[(na + j) * n + i] = d;
+			v[i * n + (j + na)] = d;
+		}
+
+	return 0;
+}
+
+int aml_area_hwloc_preferred_create(struct aml_area **area,
+                                    hwloc_obj_t initiator,
+                                    const enum hwloc_distances_kind_e kind)
+{
+	int err;
+	const unsigned num_nodes =
+	        hwloc_get_nbobjs_by_type(aml_topology, HWLOC_OBJ_NUMANODE);
+	// output area
+	struct aml_area *ar = NULL;
+	// area numanodes
+	struct aml_area_hwloc_preferred_data *data;
+	// number of hwloc matrices to return in handle
+	unsigned int i, nr = 1;
+	// hwloc distance matrix
+	struct hwloc_distances_s handle[nr];
+	// array of distances to sort
+	struct aml_area_hwloc_distance distances[num_nodes];
+	// node iterator
+	hwloc_obj_t node =
+	        hwloc_get_obj_by_type(aml_topology, HWLOC_OBJ_NUMANODE, 0);
+	// distances from/to initiator, to/from target.
+	hwloc_uint64_t itot = 0, ttoi = 0;
+
+	// Check input
+	if (area == NULL)
+		return -AML_EINVAL;
+	if (initiator == NULL || initiator->cpuset == NULL ||
+	    hwloc_bitmap_weight(initiator->cpuset) == 0)
+		return -AML_EINVAL;
+	if (initiator->depth < node->parent->depth)
+		return -AML_EINVAL;
+
+	// Allocate structures
+	err = aml_area_hwloc_preferred_alloc(&ar);
+	if (ar == NULL)
+		return -AML_ENOMEM;
+	data = (struct aml_area_hwloc_preferred_data *)ar->data;
+
+	// Collect distances
+	err = hwloc_distances_get(
+	        aml_topology, &nr, (struct hwloc_distances_s **)(&handle),
+	        kind | HWLOC_DISTANCES_KIND_HETEROGENEOUS_TYPES, 0);
+	// If fail, fallback on hop distances.
+	if ((err != 0 || nr == 0) &&
+	    aml_hwloc_distance_hop_matrix(initiator->type, HWLOC_OBJ_NUMANODE,
+	                                  handle) == -1) {
+		err = -AML_ENOTSUP;
+		goto err_with_area;
+	}
+
+	// For each numanode compute distance to initiator
+	for (i = 0; i < data->num_nodes; i++) {
+		node = hwloc_get_obj_by_type(aml_topology, HWLOC_OBJ_NUMANODE,
+		                             i);
+	try_again:
+		err = hwloc_distances_obj_pair_values(&handle[0], initiator,
+		                                      node, &itot, &ttoi);
+		// There were no matrix for this (initiator, numanode).
+		// Let's try again with initiator's parent.
+		if (err != 0 && initiator->depth > node->parent->depth) {
+			initiator = initiator->parent;
+			goto try_again;
+		}
+		// Did not work either... then give up.
+		if (err != 0) {
+			err = -AML_FAILURE;
+			goto err_with_handle;
+		}
+		// Store average distance (back and forth)
+		distances[i].distance = (itot + ttoi) / 2;
+		distances[i].index = i;
+	}
+
+	// Sort distances
+	qsort(distances, data->num_nodes, sizeof(*distances),
+	      aml_area_hwloc_hwloc_lt);
+	// Store sorted nodes in area data.
+	for (i = 0; i < data->num_nodes; i++) {
+		node = hwloc_get_obj_by_type(aml_topology, HWLOC_OBJ_NUMANODE,
+		                             distances[i].index);
+		data->numanodes[i] = node;
+	}
+
+	// Cleanup
+	for (i = 0; i < nr; i++)
+		hwloc_distances_release(aml_topology, &handle[i]);
+
+	// Success !
+	*area = ar;
+	return AML_SUCCESS;
+
+	// Error
+err_with_handle:
+	for (i = 0; i < nr; i++)
+		hwloc_distances_release(aml_topology, &handle[i]);
+err_with_area:
+	free(ar);
+	return err;
+}
+
+int aml_area_hwloc_preferred_local_create(
+        struct aml_area **area, const enum hwloc_distances_kind_e kind)
+{
+	int err;
+	hwloc_cpuset_t cpuset;
+	hwloc_obj_t initiator;
+
+	/** Collect cpuset binding of current thread **/
+	cpuset = hwloc_bitmap_alloc();
+	if (cpuset == NULL)
+		return -AML_ENOMEM;
+	err = hwloc_get_cpubind(aml_topology, cpuset, HWLOC_CPUBIND_THREAD);
+
+	/** If thread is not bound we raise an error **/
+	if (err != 0 || hwloc_bitmap_iszero(cpuset)) {
+		err = -AML_FAILURE;
+		goto err_with_cpuset;
+	}
+
+	/** Match cpuset with a location on machine **/
+	err = hwloc_get_largest_objs_inside_cpuset(aml_topology, cpuset,
+	                                           &initiator, 1);
+	if (err != 0) {
+		err = -AML_FAILURE;
+		goto err_with_cpuset;
+	}
+	hwloc_bitmap_free(cpuset);
+
+	/** Build area with found initiator **/
+	return aml_area_hwloc_preferred_create(area, initiator, kind);
+
+err_with_cpuset:
+	hwloc_bitmap_free(cpuset);
+	return err;
+}
+
+struct aml_area_ops aml_area_hwloc_preferred_ops = {
+        .mmap = aml_area_hwloc_preferred_mmap,
+        .munmap = aml_area_hwloc_preferred_munmap,
+        .fprintf = NULL,
+};

@@ -107,7 +107,25 @@ The backend provides static areas, e.g for interleaving data on all NUMA nodes:
 and areas constructor based on hwloc memory binding policies and nodeset.
 The backend may require that you provide objects from the current system
 topology. Such a topology may be obtained through hwloc API.
-	
+
+Additionally, AML provides a performance based area `aml_area_hwloc_preferred`.
+This type of area will allocate data on available NUMA nodes with the highest
+performance from an initiator perspective.
+In this context, an initiator is a topolgy object with a cpuset.
+`aml_area_hwloc_preferred` areas are initialized respectively to an
+initiator and a performance criterion, e.g HWLOC_DISTANCES_KIND_MEANS_BANDWIDTH,
+HWLOC_DISTANCES_KIND_FROM_OS.
+
+.. code-block:: c
+
+	// The object from which the bandwidth is maximized.
+	hwloc_obj_t initiator = hwloc_get_obj_by_type(aml_topology, HWLOC_OBJ_CORE, 0);
+
+	aml_area_hwloc_preferred_create(&area, initiator,
+	                                HWLOC_DISTANCES_KIND_FROM_OS |
+																	HWLOC_DISTANCES_KIND_MEANS_BANDWIDTH |
+																	HWLOC_DISTANCES_KIND_HETEROGENEOUS_TYPES);
+
 CUDA Area
 ---------
 
