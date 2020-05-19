@@ -3,6 +3,11 @@ AM_COLOR_TESTS = yes
 AM_CFLAGS = -I$(top_srcdir)/include $(PTHREAD_CFLAGS) $(OPENMP_CFLAGS)
 AM_LDFLAGS = ../src/libaml.la $(PTHREAD_LIBS) $(OPENMP_CFLAGS)
 
+if HAVE_HWLOC
+AM_CFLAGS += $(HWLOC_CFLAGS)
+AM_LDFLAGS += $(HWLOC_LIBS)
+endif
+
 noinst_LIBRARIES = libkernel.a
 libkernel_a_SOURCES = utils.c utils.h blas_l1_kernel.c blas_l1_kernel.h verify_blas_l1.c verify_blas_l1.h
 LDADD = libkernel.a
