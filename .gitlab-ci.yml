@@ -14,7 +14,7 @@ repoquality:
     - /^wip.*/
     - /^WIP.*/
   script:
-    - git ls-files '*.c' '*.h' | grep -vE "benchmarks" > .repoquality
+    - git ls-files '*.c' '*.h' > .repoquality
     - nix run -f "$ARGOPKGS" repoquality --command repoquality
   tags:
     - nix
@@ -74,7 +74,7 @@ make:generic:
     - /^wip.*/
     - /^WIP.*/
   variables:
-    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter"
+    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter -Wno-builtin-declaration-mismatch"
   script:
     - |
       nix-shell --run bash <<< '
@@ -100,7 +100,7 @@ make:out-of-tree:
     - /^wip.*/
     - /^WIP.*/
   variables:
-    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter"
+    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter -Wno-builtin-declaration-mismatch"
   script:
     - |
       nix-shell --run bash <<< '
@@ -123,13 +123,16 @@ make:knl:
   except:
     - /^wip.*/
     - /^WIP.*/
+  variables:
+    CFLAGS: "-mkl -xhost"
+    CC: "icc"
   tags:
     - knl
   script:
     - source /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh intel64
     - ./autogen.sh
     - mkdir build
-    - CC=icc CFLAGS="-mkl -xhost" ./configure --prefix=`pwd`/build --enable-benchmarks
+    - ./configure --prefix=`pwd`/build
     - make -j64
     - make -C tests check
     - make install

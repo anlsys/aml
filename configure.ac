@@ -47,18 +47,9 @@ AX_VALGRIND_DFLT([drd], [off])
 AX_VALGRIND_DFLT([sgcheck], [off])
 AX_VALGRIND_CHECK
 
-# support for compiling benchmarks
-##################################
-
-AC_ARG_ENABLE(benchmarks,
-[AS_HELP_STRING([--enable-benchmarks],[Compile additional benchmarks (default is no).])],
-[benchmarks=true],[benchmarks=false])
-
-if [[ "x$benchmarks" = xtrue ]]; then
-	AC_OPENMP
-	AC_CHECK_LIB(m, sqrt)
-fi
-AM_CONDITIONAL([ADD_BENCHMARKS],[test "x$benchmarks" = xtrue])
+AC_OPENMP
+AC_CHECK_HEADERS([math.h],,[AC_MSG_ERROR([AML requires libmath headers.])])
+AC_CHECK_LIB(m, sqrt,,[AC_MSG_ERROR([AML requires libmath.])])
 
 AC_CHECK_LIB(dl, dlopen)
 
