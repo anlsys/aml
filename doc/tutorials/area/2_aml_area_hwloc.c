@@ -47,8 +47,7 @@ int max_bandwidth_area()
 	err = aml_area_hwloc_preferred_create(
 	        &area, initiator,
 	        HWLOC_DISTANCES_KIND_FROM_OS |
-	                HWLOC_DISTANCES_KIND_MEANS_LATENCY |
-	                HWLOC_DISTANCES_KIND_HETEROGENEOUS_TYPES);
+	                HWLOC_DISTANCES_KIND_MEANS_LATENCY);
 
 	if (err != AML_SUCCESS) {
 		fprintf(stderr, "aml_area_hwloc_preferred_create: %s\n",

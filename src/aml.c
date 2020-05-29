@@ -29,12 +29,21 @@ hwloc_const_bitmap_t allowed_nodeset;
 
 int aml_topology_init(void)
 {
+	char *topology_input = getenv("AML_TOPOLOGY");
+
 	if (hwloc_topology_init(&aml_topology) == -1)
 		return -1;
+
 	if (hwloc_topology_set_flags(
 	            aml_topology,
-	            HWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES) == -1)
+	            HWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES |
+	                    HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM) == -1)
 		return -1;
+
+	if (topology_input != NULL &&
+	    hwloc_topology_set_xml(aml_topology, topology_input) == -1)
+		return -1;
+
 	if (hwloc_topology_load(aml_topology) == -1)
 		return -1;
 	return 0;
@@ -50,7 +59,6 @@ int aml_init(int *argc, char **argv[])
 	// Initialize topology
 #if HAVE_HWLOC == 1
 	int err_hwloc;
-
 	err_hwloc = aml_topology_init();
 	if (err_hwloc < 0)
 		return AML_FAILURE;

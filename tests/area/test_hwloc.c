@@ -9,12 +9,23 @@
  *******************************************************************************/
 
 #include <assert.h>
+#include <hwloc.h>
 
 #include "aml.h"
 
 #include "aml/area/hwloc.h"
 
 extern hwloc_topology_t aml_topology;
+
+const char *xml_topology_path = "aml_topology.xml";
+
+int aml_hwloc_distance_hop_matrix(const hwloc_obj_type_t ta,
+                                  const hwloc_obj_type_t tb,
+                                  struct hwloc_distances_s **s);
+
+//------------------------------------------------------------------------------
+// Test basic API
+//------------------------------------------------------------------------------
 
 /** Number of sizes to test **/
 #define ns 3
@@ -118,9 +129,95 @@ void check_areas()
 	hwloc_bitmap_free(nodeset);
 }
 
+//------------------------------------------------------------------------------
+// Test preferred API
+//------------------------------------------------------------------------------
+
+void create_topology()
+{
+	unsigned nr = 1;
+	struct hwloc_distances_s *hops, *xml_hops;
+
+	// Get distance matrix
+	assert(aml_hwloc_distance_hop_matrix(HWLOC_OBJ_CORE, HWLOC_OBJ_CORE,
+	                                     &hops) == 0);
+
+	// Add matrix to topology
+	assert(hwloc_distances_add(aml_topology, hops->nbobjs, hops->objs,
+	                           hops->values, hops->kind,
+	                           HWLOC_DISTANCES_ADD_FLAG_GROUP_INACCURATE) ==
+	       0);
+
+	// Save topology as a xml file
+	assert(hwloc_topology_export_xml(aml_topology, xml_topology_path, 0) !=
+	       -1);
+
+	aml_finalize();
+
+	// Load xml topology.
+	setenv("AML_TOPOLOGY", xml_topology_path, 1);
+	assert(aml_init(NULL, NULL) == AML_SUCCESS);
+
+	// Get xml distance matrix
+	assert(hwloc_distances_get(aml_topology, &nr, &xml_hops,
+	                           HWLOC_DISTANCES_KIND_FROM_USER |
+	                                   HWLOC_DISTANCES_KIND_MEANS_LATENCY,
+	                           0) == 0);
+
+	// At least one distance matrix is present
+	assert(nr > 0);
+	// Same number of objects
+	assert(hops->nbobjs == xml_hops->nbobjs);
+	// Same values
+	assert(!memcmp(hops->values, xml_hops->values,
+	               hops->nbobjs * sizeof(*hops->values)));
+}
+
+void test_preferred()
+{
+	// bind ourselves to the last NUMANODE.
+	hwloc_obj_t PU, NUMANODE = hwloc_get_obj_by_type(aml_topology,
+	                                                 HWLOC_OBJ_NUMANODE, 0);
+
+	while (NUMANODE->next_cousin != NULL)
+		NUMANODE = NUMANODE->next_cousin;
+
+	PU = NUMANODE->parent;
+	while (PU->type != HWLOC_OBJ_CORE)
+		PU = PU->first_child;
+
+	assert(hwloc_set_cpubind(aml_topology, PU->cpuset,
+	                         HWLOC_CPUBIND_PROCESS | HWLOC_CPUBIND_STRICT |
+	                                 HWLOC_CPUBIND_NOMEMBIND) != -1);
+
+	// Now hwloc preferred area should return the
+	// closest NUMANODE (i.e the one above)
+	struct aml_area *area;
+	struct aml_area_hwloc_preferred_data *data;
+
+	assert(aml_area_hwloc_preferred_local_create(
+	               &area, HWLOC_DISTANCES_KIND_FROM_USER |
+	                              HWLOC_DISTANCES_KIND_MEANS_LATENCY) ==
+	       AML_SUCCESS);
+
+	data = (struct aml_area_hwloc_preferred_data *)area->data;
+	assert(data->numanodes[0] == NUMANODE);
+
+	aml_area_hwloc_preferred_destroy(&area);
+}
+
+void delete_topology()
+{
+	// Cleanup
+	unlink(xml_topology_path);
+}
+
 int main(int argc, char **argv)
 {
 	aml_init(&argc, &argv);
 	check_areas();
+	create_topology();
+	test_preferred();
+	delete_topology();
 	aml_finalize();
 }

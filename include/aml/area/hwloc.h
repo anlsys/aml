@@ -181,7 +181,7 @@ struct aml_area_hwloc_options {
  **/
 int aml_area_hwloc_preferred_create(struct aml_area **area,
                                     hwloc_obj_t initiator,
-                                    const enum hwloc_distances_kind_e kind);
+                                    enum hwloc_distances_kind_e kind);
 
 /**
  * Allocate an area with "preferred" policy with all the available numanodes
@@ -200,8 +200,8 @@ int aml_area_hwloc_preferred_create(struct aml_area **area,
  * @return AML_SUCCESS on success.
  * @see <hwloc/distances.h>
  **/
-int aml_area_hwloc_preferred_local_create(
-        struct aml_area **area, const enum hwloc_distances_kind_e kind);
+int aml_area_hwloc_preferred_local_create(struct aml_area **area,
+                                          enum hwloc_distances_kind_e kind);
 
 /**
  * Free memory space allocated for a aml_area_hwloc_preferred.
