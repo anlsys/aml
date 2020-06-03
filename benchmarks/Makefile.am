@@ -27,7 +27,7 @@ endif
 @VALGRIND_CHECK_RULES@
 
 noinst_LIBRARIES = libkernel.a
-libkernel_a_SOURCES = utils.c utils.h blas_l1_kernel.c blas_l1_kernel.h verify_blas_l1.c verify_blas_l1.h
+libkernel_a_SOURCES = utils.c utils.h blas_l1_kernel.c blas_l1_kernel.h blas_l2_kernel.c blas_l2_kernel.h verify_blas_l1.c verify_blas_l1.h verify_blas_l2.c verify_blas_l2.h
 LDADD = libkernel.a
 
 NOPREFETCH = noprefetch/flat_blas_l1 \
