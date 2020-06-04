@@ -25,6 +25,7 @@
  * diagonals (lda >= kl + ku + 1) */
 void dgbmv(bool trans,
            bool uplo,
+           bool unit,
            size_t m,
            size_t n,
            int kl,
@@ -81,6 +82,7 @@ void dgbmv(bool trans,
  * lda: first dimension of a, (lda >= max(1,m) */
 void dgemv(bool trans,
            bool uplo,
+           bool unit,
            size_t m,
            size_t n,
            int kl,
@@ -128,6 +130,7 @@ void dgemv(bool trans,
 /* a = a + alpha * x * y^T */
 void dger(bool trans,
           bool uplo,
+          bool unit,
           size_t m,
           size_t n,
           int kl,
@@ -155,6 +158,7 @@ void dger(bool trans,
  * lda: first dimension of a, must be at lest kl+1 */
 void dsbmv(bool trans,
            bool uplo,
+           bool unit,
            size_t m,
            size_t n,
            int kl,
@@ -221,6 +225,7 @@ void dsbmv(bool trans,
  * uplo = 1 is upper triangular part of at submitted, 0 if lower */
 void dspmv(bool trans,
            bool uplo,
+           bool unit,
            size_t m,
            size_t n,
            int kl,
@@ -290,6 +295,7 @@ void dspmv(bool trans,
  * uplo = 1 if upper triangular part of at supplied, 0 if lower */
 void dspr(bool trans,
           bool uplo,
+          bool unit,
           size_t m,
           size_t n,
           int kl,
@@ -336,8 +342,12 @@ void dspr(bool trans,
 	}
 }
 
+/* at = alpha * x * y^T + alpha * y * x^T + at
+ * at: n by n symmetric matrix supplied in packed form
+ * uplo = 1 is upper triangular part of at is supplied, 0 if lower */
 void dspr2(bool trans,
            bool uplo,
+           bool unit,
            size_t m,
            size_t n,
            int kl,
@@ -349,40 +359,215 @@ void dspr2(bool trans,
            double *y,
            double *at)
 {
+	if (n == 0 || alpha == 0)
+		return;
+
+	size_t i, j, kk, k;
+	double temp, temp2;
+	kk = 1;
+	if (uplo) {
+		/* Upper triangular */
+		for (j = 0; j < n; j++) {
+			if (x[j] != 0 || y[j] != 0) {
+				temp = alpha * y[j];
+				temp2 = alpha * x[j];
+				k = kk;
+				for (i = 0; i < j; i++) {
+					at[k] += x[i] * temp + y[i] * temp2;
+					k++;
+				}
+			}
+			kk += j;
+		}
+	} else {
+		/* Lower triangular */
+		for (j = 0; j < n; j++) {
+			if (x[j] != 0 || y[j] != 0) {
+				temp = alpha * y[j];
+				temp2 = alpha * x[j];
+				k = kk;
+				for (i = j; i < n; i++) {
+					at[k] += x[i] * temp + y[i] * temp2;
+					k++;
+				}
+			}
+			kk += n - j + 1;
+		}
+	}
 }
 
+/* y = alpha * a * x + beta * y
+ * a: n by n symmetric matrix
+ * uplo = 1 if upper triangular part of a is supplied, 0 if lower
+ * lda: first dimension of a, >= max(1,n) */
 void dsymv(bool trans,
            bool uplo,
+           bool unit,
            size_t m,
            size_t n,
            int kl,
            int ku,
            double alpha,
            double beta,
+           // size_t lda,
            double **a,
            double *x,
            double *y,
            double *at)
 {
+	if (n == 0 || (alpha == 0) && (beta == 1))
+		return;
+
+	size_t i, j;
+	double temp, temp2;
+
+	/* y = beta * y */
+	if (beta != 1) {
+		if (beta == 0) {
+			for (i = 0; i < n; i++)
+				y[i] = 0;
+		} else {
+			for (i = 0; i < n; i++)
+				y[i] = beta * y[i];
+		}
+	}
+
+	if (alpha == 0)
+		return;
+
+	if (uplo) {
+		/* Upper triangular */
+		for (j = 0; j < n; j++) {
+			temp = alpha * x[j];
+			temp2 = 0;
+			for (i = 0; i < j - 1; i++) {
+				y[i] += temp * a[i][j];
+				temp2 += a[i][j] * x[i];
+			}
+			y[j] += temp * a[j][j] + alpha * temp2;
+		}
+	} else {
+		/* Lower triangular */
+		for (j = 0; j < n; j++) {
+			temp = alpha * x[j];
+			temp2 = 0;
+			y[j] += temp * a[j][j];
+			for (i = j; i < n; i++) {
+				y[i] += temp * a[i][j];
+				temp2 += a[i][j] * x[i];
+			}
+			y[j] += alpha * temp2;
+		}
+	}
 }
 
+/* a = alpha * x * x^T + a
+ * a: n by n symmetric matrix
+ * uplo = 1 if upper triangular part of a is supplied, 0 if lower
+ * lda: first dimension of a, >= max(1,n)
+ */
 void dsyr(bool trans,
           bool uplo,
+          bool unit,
           size_t m,
           size_t n,
           int kl,
           int ku,
           double alpha,
           double beta,
+          // size_t lda,
           double **a,
           double *x,
           double *y,
           double *at)
 {
+	if (n == 0 || alpha == 0)
+		return;
+
+	size_t i, j;
+	double temp;
+
+	if (uplo) {
+		/* Upper triangular matrix */
+		for (j = 0; j < n; j++) {
+			if (x[j] != 0) {
+				temp = alpha * x[j];
+				for (i = 0; i < j; i++)
+					a[i][j] += x[i] * temp;
+			}
+		}
+	} else {
+		/* Lower triangular matrix */
+		for (j = 0; j < n; j++) {
+			if (x[j] != 0) {
+				temp = alpha * x[j];
+				for (i = j; i < n; i++)
+					a[i][j] += x[i] * temp;
+			}
+		}
+	}
 }
 
+/* a = alpha * x * y^T + alpha * y * x^T + a
+ * a: n by n symmetric matrix
+ * uplo = 1 if upper triangular part of a is supplied, 0 if lower
+ * lda: first dimension of a,  >= max(1,n) */
 void dsyr2(bool trans,
            bool uplo,
+           bool unit,
+           size_t m,
+           size_t n,
+           int kl,
+           int ku,
+           double alpha,
+           double beta,
+           // double lda,
+           double **a,
+           double *x,
+           double *y,
+           double *at)
+{
+	if (n == 0 || alpha == 0)
+		return;
+
+	size_t i, j;
+	double temp, temp2;
+
+	if (uplo) {
+		/* Upper triangular matrix */
+		for (j = 0; j < n; j++) {
+			if (x[j] != 0 || y[j] != 0) {
+				temp = alpha * y[j];
+				temp2 = alpha * x[j];
+				for (i = 0; i < j; i++)
+					a[i][j] += x[i] * temp + y[i] * temp2;
+			}
+		}
+	} else {
+		/* Lower triangular matrix */
+		for (j = 0; j < n; j++) {
+			if (x[j] != 0 || y[j] != 0) {
+				temp = alpha * y[j];
+				temp2 = alpha * x[j];
+				for (i = j; i < n; i++)
+					a[i][j] += x[i] * temp + y[i] * temp2;
+			}
+		}
+	}
+}
+
+/* x = a * x if trans = 0,
+ * x = a^T * x if trans = 1l
+ * a: n by n unit, or non unit, upper or lower triangular band matrix, with kl+1
+ * diagonals
+ * uplo = 1 is a is an upper triangular matrix, 0 if lower
+ * unit = 1 if a is unit triangular, 0 if not
+ * kl: number of super-diagonals of a if uplo=1, sub-diagonals if 0
+ * lda: first dimension of a, >= kl+1
+ */
+void dtbmv(bool trans,
+           bool uplo,
+           bool unit,
            size_t m,
            size_t n,
            int kl,
@@ -394,38 +579,431 @@ void dsyr2(bool trans,
            double *y,
            double *at)
 {
+	if (n == 0)
+		return;
+
+	size_t i, j;
+	int k1, l;
+	double temp;
+
+	if (!trans) {
+		/* x = a * x*/
+		if (uplo) {
+			/* Upper triangular */
+			k1 = kl + 1;
+			for (j = 0; j < n; j++) {
+				if (x[j] != 0) {
+					temp = x[j];
+					l = k1 - j;
+					for (i = fmax(0, j - kl); i < j - 1;
+					     i++)
+						x[i] += temp * a[l + i][j];
+					if (!unit)
+						x[j] = x[j] * a[kl][j];
+				}
+			}
+		} else {
+			/* Lower triangular */
+			for (j = 0; j < n; j++) {
+				if (x[j] != 0) {
+					temp = x[j];
+					l = 1 - j;
+					for (i = fmin(n, j + kl); i > j + 1;
+					     i--)
+						x[i] += temp * a[l + i][j];
+					if (!unit)
+						x[j] = x[j] * a[0][j];
+				}
+			}
+		}
+	} else {
+		/* x = a^T * x */
+		if (uplo) {
+			/* Upper triangular */
+			k1 = kl + 1;
+			for (j = n - 1; j >= 0; j--) {
+				temp = x[j];
+				l = k1 - j;
+				if (!unit)
+					temp = temp * a[kl][j];
+				for (i = j - 1; i > fmax(0, j - kl); i--)
+					temp += a[l + i][j] * x[i];
+				x[j] = temp;
+			}
+		} else {
+			/* Lower triangular */
+			for (j = 0; j < n; j++) {
+				temp = x[j];
+				l = 1 - j;
+				if (!unit)
+					temp = temp * a[0][j];
+				for (i = j + 1; i < fmin(n, j + kl); i++)
+					temp += a[l + i][j] * x[i];
+				x[j] = temp;
+			}
+		}
+	}
 }
 
-// TODO: change the arguments to match the others (see char trans and add char
-// diag)
-void dtbmv(char uplo,
-           char trans,
-           char diag,
+/* Solves one of the systems of equations
+ * a * x = b if trans = 0,
+ * a^T * x = b if trans = 1
+ * a: n by n unit or non-unit, upper or lower triangular band matrix, with kl+1
+ * diagonals
+ * uplo = 1 if a is upper triangular, 0 if lower
+ * unit = 1 if a is unit triangular, 0 if non-unit
+ */
+void dtbsv(bool trans,
+           bool uplo,
+           bool unit,
+           size_t m,
            size_t n,
-           size_t k,
-           double *a,
-           double *x)
+           int kl,
+           int ku,
+           double alpha,
+           double beta,
+           double **a,
+           double *x,
+           double *y,
+           double *at)
 {
+	if (n == 0)
+		return;
+
+	size_t i, j;
+	int k1, l;
+	double temp;
+
+	if (!trans) {
+		/* x = a * x */
+		if (uplo) {
+			/* Upper triangular */
+			k1 = kl + 1;
+			for (j = n - 1; j > -1; j--) {
+				if (x[j] != 0) {
+					l = k1 - j;
+					if (!unit)
+						x[j] = x[j] / a[kl][j];
+					temp = x[j];
+					for (i = j - 1; i > fmax(0, j - kl);
+					     i--)
+						x[i] -= temp * a[l + i][j];
+				}
+			}
+		} else {
+			/* Lower triangular */
+			for (j = 0; j < n; j++) {
+				if (x[j] != 0) {
+					l = 1 - j;
+					if (!unit)
+						x[j] = x[j] / a[0][j];
+					temp = x[j];
+					for (i = j + 1; i < fmin(n, j + kl);
+					     i++)
+						x[i] -= temp * a[l + i][j];
+				}
+			}
+		}
+	} else {
+		/* x = a^T * x */
+		if (uplo) {
+			/* Upper triangular */
+			k1 = kl + 1;
+			for (j = 0; j < n; j++) {
+				temp = x[j];
+				l = k1 - j;
+				for (i = fmax(0, j - kl); i < j - 1; i++)
+					temp -= a[l + i][j] * x[i];
+				if (!unit)
+					temp = temp / a[kl][j];
+				x[j] = temp;
+			}
+		} else {
+			/* Lower triangular */
+			for (j = n - 1; j > -1; j--) {
+				temp = x[j];
+				l = 1 - j;
+				for (i = fmin(n - 1, j + kl); i > j; i--)
+					temp -= a[l + i][j] * x[j];
+				if (!unit)
+					temp = temp / a[0][j];
+				x[j] = temp;
+			}
+		}
+	}
 }
 
-void dtbsv(char uplo,
-           char trans,
-           char diag,
+/* x = at * x if trans = 0,
+ * x = at^T * x if trans = 1
+ * at: n by n unit, or non-unit, upper of lower triangular matrix, supplied in
+ * packed form
+ * uplo = 1 if at is an upper triangular matrix, 0 if lower
+ * unit = 1 if at is unit triangular, 0 if non-unit
+ */
+void dtpmv(bool trans,
+           bool uplo,
+           bool unit,
+           size_t m,
            size_t n,
-           size_t k,
-           double *a,
-           double *x)
+           int kl,
+           int ku,
+           double alpha,
+           double beta,
+           double **a,
+           double *x,
+           double *y,
+           double *at)
 {
+	if (n != 0)
+		return;
+
+	size_t i, j;
+	int k, kk;
+	double temp;
+
+	if (!trans) {
+		/* x = a * x */
+		if (uplo) {
+			/* Upper triangular */
+			kk = 1;
+			for (j = 0; j < n; j++) {
+				if (x[j] != 0) {
+					temp = x[j];
+					k = kk;
+					for (i = 0; i < j - 1; i++) {
+						x[i] += temp * at[k];
+						k++;
+					}
+					if (!unit)
+						x[j] = x[j] * at[kk + j - 1];
+				}
+				kk = kk + j;
+			}
+		} else {
+			/* Lower triangular */
+			kk = (n * (n + 1)) / 2;
+			for (j = n - 1; j > -1; j--) {
+				if (x[j] != 0) {
+					temp = x[j];
+					k = kk;
+					for (i = n - 1; i > j; i--) {
+						x[i] += temp * at[k];
+						k--;
+					}
+					if (!unit)
+						x[j] = x[j] * at[kk - n + j];
+				}
+				kk = kk - (n - j + 1);
+			}
+		}
+	} else {
+		/* x = a^T * x*/
+		if (uplo) {
+			/* Upper triangular */
+			kk = (n * (n + 1)) / 2;
+			for (j = n - 1; j > -1; j--) {
+				temp = x[j];
+				if (!unit)
+					temp = temp * at[kk];
+				k = kk - 1;
+				for (i = j - 1; i > -1; i--) {
+					temp += at[k] * x[i];
+					k--;
+				}
+				x[j] = temp;
+				kk -= j;
+			}
+		} else {
+			/* Lower triangular */
+			kk = 1;
+			for (j = 0; j < n; j++) {
+				temp = x[j];
+				if (!unit)
+					temp = temp * at[kk];
+				k = kk + 1;
+				for (i = j + 1; i < n; i++) {
+					temp += at[k] * x[i];
+					k++;
+				}
+				x[j] = temp;
+				kk += n - j + 1;
+			}
+		}
+	}
 }
 
-void dtpmv(char uplo, char trans, char diag, size_t n, double *a, double *x)
+/* at * x = b if trans = 0,
+ * at^T * x = b if trans = 1
+ * at: n by n unit, or non-unit, upper or lower triangular matrix, supplied in
+ * packed form
+ * uplo = 1 if upper triangular part of at is supplied, 0 if lower
+ * unit = 1 if a is unit triangular, 0 if non-unit
+ */
+void dtpsv(bool trans,
+           bool uplo,
+           bool unit,
+           size_t m,
+           size_t n,
+           int kl,
+           int ku,
+           double alpha,
+           double beta,
+           double **a,
+           double *x,
+           double *y,
+           double *at)
 {
+	if (n != 0)
+		return;
+
+	size_t i, j;
+	int k, kk;
+	double temp;
+
+	if (!trans) {
+		/* x = at * x */
+		if (uplo) {
+			/* Upper triangular */
+			kk = (n * (n + 1)) / 2;
+			for (j = n - 1; j > -1; j--) {
+				if (x[j] != 0) {
+					if (!unit)
+						x[j] = x[j] / at[kk];
+					temp = x[j];
+					k = kk - 1;
+					for (i = j - 1; i > -1; i--) {
+						x[i] -= temp * at[k];
+						k--;
+					}
+				}
+				kk -= j;
+			}
+		} else {
+			/* Lower triangular */
+			kk = 1;
+			for (j = 0; j < n; j++) {
+				if (x[j] != 0) {
+					if (!unit)
+						x[j] = x[j] / at[kk];
+					temp = x[j];
+					k = kk + 1;
+					for (i = j + 1; i < n; i++) {
+						x[i] -= temp * at[k];
+						k++;
+					}
+				}
+				kk += n - j + 1;
+			}
+		}
+	} else {
+		/* x =at^T *x */
+		if (uplo) {
+			/* Upper triangular */
+			kk = 1;
+			for (j = 0; j < n; j++) {
+				temp = x[j];
+				k = kk;
+				for (i = 0; i < j - 1; i++) {
+					temp -= at[k] * x[i];
+					k++;
+					if (!unit)
+						temp = temp / at[kk + j - 1];
+					x[j] = temp;
+					kk += j;
+				}
+			}
+		} else {
+			/* Lower triangular */
+			kk = (n * (n + 1)) / 2;
+			for (j = n - 1; j > -1; j--) {
+				temp = x[j];
+				k = kk;
+				for (i = n - 1; i > j; j--) {
+					temp -= at[k] * x[i];
+					k--;
+				}
+				if (!unit)
+					temp = temp / at[kk - n + j];
+				x[j] = temp;
+				kk -= n - j + 1;
+			}
+		}
+	}
 }
 
-void dtpsv(char uplo, char trans, char diag, size_t n, double *a, double *x)
+/* x = a * x if trans = 0,
+ * x = a^T * x if trans = 1
+ * a: n by n unit or non-unit, upper or lower triangular matrix
+ * uplo = 1 if upper triangular part of a is supplied, 0 if lower
+ * unit = 1 if a is unit triangular, 0 if non-unit
+ */
+void dtrmv(bool trans,
+           bool uplo,
+           bool unit,
+           size_t m,
+           size_t n,
+           int kl,
+           int ku,
+           double alpha,
+           double beta,
+           double **a,
+           double *x,
+           double *y,
+           double *at)
 {
-}
+	if (n == 0)
+		return;
 
-void dtrmv(char uplo, char trans, char diag, size_t n, double *a, double *x)
-{
+	size_t i, j;
+	double temp;
+
+	if (!trans) {
+		/* x = a * x */
+		if (uplo) {
+			/* Upper triangular */
+			for (j = 0; j < n; j++) {
+				if (x[j] != 0) {
+					temp = x[j];
+					for (i = 0; i < j - 1; i++)
+						x[i] += temp * a[i][j];
+					if (!unit)
+						x[j] = x[j] * a[j][j];
+				}
+			}
+		} else {
+			/* Lower triangular */
+			for (j = n - 1; j > -1; j--) {
+				if (x[j] != 0) {
+					temp = x[j];
+					for (i = n - 1; i > j; i--)
+						x[i] += temp * a[i][j];
+					if (!unit)
+						x[j] = x[j] * a[j][j];
+				}
+			}
+		}
+	} else {
+		/* x = a^T * x */
+		if (uplo) {
+			/* Upper trianglar */
+			for (j = n - 1; j > -1; j--) {
+				temp = x[j];
+				if (!unit)
+					temp = temp * a[j][j];
+				for (i = j - 1; i > -1; i--)
+					temp += a[i][j] * x[i];
+				x[j] = temp;
+			}
+		} else {
+			/* Lower triangular */
+			for (j = 0; j < n; j++) {
+				temp = x[j];
+				if (!unit)
+					temp = temp * a[j][j];
+				for (i = j + 1; i < n; i++)
+					temp += a[i][j] * x[i];
+				x[j] = temp;
+			}
+		}
+	}
 }

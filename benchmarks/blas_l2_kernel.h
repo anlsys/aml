@@ -20,6 +20,7 @@
 
 void dgbmv(bool trans,
            bool uplo,
+           bool unit,
            size_t m,
            size_t n,
            int kl,
@@ -30,8 +31,10 @@ void dgbmv(bool trans,
            double *x,
            double *y,
            double *at);
+
 void dgemv(bool trans,
            bool uplo,
+           bool unit,
            size_t m,
            size_t n,
            int kl,
@@ -42,8 +45,10 @@ void dgemv(bool trans,
            double *x,
            double *y,
            double *at);
+
 void dger(bool trans,
           bool uplo,
+          bool unit,
           size_t m,
           size_t n,
           int kl,
@@ -54,8 +59,10 @@ void dger(bool trans,
           double *x,
           double *y,
           double *at);
+
 void dsbmv(bool trans,
            bool uplo,
+           bool unit,
            size_t m,
            size_t n,
            int kl,
@@ -66,8 +73,10 @@ void dsbmv(bool trans,
            double *x,
            double *y,
            double *at);
+
 void dspmv(bool trans,
            bool uplo,
+           bool unit,
            size_t m,
            size_t n,
            int kl,
@@ -78,8 +87,10 @@ void dspmv(bool trans,
            double *x,
            double *y,
            double *at);
+
 void dspr(bool trans,
           bool uplo,
+          bool unit,
           size_t m,
           size_t n,
           int kl,
@@ -90,9 +101,10 @@ void dspr(bool trans,
           double *x,
           double *y,
           double *at);
-// To Do
+
 void dspr2(bool trans,
            bool uplo,
+           bool unit,
            size_t m,
            size_t n,
            int kl,
@@ -103,9 +115,10 @@ void dspr2(bool trans,
            double *x,
            double *y,
            double *at);
-// To Do
+
 void dsymv(bool trans,
            bool uplo,
+           bool unit,
            size_t m,
            size_t n,
            int kl,
@@ -116,9 +129,10 @@ void dsymv(bool trans,
            double *x,
            double *y,
            double *at);
-// To Do
+
 void dsyr(bool trans,
           bool uplo,
+          bool unit,
           size_t m,
           size_t n,
           int kl,
@@ -129,9 +143,24 @@ void dsyr(bool trans,
           double *x,
           double *y,
           double *at);
-// To Do
+
 void dsyr2(bool trans,
            bool uplo,
+           bool unit,
+           size_t m,
+           size_t n,
+           int kl,
+           int ku,
+           double alpha,
+           double beta,
+           double **a,
+           double *x,
+           double *y,
+           double *at);
+
+void dtbmv(bool trans,
+           bool uplo,
+           bool unit,
            size_t m,
            size_t n,
            int kl,
@@ -144,24 +173,61 @@ void dsyr2(bool trans,
            double *at);
 
 // To Do
-void dtbmv(char uplo,
-           char trans,
-           char diag,
+void dtbsv(bool trans,
+           bool uplo,
+           bool unit,
+           size_t m,
            size_t n,
-           size_t k,
-           double *a,
-           double *x);
+           int kl,
+           int ku,
+           double alpha,
+           double beta,
+           double **a,
+           double *x,
+           double *y,
+           double *at);
+
 // To Do
-void dtbsv(char uplo,
-           char trans,
-           char diag,
+void dtpmv(bool trans,
+           bool uplo,
+           bool unit,
+           size_t m,
            size_t n,
-           size_t k,
-           double *a,
-           double *x);
+           int kl,
+           int ku,
+           double alpha,
+           double beta,
+           double **a,
+           double *x,
+           double *y,
+           double *at);
+
 // To Do
-void dtpmv(char uplo, char trans, char diag, size_t n, double *a, double *x);
+void dtpsv(bool trans,
+           bool uplo,
+           bool unit,
+           size_t m,
+           size_t n,
+           int kl,
+           int ku,
+           double alpha,
+           double beta,
+           double **a,
+           double *x,
+           double *y,
+           double *at);
+
 // To Do
-void dtpsv(char uplo, char trans, char diag, size_t n, double *a, double *x);
-// To Do
-void dtrmv(char uplo, char trans, char diag, size_t n, double *a, double *x);
+void dtrmv(bool trans,
+           bool uplo,
+           bool unit,
+           size_t m,
+           size_t n,
+           int kl,
+           int ku,
+           double alpha,
+           double beta,
+           double **a,
+           double *x,
+           double *y,
+           double *at);

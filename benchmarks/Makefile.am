@@ -1,5 +1,6 @@
 AM_COLOR_TESTS = yes
 
+<<<<<<< HEAD
 AM_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS) $(OPENMP_CFLAGS)
 AM_LDFLAGS = ../src/libaml.la $(top_builddir)/excit/src/libexcit.la $(PTHREAD_LIBS) $(OPENMP_CFLAGS)
 
@@ -13,7 +14,7 @@ AM_CFLAGS += $(CUDA_CFLAGS)
 AM_LDFLAGS += $(CUDA_LIBS)
 endif
 
-if HAVE_HWLOC
+if HAVE_HWLOC 
 AM_CFLAGS += $(HWLOC_CFLAGS)
 AM_LDFLAGS += $(HWLOC_LIBS)
 endif
@@ -27,11 +28,14 @@ endif
 @VALGRIND_CHECK_RULES@
 
 noinst_LIBRARIES = libkernel.a
-libkernel_a_SOURCES = utils.c utils.h blas_l1_kernel.c blas_l1_kernel.h blas_l2_kernel.c blas_l2_kernel.h verify_blas_l1.c verify_blas_l1.h verify_blas_l2.c verify_blas_l2.h
+libkernel_a_SOURCES = utils.c utils.h blas_l1_kernel.c blas_l1_kernel.h \
+		      blas_l2_kernel.c blas_l2_kernel.h verify_blas_l1.c \
+		      verify_blas_l1.h verify_blas_l2.c verify_blas_l2.h
 LDADD = libkernel.a
 
 NOPREFETCH = noprefetch/flat_blas_l1 \
-	     noprefetch/tiled_blas_l1
+	     noprefetch/tiled_blas_l1 \
+	     noprefetch/flat_blas_l2
 
 BENCHMARKS = $(NOPREFETCH)
 
