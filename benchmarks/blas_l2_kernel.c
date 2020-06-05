@@ -20,28 +20,25 @@
 /* y = alpha * a * x + beta * y if trans = 0,
  * y = alpha * A^T * x + beta * y if trans = 1
  * kl: number of sub-diagonals of a
- * ku: number of super-diagonals of a
- * lda: first dimension of a, considering the numbers of full sub and super
- * diagonals (lda >= kl + ku + 1) */
-void dgbmv(bool trans,
-           bool uplo,
-           bool unit,
-           size_t m,
-           size_t n,
-           int kl,
-           int ku,
-           double alpha,
-           double beta,
-           // size_t lda,
-           double **a,
-           double *x,
-           double *y,
-           double *at)
+ * ku: number of super-diagonals of a */
+double dgbmv(bool trans,
+             bool uplo,
+             bool unit,
+             size_t m,
+             size_t n,
+             int kl,
+             int ku,
+             double alpha,
+             double beta,
+             double **a,
+             double *x,
+             double *y,
+             double *at)
 {
-	size_t i, j, kup, ky, k;
+	size_t i, j, ky, k; //, kup;
 	double temp;
 	if (m == 0 || n == 0 || (alpha == 0 && beta == 1))
-		return;
+		return 1;
 	ky = trans ? n : m;
 
 	/* y = beta * y */
@@ -55,7 +52,7 @@ void dgbmv(bool trans,
 		}
 	}
 	if (alpha == 0)
-		return;
+		return 1;
 	// kup = ku + 1;
 	if (!trans) {
 		/* y = alpha * A * x + y */
@@ -75,28 +72,26 @@ void dgbmv(bool trans,
 			y[j] += alpha * temp;
 		}
 	}
+	return 1;
 }
 
 /* y = alpha * a * x + beta * y if trans = 0,
- * y = alpha * a^T * x + beta * y if trans = 1
- * lda: first dimension of a, (lda >= max(1,m) */
-void dgemv(bool trans,
-           bool uplo,
-           bool unit,
-           size_t m,
-           size_t n,
-           int kl,
-           int ku,
-           double alpha,
-           double beta,
-           // double lda,
-           double **a,
-           double *x,
-           double *y,
-           double *at)
+ * y = alpha * a^T * x + beta * y if trans = 1 */
+double dgemv(bool trans,
+             bool uplo,
+             bool unit,
+             size_t m,
+             size_t n,
+             int kl,
+             int ku,
+             double alpha,
+             double beta,
+             double **a,
+             double *x,
+             double *y,
+             double *at)
 {
-	size_t i, j, kx, ky;
-	double temp;
+	size_t i, j, ky;
 	ky = trans ? n : m;
 
 	if (beta != 1) {
@@ -109,7 +104,7 @@ void dgemv(bool trans,
 		}
 	}
 	if (alpha == 0)
-		return;
+		return 1;
 	else {
 		if (trans) {
 			/* y = alpha * a * x + y */
@@ -125,57 +120,56 @@ void dgemv(bool trans,
 			}
 		}
 	}
+	return 1;
 }
 
 /* a = a + alpha * x * y^T */
-void dger(bool trans,
-          bool uplo,
-          bool unit,
-          size_t m,
-          size_t n,
-          int kl,
-          int ku,
-          double alpha,
-          double beta,
-          // size_t lda,
-          double **a,
-          double *x,
-          double *y,
-          double *at)
+double dger(bool trans,
+            bool uplo,
+            bool unit,
+            size_t m,
+            size_t n,
+            int kl,
+            int ku,
+            double alpha,
+            double beta,
+            double **a,
+            double *x,
+            double *y,
+            double *at)
 {
 	size_t i, j;
 	if (m == 0 || n == 0 || alpha == 0)
-		return;
+		return 1;
 	for (j = 0; j < n; j++) {
 		for (i = 0; i < m; i++)
 			a[i][j] += alpha * y[j] * x[i];
 	}
+	return 1;
 }
 
 /* y = alpha * a * x + beta * y
  * a: n by n symmetric matrix, with kl super-diagonals
- * uplo = 1 is the upper triangular part of a is supplied, 0 if lower part
- * lda: first dimension of a, must be at lest kl+1 */
-void dsbmv(bool trans,
-           bool uplo,
-           bool unit,
-           size_t m,
-           size_t n,
-           int kl,
-           int ku,
-           double alpha,
-           double beta,
-           // size_t lda,
-           double **a,
-           double *x,
-           double *y,
-           double *at)
+ * uplo = 1 is the upper triangular part of a is supplied, 0 if lower part */
+double dsbmv(bool trans,
+             bool uplo,
+             bool unit,
+             size_t m,
+             size_t n,
+             int kl,
+             int ku,
+             double alpha,
+             double beta,
+             double **a,
+             double *x,
+             double *y,
+             double *at)
 {
-	size_t i, j, l, kp1;
+	size_t i, j, l;
 	double temp, temp2;
 
 	if (n == 0 || (alpha == 0 && beta == 1))
-		return;
+		return 1;
 
 	// y = beta * y
 	if (beta != 1) {
@@ -188,7 +182,7 @@ void dsbmv(bool trans,
 		}
 	}
 	if (alpha == 0)
-		return;
+		return 1;
 
 	if (uplo) {
 		/* Upper triangle */
@@ -218,30 +212,31 @@ void dsbmv(bool trans,
 			y[j] += alpha * temp2;
 		}
 	}
+	return 1;
 }
 
 /* y = alpha * at *x + beta * y
  * a: n by n symmetric matrix, supplied in packed form
  * uplo = 1 is upper triangular part of at submitted, 0 if lower */
-void dspmv(bool trans,
-           bool uplo,
-           bool unit,
-           size_t m,
-           size_t n,
-           int kl,
-           int ku,
-           double alpha,
-           double beta,
-           double **a,
-           double *x,
-           double *y,
-           double *at)
+double dspmv(bool trans,
+             bool uplo,
+             bool unit,
+             size_t m,
+             size_t n,
+             int kl,
+             int ku,
+             double alpha,
+             double beta,
+             double **a,
+             double *x,
+             double *y,
+             double *at)
 {
 	size_t i, j, kk, k;
 	double temp, temp2;
 
 	if (n == 0 || (alpha == 0 && beta == 1))
-		return;
+		return 1;
 
 	/* y = beta * y */
 	if (beta != 1) {
@@ -254,7 +249,7 @@ void dspmv(bool trans,
 		}
 	}
 	if (alpha == 0)
-		return;
+		return 1;
 
 	/* y = alpha * x + beta * y */
 	kk = 0;
@@ -288,30 +283,31 @@ void dspmv(bool trans,
 			kk = kk + (n - i);
 		}
 	}
+	return 1;
 }
 
 /* at = alpha * x * x^T + at
  * at: n by n symmetric matrix, in packed form
  * uplo = 1 if upper triangular part of at supplied, 0 if lower */
-void dspr(bool trans,
-          bool uplo,
-          bool unit,
-          size_t m,
-          size_t n,
-          int kl,
-          int ku,
-          double alpha,
-          double beta,
-          double **a,
-          double *x,
-          double *y,
-          double *at)
+double dspr(bool trans,
+            bool uplo,
+            bool unit,
+            size_t m,
+            size_t n,
+            int kl,
+            int ku,
+            double alpha,
+            double beta,
+            double **a,
+            double *x,
+            double *y,
+            double *at)
 {
 	size_t i, j, k, kk;
 	double temp;
 
 	if (n == 0 || alpha == 0)
-		return;
+		return 1;
 	kk = 0;
 	if (uplo) {
 		/* Upper triangular */
@@ -340,27 +336,28 @@ void dspr(bool trans,
 			kk += n - j + 1;
 		}
 	}
+	return 1;
 }
 
 /* at = alpha * x * y^T + alpha * y * x^T + at
  * at: n by n symmetric matrix supplied in packed form
  * uplo = 1 is upper triangular part of at is supplied, 0 if lower */
-void dspr2(bool trans,
-           bool uplo,
-           bool unit,
-           size_t m,
-           size_t n,
-           int kl,
-           int ku,
-           double alpha,
-           double beta,
-           double **a,
-           double *x,
-           double *y,
-           double *at)
+double dspr2(bool trans,
+             bool uplo,
+             bool unit,
+             size_t m,
+             size_t n,
+             int kl,
+             int ku,
+             double alpha,
+             double beta,
+             double **a,
+             double *x,
+             double *y,
+             double *at)
 {
 	if (n == 0 || alpha == 0)
-		return;
+		return 1;
 
 	size_t i, j, kk, k;
 	double temp, temp2;
@@ -394,29 +391,28 @@ void dspr2(bool trans,
 			kk += n - j + 1;
 		}
 	}
+	return 1;
 }
 
 /* y = alpha * a * x + beta * y
  * a: n by n symmetric matrix
- * uplo = 1 if upper triangular part of a is supplied, 0 if lower
- * lda: first dimension of a, >= max(1,n) */
-void dsymv(bool trans,
-           bool uplo,
-           bool unit,
-           size_t m,
-           size_t n,
-           int kl,
-           int ku,
-           double alpha,
-           double beta,
-           // size_t lda,
-           double **a,
-           double *x,
-           double *y,
-           double *at)
+ * uplo = 1 if upper triangular part of a is supplied, 0 if lower */
+double dsymv(bool trans,
+             bool uplo,
+             bool unit,
+             size_t m,
+             size_t n,
+             int kl,
+             int ku,
+             double alpha,
+             double beta,
+             double **a,
+             double *x,
+             double *y,
+             double *at)
 {
 	if (n == 0 || (alpha == 0) && (beta == 1))
-		return;
+		return 1;
 
 	size_t i, j;
 	double temp, temp2;
@@ -433,7 +429,7 @@ void dsymv(bool trans,
 	}
 
 	if (alpha == 0)
-		return;
+		return 1;
 
 	if (uplo) {
 		/* Upper triangular */
@@ -459,30 +455,29 @@ void dsymv(bool trans,
 			y[j] += alpha * temp2;
 		}
 	}
+	return 1;
 }
 
 /* a = alpha * x * x^T + a
  * a: n by n symmetric matrix
  * uplo = 1 if upper triangular part of a is supplied, 0 if lower
- * lda: first dimension of a, >= max(1,n)
  */
-void dsyr(bool trans,
-          bool uplo,
-          bool unit,
-          size_t m,
-          size_t n,
-          int kl,
-          int ku,
-          double alpha,
-          double beta,
-          // size_t lda,
-          double **a,
-          double *x,
-          double *y,
-          double *at)
+double dsyr(bool trans,
+            bool uplo,
+            bool unit,
+            size_t m,
+            size_t n,
+            int kl,
+            int ku,
+            double alpha,
+            double beta,
+            double **a,
+            double *x,
+            double *y,
+            double *at)
 {
 	if (n == 0 || alpha == 0)
-		return;
+		return 1;
 
 	size_t i, j;
 	double temp;
@@ -506,29 +501,29 @@ void dsyr(bool trans,
 			}
 		}
 	}
+	return 1;
 }
 
 /* a = alpha * x * y^T + alpha * y * x^T + a
  * a: n by n symmetric matrix
  * uplo = 1 if upper triangular part of a is supplied, 0 if lower
- * lda: first dimension of a,  >= max(1,n) */
-void dsyr2(bool trans,
-           bool uplo,
-           bool unit,
-           size_t m,
-           size_t n,
-           int kl,
-           int ku,
-           double alpha,
-           double beta,
-           // double lda,
-           double **a,
-           double *x,
-           double *y,
-           double *at)
+ */
+double dsyr2(bool trans,
+             bool uplo,
+             bool unit,
+             size_t m,
+             size_t n,
+             int kl,
+             int ku,
+             double alpha,
+             double beta,
+             double **a,
+             double *x,
+             double *y,
+             double *at)
 {
 	if (n == 0 || alpha == 0)
-		return;
+		return 1;
 
 	size_t i, j;
 	double temp, temp2;
@@ -554,6 +549,7 @@ void dsyr2(bool trans,
 			}
 		}
 	}
+	return 1;
 }
 
 /* x = a * x if trans = 0,
@@ -563,24 +559,23 @@ void dsyr2(bool trans,
  * uplo = 1 is a is an upper triangular matrix, 0 if lower
  * unit = 1 if a is unit triangular, 0 if not
  * kl: number of super-diagonals of a if uplo=1, sub-diagonals if 0
- * lda: first dimension of a, >= kl+1
  */
-void dtbmv(bool trans,
-           bool uplo,
-           bool unit,
-           size_t m,
-           size_t n,
-           int kl,
-           int ku,
-           double alpha,
-           double beta,
-           double **a,
-           double *x,
-           double *y,
-           double *at)
+double dtbmv(bool trans,
+             bool uplo,
+             bool unit,
+             size_t m,
+             size_t n,
+             int kl,
+             int ku,
+             double alpha,
+             double beta,
+             double **a,
+             double *x,
+             double *y,
+             double *at)
 {
 	if (n == 0)
-		return;
+		return 1;
 
 	size_t i, j;
 	int k1, l;
@@ -643,6 +638,7 @@ void dtbmv(bool trans,
 			}
 		}
 	}
+	return 1;
 }
 
 /* Solves one of the systems of equations
@@ -653,22 +649,22 @@ void dtbmv(bool trans,
  * uplo = 1 if a is upper triangular, 0 if lower
  * unit = 1 if a is unit triangular, 0 if non-unit
  */
-void dtbsv(bool trans,
-           bool uplo,
-           bool unit,
-           size_t m,
-           size_t n,
-           int kl,
-           int ku,
-           double alpha,
-           double beta,
-           double **a,
-           double *x,
-           double *y,
-           double *at)
+double dtbsv(bool trans,
+             bool uplo,
+             bool unit,
+             size_t m,
+             size_t n,
+             int kl,
+             int ku,
+             double alpha,
+             double beta,
+             double **a,
+             double *x,
+             double *y,
+             double *at)
 {
 	if (n == 0)
-		return;
+		return 1;
 
 	size_t i, j;
 	int k1, l;
@@ -731,6 +727,7 @@ void dtbsv(bool trans,
 			}
 		}
 	}
+	return 1;
 }
 
 /* x = at * x if trans = 0,
@@ -740,22 +737,22 @@ void dtbsv(bool trans,
  * uplo = 1 if at is an upper triangular matrix, 0 if lower
  * unit = 1 if at is unit triangular, 0 if non-unit
  */
-void dtpmv(bool trans,
-           bool uplo,
-           bool unit,
-           size_t m,
-           size_t n,
-           int kl,
-           int ku,
-           double alpha,
-           double beta,
-           double **a,
-           double *x,
-           double *y,
-           double *at)
+double dtpmv(bool trans,
+             bool uplo,
+             bool unit,
+             size_t m,
+             size_t n,
+             int kl,
+             int ku,
+             double alpha,
+             double beta,
+             double **a,
+             double *x,
+             double *y,
+             double *at)
 {
 	if (n != 0)
-		return;
+		return 1;
 
 	size_t i, j;
 	int k, kk;
@@ -830,6 +827,7 @@ void dtpmv(bool trans,
 			}
 		}
 	}
+	return 1;
 }
 
 /* at * x = b if trans = 0,
@@ -839,22 +837,22 @@ void dtpmv(bool trans,
  * uplo = 1 if upper triangular part of at is supplied, 0 if lower
  * unit = 1 if a is unit triangular, 0 if non-unit
  */
-void dtpsv(bool trans,
-           bool uplo,
-           bool unit,
-           size_t m,
-           size_t n,
-           int kl,
-           int ku,
-           double alpha,
-           double beta,
-           double **a,
-           double *x,
-           double *y,
-           double *at)
+double dtpsv(bool trans,
+             bool uplo,
+             bool unit,
+             size_t m,
+             size_t n,
+             int kl,
+             int ku,
+             double alpha,
+             double beta,
+             double **a,
+             double *x,
+             double *y,
+             double *at)
 {
 	if (n != 0)
-		return;
+		return 1;
 
 	size_t i, j;
 	int k, kk;
@@ -929,6 +927,7 @@ void dtpsv(bool trans,
 			}
 		}
 	}
+	return 1;
 }
 
 /* x = a * x if trans = 0,
@@ -937,22 +936,22 @@ void dtpsv(bool trans,
  * uplo = 1 if upper triangular part of a is supplied, 0 if lower
  * unit = 1 if a is unit triangular, 0 if non-unit
  */
-void dtrmv(bool trans,
-           bool uplo,
-           bool unit,
-           size_t m,
-           size_t n,
-           int kl,
-           int ku,
-           double alpha,
-           double beta,
-           double **a,
-           double *x,
-           double *y,
-           double *at)
+double dtrmv(bool trans,
+             bool uplo,
+             bool unit,
+             size_t m,
+             size_t n,
+             int kl,
+             int ku,
+             double alpha,
+             double beta,
+             double **a,
+             double *x,
+             double *y,
+             double *at)
 {
 	if (n == 0)
-		return;
+		return 1;
 
 	size_t i, j;
 	double temp;
@@ -1006,4 +1005,5 @@ void dtrmv(bool trans,
 			}
 		}
 	}
+	return 1;
 }

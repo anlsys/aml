@@ -1,6 +1,5 @@
 AM_COLOR_TESTS = yes
 
-<<<<<<< HEAD
 AM_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS) $(OPENMP_CFLAGS)
 AM_LDFLAGS = ../src/libaml.la $(top_builddir)/excit/src/libexcit.la $(PTHREAD_LIBS) $(OPENMP_CFLAGS)
 

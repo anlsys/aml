@@ -25,7 +25,7 @@
 
 /* Look into another way to define these parameters */
 
-#define DEFAULT_ARRAY_SIZE (1UL << 20)
+#define DEFAULT_ARRAY_SIZE (1UL << 10)
 
 #ifdef NTIMES
 #if NTIMES <= 1
@@ -46,14 +46,28 @@
 
 extern int omp_get_num_threads(void);
 
-static double *a, *b, *c;
+typedef double (*r)(bool,
+                    bool,
+                    bool,
+                    size_t,
+                    size_t,
+                    int,
+                    int,
+                    double,
+                    double,
+                    double **,
+                    double *,
+                    double *,
+                    double *);
 
-/* adapt those to level 2 BLAS
-typedef double (*r)(size_t, double *, double *, double *, double);
-
-r run_f[8] = {&dcopy, &dscal, &daxpy, &dasum, &ddot, &dnrm2, &dswap, &idmax};
-v verify_f[8] = {&verify_dcopy, &verify_dscal, &verify_daxpy, &verify_dasum,
-                 &verify_ddot,  &verify_dnrm2, &verify_dswap, &verify_idmax};
+r run_f[15] = {&dgbmv, &dgemv, &dger,  &dsbmv, &dspmv, &dspr,  &dspr2, &dsymv,
+               &dsyr,  &dsyr2, &dtbmv, &dtbsv, &dtpmv, &dtpsv, &dtrmv};
+// TODO implement those functions
+/*
+v verify_f[15] = {&verify_dgbmv, &verify_dgemv, &verify_dger, &verify_dsbmv,
+                  &verify_dspmv, &verify_dspr, &verify_dspr2, &verify_dsymv,
+                  &verify_dsyr, &verify_dsyr2, &verify_dtbmv, &verify_dtbsv,
+                  &verify_dtpmv, &verify_dtpsv, &verify_dtrmv};
 */
 
 int main(int argc, char *argv[])
@@ -62,16 +76,17 @@ int main(int argc, char *argv[])
 	struct aml_area *area = &aml_area_linux;
 	size_t i, j, k;
 	size_t memsize;
-	double t, timing;
-	double dscalar;
-	double avgtime[10] = {0}, maxtime[10] = {0},
-	       mintime[10] = {FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX,
+	double timing; //, t;
+	double avgtime[15] = {0}, maxtime[15] = {0},
+	       mintime[15] = {FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX,
+	                      FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX,
 	                      FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX};
-	// TODO Change labels
-	char *label[10] = {
-	        "Copy:	", "Scale:	", "Triad:	", "Asum:	",
-	        "Dot:	", "Norm:	", "Swap:	", "Max ID:	",
-	        "RotP:	", "RotM:	"};
+
+	char *label[15] = {
+	        "Dgbmv:	", "Dgemv:	", "Dger:	", "Dsbmv:	",
+	        "Dspmv:	", "Dspr:	", "Dspr2:	", "Dsymv:	",
+	        "Dsyr:	", "Dsyr2:	", "Dtbmv:	", "Dtbsv:	",
+	        "Dtpmv,	", "Dtpsv:	", "Dtrmv:	"};
 
 	if (argc == 1) {
 		memsize = DEFAULT_ARRAY_SIZE;
@@ -79,6 +94,12 @@ int main(int argc, char *argv[])
 		assert(argc == 2);
 		memsize = 1UL << atoi(argv[1]);
 	}
+
+	bool trans, uplo, unit;
+	int kl, ku;
+	double alpha, beta;
+	double *x, *y, *at;
+	double **a;
 
 #pragma omp parallel
 	{
@@ -96,25 +117,26 @@ int main(int argc, char *argv[])
 	printf("Number of threads counted = %li\n", k);
 
 	size_t size = sizeof(double) * (memsize + OFFSET);
-	a = aml_area_mmap(area, size, NULL);
-	b = aml_area_mmap(area, size, NULL);
-	c = aml_area_mmap(area, size, NULL);
+	a = aml_area_mmap(area, size ^ 2, NULL);
+	x = aml_area_mmap(area, size, NULL);
+	y = aml_area_mmap(area, size, NULL);
+	at = aml_area_mmap(area, size ^ 2, NULL);
 
 	/* MAIN LOOP - repeat test cases NTIMES */
-	dscalar = 3.0;
-	double x = 1.0, y = 2.0;
-	double param[5];
-	param[0] = -1.0;
-	for (k = 1; k < 5; k++)
-		param[k] = k;
-	double asum, dot, nrm;
-	size_t id_max;
+	alpha = 2.0;
+	beta = 3.0;
+	trans = 0;
+	uplo = 1;
+	unit = 0;
+	kl = 2;
+	ku = 2;
+	// m = n = memsize
 
 	for (k = 0; k < NTIMES; k++) {
 		// Array of functions
-		for (i = 0; i < 8; i++) {
+		for (i = 0; i < 15; i++) {
 			// might be init matrices
-			init_arrays(memsize, a, b, c);
+			// init_arrays(memsize, a, b, c);
 			timing = mysecond();
 			//			res = run_f[i](memsize, a, b, c,
 			// dscalar);
@@ -125,60 +147,21 @@ int main(int argc, char *argv[])
 			mintime[i] = MIN(mintime[i], timing);
 			maxtime[i] = MAX(maxtime[i], timing);
 		}
-		// y = alpha * A * x + beta * y, or y = alpha * A * T * x + beta
-		// * y m nb of rows of A, n nb of columns of A, kl nb of sub-
-		// diagonals of A, ku nb of super-diagonals of A
-		// void dgbmv(bool trans, size_t m, size_t n, int kl, int ku,
-		// double alpha,
-		//		double beta, double **a, double *x, double *y);
-
-		// void dgemv(bool trans, size_t m, size_t n, double alpha,
-		// double beta,
-		//		double **a, double *x, double *y);
-
-		// void dger(size_t m, size_t n, double alpha, double **a,
-		// double *x, double *y);
-
-		// void dsbmv(char uplo, size_t n, int k, double alpha, double
-		// beta, double *a,
-		//		double *x, double *y);
-
-		// void dspmv(char uplo, size_t n, double alpha, double beta,
-		// double *a,
-		//		   double *x, double *y);
-
-		// TODO
-		// void dspr(char uplo, size_t n, double alpha, double *a,
-		// double *x); void dspr2(char uplo, size_t n, double alpha,
-		// double *a, double *x, double *y); void dsymv(char uplo,
-		// size_t n, double alpha, double beta, double *a,
-		//		   double *x, double *y);
-		// void dsyr(char uplo, size_t n, double alpha, double *a,
-		// double *x); void dsyr2(char uplo, size_t n, double alpha,
-		// double *a, double *x, double *y); void dtbmv(char uplo, char
-		// trans, char diag, size_t n, size_t k, double *a,
-		//		double *x);
-		// void dtbsv(char uplo, char trans, char diag, size_t n, size_t
-		// k, double *a,
-		//            double *x);
-		// void dtpmv(char uplo, char trans, char diag, size_t n, double
-		// *a, double *x); void dtpsv(char uplo, char trans, char diag,
-		// size_t n, double *a, double *x); void dtrmv(char uplo, char
-		// trans, char diag, size_t n, double *a, double *x);
 	}
 
 	/* SUMMARY */
 	printf("Function	Avg time	Min time	Max time\n");
-	for (j = 0; j < 10; j++) {
+	for (j = 0; j < 15; j++) {
 		avgtime[j] = avgtime[j] / (double)(NTIMES - 1);
 		printf("%s	%11.6f	%11.6f	%11.6f\n", label[j], avgtime[j],
 		       mintime[j], maxtime[j]);
 	}
 
 	/* aml specific code */
-	aml_area_munmap(area, a, size);
-	aml_area_munmap(area, b, size);
-	aml_area_munmap(area, c, size);
+	aml_area_munmap(area, a, size ^ 2);
+	aml_area_munmap(area, x, size);
+	aml_area_munmap(area, y, size);
+	aml_area_munmap(area, at, size ^ 2);
 	aml_finalize();
 
 	return 0;
