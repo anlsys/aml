@@ -18,7 +18,7 @@
 #define sign(a) ((a > 0) ? 1 : ((a < 0) ? -1 : 0))
 
 /* y = alpha * a * x + beta * y if trans = 0,
- * y = alpha * A^T * x + beta * y if trans = 1
+ * y = alpha * a^T * x + beta * y if trans = 1
  * kl: number of sub-diagonals of a
  * ku: number of super-diagonals of a */
 double dgbmv(bool trans,
@@ -35,10 +35,16 @@ double dgbmv(bool trans,
              double *y,
              double *at)
 {
-	size_t i, j, ky, k; //, kup;
-	double temp;
+	(void)uplo;
+	(void)unit;
+	(void)*at;
+
 	if (m == 0 || n == 0 || (alpha == 0 && beta == 1))
 		return 1;
+
+	size_t i, j, ky, k; //, kup;
+	double temp;
+
 	ky = trans ? n : m;
 
 	/* y = beta * y */
@@ -91,7 +97,14 @@ double dgemv(bool trans,
              double *y,
              double *at)
 {
+	(void)uplo;
+	(void)unit;
+	(void)kl;
+	(void)ku;
+	(void)*at;
+
 	size_t i, j, ky;
+
 	ky = trans ? n : m;
 
 	if (beta != 1) {
@@ -138,9 +151,19 @@ double dger(bool trans,
             double *y,
             double *at)
 {
-	size_t i, j;
+	(void)trans;
+	(void)uplo;
+	(void)unit;
+	(void)kl;
+	(void)ku;
+	(void)beta;
+	(void)*at;
+
 	if (m == 0 || n == 0 || alpha == 0)
 		return 1;
+
+	size_t i, j;
+
 	for (j = 0; j < n; j++) {
 		for (i = 0; i < m; i++)
 			a[i][j] += alpha * y[j] * x[i];
@@ -165,11 +188,17 @@ double dsbmv(bool trans,
              double *y,
              double *at)
 {
-	size_t i, j, l;
-	double temp, temp2;
+	(void)trans;
+	(void)unit;
+	(void)m;
+	(void)ku;
+	(void)*at;
 
 	if (n == 0 || (alpha == 0 && beta == 1))
 		return 1;
+
+	size_t i, j, l;
+	double temp, temp2;
 
 	// y = beta * y
 	if (beta != 1) {
@@ -232,11 +261,18 @@ double dspmv(bool trans,
              double *y,
              double *at)
 {
-	size_t i, j, kk, k;
-	double temp, temp2;
+	(void)trans;
+	(void)unit;
+	(void)m;
+	(void)kl;
+	(void)ku;
+	(void)**a;
 
 	if (n == 0 || (alpha == 0 && beta == 1))
 		return 1;
+
+	size_t i, j, kk, k;
+	double temp, temp2;
 
 	/* y = beta * y */
 	if (beta != 1) {
@@ -303,11 +339,21 @@ double dspr(bool trans,
             double *y,
             double *at)
 {
-	size_t i, j, k, kk;
-	double temp;
+	(void)trans;
+	(void)unit;
+	(void)m;
+	(void)kl;
+	(void)ku;
+	(void)beta;
+	(void)**a;
+	(void)*y;
 
 	if (n == 0 || alpha == 0)
 		return 1;
+
+	size_t i, j, k, kk;
+	double temp;
+
 	kk = 0;
 	if (uplo) {
 		/* Upper triangular */
@@ -356,6 +402,14 @@ double dspr2(bool trans,
              double *y,
              double *at)
 {
+	(void)trans;
+	(void)unit;
+	(void)m;
+	(void)kl;
+	(void)ku;
+	(void)beta;
+	(void)**a;
+
 	if (n == 0 || alpha == 0)
 		return 1;
 
@@ -411,6 +465,13 @@ double dsymv(bool trans,
              double *y,
              double *at)
 {
+	(void)trans;
+	(void)unit;
+	(void)m;
+	(void)kl;
+	(void)ku;
+	(void)*at;
+
 	if (n == 0 || (alpha == 0) && (beta == 1))
 		return 1;
 
@@ -476,6 +537,15 @@ double dsyr(bool trans,
             double *y,
             double *at)
 {
+	(void)trans;
+	(void)unit;
+	(void)m;
+	(void)kl;
+	(void)ku;
+	(void)beta;
+	(void)*y;
+	(void)*at;
+
 	if (n == 0 || alpha == 0)
 		return 1;
 
@@ -522,6 +592,14 @@ double dsyr2(bool trans,
              double *y,
              double *at)
 {
+	(void)trans;
+	(void)unit;
+	(void)m;
+	(void)kl;
+	(void)ku;
+	(void)beta;
+	(void)*at;
+
 	if (n == 0 || alpha == 0)
 		return 1;
 
@@ -574,6 +652,13 @@ double dtbmv(bool trans,
              double *y,
              double *at)
 {
+	(void)m;
+	(void)ku;
+	(void)alpha;
+	(void)beta;
+	(void)*y;
+	(void)*at;
+
 	if (n == 0)
 		return 1;
 
@@ -663,6 +748,13 @@ double dtbsv(bool trans,
              double *y,
              double *at)
 {
+	(void)m;
+	(void)ku;
+	(void)alpha;
+	(void)beta;
+	(void)*y;
+	(void)*at;
+
 	if (n == 0)
 		return 1;
 
@@ -751,6 +843,14 @@ double dtpmv(bool trans,
              double *y,
              double *at)
 {
+	(void)m;
+	(void)kl;
+	(void)ku;
+	(void)alpha;
+	(void)beta;
+	(void)**a;
+	(void)*y;
+
 	if (n != 0)
 		return 1;
 
@@ -851,6 +951,14 @@ double dtpsv(bool trans,
              double *y,
              double *at)
 {
+	(void)m;
+	(void)kl;
+	(void)ku;
+	(void)alpha;
+	(void)beta;
+	(void)**a;
+	(void)*y;
+
 	if (n != 0)
 		return 1;
 
@@ -950,6 +1058,14 @@ double dtrmv(bool trans,
              double *y,
              double *at)
 {
+	(void)m;
+	(void)kl;
+	(void)ku;
+	(void)alpha;
+	(void)beta;
+	(void)*y;
+	(void)*at;
+
 	if (n == 0)
 		return 1;
 

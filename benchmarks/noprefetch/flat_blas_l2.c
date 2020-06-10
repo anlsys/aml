@@ -62,13 +62,12 @@ typedef double (*r)(bool,
 
 r run_f[15] = {&dgbmv, &dgemv, &dger,  &dsbmv, &dspmv, &dspr,  &dspr2, &dsymv,
                &dsyr,  &dsyr2, &dtbmv, &dtbsv, &dtpmv, &dtpsv, &dtrmv};
+
 // TODO implement those functions
-/*
-v verify_f[15] = {&verify_dgbmv, &verify_dgemv, &verify_dger, &verify_dsbmv,
-                  &verify_dspmv, &verify_dspr, &verify_dspr2, &verify_dsymv,
-                  &verify_dsyr, &verify_dsyr2, &verify_dtbmv, &verify_dtbsv,
+v verify_f[15] = {&verify_dgbmv, &verify_dgemv, &verify_dger,  &verify_dsbmv,
+                  &verify_dspmv, &verify_dspr,  &verify_dspr2, &verify_dsymv,
+                  &verify_dsyr,  &verify_dsyr2, &verify_dtbmv, &verify_dtbsv,
                   &verify_dtpmv, &verify_dtpsv, &verify_dtrmv};
-*/
 
 int main(int argc, char *argv[])
 {
@@ -96,6 +95,7 @@ int main(int argc, char *argv[])
 	}
 
 	bool trans, uplo, unit;
+	size_t m, n;
 	int kl, ku;
 	double alpha, beta;
 	double *x, *y, *at;
@@ -123,6 +123,8 @@ int main(int argc, char *argv[])
 	at = aml_area_mmap(area, size ^ 2, NULL);
 
 	/* MAIN LOOP - repeat test cases NTIMES */
+	m = memsize - 2;
+	n = memsize;
 	alpha = 2.0;
 	beta = 3.0;
 	trans = 0;
@@ -130,19 +132,26 @@ int main(int argc, char *argv[])
 	unit = 0;
 	kl = 2;
 	ku = 2;
-	// m = n = memsize
 
 	for (k = 0; k < NTIMES; k++) {
 		// Array of functions
 		for (i = 0; i < 15; i++) {
-			// might be init matrices
-			// init_arrays(memsize, a, b, c);
+			// TODO Implement both init functions
+			if (i < 3)
+				init_matrix_mn(m, n, kl, ku, a, x, y, at);
+			else
+				init_matrix_n(n, kl, ku, a, x, y, at);
+
 			timing = mysecond();
-			//			res = run_f[i](memsize, a, b, c,
-			// dscalar);
+
+			res = run_f[i](trans, uplo, unit, m, n, kl, ku, alpha,
+			               beta, a, x, y, at);
+
 			timing = mysecond() - timing;
-			//			verify_f[i](memsize, a, b, c,
-			// dscalar, res);
+
+			// TODO Change the arguments once implemented
+			verify_f[i](m, n, kl, ku, alpha, beta, a, x, y, at);
+
 			avgtime[i] += timing;
 			mintime[i] = MIN(mintime[i], timing);
 			maxtime[i] = MAX(maxtime[i], timing);
