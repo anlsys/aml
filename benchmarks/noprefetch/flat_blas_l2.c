@@ -100,6 +100,7 @@ int main(int argc, char *argv[])
 	double alpha, beta;
 	double *x, *y, *at;
 	double **a;
+	double res;
 
 #pragma omp parallel
 	{

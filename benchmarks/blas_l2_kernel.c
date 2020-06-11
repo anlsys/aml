@@ -472,7 +472,7 @@ double dsymv(bool trans,
 	(void)ku;
 	(void)*at;
 
-	if (n == 0 || (alpha == 0) && (beta == 1))
+	if (n == 0 || (alpha == 0 && beta == 1))
 		return 1;
 
 	size_t i, j;
@@ -701,12 +701,12 @@ double dtbmv(bool trans,
 		if (uplo) {
 			/* Upper triangular */
 			k1 = kl + 1;
-			for (j = n - 1; j >= 0; j--) {
+			for (j = 0; j < n; j++) {
 				temp = x[j];
 				l = k1 - j;
 				if (!unit)
 					temp = temp * a[kl][j];
-				for (i = j - 1; i > fmax(0, j - kl); i--)
+				for (i = fmax(0, j - kl) + 1; i < j; i++)
 					temp += a[l + i][j] * x[i];
 				x[j] = temp;
 			}
@@ -767,14 +767,14 @@ double dtbsv(bool trans,
 		if (uplo) {
 			/* Upper triangular */
 			k1 = kl + 1;
-			for (j = n - 1; j > -1; j--) {
+			for (j = 0; j < n; j++) {
 				if (x[j] != 0) {
 					l = k1 - j;
 					if (!unit)
 						x[j] = x[j] / a[kl][j];
 					temp = x[j];
-					for (i = j - 1; i > fmax(0, j - kl);
-					     i--)
+					for (i = fmax(0, j - kl) + 1; i < j;
+					     i++)
 						x[i] -= temp * a[l + i][j];
 				}
 			}
@@ -808,10 +808,10 @@ double dtbsv(bool trans,
 			}
 		} else {
 			/* Lower triangular */
-			for (j = n - 1; j > -1; j--) {
+			for (j = 0; j < n; j++) {
 				temp = x[j];
-				l = 1 - j;
-				for (i = fmin(n - 1, j + kl); i > j; i--)
+				l = -j;
+				for (i = j + 1; i < fmin(n, j + kl + 1); i++)
 					temp -= a[l + i][j] * x[j];
 				if (!unit)
 					temp = temp / a[0][j];
@@ -878,37 +878,37 @@ double dtpmv(bool trans,
 			}
 		} else {
 			/* Lower triangular */
-			kk = (n * (n + 1)) / 2;
-			for (j = n - 1; j > -1; j--) {
+			kk = 0;
+			for (j = 0; j < n; j++) {
 				if (x[j] != 0) {
 					temp = x[j];
 					k = kk;
-					for (i = n - 1; i > j; i--) {
+					for (i = j + 1; i < n; i++) {
 						x[i] += temp * at[k];
-						k--;
+						k++;
 					}
 					if (!unit)
-						x[j] = x[j] * at[kk - n + j];
+						x[j] = x[j] * at[kk + n - j];
 				}
-				kk = kk - (n - j + 1);
+				kk += n - j;
 			}
 		}
 	} else {
 		/* x = a^T * x*/
 		if (uplo) {
 			/* Upper triangular */
-			kk = (n * (n + 1)) / 2;
-			for (j = n - 1; j > -1; j--) {
+			kk = 0;
+			for (j = 0; j < n; j++) {
 				temp = x[j];
 				if (!unit)
 					temp = temp * at[kk];
-				k = kk - 1;
-				for (i = j - 1; i > -1; i--) {
+				k = kk;
+				for (i = 0; i < j; i++) {
 					temp += at[k] * x[i];
-					k--;
+					k++;
 				}
 				x[j] = temp;
-				kk -= j;
+				kk += j;
 			}
 		} else {
 			/* Lower triangular */
@@ -970,29 +970,29 @@ double dtpsv(bool trans,
 		/* x = at * x */
 		if (uplo) {
 			/* Upper triangular */
-			kk = (n * (n + 1)) / 2;
-			for (j = n - 1; j > -1; j--) {
-				if (x[j] != 0) {
-					if (!unit)
-						x[j] = x[j] / at[kk];
-					temp = x[j];
-					k = kk - 1;
-					for (i = j - 1; i > -1; i--) {
-						x[i] -= temp * at[k];
-						k--;
-					}
-				}
-				kk -= j;
-			}
-		} else {
-			/* Lower triangular */
-			kk = 1;
+			kk = 0;
 			for (j = 0; j < n; j++) {
 				if (x[j] != 0) {
 					if (!unit)
 						x[j] = x[j] / at[kk];
 					temp = x[j];
-					k = kk + 1;
+					k = kk;
+					for (i = 0; i < j; i++) {
+						x[i] -= temp * at[k];
+						k++;
+					}
+				}
+				kk += j;
+			}
+		} else {
+			/* Lower triangular */
+			kk = 0;
+			for (j = 0; j < n; j++) {
+				if (x[j] != 0) {
+					if (!unit)
+						x[j] = x[j] / at[kk];
+					temp = x[j];
+					k = kk;
 					for (i = j + 1; i < n; i++) {
 						x[i] -= temp * at[k];
 						k++;
@@ -1005,7 +1005,7 @@ double dtpsv(bool trans,
 		/* x =at^T *x */
 		if (uplo) {
 			/* Upper triangular */
-			kk = 1;
+			kk = 0;
 			for (j = 0; j < n; j++) {
 				temp = x[j];
 				k = kk;
@@ -1020,18 +1020,18 @@ double dtpsv(bool trans,
 			}
 		} else {
 			/* Lower triangular */
-			kk = (n * (n + 1)) / 2;
-			for (j = n - 1; j > -1; j--) {
+			kk = 0;
+			for (j = 0; j < n; j++) {
 				temp = x[j];
 				k = kk;
-				for (i = n - 1; i > j; j--) {
+				for (i = j + 1; i < n; i++) {
 					temp -= at[k] * x[i];
-					k--;
+					k++;
 				}
 				if (!unit)
-					temp = temp / at[kk - n + j];
+					temp = temp / at[kk + n - j];
 				x[j] = temp;
-				kk -= n - j + 1;
+				kk += n - j + 1;
 			}
 		}
 	}
@@ -1079,7 +1079,7 @@ double dtrmv(bool trans,
 			for (j = 0; j < n; j++) {
 				if (x[j] != 0) {
 					temp = x[j];
-					for (i = 0; i < j - 1; i++)
+					for (i = 0; i < j; i++)
 						x[i] += temp * a[i][j];
 					if (!unit)
 						x[j] = x[j] * a[j][j];
@@ -1087,10 +1087,10 @@ double dtrmv(bool trans,
 			}
 		} else {
 			/* Lower triangular */
-			for (j = n - 1; j > -1; j--) {
+			for (j = 0; j < n; j++) {
 				if (x[j] != 0) {
 					temp = x[j];
-					for (i = n - 1; i > j; i--)
+					for (i = j + 1; i < n; i++)
 						x[i] += temp * a[i][j];
 					if (!unit)
 						x[j] = x[j] * a[j][j];
@@ -1101,11 +1101,11 @@ double dtrmv(bool trans,
 		/* x = a^T * x */
 		if (uplo) {
 			/* Upper trianglar */
-			for (j = n - 1; j > -1; j--) {
+			for (j = 0; j < n; j++) {
 				temp = x[j];
 				if (!unit)
 					temp = temp * a[j][j];
-				for (i = j - 1; i > -1; i--)
+				for (i = 0; i < j; i--)
 					temp += a[i][j] * x[i];
 				x[j] = temp;
 			}
