@@ -33,6 +33,9 @@ UTILS_TESTS = \
 AREA_TESTS = \
 	area/test_area \
 	area/test_linux
+if HAVE_CUDA
+AREA_TESTS += area/test_cuda
+endif
 
 noinst_LTLIBRARIES = liblayout_test.la
 liblayout_test_la_CPPFLAGS =

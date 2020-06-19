@@ -69,8 +69,10 @@ AM_LDFLAGS += $(CUDA_LIBS)
 # Build .c sources using cuda runtime library.
 libaml_la_SOURCES+=area/cuda.c
 
+# Build files not requiring additional libraries
+LAYOUT_SOURCES+=layout/cuda.c
+
 # Build .cu sources containing device code.
-#
 # CUDA_LO_FILES= # .lo files result of .cu files.
 # CUDA_FLAGS=--x=cu
 #
