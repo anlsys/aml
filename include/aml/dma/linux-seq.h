@@ -6,7 +6,7 @@
  * For more info, see https://xgitlab.cels.anl.gov/argo/aml
  *
  * SPDX-License-Identifier: BSD-3-Clause
-*******************************************************************************/
+ *******************************************************************************/
 
 #ifndef AML_DMA_LINUX_SEQ_H
 #define AML_DMA_LINUX_SEQ_H 1
@@ -79,7 +79,7 @@ struct aml_dma_linux_seq_inner_ops {
 	 * @see aml_area
 	 **/
 	int (*do_copy)(struct aml_dma_linux_seq_data *dma,
-		       struct aml_dma_request_linux_seq *req);
+	               struct aml_dma_request_linux_seq *req);
 };
 
 /**
@@ -91,7 +91,6 @@ struct aml_dma_linux_seq {
 	struct aml_dma_linux_seq_inner_ops ops;
 	struct aml_dma_linux_seq_data data;
 };
-
 
 /**
  * Allocates and initializes a new sequential DMA.
@@ -105,8 +104,10 @@ struct aml_dma_linux_seq {
  *
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_dma_linux_seq_create(struct aml_dma **dma, size_t nbreqs,
-			     aml_dma_operator op, void *op_arg);
+int aml_dma_linux_seq_create(struct aml_dma **dma,
+                             size_t nbreqs,
+                             aml_dma_operator op,
+                             void *op_arg);
 
 /**
  * Tears down a sequential DMA created with aml_dma_linux_seq_create.
@@ -121,7 +122,7 @@ void aml_dma_linux_seq_destroy(struct aml_dma **dma);
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_linux_seq_do_copy(struct aml_dma_linux_seq_data *dma,
-			      struct aml_dma_request_linux_seq *req);
+                              struct aml_dma_request_linux_seq *req);
 
 /**
  * Generic helper to copy from one layout to another.
@@ -131,9 +132,9 @@ int aml_dma_linux_seq_do_copy(struct aml_dma_linux_seq_data *dma,
  * @param[out] out: A pointer where to store output of the function.
  */
 int aml_copy_layout_generic(struct aml_layout *dst,
-			    const struct aml_layout *src,
-			    void *arg,
-			    void **out);
+                            const struct aml_layout *src,
+                            void *arg,
+                            void **out);
 
 /**
  * @}

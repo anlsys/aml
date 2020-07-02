@@ -33,14 +33,14 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include "aml/utils/async.h"
 #include "aml/utils/bitmap.h"
 #include "aml/utils/error.h"
-#include "aml/utils/inner-malloc.h"
-#include "aml/utils/vector.h"
-#include "aml/utils/queue.h"
-#include "aml/utils/async.h"
-#include "aml/utils/version.h"
 #include "aml/utils/features.h"
+#include "aml/utils/inner-malloc.h"
+#include "aml/utils/queue.h"
+#include "aml/utils/vector.h"
+#include "aml/utils/version.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -136,9 +136,9 @@ struct aml_area_ops {
 	 *        mmap hook. Can be NULL and must work with NULL opts.
 	 * @return a pointer to allocated memory object.
 	 **/
-	void* (*mmap)(const struct aml_area_data  *data,
-		      size_t                       size,
-		      struct aml_area_mmap_options *opts);
+	void *(*mmap)(const struct aml_area_data *data,
+	              size_t size,
+	              struct aml_area_mmap_options *opts);
 
 	/**
 	 * Building block for unmapping of virtual memory mapped with mmap()
@@ -151,9 +151,7 @@ struct aml_area_ops {
 	 * @return: AML_AREA_* error code.
 	 * @see mmap()
 	 **/
-	int (*munmap)(const struct aml_area_data *data,
-		      void                       *ptr,
-		      size_t                      size);
+	int (*munmap)(const struct aml_area_data *data, void *ptr, size_t size);
 
 	/**
 	 * Print the implementation-specific information available
@@ -163,7 +161,8 @@ struct aml_area_ops {
 	 * @return 0 if successful, an error code otherwise.
 	 **/
 	int (*fprintf)(const struct aml_area_data *data,
-		       FILE *stream, const char *prefix);
+	               FILE *stream,
+	               const char *prefix);
 };
 
 /**
@@ -190,9 +189,9 @@ struct aml_area {
  * @return NULL on failure, with aml_errno set to the appropriate error
  * code.
  **/
-void *aml_area_mmap(const struct aml_area        *area,
-		    size_t                        size,
-		    struct aml_area_mmap_options *opts);
+void *aml_area_mmap(const struct aml_area *area,
+                    size_t size,
+                    struct aml_area_mmap_options *opts);
 
 /**
  * Releases memory region obtained with aml_area_mmap().
@@ -203,10 +202,7 @@ void *aml_area_mmap(const struct aml_area        *area,
  * @return 0 if successful, an error code otherwise.
  * @see aml_area_mmap()
  **/
-int
-aml_area_munmap(const struct aml_area *area,
-		void                  *ptr,
-		size_t                 size);
+int aml_area_munmap(const struct aml_area *area, void *ptr, size_t size);
 
 /**
  * Print on the file handle the metadata associated with this area.
@@ -215,8 +211,9 @@ aml_area_munmap(const struct aml_area *area,
  * @param area area to print
  * @return 0 if successful, an error code otherwise.
  */
-int aml_area_fprintf(FILE *stream, const char *prefix,
-		     const struct aml_area *area);
+int aml_area_fprintf(FILE *stream,
+                     const char *prefix,
+                     const struct aml_area *area);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -307,7 +304,7 @@ struct aml_layout_ops {
 	 * @return NULL on failure with aml_errno set to the error reason.
 	 **/
 	void *(*deref)(const struct aml_layout_data *data,
-		       const size_t *coords);
+	               const size_t *coords);
 
 	/**
 	 * Function for derefencing elements of a layout inside the library.
@@ -322,7 +319,7 @@ struct aml_layout_ops {
 	 * @return NULL on failure with aml_errno set to the error reason.
 	 **/
 	void *(*deref_native)(const struct aml_layout_data *data,
-			      const size_t *coords);
+	                      const size_t *coords);
 
 	/**
 	 * Function to retrieve a pointer to the start of the actual memory
@@ -361,8 +358,7 @@ struct aml_layout_ops {
 	 * supposed to be large enough to contain ndims() elements.
 	 * @return AML_SUCCESS on success, else an AML error code.
 	 **/
-	int (*dims_native)(const struct aml_layout_data *data,
-			   size_t *dims);
+	int (*dims_native)(const struct aml_layout_data *data, size_t *dims);
 
 	/**
 	 * Return the number of dimensions in a layout.
@@ -391,9 +387,9 @@ struct aml_layout_ops {
 	 * @return AML_SUCCESS on success, else an AML error code (<0).
 	 **/
 	int (*reshape)(const struct aml_layout_data *data,
-		       struct aml_layout **output,
-		       const size_t ndims,
-		       const size_t *dims);
+	               struct aml_layout **output,
+	               const size_t ndims,
+	               const size_t *dims);
 
 	/**
 	 * Return a layout that is a subset of another layout.
@@ -413,10 +409,10 @@ struct aml_layout_ops {
 	 * @return NULL on error with aml_errno set to the failure reason.
 	 **/
 	int (*slice)(const struct aml_layout_data *data,
-		     struct aml_layout **output,
-		     const size_t *offsets,
-		     const size_t *dims,
-		     const size_t *strides);
+	             struct aml_layout **output,
+	             const size_t *offsets,
+	             const size_t *dims,
+	             const size_t *strides);
 
 	/**
 	 * Return a layout that is a subset of another layout, assuming
@@ -437,10 +433,10 @@ struct aml_layout_ops {
 	 * @return NULL on error with aml_errno set to the failure reason.
 	 **/
 	int (*slice_native)(const struct aml_layout_data *data,
-			    struct aml_layout **output,
-			    const size_t *offsets,
-			    const size_t *dims,
-			    const size_t *strides);
+	                    struct aml_layout **output,
+	                    const size_t *offsets,
+	                    const size_t *dims,
+	                    const size_t *strides);
 	/**
 	 * Print the implementation-specific information available on a layout,
 	 * content excluded.
@@ -450,7 +446,8 @@ struct aml_layout_ops {
 	 * @return 0 if successful, an error code otherwise.
 	 **/
 	int (*fprintf)(const struct aml_layout_data *data,
-		       FILE *stream, const char *prefix);
+	               FILE *stream,
+	               const char *prefix);
 };
 
 /**
@@ -460,7 +457,7 @@ struct aml_layout_ops {
  * This tag will store dimensions in the order provided by the user,
  * i.e., elements of the last dimension will be contiguous in memory.
  **/
-#define AML_LAYOUT_ORDER_FORTRAN (0<<0)
+#define AML_LAYOUT_ORDER_FORTRAN (0 << 0)
 
 /**
  * Tag specifying user storage of dimensions inside a layout.
@@ -471,19 +468,19 @@ struct aml_layout_ops {
  * in memory. This storage is the actual storage used by the library
  * inside the structure.
  **/
-#define AML_LAYOUT_ORDER_C (1<<0)
+#define AML_LAYOUT_ORDER_C (1 << 0)
 
 /**
  * This is equivalent to AML_LAYOUT_ORDER_FORTRAN.
  * @see AML_LAYOUT_ORDER_FORTRAN
  **/
-#define AML_LAYOUT_ORDER_COLUMN_MAJOR (0<<0)
+#define AML_LAYOUT_ORDER_COLUMN_MAJOR (0 << 0)
 
 /**
  * This is equivalent to AML_LAYOUT_ORDER_C.
  * @see AML_LAYOUT_ORDER_C
  **/
-#define AML_LAYOUT_ORDER_ROW_MAJOR (1<<0)
+#define AML_LAYOUT_ORDER_ROW_MAJOR (1 << 0)
 
 /**
  * Get the order bit of an integer bitmask.
@@ -493,7 +490,7 @@ struct aml_layout_ops {
  * to the order value.
  * @return An integer containing only the bit order.
  **/
-#define AML_LAYOUT_ORDER(x) ((x) & (1<<0))
+#define AML_LAYOUT_ORDER(x) ((x) & (1 << 0))
 
 /**
  * Dereference an element of a layout by its coordinates.
@@ -505,8 +502,7 @@ struct aml_layout_ops {
  * * See specific implementation of layout for further information
  * on possible error codes.
  **/
-void *aml_layout_deref(const struct aml_layout *layout,
-		       const size_t *coords);
+void *aml_layout_deref(const struct aml_layout *layout, const size_t *coords);
 
 /**
  * Equivalent to aml_layout_deref() but with bound checking
@@ -514,7 +510,7 @@ void *aml_layout_deref(const struct aml_layout *layout,
  * @see aml_layout_deref()
  **/
 void *aml_layout_deref_safe(const struct aml_layout *layout,
-			    const size_t *coords);
+                            const size_t *coords);
 
 /**
  * Return a pointer to the first byte of the buffer this layout maps to.
@@ -578,9 +574,9 @@ size_t aml_layout_element_size(const struct aml_layout *layout);
  * implementation of reshape function.
  **/
 int aml_layout_reshape(const struct aml_layout *layout,
-		       struct aml_layout **reshaped_layout,
-		       const size_t ndims,
-		       const size_t *dims);
+                       struct aml_layout **reshaped_layout,
+                       const size_t ndims,
+                       const size_t *dims);
 
 /**
  * Return a layout that is a subset of another layout.
@@ -602,10 +598,10 @@ int aml_layout_reshape(const struct aml_layout *layout,
  * @return AML_SUCCESS on success, else an AML error code (<0).
  **/
 int aml_layout_slice(const struct aml_layout *layout,
-		     struct aml_layout **reshaped_layout,
-		     const size_t *offsets,
-		     const size_t *dims,
-		     const size_t *strides);
+                     struct aml_layout **reshaped_layout,
+                     const size_t *offsets,
+                     const size_t *dims,
+                     const size_t *strides);
 
 /**
  * Print on the file handle the metadata associated with this layout.
@@ -614,9 +610,9 @@ int aml_layout_slice(const struct aml_layout *layout,
  * @param layout layout to print
  * @return 0 if successful, an error code otherwise.
  */
-int aml_layout_fprintf(FILE *stream, const char *prefix,
-		       const struct aml_layout *layout);
-
+int aml_layout_fprintf(FILE *stream,
+                       const char *prefix,
+                       const struct aml_layout *layout);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -642,7 +638,7 @@ int aml_layout_fprintf(FILE *stream, const char *prefix,
  * This tag will store dimensions in the order provided by the user,
  * i.e elements of the last dimension will be contiguous in memory.
  **/
-#define AML_TILING_ORDER_FORTRAN (0<<0)
+#define AML_TILING_ORDER_FORTRAN (0 << 0)
 
 /**
  * Tag specifying user storage of dimensions inside a layout.
@@ -653,19 +649,19 @@ int aml_layout_fprintf(FILE *stream, const char *prefix,
  * in memory. This storage is the actual storage used by the library
  * inside the structure.
  **/
-#define AML_TILING_ORDER_C (1<<0)
+#define AML_TILING_ORDER_C (1 << 0)
 
 /**
  * This is equivalent to AML_TILING_ORDER_FORTRAN.
  * @see AML_TILING_ORDER_FORTRAN
  **/
-#define AML_TILING_ORDER_COLUMN_MAJOR (0<<0)
+#define AML_TILING_ORDER_COLUMN_MAJOR (0 << 0)
 
 /**
  * This is equivalent to AML_TILING_ORDER_C.
  * @see AML_TILING_ORDER_C
  **/
-#define AML_TILING_ORDER_ROW_MAJOR (1<<0)
+#define AML_TILING_ORDER_ROW_MAJOR (1 << 0)
 
 /**
  * Get the order bit of an integer bitmask.
@@ -675,7 +671,7 @@ int aml_layout_fprintf(FILE *stream, const char *prefix,
  * to the order value.
  * @return An integer containing only the bit order.
  **/
-#define AML_TILING_ORDER(x) ((x) & (1<<0))
+#define AML_TILING_ORDER(x) ((x) & (1 << 0))
 
 /**
  * aml_tiling_data is an opaque handle defined by each aml_tiling
@@ -691,13 +687,12 @@ struct aml_tiling_data;
  **/
 struct aml_tiling_ops {
 	/** retrieve a tile as a layout **/
-	struct aml_layout* (*index)(const struct aml_tiling_data *t,
-				    const size_t *coords);
+	struct aml_layout *(*index)(const struct aml_tiling_data *t,
+	                            const size_t *coords);
 	/** retrieve a tile as a layout with coordinates in native order  **/
-	struct aml_layout* (*index_native)(const struct aml_tiling_data *t,
-					   const size_t *coords);
-	void *(*rawptr)(const struct aml_tiling_data *t,
-			const size_t *coords);
+	struct aml_layout *(*index_native)(const struct aml_tiling_data *t,
+	                                   const size_t *coords);
+	void *(*rawptr)(const struct aml_tiling_data *t, const size_t *coords);
 	int (*tileid)(const struct aml_tiling_data *t, const size_t *coords);
 	int (*order)(const struct aml_tiling_data *t);
 	int (*tile_dims)(const struct aml_tiling_data *t, size_t *dims);
@@ -715,7 +710,8 @@ struct aml_tiling_ops {
 	 * @return 0 if successful, an error code otherwise.
 	 **/
 	int (*fprintf)(const struct aml_tiling_data *data,
-		       FILE *stream, const char *prefix);
+	               FILE *stream,
+	               const char *prefix);
 };
 
 /**
@@ -778,7 +774,7 @@ size_t aml_tiling_ntiles(const struct aml_tiling *tiling);
  * @return the tile as a layout on success, NULL on error.
  **/
 struct aml_layout *aml_tiling_index(const struct aml_tiling *tiling,
-				    const size_t *coords);
+                                    const size_t *coords);
 
 /**
  * Return a pointer to the first valid coordinate in the underlying tile.
@@ -803,7 +799,7 @@ int aml_tiling_tileid(const struct aml_tiling *tiling, const size_t *coords);
  * @return the tiling as a layout on success, NULL on error.
  */
 struct aml_layout *aml_tiling_index_byid(const struct aml_tiling *tiling,
-					 const int uuid);
+                                         const int uuid);
 
 /**
  * Print on the file handle the metadata associated with this tiling.
@@ -812,8 +808,9 @@ struct aml_layout *aml_tiling_index_byid(const struct aml_tiling *tiling,
  * @param tiling tiling to print
  * @return 0 if successful, an error code otherwise.
  */
-int aml_tiling_fprintf(FILE *stream, const char *prefix,
-		       const struct aml_tiling *tiling);
+int aml_tiling_fprintf(FILE *stream,
+                       const char *prefix,
+                       const struct aml_tiling *tiling);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -891,8 +888,9 @@ struct aml_dma_data;
  * See operator implementators for more details.
  **/
 typedef int (*aml_dma_operator)(struct aml_layout *dst,
-				const struct aml_layout *src,
-				void *arg, void **out);
+                                const struct aml_layout *src,
+                                void *arg,
+                                void **out);
 
 /**
  * aml_dma_ops is a structure containing operations for a specific
@@ -915,10 +913,11 @@ struct aml_dma_ops {
 	 * @return an AML error code.
 	 **/
 	int (*create_request)(struct aml_dma_data *dma,
-			      struct aml_dma_request **req,
-			      struct aml_layout *dest,
-			      struct aml_layout *src,
-			      aml_dma_operator op, void *op_arg);
+	                      struct aml_dma_request **req,
+	                      struct aml_layout *dest,
+	                      struct aml_layout *src,
+	                      aml_dma_operator op,
+	                      void *op_arg);
 
 	/**
 	 * Destroy the request handle. If the data movement is still ongoing,
@@ -929,7 +928,7 @@ struct aml_dma_ops {
 	 * @return an AML error code.
 	 **/
 	int (*destroy_request)(struct aml_dma_data *dma,
-			       struct aml_dma_request **req);
+	                       struct aml_dma_request **req);
 
 	/**
 	 * Wait for termination of a data movement and destroy the request
@@ -940,7 +939,7 @@ struct aml_dma_ops {
 	 * @return an AML error code.
 	 **/
 	int (*wait_request)(struct aml_dma_data *dma,
-			    struct aml_dma_request **req);
+	                    struct aml_dma_request **req);
 
 	/**
 	 * Print the implementation-specific information available on a dma.
@@ -950,7 +949,8 @@ struct aml_dma_ops {
 	 * @return 0 if successful, an error code otherwise.
 	 **/
 	int (*fprintf)(const struct aml_dma_data *data,
-		       FILE *stream, const char *prefix);
+	               FILE *stream,
+	               const char *prefix);
 };
 
 /**
@@ -975,9 +975,10 @@ struct aml_dma {
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_copy(struct aml_dma *dma,
-		 struct aml_layout *dest,
-		 struct aml_layout *src,
-		 aml_dma_operator op, void *op_arg);
+                 struct aml_layout *dest,
+                 struct aml_layout *src,
+                 aml_dma_operator op,
+                 void *op_arg);
 
 /**
  * Requests a data copy between two different buffers.This is an asynchronous
@@ -992,13 +993,14 @@ int aml_dma_copy(struct aml_dma *dma,
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_async_copy(struct aml_dma *dma,
-		       struct aml_dma_request **req,
-		       struct aml_layout *dest,
-		       struct aml_layout *src,
-		       aml_dma_operator op, void *op_arg);
+                       struct aml_dma_request **req,
+                       struct aml_layout *dest,
+                       struct aml_layout *src,
+                       aml_dma_operator op,
+                       void *op_arg);
 
 #define aml_dma_copy_helper(dma, d, s) aml_dma_copy(dma, d, s, NULL, NULL)
-#define aml_dma_async_copy_helper(dma, r, d, s) \
+#define aml_dma_async_copy_helper(dma, r, d, s)                                \
 	aml_dma_async_copy(dma, r, d, s, NULL, NULL)
 
 /**
@@ -1024,12 +1026,13 @@ int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request **req);
  * @param dma dma to print
  * @return 0 if successful, an error code otherwise.
  */
-int aml_dma_fprintf(FILE *stream, const char *prefix,
-		    const struct aml_dma *dma);
+int aml_dma_fprintf(FILE *stream,
+                    const char *prefix,
+                    const struct aml_dma *dma);
 
 int aml_copy_layout_transform_generic(struct aml_layout *dst,
-				      const struct aml_layout *src,
-				      const size_t *target_dims);
+                                      const struct aml_layout *src,
+                                      const size_t *target_dims);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1104,19 +1107,22 @@ struct aml_scratch_ops {
 	 * \todo Doc
 	 **/
 	int (*create_request)(struct aml_scratch_data *scratch,
-			      struct aml_scratch_request **req, int type,
-			      struct aml_layout **dest, int *destid,
-			      struct aml_layout *src, int srcid);
+	                      struct aml_scratch_request **req,
+	                      int type,
+	                      struct aml_layout **dest,
+	                      int *destid,
+	                      struct aml_layout *src,
+	                      int srcid);
 	/**
 	 * \todo Doc
 	 **/
 	int (*destroy_request)(struct aml_scratch_data *scratch,
-			       struct aml_scratch_request *req);
+	                       struct aml_scratch_request *req);
 	/**
 	 * \todo Doc
 	 **/
 	int (*wait_request)(struct aml_scratch_data *scratch,
-			    struct aml_scratch_request *req);
+	                    struct aml_scratch_request *req);
 	/**
 	 * \todo Doc
 	 **/
@@ -1148,8 +1154,10 @@ struct aml_scratch {
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_scratch_pull(struct aml_scratch *scratch,
-		     struct aml_layout **dest, int *scratchid,
-		     struct aml_layout *src, int srcid);
+                     struct aml_layout **dest,
+                     int *scratchid,
+                     struct aml_layout *src,
+                     int srcid);
 
 /**
  * Requests a pull from regular memory to the scratchpad. This is an
@@ -1166,9 +1174,11 @@ int aml_scratch_pull(struct aml_scratch *scratch,
  * @see aml_scratch_pull()
  **/
 int aml_scratch_async_pull(struct aml_scratch *scratch,
-			   struct aml_scratch_request **req,
-			   struct aml_layout **scratch_layout, int *scratchid,
-			   struct aml_layout *src_layout, int srcid);
+                           struct aml_scratch_request **req,
+                           struct aml_layout **scratch_layout,
+                           int *scratchid,
+                           struct aml_layout *src_layout,
+                           int srcid);
 /**
  * Requests a synchronous push from the scratchpad to regular memory.
  * @param scratch: an initialized scratchpad structure.
@@ -1182,8 +1192,10 @@ int aml_scratch_async_pull(struct aml_scratch *scratch,
  * @see aml_scratch_baseptr()
  **/
 int aml_scratch_push(struct aml_scratch *scratch,
-		     struct aml_layout **dest_layout, int *destid,
-		     struct aml_layout *scratch_layout, int scratchid);
+                     struct aml_layout **dest_layout,
+                     int *destid,
+                     struct aml_layout *scratch_layout,
+                     int scratchid);
 
 /**
  * Requests a push from the scratchpad to regular memory.  This is an
@@ -1201,9 +1213,11 @@ int aml_scratch_push(struct aml_scratch *scratch,
  * @see aml_scratch_push()
  **/
 int aml_scratch_async_push(struct aml_scratch *scratch,
-			   struct aml_scratch_request **req,
-			   struct aml_layout **dest_layout, int *destid,
-			   struct aml_layout *scratch_layout, int scratchid);
+                           struct aml_scratch_request **req,
+                           struct aml_layout **dest_layout,
+                           int *destid,
+                           struct aml_layout *scratch_layout,
+                           int scratchid);
 /**
  * Waits for an asynchronous scratch request to complete.
  * @param scratch: an initialized scratchpad structure.
@@ -1211,7 +1225,7 @@ int aml_scratch_async_push(struct aml_scratch *scratch,
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_scratch_wait(struct aml_scratch *scratch,
-		     struct aml_scratch_request *req);
+                     struct aml_scratch_request *req);
 
 /**
  * Tears down an asynchronous scratch request before it completes.
@@ -1220,7 +1234,7 @@ int aml_scratch_wait(struct aml_scratch *scratch,
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_scratch_cancel(struct aml_scratch *scratch,
-		       struct aml_scratch_request *req);
+                       struct aml_scratch_request *req);
 /**
  * Provides the location of the scratchpad.
  * @param scratch: an initialized scratchpad structure.

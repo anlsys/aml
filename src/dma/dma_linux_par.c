@@ -6,16 +6,17 @@
  * For more info, see https://xgitlab.cels.anl.gov/argo/aml
  *
  * SPDX-License-Identifier: BSD-3-Clause
-*******************************************************************************/
-
-#include "aml.h"
-#include "aml/dma/linux-seq.h"
-#include "aml/dma/linux-par.h"
-#include "aml/layout/dense.h"
+ *******************************************************************************/
 
 #include <assert.h>
 #include <errno.h>
 #include <sys/mman.h>
+
+#include "aml.h"
+
+#include "aml/dma/linux-par.h"
+#include "aml/dma/linux-seq.h"
+#include "aml/layout/dense.h"
 
 /*******************************************************************************
  * Linux-backed, paruential dma
@@ -31,9 +32,10 @@
  ******************************************************************************/
 
 int aml_dma_request_linux_par_copy_init(struct aml_dma_request_linux_par *req,
-					struct aml_layout *dest,
-					struct aml_layout *src,
-					aml_dma_operator op, void *op_arg)
+                                        struct aml_layout *dest,
+                                        struct aml_layout *src,
+                                        aml_dma_operator op,
+                                        void *op_arg)
 {
 	assert(req != NULL);
 	req->type = AML_DMA_REQUEST_TYPE_LAYOUT;
@@ -57,7 +59,7 @@ int aml_dma_request_linux_par_copy_destroy(struct aml_dma_request_linux_par *r)
 void *aml_dma_linux_par_do_thread(void *arg)
 {
 	struct aml_dma_request_linux_par *req =
-		(struct aml_dma_request_linux_par *)arg;
+	        (struct aml_dma_request_linux_par *)arg;
 
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	if (req->type != AML_DMA_REQUEST_TYPE_INVALID)
@@ -66,7 +68,7 @@ void *aml_dma_linux_par_do_thread(void *arg)
 }
 
 struct aml_dma_linux_par_inner_ops aml_dma_linux_par_inner_ops = {
-	aml_dma_linux_par_do_thread,
+        aml_dma_linux_par_do_thread,
 };
 
 /*******************************************************************************
@@ -74,18 +76,18 @@ struct aml_dma_linux_par_inner_ops aml_dma_linux_par_inner_ops = {
  ******************************************************************************/
 
 int aml_dma_linux_par_create_request(struct aml_dma_data *d,
-				     struct aml_dma_request **r,
-				     struct aml_layout *dest,
-				     struct aml_layout *src,
-				     aml_dma_operator op, void *op_arg)
+                                     struct aml_dma_request **r,
+                                     struct aml_layout *dest,
+                                     struct aml_layout *src,
+                                     aml_dma_operator op,
+                                     void *op_arg)
 {
 	/* NULL checks done by the generic API */
 	assert(d != NULL);
 	assert(r != NULL);
 	assert(dest != NULL);
 	assert(src != NULL);
-	struct aml_dma_linux_par *dma =
-		(struct aml_dma_linux_par *)d;
+	struct aml_dma_linux_par *dma = (struct aml_dma_linux_par *)d;
 	struct aml_dma_request_linux_par *req;
 
 	if (op == NULL)
@@ -103,12 +105,11 @@ int aml_dma_linux_par_create_request(struct aml_dma_data *d,
 }
 
 int aml_dma_linux_par_destroy_request(struct aml_dma_data *d,
-				      struct aml_dma_request **r)
+                                      struct aml_dma_request **r)
 {
 	assert(d != NULL);
 	assert(r != NULL);
-	struct aml_dma_linux_par *dma =
-		(struct aml_dma_linux_par *)d;
+	struct aml_dma_linux_par *dma = (struct aml_dma_linux_par *)d;
 	struct aml_dma_request_linux_par *req;
 
 	if (*r == NULL)
@@ -133,7 +134,7 @@ int aml_dma_linux_par_destroy_request(struct aml_dma_data *d,
 }
 
 int aml_dma_linux_par_wait_request(struct aml_dma_data *d,
-				   struct aml_dma_request **r)
+                                   struct aml_dma_request **r)
 {
 	assert(d != NULL);
 	assert(r != NULL);
@@ -156,7 +157,8 @@ int aml_dma_linux_par_wait_request(struct aml_dma_data *d,
 }
 
 int aml_dma_linux_par_fprintf(const struct aml_dma_data *data,
-			      FILE *stream, const char *prefix)
+                              FILE *stream,
+                              const char *prefix)
 {
 	const struct aml_dma_linux_par *d;
 	size_t vsize;
@@ -170,7 +172,7 @@ int aml_dma_linux_par_fprintf(const struct aml_dma_data *data,
 	vsize = aml_vector_size(d->data.requests);
 	/* ugly cast because ISO C forbids function pointer to void * */
 	fprintf(stream, "%s: op: %p\n", prefix,
-		(void *) (intptr_t) d->data.default_op);
+	        (void *)(intptr_t)d->data.default_op);
 	fprintf(stream, "%s: op-arg: %p\n", prefix, d->data.default_op_arg);
 	fprintf(stream, "%s: requests: %zu\n", prefix, vsize);
 	for (size_t i = 0; i < vsize; i++) {
@@ -182,30 +184,32 @@ int aml_dma_linux_par_fprintf(const struct aml_dma_data *data,
 			continue;
 
 		fprintf(stream, "%s: layout-dest: %p\n", prefix,
-			(void *)r->dest);
+		        (void *)r->dest);
 		aml_layout_fprintf(stream, prefix, r->dest);
 		fprintf(stream, "%s: layout-src: %p\n", prefix, (void *)r->src);
 		aml_layout_fprintf(stream, prefix, r->src);
 		fprintf(stream, "%s: op: %p\n", prefix,
-			(void *) (intptr_t)r->op);
+		        (void *)(intptr_t)r->op);
 		fprintf(stream, "%s: op-arg: %p\n", prefix, (void *)r->op_arg);
 	}
 	return AML_SUCCESS;
 }
 
 struct aml_dma_ops aml_dma_linux_par_ops = {
-	aml_dma_linux_par_create_request,
-	aml_dma_linux_par_destroy_request,
-	aml_dma_linux_par_wait_request,
-	aml_dma_linux_par_fprintf,
+        aml_dma_linux_par_create_request,
+        aml_dma_linux_par_destroy_request,
+        aml_dma_linux_par_wait_request,
+        aml_dma_linux_par_fprintf,
 };
 
 /*******************************************************************************
  * Init functions:
  ******************************************************************************/
 
-int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs,
-			     aml_dma_operator op, void *op_arg)
+int aml_dma_linux_par_create(struct aml_dma **dma,
+                             size_t nbreqs,
+                             aml_dma_operator op,
+                             void *op_arg)
 {
 	struct aml_dma *ret = NULL;
 	struct aml_dma_linux_par *d;
@@ -219,9 +223,8 @@ int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs,
 	if (ret == NULL)
 		return -AML_ENOMEM;
 
-	ret->data = AML_INNER_MALLOC_GET_FIELD(ret, 2,
-					       struct aml_dma,
-					       struct aml_dma_linux_par);
+	ret->data = AML_INNER_MALLOC_GET_FIELD(ret, 2, struct aml_dma,
+	                                       struct aml_dma_linux_par);
 	ret->ops = &aml_dma_linux_par_ops;
 	d = (struct aml_dma_linux_par *)ret->data;
 	d->ops = aml_dma_linux_par_inner_ops;
@@ -235,9 +238,9 @@ int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs,
 
 	/* allocate request array */
 	aml_vector_create(&d->data.requests, nbreqs,
-			  sizeof(struct aml_dma_request_linux_par),
-			  offsetof(struct aml_dma_request_linux_par, type),
-			  AML_DMA_REQUEST_TYPE_INVALID);
+	                  sizeof(struct aml_dma_request_linux_par),
+	                  offsetof(struct aml_dma_request_linux_par, type),
+	                  AML_DMA_REQUEST_TYPE_INVALID);
 	pthread_mutex_init(&d->data.lock, NULL);
 
 	*dma = ret;

@@ -6,13 +6,15 @@
  * For more info, see https://xgitlab.cels.anl.gov/argo/aml
  *
  * SPDX-License-Identifier: BSD-3-Clause
-*******************************************************************************/
+ *******************************************************************************/
+
+#include <assert.h>
 
 #include "aml.h"
+
 #include "aml/layout/dense.h"
-#include "aml/tiling/native.h"
 #include "aml/scratch/seq.h"
-#include <assert.h>
+#include "aml/tiling/native.h"
 
 /*******************************************************************************
  * Sequential scratchpad
@@ -27,9 +29,12 @@
  * Requests:
  ******************************************************************************/
 
-int aml_scratch_request_seq_init(struct aml_scratch_request_seq *req, int type,
-				 struct aml_layout *dest, int destid,
-				 struct aml_layout *src, int srcid)
+int aml_scratch_request_seq_init(struct aml_scratch_request_seq *req,
+                                 int type,
+                                 struct aml_layout *dest,
+                                 int destid,
+                                 struct aml_layout *src,
+                                 int srcid)
 
 {
 	assert(req != NULL);
@@ -52,16 +57,16 @@ int aml_scratch_request_seq_destroy(struct aml_scratch_request_seq *r)
  * Internal functions
  ******************************************************************************/
 int aml_scratch_seq_doit(struct aml_scratch_seq_data *scratch,
-			      struct aml_scratch_request_seq *req)
+                         struct aml_scratch_request_seq *req)
 {
 	assert(scratch != NULL);
 	assert(req != NULL);
-	return aml_dma_async_copy(scratch->dma, &req->dma_req,
-				  req->dst, req->src, NULL, NULL);
+	return aml_dma_async_copy(scratch->dma, &req->dma_req, req->dst,
+	                          req->src, NULL, NULL);
 }
 
 struct aml_scratch_seq_inner_ops aml_scratch_seq_inner_ops = {
-	aml_scratch_seq_doit,
+        aml_scratch_seq_doit,
 };
 
 /*******************************************************************************
@@ -69,15 +74,16 @@ struct aml_scratch_seq_inner_ops aml_scratch_seq_inner_ops = {
  ******************************************************************************/
 
 int aml_scratch_seq_create_request(struct aml_scratch_data *d,
-				   struct aml_scratch_request **r,
-				   int type,
-				   struct aml_layout **dest, int *destid,
-				   struct aml_layout *src, int srcid)
+                                   struct aml_scratch_request **r,
+                                   int type,
+                                   struct aml_layout **dest,
+                                   int *destid,
+                                   struct aml_layout *src,
+                                   int srcid)
 {
 	assert(d != NULL);
 	assert(r != NULL);
-	struct aml_scratch_seq *scratch =
-		(struct aml_scratch_seq *)d;
+	struct aml_scratch_seq *scratch = (struct aml_scratch_seq *)d;
 
 	struct aml_scratch_request_seq *req;
 
@@ -92,11 +98,11 @@ int aml_scratch_seq_create_request(struct aml_scratch_data *d,
 		assert(slot != NULL);
 		*destid = *slot;
 		*dest = aml_tiling_index_byid(scratch->data.src_tiling,
-						*destid);
+		                              *destid);
 
 		/* init request */
-		aml_scratch_request_seq_init(req, type, *dest, *destid,
-					     src, srcid);
+		aml_scratch_request_seq_init(req, type, *dest, *destid, src,
+		                             srcid);
 	} else if (type == AML_SCRATCH_REQUEST_TYPE_PULL) {
 		int slot, *tile;
 
@@ -115,11 +121,11 @@ int aml_scratch_seq_create_request(struct aml_scratch_data *d,
 		/* save the key */
 		*destid = slot;
 		*dest = aml_tiling_index_byid(scratch->data.scratch_tiling,
-					      slot);
+		                              slot);
 
 		/* init request */
-		aml_scratch_request_seq_init(req, type, *dest, *destid,
-					     src, srcid);
+		aml_scratch_request_seq_init(req, type, *dest, *destid, src,
+		                             srcid);
 	}
 	pthread_mutex_unlock(&scratch->data.lock);
 	if (req->type != AML_SCRATCH_REQUEST_TYPE_NOOP)
@@ -130,15 +136,14 @@ int aml_scratch_seq_create_request(struct aml_scratch_data *d,
 }
 
 int aml_scratch_seq_destroy_request(struct aml_scratch_data *d,
-					 struct aml_scratch_request *r)
+                                    struct aml_scratch_request *r)
 {
 	assert(d != NULL);
 	assert(r != NULL);
-	struct aml_scratch_seq *scratch =
-		(struct aml_scratch_seq *)d;
+	struct aml_scratch_seq *scratch = (struct aml_scratch_seq *)d;
 
 	struct aml_scratch_request_seq *req =
-		(struct aml_scratch_request_seq *)r;
+	        (struct aml_scratch_request_seq *)r;
 	int *tile = NULL;
 
 	if (req->type != AML_SCRATCH_REQUEST_TYPE_NOOP)
@@ -159,13 +164,13 @@ int aml_scratch_seq_destroy_request(struct aml_scratch_data *d,
 }
 
 int aml_scratch_seq_wait_request(struct aml_scratch_data *d,
-				   struct aml_scratch_request *r)
+                                 struct aml_scratch_request *r)
 {
 	assert(d != NULL);
 	assert(r != NULL);
 	struct aml_scratch_seq *scratch = (struct aml_scratch_seq *)d;
 	struct aml_scratch_request_seq *req =
-		(struct aml_scratch_request_seq *)r;
+	        (struct aml_scratch_request_seq *)r;
 	int *tile;
 
 	/* wait for completion of the request */
@@ -199,10 +204,10 @@ int aml_scratch_seq_release(struct aml_scratch_data *d, int scratchid)
 }
 
 struct aml_scratch_ops aml_scratch_seq_ops = {
-	aml_scratch_seq_create_request,
-	aml_scratch_seq_destroy_request,
-	aml_scratch_seq_wait_request,
-	aml_scratch_seq_release,
+        aml_scratch_seq_create_request,
+        aml_scratch_seq_destroy_request,
+        aml_scratch_seq_wait_request,
+        aml_scratch_seq_release,
 };
 
 /*******************************************************************************
@@ -210,27 +215,27 @@ struct aml_scratch_ops aml_scratch_seq_ops = {
  ******************************************************************************/
 
 int aml_scratch_seq_create(struct aml_scratch **scratch,
-			   struct aml_dma *dma, struct aml_tiling *src_tiling,
-			   struct aml_tiling *scratch_tiling, size_t nbreqs)
+                           struct aml_dma *dma,
+                           struct aml_tiling *src_tiling,
+                           struct aml_tiling *scratch_tiling,
+                           size_t nbreqs)
 {
 	struct aml_scratch *ret = NULL;
 	struct aml_scratch_seq *s;
 
-	if (scratch == NULL || dma == NULL || src_tiling == NULL
-	    || scratch_tiling == NULL)
+	if (scratch == NULL || dma == NULL || src_tiling == NULL ||
+	    scratch_tiling == NULL)
 		return -AML_EINVAL;
 
 	*scratch = NULL;
 
-	ret = AML_INNER_MALLOC(struct aml_scratch,
-				      struct aml_scratch_seq);
+	ret = AML_INNER_MALLOC(struct aml_scratch, struct aml_scratch_seq);
 	if (ret == NULL)
 		return -AML_ENOMEM;
 
 	ret->ops = &aml_scratch_seq_ops;
-	ret->data = AML_INNER_MALLOC_GET_FIELD(ret, 2,
-					       struct aml_scratch,
-					       struct aml_scratch_seq);
+	ret->data = AML_INNER_MALLOC_GET_FIELD(ret, 2, struct aml_scratch,
+	                                       struct aml_scratch_seq);
 	s = (struct aml_scratch_seq *)ret->data;
 	s->ops = aml_scratch_seq_inner_ops;
 
@@ -240,9 +245,9 @@ int aml_scratch_seq_create(struct aml_scratch **scratch,
 
 	/* allocate request array */
 	aml_vector_create(&s->data.requests, nbreqs,
-			  sizeof(struct aml_scratch_request_seq),
-			  offsetof(struct aml_scratch_request_seq, type),
-			  AML_SCRATCH_REQUEST_TYPE_INVALID);
+	                  sizeof(struct aml_scratch_request_seq),
+	                  offsetof(struct aml_scratch_request_seq, type),
+	                  AML_SCRATCH_REQUEST_TYPE_INVALID);
 
 	/* "hashmap for src to scratch tiles */
 	size_t nbtiles = aml_tiling_ntiles(scratch_tiling);

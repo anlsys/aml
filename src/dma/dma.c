@@ -6,12 +6,13 @@
  * For more info, see https://xgitlab.cels.anl.gov/argo/aml
  *
  * SPDX-License-Identifier: BSD-3-Clause
-*******************************************************************************/
-
-#include "aml.h"
-#include "aml/layout/native.h"
+ *******************************************************************************/
 
 #include <assert.h>
+
+#include "aml.h"
+
+#include "aml/layout/native.h"
 
 /*******************************************************************************
  * Generic DMA API:
@@ -22,8 +23,11 @@
  * abstract the request creation after this layer.
  ******************************************************************************/
 
-int aml_dma_copy(struct aml_dma *dma, struct aml_layout *dest,
-		 struct aml_layout *src, aml_dma_operator op, void *op_arg)
+int aml_dma_copy(struct aml_dma *dma,
+                 struct aml_layout *dest,
+                 struct aml_layout *src,
+                 aml_dma_operator op,
+                 void *op_arg)
 {
 	int ret;
 	struct aml_dma_request *req;
@@ -38,9 +42,12 @@ int aml_dma_copy(struct aml_dma *dma, struct aml_layout *dest,
 	return ret;
 }
 
-int aml_dma_async_copy(struct aml_dma *dma, struct aml_dma_request **req,
-		       struct aml_layout *dest, struct aml_layout *src,
-		       aml_dma_operator op, void *op_arg)
+int aml_dma_async_copy(struct aml_dma *dma,
+                       struct aml_dma_request **req,
+                       struct aml_layout *dest,
+                       struct aml_layout *src,
+                       aml_dma_operator op,
+                       void *op_arg)
 {
 	if (dma == NULL || req == NULL || dest == NULL || src == NULL)
 		return -AML_EINVAL;
@@ -62,8 +69,7 @@ int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request **req)
 	return dma->ops->wait_request(dma->data, req);
 }
 
-int aml_dma_fprintf(FILE *stream, const char *prefix,
-		    const struct aml_dma *dma)
+int aml_dma_fprintf(FILE *stream, const char *prefix, const struct aml_dma *dma)
 {
 	assert(dma != NULL && dma->ops != NULL && stream != NULL);
 
