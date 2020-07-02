@@ -130,11 +130,11 @@ main(void)
 
 	// Schedule requests
 	err =
-	    aml_dma_async_copy(dma, &a_request, a_continuous_layout, a_layout);
+	    aml_dma_async_copy_helper(dma, &a_request, a_continuous_layout, a_layout);
 	CHK_ABORT(err, "aml_dma_async_copy_custom:");
 
 	err =
-	    aml_dma_async_copy(dma, &b_request, b_continuous_layout, b_layout);
+	    aml_dma_async_copy_helper(dma, &b_request, b_continuous_layout, b_layout);
 	CHK_ABORT(err, "aml_dma_async_copy_custom:");
 
 	// Wait for the requests to complete

@@ -22,6 +22,17 @@
  **/
 
 /**
+ * Internal macros used for tracking DMA request types.
+ * Invalid request type.  Used for marking inactive requests in the vector.
+ **/
+#define AML_DMA_REQUEST_TYPE_INVALID -1
+
+/**
+ * The request is in the format (dest layout, src layout)
+ **/
+#define AML_DMA_REQUEST_TYPE_LAYOUT 0
+
+/**
  * Default table of dma request operations for linux
  * sequential dma.
  **/
@@ -111,6 +122,18 @@ void aml_dma_linux_seq_destroy(struct aml_dma **dma);
  **/
 int aml_dma_linux_seq_do_copy(struct aml_dma_linux_seq_data *dma,
 			      struct aml_dma_request_linux_seq *req);
+
+/**
+ * Generic helper to copy from one layout to another.
+ * @param[out] dst: destination layout
+ * @param[in] src: source layout
+ * @param[in] arg: unused (should be NULL)
+ * @param[out] out: A pointer where to store output of the function.
+ */
+int aml_copy_layout_generic(struct aml_layout *dst,
+			    const struct aml_layout *src,
+			    void *arg,
+			    void **out);
 
 /**
  * @}

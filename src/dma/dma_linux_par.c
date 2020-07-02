@@ -9,6 +9,7 @@
 *******************************************************************************/
 
 #include "aml.h"
+#include "aml/dma/linux-seq.h"
 #include "aml/dma/linux-par.h"
 #include "aml/layout/dense.h"
 
@@ -60,7 +61,7 @@ void *aml_dma_linux_par_do_thread(void *arg)
 
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	if (req->type != AML_DMA_REQUEST_TYPE_INVALID)
-		req->op(req->dest, req->src, req->op_arg);
+		req->op(req->dest, req->src, req->op_arg, NULL);
 	return NULL;
 }
 

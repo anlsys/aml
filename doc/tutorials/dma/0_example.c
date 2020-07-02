@@ -65,7 +65,7 @@ main(void)
 	// Handle to the dma request we are about to issue.
 	struct aml_dma_request *request;
 
-	err = aml_dma_async_copy_custom(
+	err = aml_dma_async_copy(
 	    dma, &request, dst_layout, src_layout, NULL, NULL);
 	CHK_ABORT(err, "aml_dma_async_copy_custom:");
 

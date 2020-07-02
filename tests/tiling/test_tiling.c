@@ -9,6 +9,7 @@
 *******************************************************************************/
 
 #include "aml.h"
+#include "aml/dma/linux-seq.h"
 #include "aml/layout/dense.h"
 #include "aml/layout/native.h"
 #include "aml/tiling/resize.h"
@@ -66,7 +67,7 @@ void test_tiling_even_mixed(void)
 				b = aml_tiling_index(t, (size_t[]){k, j, i});
 				bres = aml_tiling_index(tres,
 							(size_t[]){i, j, k});
-				aml_copy_layout_generic(bres, b, NULL);
+				aml_copy_layout_generic(bres, b, NULL, NULL);
 				free(b);
 				free(bres);
 			}
@@ -106,7 +107,7 @@ void test_tiling_even_mixed(void)
 				b = aml_tiling_index(t, (size_t[]){i, j, k});
 				bres = aml_tiling_index(tres,
 							(size_t[]){k, j, i});
-				aml_copy_layout_generic(bres, b, NULL);
+				aml_copy_layout_generic(bres, b, NULL, NULL);
 				free(b);
 				free(bres);
 			}
@@ -182,7 +183,7 @@ void test_tiling_even(void)
 				b = aml_tiling_index(t, (size_t[]){k, j, i});
 				bres = aml_tiling_index(tres,
 							(size_t[]){k, j, i});
-				aml_copy_layout_generic(bres, b, NULL);
+				aml_copy_layout_generic(bres, b, NULL, NULL);
 				free(b);
 				free(bres);
 			}
@@ -231,7 +232,7 @@ void test_tiling_even(void)
 				bres = aml_tiling_index(tres,
 							(size_t[]){i, j, k});
 				assert(b != NULL && bres != NULL);
-				aml_copy_layout_generic(bres, b, NULL);
+				aml_copy_layout_generic(bres, b, NULL, NULL);
 				free(b);
 				free(bres);
 			}
@@ -308,7 +309,7 @@ void test_tiling_uneven(void)
 				b = aml_tiling_index(t, (size_t[]){k, j, i});
 				bres = aml_tiling_index(tres,
 							(size_t[]){k, j, i});
-				aml_copy_layout_generic(bres, b, NULL);
+				aml_copy_layout_generic(bres, b, NULL, NULL);
 				free(b);
 				free(bres);
 			}
@@ -357,7 +358,7 @@ void test_tiling_uneven(void)
 				b = aml_tiling_index(t, (size_t[]){i, j, k});
 				bres = aml_tiling_index(tres,
 							(size_t[]){i, j, k});
-				aml_copy_layout_generic(bres, b, NULL);
+				aml_copy_layout_generic(bres, b, NULL, NULL);
 				free(b);
 				free(bres);
 			}
@@ -433,7 +434,7 @@ void test_tiling_pad_even(void)
 				b = aml_tiling_index(t, (size_t[]){k, j, i});
 				bres = aml_tiling_index(tres,
 							(size_t[]){k, j, i});
-				aml_copy_layout_generic(bres, b, NULL);
+				aml_copy_layout_generic(bres, b, NULL, NULL);
 				free(b);
 				free(bres);
 			}
@@ -480,7 +481,7 @@ void test_tiling_pad_even(void)
 				b = aml_tiling_index(t, (size_t[]){i, j, k});
 				bres = aml_tiling_index(tres,
 							(size_t[]){i, j, k});
-				aml_copy_layout_generic(bres, b, NULL);
+				aml_copy_layout_generic(bres, b, NULL, NULL);
 				free(b);
 				free(bres);
 			}
@@ -563,7 +564,7 @@ void test_tiling_pad_uneven(void)
 				b = aml_tiling_index(t, (size_t[]){k, j, i});
 				bres = aml_tiling_index(tres,
 							(size_t[]){k, j, i});
-				aml_copy_layout_generic(bres, b, NULL);
+				aml_copy_layout_generic(bres, b, NULL, NULL);
 				free(b);
 				free(bres);
 			}
@@ -621,7 +622,7 @@ void test_tiling_pad_uneven(void)
 				b = aml_tiling_index(t, (size_t[]){i, j, k});
 				bres = aml_tiling_index(tres,
 							(size_t[]){i, j, k});
-				aml_copy_layout_generic(bres, b, NULL);
+				aml_copy_layout_generic(bres, b, NULL, NULL);
 				free(b);
 				free(bres);
 			}

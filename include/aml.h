@@ -823,13 +823,41 @@ int aml_tiling_fprintf(FILE *stream, const char *prefix,
  * @brief Management of low-level memory movements.
  *
  * AML DMA (inspired by Direct Memory Access engines) is an abstraction over the
- * ability to move data between places. A DMAs presents an interface that allows
- * clients to create an asynchronous request to move data and to wait for this
- * request to complete. Depending on the exact operation it is configured to do,
- * the DMA might transform the data during the operation.
+ * ability to move data between areas and between layouts.
+ * @see aml_area
+ * @see aml_layout
+ * Through DMAs, AML exposes an interface allowing clients to instanciate
+ * asynchronous requests to copy data and wait for these requests to complete.
+ * @see aml_dma_copy()
+ * @see aml_dma_async_copy()
+ * @see aml_dma_request
  *
- * Implementations are mostly responsible for providing access to various types
- * of execution engine for data movement itself.
+ * The performance of the execution of a dma is highly dependent on the type of
+ * source and destination layouts. For instance a copy of continuous and
+ * contiguous address space can easily be vectorized, packed, etc...
+ * The optimization of such a copy is encapsulated by the aml_dma_operator
+ * abstraction. aml_dma_operator is a function provided by the dma implementer
+ * that is passed to aml_dma_copy() and aml_dma_async_copy() by the user.
+ * With the knowledge of source and destination layouts, the user is able to
+ * select a good aml_dma_operator to make the copy faster.
+ * @see aml_dma_operator
+ *
+ * Implementing a DMA requires to implement 4 abstractions:
+ * * struct aml_dma_request
+ * * struct aml_dma_data
+ * * struct aml_dma_ops
+ * * fn aml_dma_operator
+ * A DMA engine is an implementation of a struct aml_dma that is further
+ * provided to aml_dma_*() functions from the high level interface.
+ * The struct contains an internal data handle (aml_dma_data) to manage the
+ * engine, and a set of functions (aml_dma_ops) required to implement the
+ * high level interface. aml_dma_ops will allow to create a aml_dma_request
+ * to handle a transfer. A request is responsible for managing the transfer
+ * performed by a aml_dma_operator. When a request is iniciated by a user,
+ * the latter will need to provide a performant implementation of the
+ * aml_dma_operator, which is provided by the dma implementation.
+ * @see aml_dma_data
+ * @see aml_dma_ops
  *
  * @image html dma.png width=600
  * @{
@@ -838,52 +866,43 @@ int aml_tiling_fprintf(FILE *stream, const char *prefix,
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Internal macros used for tracking DMA request types.
- * Invalid request type.  Used for marking inactive requests in the vector.
- **/
-#define AML_DMA_REQUEST_TYPE_INVALID -1
-
-/**
- * The request is in the format (dest layout, src layout)
- **/
-#define AML_DMA_REQUEST_TYPE_LAYOUT 0
-
-/**
- * aml_dma is mainly used to asynchronously move data.
- * aml_dma_request is an opaque structure containing information
- * about ongoing request for data movement in a dma operation.
+ * Handle output of aml_dma_async_copy() to wait handle dma completion
+ * and errors.
+ * Implementers of struct aml_dma_ops will populate and destroy requests.
  * @see aml_dma_ops
  * @see aml_dma_async_copy()
  **/
 struct aml_dma_request;
 
 /**
- * Opaque handle implemented by each aml_dma implementations.
+ * Internal data, specific to a dma engine implementation.
  * Should not be used by end-users.
  **/
 struct aml_dma_data;
 
 /**
- * Type of the function used to perform the DMA between two layouts.
- * @param dst: destination layout
- * @param src: source layout
- * @param arg: extra argument needed by the operator
+ * Function called in a request to perform the copy between two areas and two
+ * layouts.
+ * @param[in] dst: destination layout
+ * @param[in] src: source layout
+ * @param[in] arg: extra argument needed by the operator.
+ * See operator implementators for more details.
+ * @param[out] out: Output of the operator.
+ * See operator implementators for more details.
  **/
 typedef int (*aml_dma_operator)(struct aml_layout *dst,
-				const struct aml_layout *src, void *arg);
+				const struct aml_layout *src,
+				void *arg, void **out);
 
 /**
-   aml_dma_ops is a structure containing operations for a specific
-   * aml_dma implementation.
-   * These operation are operation are detailed in the structure.
-   * They are specific in:
-   * - the type of aml_area source and destination,
-   * - the progress engine performing the operation,
-   * - the type of of source and destination data structures.
-   *
-   * Each different combination of these three points may require a different
-   * set of dma operations.
-   **/
+ * aml_dma_ops is a structure containing operations for a specific
+ * aml_dma implementation. These operations are detailed in the structure.
+ * They are specific in:
+ * - the type of aml_area source and destination,
+ * - the progress engine performing the operation (thread, hardware dma, ...).
+ * Each different combination of these two points may require a different
+ * set of dma operations.
+ **/
 struct aml_dma_ops {
 	/**
 	 * Initiate a data movement, from a source pointer to a destination
@@ -935,11 +954,9 @@ struct aml_dma_ops {
 };
 
 /**
- * aml_dma is an abstraction for (asynchronously) moving data
- * from one area to another. The implementation of dma to use
- * is depends on the source and destination areas. The appropriate
- * dma choice is delegated to the user.
- * @see struct aml_area.
+ * This is the high level structure containing the implementation
+ * specific data and methods.
+ * @see struct aml_dma.
  **/
 struct aml_dma {
 	/** @see aml_dma_ops **/
@@ -957,8 +974,10 @@ struct aml_dma {
  * @param op_arg: optional argument to the operator
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_dma_copy_custom(struct aml_dma *dma, struct aml_layout *dest,
-		 struct aml_layout *src, aml_dma_operator op, void *op_arg);
+int aml_dma_copy(struct aml_dma *dma,
+		 struct aml_layout *dest,
+		 struct aml_layout *src,
+		 aml_dma_operator op, void *op_arg);
 
 /**
  * Requests a data copy between two different buffers.This is an asynchronous
@@ -972,14 +991,15 @@ int aml_dma_copy_custom(struct aml_dma *dma, struct aml_layout *dest,
  * @param op_arg: optional argument to the operator
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_dma_async_copy_custom(struct aml_dma *dma, struct aml_dma_request **req,
+int aml_dma_async_copy(struct aml_dma *dma,
+		       struct aml_dma_request **req,
 		       struct aml_layout *dest,
 		       struct aml_layout *src,
 		       aml_dma_operator op, void *op_arg);
 
-#define aml_dma_copy(dma, d, s) aml_dma_copy_custom(dma, d, s, NULL, NULL)
-#define aml_dma_async_copy(dma, r, d, s) \
-	aml_dma_async_copy_custom(dma, r, d, s, NULL, NULL)
+#define aml_dma_copy_helper(dma, d, s) aml_dma_copy(dma, d, s, NULL, NULL)
+#define aml_dma_async_copy_helper(dma, r, d, s) \
+	aml_dma_async_copy(dma, r, d, s, NULL, NULL)
 
 /**
  * Waits for an asynchronous DMA request to complete.
@@ -1006,15 +1026,6 @@ int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request **req);
  */
 int aml_dma_fprintf(FILE *stream, const char *prefix,
 		    const struct aml_dma *dma);
-
-/**
- * Generic helper to copy from one layout to another.
- * @param[out] dst: destination layout
- * @param[in] src: source layout
- * @param[in] arg: unused (should be NULL)
- */
-int aml_copy_layout_generic(struct aml_layout *dst,
-			    const struct aml_layout *src, void *arg);
 
 int aml_copy_layout_transform_generic(struct aml_layout *dst,
 				      const struct aml_layout *src,

@@ -58,7 +58,7 @@ void *aml_scratch_par_do_thread(void *arg)
 	struct aml_scratch_par *scratch = req->scratch;
 
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-	aml_dma_copy(scratch->data.dma, req->dst, req->src);
+	aml_dma_copy(scratch->data.dma, req->dst, req->src, NULL, NULL);
 	return NULL;
 }
 
