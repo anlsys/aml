@@ -30,8 +30,6 @@
  * @{
  **/
 
-#include <aml/area/cuda.h>
-
 /** aml_layout data structure **/
 struct aml_layout_cuda_data {
 	/** Pointer to data on device. **/

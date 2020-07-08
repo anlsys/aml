@@ -25,31 +25,21 @@ int aml_layout_cuda_create(struct aml_layout **out,
 	struct aml_layout *layout;
 	struct aml_layout_cuda_data *layout_data;
 
-	layout = AML_INNER_MALLOC_EXTRA(struct aml_layout,
-	                                struct aml_layout_cuda_data, size_t,
-	                                3 * ndims);
+	layout = AML_INNER_MALLOC_ARRAY(3 * ndims, size_t, struct aml_layout,
+	                                struct aml_layout_cuda_data);
 
 	if (layout == NULL)
 		return -AML_ENOMEM;
 
-	layout_data = AML_INNER_MALLOC_NEXTPTR(layout, struct aml_layout,
-	                                       struct aml_layout_cuda_data);
-
+	layout_data = AML_INNER_MALLOC_GET_FIELD(layout, 2, struct aml_layout,
+	                                         struct aml_layout_cuda_data);
 	layout_data->device_ptr = device_ptr;
 	layout_data->order = order;
 	layout_data->ndims = ndims;
-
-	layout_data->dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(
-	        layout, struct aml_layout, struct aml_layout_cuda_data, size_t,
-	        0);
-
-	layout_data->stride = AML_INNER_MALLOC_EXTRA_NEXTPTR(
-	        layout, struct aml_layout, struct aml_layout_cuda_data, size_t,
-	        ndims);
-
-	layout_data->cpitch = AML_INNER_MALLOC_EXTRA_NEXTPTR(
-	        layout, struct aml_layout, struct aml_layout_cuda_data, size_t,
-	        ndims * 2);
+	layout_data->dims = AML_INNER_MALLOC_GET_ARRAY(
+	        layout, size_t, struct aml_layout, struct aml_layout_cuda_data);
+	layout_data->stride = layout_data->dims + ndims;
+	layout_data->cpitch = layout_data->stride + ndims;
 
 	// Store dims, stride and cpitch are internally stored in fortran
 	// row major.
