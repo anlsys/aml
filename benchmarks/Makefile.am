@@ -8,6 +8,13 @@ AM_CFLAGS += $(HWLOC_CFLAGS)
 AM_LDFLAGS += $(HWLOC_LIBS)
 endif
 
+if HAVE_CUDA
+LIBS += $(CUDA_CFLAGS)
+LIBS += $(CUDA_LIBS)
+AM_CFLAGS += $(CUDA_CFLAGS)
+AM_LDFLAGS += $(CUDA_LIBS)
+endif
+
 noinst_LIBRARIES = libkernel.a
 libkernel_a_SOURCES = utils.c utils.h blas_l1_kernel.c blas_l1_kernel.h verify_blas_l1.c verify_blas_l1.h
 LDADD = libkernel.a

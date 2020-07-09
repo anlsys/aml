@@ -142,6 +142,24 @@ make:knl:
       - config.log
       - tests/*.log
 
+make:chimera:
+  stage: build
+  except:
+    - /^wip.*/
+    - /^WIP.*/
+  tags:
+    - cuda
+  script:
+    - ./autogen.sh
+    - mkdir build
+    - ./configure --prefix=`pwd`/build --with-cuda=yes
+    - make -j check
+  artifacts:
+    when: on_failure
+    paths:
+      - config.log
+      - tests/*.log
+
 readthedocs:
   stage: docs
   when: on_success
