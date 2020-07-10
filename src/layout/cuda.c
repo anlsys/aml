@@ -15,6 +15,7 @@
 
 int aml_layout_cuda_create(struct aml_layout **out,
                            void *device_ptr,
+                           int device,
                            const size_t element_size,
                            const int order,
                            const size_t ndims,
@@ -34,6 +35,7 @@ int aml_layout_cuda_create(struct aml_layout **out,
 	layout_data = AML_INNER_MALLOC_GET_FIELD(layout, 2, struct aml_layout,
 	                                         struct aml_layout_cuda_data);
 	layout_data->device_ptr = device_ptr;
+	layout_data->device = device;
 	layout_data->order = order;
 	layout_data->ndims = ndims;
 	layout_data->dims = AML_INNER_MALLOC_GET_ARRAY(
@@ -145,9 +147,18 @@ size_t aml_layout_cuda_element_size(const struct aml_layout_data *data)
 	return cudata->cpitch[0];
 }
 
+void *aml_layout_cuda_rawptr(const struct aml_layout_data *data)
+{
+	struct aml_layout_cuda_data *cudata;
+
+	cudata = (struct aml_layout_cuda_data *)data;
+	return cudata->device_ptr;
+}
+
 struct aml_layout_ops aml_layout_cuda_ops = {
         .deref = aml_layout_cuda_deref,
         .deref_native = aml_layout_cuda_deref_native,
+        .rawptr = aml_layout_cuda_rawptr,
         .order = aml_layout_cuda_order,
         .dims = aml_layout_cuda_dims,
         .dims_native = aml_layout_cuda_dims_native,

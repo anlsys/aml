@@ -56,7 +56,7 @@ LAYOUT_TESTS = \
 
 TILING_TESTS = tiling/test_tiling
 
-DMA_LINUX_TESTS = dma/test_dma_linux_seq \
+DMA_TESTS = dma/test_dma_linux_seq \
 		  dma/test_dma_linux_par
 
 SCRATCH_TESTS = scratch/test_scratch_seq \
@@ -64,6 +64,7 @@ SCRATCH_TESTS = scratch/test_scratch_seq \
 
 if HAVE_CUDA
 AREA_TESTS += area/test_cuda
+DMA_TESTS += dma/test_cuda
 endif
 
 if HAVE_HWLOC
@@ -76,7 +77,7 @@ UNIT_TESTS = $(UTILS_TESTS) \
 	     $(LAYOUT_TESTS) \
 	     $(BINDING_TESTS) \
 	     $(AREA_TESTS) \
-	     $(DMA_LINUX_TESTS) \
+	     $(DMA_TESTS) \
 	     $(SCRATCH_TESTS)
 
 # all tests

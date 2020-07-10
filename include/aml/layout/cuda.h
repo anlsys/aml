@@ -8,8 +8,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  ******************************************************************************/
 
-#ifndef AML_AREA_LAYOUT_CUDA_H
-#define AML_AREA_LAYOUT_CUDA_H
+#ifndef AML_LAYOUT_CUDA_H
+#define AML_LAYOUT_CUDA_H
 
 /**
  * @defgroup aml_layout_cuda "AML Layout Cuda"
@@ -34,6 +34,8 @@
 struct aml_layout_cuda_data {
 	/** Pointer to data on device. **/
 	void *device_ptr;
+	/** device id where ptr is located **/
+	int device;
 	/** user expected layout order **/
 	int order;
 	/** layout num dims **/
@@ -56,6 +58,7 @@ struct aml_layout_cuda_data {
  * Create a new layout on device pointer with embedded layout.
  * @param[out] out: A pointer to receive the newly allocated layout.
  * @param[in] device_ptr: The pointer on which the layout has to work.
+ * @param[in] device: The device id where the device_ptr is allocated.
  * @param[in] element_size: The size of elements in this layout.
  * @param[in] order: Order of dimensions in the layout.
  * @param[in] ndims: The number of dimensions in the layout.
@@ -69,6 +72,7 @@ struct aml_layout_cuda_data {
  **/
 int aml_layout_cuda_create(struct aml_layout **out,
                            void *device_ptr,
+                           int device,
                            const size_t element_size,
                            const int order,
                            const size_t ndims,
@@ -115,4 +119,4 @@ extern struct aml_layout_ops aml_layout_cuda_ops;
  * @}
  **/
 
-#endif // AML_AREA_LAYOUT_CUDA_H
+#endif // AML_LAYOUT_CUDA_H
