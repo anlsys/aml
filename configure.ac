@@ -160,7 +160,7 @@ if [[ "x$have_nvcc" = xyes ]]; then
 			[AC_MSG_ERROR([could not find cuda.h])])
 	AC_CHECK_HEADER([cuda_runtime.h],,
 			[AC_MSG_ERROR([could not find cuda_runtime.h])])
-	AC_CHECK_LIB(cudart, cudaMalloc,,
+	AC_CHECK_LIB(cudart, cudaLaunchHostFunc,,
 		     AC_MSG_ERROR([could not find cudart library]))
 	LIBS=$saved_LIBS
 	CFLAGS=$saved_CFLAGS

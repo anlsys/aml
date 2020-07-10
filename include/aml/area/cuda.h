@@ -8,6 +8,9 @@
  * SPDX-License-Identifier: BSD-3-Clause
 *******************************************************************************/
 
+#ifndef AML_AREA_CUDA_H
+#define AML_AREA_CUDA_H
+
 /**
  * @defgroup aml_area_cuda "AML Cuda Areas"
  * @brief Cuda Implementation of Areas.
@@ -226,3 +229,5 @@ aml_area_cuda_munmap(const struct aml_area_data *area_data,
 /**
  * @}
  **/
+
+#endif // AML_AREA_CUDA_H
