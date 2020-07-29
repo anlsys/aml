@@ -220,8 +220,12 @@ int aml_layout_reshape_column_fprintf(const struct aml_layout_data *data,
 	fprintf(stream, "%s: ndims: %zu\n", prefix, d->ndims);
 	fprintf(stream, "%s: target-ndims: %zu\n", prefix, d->target_ndims);
 	for (size_t i = 0; i < d->ndims; i++) {
-		fprintf(stream, "%s: %16zu: %16zu %16zu %16zu\n", prefix,
-			i, d->dims[i], d->coffsets[i], d->target_dims[i]);
+		fprintf(stream, "%s: %16zu: %16zu %16zu\n", prefix, i,
+		        d->dims[i], d->coffsets[i]);
+	}
+	for (size_t i = 0; i < d->target_ndims; i++) {
+		fprintf(stream, "%s: %16zu: %16zu\n", prefix, i,
+		        d->target_dims[i]);
 	}
 	fprintf(stream, "%s: target: begin\n", prefix);
 	aml_layout_fprintf(stream, prefix, d->target);
@@ -306,9 +310,14 @@ int aml_layout_reshape_row_fprintf(const struct aml_layout_data *data,
 	for (size_t i = 0; i < d->ndims; i++) {
 		size_t j = d->ndims - i - 1;
 
-		fprintf(stream, "%s: %16zu: %16zu %16zu %16zu\n", prefix,
-			i, d->dims[j], d->coffsets[j], d->target_dims[j]);
+		fprintf(stream, "%s: %16zu: %16zu %16zu\n", prefix, i,
+		        d->dims[j], d->coffsets[j]);
 	}
+	for (size_t i = 0; i < d->target_ndims; i++) {
+		fprintf(stream, "%s: %16zu: %16zu\n", prefix, i,
+		        d->target_dims[i]);
+	}
+
 	fprintf(stream, "%s: target: begin\n", prefix);
 	aml_layout_fprintf(stream, prefix, d->target);
 	fprintf(stream, "%s: target: end\n", prefix);
