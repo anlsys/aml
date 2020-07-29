@@ -174,6 +174,9 @@ AC_SUBST(CUDA_CFLAGS)
 AC_SUBST(CUDA_LIBS)
 AC_SUBST(NVCC)
 
+# Support for cross-compiling check programs
+AM_EXTRA_RECURSIVE_TARGETS([check-programs])
+
 # Output
 ########
 
