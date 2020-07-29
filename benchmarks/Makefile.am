@@ -37,3 +37,7 @@ BENCHMARKS = $(NOPREFETCH)
 # all tests
 check_PROGRAMS = $(BENCHMARKS)
 TESTS = $(BENCHMARKS)
+
+# phony target to allow us to compile the check programs without running the
+# tests. Required for any environment where we are cross-compiling
+check-programs-local: $(BENCHMARKS)

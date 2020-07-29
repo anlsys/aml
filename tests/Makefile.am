@@ -84,3 +84,7 @@ UNIT_TESTS = $(UTILS_TESTS) \
 TST_PROGS = $(UNIT_TESTS)
 check_PROGRAMS = $(TST_PROGS)
 TESTS = $(TST_PROGS)
+
+# phony target to allow us to compile the check programs without running the
+# tests. Required for any environment where we are cross-compiling
+check-programs-local: $(TST_PROGS)

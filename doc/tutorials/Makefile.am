@@ -53,3 +53,7 @@ UNIT_TESTS = $(HELLO_TESTS) $(AREA_TESTS) $(LAYOUT_TESTS) $(DMA_TESTS) $(TILING_
 
 check_PROGRAMS = $(UNIT_TESTS)
 TESTS = $(UNIT_TESTS)
+
+# phony target to allow us to compile the check programs without running the
+# tests. Required for any environment where we are cross-compiling
+check-programs-local: $(UNIT_TESTS)
