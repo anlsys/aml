@@ -62,7 +62,7 @@ void test_dense(void)
 				       AML_LAYOUT_ORDER_COLUMN_MAJOR,
 				       sizeof(int), 5, NULL, stride_col,
 				       pitch_col) == -AML_EINVAL);
-	aml_layout_dense_destroy(NULL);
+	aml_layout_destroy(NULL);
 
 	/* test partial data */
 	assert(aml_layout_dense_create(&a,
@@ -72,7 +72,7 @@ void test_dense(void)
 				       5,
 				       dims_col,
 				       NULL, pitch_col) == AML_SUCCESS);
-	aml_layout_dense_destroy(&a);
+	aml_layout_destroy(&a);
 	assert(aml_layout_dense_create(&a,
 				       (void *)memory,
 				       AML_LAYOUT_ORDER_COLUMN_MAJOR,
@@ -80,7 +80,7 @@ void test_dense(void)
 				       5,
 				       dims_col,
 				       stride_col, NULL) == AML_SUCCESS);
-	aml_layout_dense_destroy(&a);
+	aml_layout_destroy(&a);
 
 	/* initialize column order layouts */
 	assert(aml_layout_dense_create(&a,
@@ -127,7 +127,7 @@ void test_dense(void)
 	assert(res_addr == test_addr);
 	assert(aml_layout_order(a) == AML_LAYOUT_ORDER_COLUMN_MAJOR);
 
-	aml_layout_dense_destroy(&a);
+	aml_layout_destroy(&a);
 
 	/* test partial data */
 	assert(aml_layout_dense_create(&a,
@@ -136,13 +136,13 @@ void test_dense(void)
 				       sizeof(float),
 				       5, dims_row,
 				       NULL, pitch_row) == AML_SUCCESS);
-	aml_layout_dense_destroy(&a);
+	aml_layout_destroy(&a);
 	assert(aml_layout_dense_create(&a, (void *)memory,
 				       AML_LAYOUT_ORDER_ROW_MAJOR,
 				       sizeof(float),
 				       5, dims_row,
 				       stride_row, NULL) == AML_SUCCESS);
-	aml_layout_dense_destroy(&a);
+	aml_layout_destroy(&a);
 
 	/* initialize row order layouts */
 	assert(aml_layout_dense_create(&a, (void *)memory,
@@ -171,8 +171,8 @@ void test_dense(void)
 	assert(res_addr == test_addr);
 	assert(aml_layout_order(a) == AML_LAYOUT_ORDER_ROW_MAJOR);
 
-	aml_layout_dense_destroy(&a);
-	aml_layout_dense_destroy(&b);
+	aml_layout_destroy(&a);
+	aml_layout_destroy(&b);
 }
 
 void test_generics(void)

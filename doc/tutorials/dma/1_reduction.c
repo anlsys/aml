@@ -155,10 +155,10 @@ main(void)
 	//----------------------------- Cleanup
 	//-------------------------------------
 
-	aml_layout_dense_destroy(&a_layout);
-	aml_layout_dense_destroy(&b_layout);
-	aml_layout_dense_destroy(&a_continuous_layout);
-	aml_layout_dense_destroy(&a_continuous_layout);
+	aml_layout_destroy(&a_layout);
+	aml_layout_destroy(&b_layout);
+	aml_layout_destroy(&a_continuous_layout);
+	aml_layout_destroy(&a_continuous_layout);
 	aml_dma_linux_par_destroy(&dma);
 
 	return 0;

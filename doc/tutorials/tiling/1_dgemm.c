@@ -177,9 +177,9 @@ int main(int argc, char **argv)
 	aml_tiling_resize_destroy(&tiling_a);
 	aml_tiling_resize_destroy(&tiling_b);
 	aml_tiling_resize_destroy(&tiling_c);
-	aml_layout_dense_destroy(&layout_a);
-	aml_layout_dense_destroy(&layout_b);
-	aml_layout_dense_destroy(&layout_c);
+	aml_layout_destroy(&layout_a);
+	aml_layout_destroy(&layout_b);
+	aml_layout_destroy(&layout_c);
 	free(a);
 	free(b);
 	free(c);

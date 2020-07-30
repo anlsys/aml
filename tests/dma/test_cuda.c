@@ -66,8 +66,8 @@ void teardown()
 	cudaFree(device_data);
 
 	// Layout
-	aml_layout_dense_destroy(&device_layout);
-	aml_layout_cuda_destroy(&device_layout);
+	aml_layout_destroy(&device_layout);
+	aml_layout_destroy(&device_layout);
 
 	// Dma
 	aml_dma_cuda_destroy(&host_device);

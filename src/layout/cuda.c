@@ -69,15 +69,6 @@ int aml_layout_cuda_create(struct aml_layout **out,
 	return AML_SUCCESS;
 }
 
-int aml_layout_cuda_destroy(struct aml_layout **layout)
-{
-	if (layout == NULL || *layout == NULL)
-		return -AML_EINVAL;
-	free(*layout);
-	*layout = NULL;
-	return AML_SUCCESS;
-}
-
 void *aml_layout_cuda_deref(const struct aml_layout_data *data,
                             const size_t *coords)
 {
@@ -167,4 +158,6 @@ struct aml_layout_ops aml_layout_cuda_ops = {
         .reshape = NULL,
         .slice = NULL,
         .slice_native = NULL,
+        .fprintf = NULL,
+        .destroy = NULL,
 };

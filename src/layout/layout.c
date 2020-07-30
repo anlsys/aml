@@ -296,3 +296,16 @@ int aml_layout_fprintf(FILE *stream, const char *prefix,
 
 	return layout->ops->fprintf(layout->data, stream, p);
 }
+
+void aml_layout_destroy(struct aml_layout **layout)
+{
+	if (layout == NULL || *layout == NULL)
+		return;
+
+	struct aml_layout *l = *layout;
+	if (l->ops->destroy != NULL)
+		l->ops->destroy(l);
+	else
+		free(l);
+	*layout = NULL;
+}

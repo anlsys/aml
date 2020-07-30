@@ -123,10 +123,9 @@ int main(int argc, char **argv)
 						    (size_t[]){i, 0, 0}));
 	fprintf(stderr, "\n");
 
-
-	aml_layout_dense_destroy(&lay_part);
-	aml_layout_dense_destroy(&layout_elements);
-	aml_layout_dense_destroy(&new_layout);
+	aml_layout_destroy(&lay_part);
+	aml_layout_destroy(&layout_elements);
+	aml_layout_destroy(&new_layout);
 	aml_area_munmap(area, particles, sizeof(struct particle) * size);
 	free(array_coords);
 

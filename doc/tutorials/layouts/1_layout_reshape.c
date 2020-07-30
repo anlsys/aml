@@ -132,8 +132,8 @@ int main(int argc, char **argv)
 	assert(!aml_layout_reshape(layout_c, &reshape_layout, 3, new_dims));
 	print_layout(reshape_layout);
 
-	aml_layout_dense_destroy(&layout_c);
-	aml_layout_dense_destroy(&reshape_layout);
+	aml_layout_destroy(&layout_c);
+	aml_layout_destroy(&reshape_layout);
 	aml_area_munmap(area, mat, sizeof(double) * x * y);
 
 	aml_finalize();

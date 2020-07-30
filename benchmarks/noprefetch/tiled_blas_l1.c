@@ -448,9 +448,9 @@ int main(int argc, char *argv[])
 	aml_tiling_resize_destroy(&ta);
 	aml_tiling_resize_destroy(&tb);
 	aml_tiling_resize_destroy(&tc);
-	aml_layout_dense_destroy(&la);
-	aml_layout_dense_destroy(&lb);
-	aml_layout_dense_destroy(&lc);
+	aml_layout_destroy(&la);
+	aml_layout_destroy(&lb);
+	aml_layout_destroy(&lc);
 	aml_area_munmap(area, a, memsize * sizeof(double));
 	aml_area_munmap(area, b, memsize * sizeof(double));
 	aml_area_munmap(area, c, memsize * sizeof(double));
