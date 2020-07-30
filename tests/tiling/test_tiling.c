@@ -67,16 +67,16 @@ void test_tiling_even_mixed(void)
 				bres = aml_tiling_index(tres,
 							(size_t[]){i, j, k});
 				aml_copy_layout_generic(bres, b, NULL);
-				free(b);
-				free(bres);
+				aml_layout_destroy(&b);
+				aml_layout_destroy(&bres);
 			}
 	assert(memcmp(memory, memoryres, 8 * 10 * 9 * sizeof(int)) == 0);
 
 	assert(!aml_tiling_fprintf(stderr, "test", t));
 	assert(!aml_tiling_fprintf(stderr, "test", tres));
 
-	aml_layout_dense_destroy(&a);
-	aml_layout_dense_destroy(&ares);
+	aml_layout_destroy(&a);
+	aml_layout_destroy(&ares);
 	aml_tiling_resize_destroy(&t);
 	aml_tiling_resize_destroy(&tres);
 
@@ -107,16 +107,16 @@ void test_tiling_even_mixed(void)
 				bres = aml_tiling_index(tres,
 							(size_t[]){k, j, i});
 				aml_copy_layout_generic(bres, b, NULL);
-				free(b);
-				free(bres);
+				aml_layout_destroy(&b);
+				aml_layout_destroy(&bres);
 			}
 	assert(memcmp(memory, memoryres, 8 * 10 * 9 * sizeof(int)) == 0);
 
 	assert(!aml_tiling_fprintf(stderr, "test", t));
 	assert(!aml_tiling_fprintf(stderr, "test", tres));
 
-	aml_layout_dense_destroy(&a);
-	aml_layout_dense_destroy(&ares);
+	aml_layout_destroy(&a);
+	aml_layout_destroy(&ares);
 	aml_tiling_resize_destroy(&t);
 	aml_tiling_resize_destroy(&tres);
 
@@ -183,16 +183,16 @@ void test_tiling_even(void)
 				bres = aml_tiling_index(tres,
 							(size_t[]){k, j, i});
 				aml_copy_layout_generic(bres, b, NULL);
-				free(b);
-				free(bres);
+				aml_layout_destroy(&b);
+				aml_layout_destroy(&bres);
 			}
 	assert(memcmp(memory, memoryres, 8 * 10 * 9 * sizeof(int)) == 0);
 
 	assert(!aml_tiling_fprintf(stderr, "test", t));
 	assert(!aml_tiling_fprintf(stderr, "test", tres));
 
-	aml_layout_dense_destroy(&a);
-	aml_layout_dense_destroy(&ares);
+	aml_layout_destroy(&a);
+	aml_layout_destroy(&ares);
 	aml_tiling_resize_destroy(&t);
 	aml_tiling_resize_destroy(&tres);
 
@@ -232,16 +232,16 @@ void test_tiling_even(void)
 							(size_t[]){i, j, k});
 				assert(b != NULL && bres != NULL);
 				aml_copy_layout_generic(bres, b, NULL);
-				free(b);
-				free(bres);
+				aml_layout_destroy(&b);
+				aml_layout_destroy(&bres);
 			}
 	assert(memcmp(memory, memoryres, 8 * 10 * 9 * sizeof(int)) == 0);
 
 	assert(!aml_tiling_fprintf(stderr, "test", t));
 	assert(!aml_tiling_fprintf(stderr, "test", tres));
 
-	aml_layout_dense_destroy(&a);
-	aml_layout_dense_destroy(&ares);
+	aml_layout_destroy(&a);
+	aml_layout_destroy(&ares);
 	aml_tiling_resize_destroy(&t);
 	aml_tiling_resize_destroy(&tres);
 
@@ -309,16 +309,16 @@ void test_tiling_uneven(void)
 				bres = aml_tiling_index(tres,
 							(size_t[]){k, j, i});
 				aml_copy_layout_generic(bres, b, NULL);
-				free(b);
-				free(bres);
+				aml_layout_destroy(&b);
+				aml_layout_destroy(&bres);
 			}
 	assert(memcmp(memory, memoryres, 7 * 10 * 8 * sizeof(int)) == 0);
 
 	assert(!aml_tiling_fprintf(stderr, "test", t));
 	assert(!aml_tiling_fprintf(stderr, "test", tres));
 
-	aml_layout_dense_destroy(&a);
-	aml_layout_dense_destroy(&ares);
+	aml_layout_destroy(&a);
+	aml_layout_destroy(&ares);
 	aml_tiling_resize_destroy(&t);
 	aml_tiling_resize_destroy(&tres);
 
@@ -358,16 +358,16 @@ void test_tiling_uneven(void)
 				bres = aml_tiling_index(tres,
 							(size_t[]){i, j, k});
 				aml_copy_layout_generic(bres, b, NULL);
-				free(b);
-				free(bres);
+				aml_layout_destroy(&b);
+				aml_layout_destroy(&bres);
 			}
 	assert(memcmp(memory, memoryres, 7 * 10 * 8 * sizeof(int)) == 0);
 
 	assert(!aml_tiling_fprintf(stderr, "test", t));
 	assert(!aml_tiling_fprintf(stderr, "test", tres));
 
-	aml_layout_dense_destroy(&a);
-	aml_layout_dense_destroy(&ares);
+	aml_layout_destroy(&a);
+	aml_layout_destroy(&ares);
 	aml_tiling_resize_destroy(&t);
 	aml_tiling_resize_destroy(&tres);
 }
@@ -434,16 +434,16 @@ void test_tiling_pad_even(void)
 				bres = aml_tiling_index(tres,
 							(size_t[]){k, j, i});
 				aml_copy_layout_generic(bres, b, NULL);
-				free(b);
-				free(bres);
+				aml_layout_destroy(&b);
+				aml_layout_destroy(&bres);
 			}
 	assert(memcmp(memory, memoryres, 8 * 10 * 9 * sizeof(int)) == 0);
 
 	assert(!aml_tiling_fprintf(stderr, "test", t));
 	assert(!aml_tiling_fprintf(stderr, "test", tres));
 
-	aml_layout_dense_destroy(&a);
-	aml_layout_dense_destroy(&ares);
+	aml_layout_destroy(&a);
+	aml_layout_destroy(&ares);
 	aml_tiling_pad_destroy(&t);
 	aml_tiling_pad_destroy(&tres);
 
@@ -481,16 +481,16 @@ void test_tiling_pad_even(void)
 				bres = aml_tiling_index(tres,
 							(size_t[]){i, j, k});
 				aml_copy_layout_generic(bres, b, NULL);
-				free(b);
-				free(bres);
+				aml_layout_destroy(&b);
+				aml_layout_destroy(&bres);
 			}
 	assert(memcmp(memory, memoryres, 8 * 10 * 9 * sizeof(int)) == 0);
 
 	assert(!aml_tiling_fprintf(stderr, "test", t));
 	assert(!aml_tiling_fprintf(stderr, "test", tres));
 
-	aml_layout_dense_destroy(&a);
-	aml_layout_dense_destroy(&ares);
+	aml_layout_destroy(&a);
+	aml_layout_destroy(&ares);
 	aml_tiling_pad_destroy(&t);
 	aml_tiling_pad_destroy(&tres);
 }
@@ -564,8 +564,8 @@ void test_tiling_pad_uneven(void)
 				bres = aml_tiling_index(tres,
 							(size_t[]){k, j, i});
 				aml_copy_layout_generic(bres, b, NULL);
-				free(b);
-				free(bres);
+				aml_layout_destroy(&b);
+				aml_layout_destroy(&bres);
 			}
 
 	for (size_t i = 0; i < 9; i++)
@@ -581,8 +581,8 @@ void test_tiling_pad_uneven(void)
 	assert(!aml_tiling_fprintf(stderr, "test", t));
 	assert(!aml_tiling_fprintf(stderr, "test", tres));
 
-	aml_layout_dense_destroy(&a);
-	aml_layout_dense_destroy(&ares);
+	aml_layout_destroy(&a);
+	aml_layout_destroy(&ares);
 	aml_tiling_pad_destroy(&t);
 	aml_tiling_pad_destroy(&tres);
 
@@ -622,8 +622,8 @@ void test_tiling_pad_uneven(void)
 				bres = aml_tiling_index(tres,
 							(size_t[]){i, j, k});
 				aml_copy_layout_generic(bres, b, NULL);
-				free(b);
-				free(bres);
+				aml_layout_destroy(&b);
+				aml_layout_destroy(&bres);
 			}
 
 	for (size_t i = 0; i < 9; i++)
@@ -639,8 +639,8 @@ void test_tiling_pad_uneven(void)
 	assert(!aml_tiling_fprintf(stderr, "test", t));
 	assert(!aml_tiling_fprintf(stderr, "test", tres));
 
-	aml_layout_dense_destroy(&a);
-	aml_layout_dense_destroy(&ares);
+	aml_layout_destroy(&a);
+	aml_layout_destroy(&ares);
 	aml_tiling_pad_destroy(&t);
 	aml_tiling_pad_destroy(&tres);
 }

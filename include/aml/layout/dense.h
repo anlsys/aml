@@ -82,12 +82,6 @@ int aml_layout_dense_create(struct aml_layout **layout,
 			    const size_t *pitch);
 
 /**
- * Function to free a dense layout.
- * @param[in,out] layout: The layout to deallocate. NULL on return.
- **/
-void aml_layout_dense_destroy(struct aml_layout **layout);
-
-/**
  * Deref operator for dense layout in AML_ORDER_COLUMN_MAJOR.
  * Also used as the deref operator for this type of layout.
  * Does not check its argument. If data is NULL, or coords are out

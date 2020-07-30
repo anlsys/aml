@@ -128,14 +128,6 @@ int aml_layout_dense_create(struct aml_layout **layout,
 	return AML_SUCCESS;
 }
 
-void aml_layout_dense_destroy(struct aml_layout **l)
-{
-	if (l == NULL || *l == NULL)
-		return;
-	free(*l);
-	*l = NULL;
-}
-
 /*******************************************************************************
  * COLUMN OPERATORS:
  ******************************************************************************/
@@ -394,20 +386,20 @@ int aml_layout_column_fprintf(const struct aml_layout_data *data,
 	return AML_SUCCESS;
 }
 
-
 struct aml_layout_ops aml_layout_column_ops = {
-	aml_layout_column_deref,
-	aml_layout_column_deref,
-	aml_layout_dense_rawptr,
-	aml_layout_column_order,
-	aml_layout_column_dims,
-	aml_layout_column_dims,
-	aml_layout_dense_ndims,
-	aml_layout_dense_element_size,
-	aml_layout_column_reshape,
-	aml_layout_column_slice,
-	aml_layout_column_slice,
-	aml_layout_column_fprintf,
+        aml_layout_column_deref,
+        aml_layout_column_deref,
+        aml_layout_dense_rawptr,
+        aml_layout_column_order,
+        aml_layout_column_dims,
+        aml_layout_column_dims,
+        aml_layout_dense_ndims,
+        aml_layout_dense_element_size,
+        aml_layout_column_reshape,
+        aml_layout_column_slice,
+        aml_layout_column_slice,
+        aml_layout_column_fprintf,
+        NULL,
 };
 
 /*******************************************************************************
@@ -595,17 +587,17 @@ int aml_layout_row_fprintf(const struct aml_layout_data *data,
 }
 
 struct aml_layout_ops aml_layout_row_ops = {
-	aml_layout_row_deref,
-	aml_layout_column_deref,
-	aml_layout_dense_rawptr,
-	aml_layout_row_order,
-	aml_layout_row_dims,
-	aml_layout_column_dims,
-	aml_layout_dense_ndims,
-	aml_layout_dense_element_size,
-	aml_layout_row_reshape,
-	aml_layout_row_slice,
-	aml_layout_row_slice_native,
-	aml_layout_row_fprintf,
+        aml_layout_row_deref,
+        aml_layout_column_deref,
+        aml_layout_dense_rawptr,
+        aml_layout_row_order,
+        aml_layout_row_dims,
+        aml_layout_column_dims,
+        aml_layout_dense_ndims,
+        aml_layout_dense_element_size,
+        aml_layout_row_reshape,
+        aml_layout_row_slice,
+        aml_layout_row_slice_native,
+        aml_layout_row_fprintf,
+        NULL,
 };
-

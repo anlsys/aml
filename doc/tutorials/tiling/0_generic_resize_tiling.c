@@ -69,7 +69,7 @@ int fill_tiling(struct aml_tiling *tiling)
 			}
 		}
 
-		aml_layout_dense_destroy(&ltile);
+		aml_layout_destroy(&ltile);
 	}
 	return AML_SUCCESS;
 }
@@ -146,8 +146,8 @@ int main(int argc, char **argv)
 	/* Destroy everything */
 	aml_tiling_resize_destroy(&tiling_c);
 	aml_tiling_resize_destroy(&tiling_f);
-	aml_layout_dense_destroy(&layout_c);
-	aml_layout_dense_destroy(&layout_f);
+	aml_layout_destroy(&layout_c);
+	aml_layout_destroy(&layout_f);
 	aml_area_munmap(area, mat, sizeof(double) * x * y);
 
 	aml_finalize();

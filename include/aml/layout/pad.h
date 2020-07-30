@@ -45,11 +45,27 @@ struct aml_layout_pad {
 	void *neutral;
 };
 
-int aml_layout_pad_create(struct aml_layout **layout, const int order,
-			  struct aml_layout *target, const size_t *dim,
-			  void *neutral);
+/**
+ * Creates a padded layout on top of a target layout, and takes ownership of it
+ * (destroy will allow destroy the target layout).
+ * @param layout a pointer to where to store a newly allocated layout.
+ * @param order the order in which dimensions are organized.
+ * @param target targeted layout.
+ * @param dims the number of elements along each dimension of the layout,
+ * including targeted layout and its pad
+ * @param neutral a pointer to a neutral element to fill the pad with (copied
+ * internally).
+ * @return -AML_ENOMEM if layout allocation failed
+ * @return -AML_EINVAL if target, dims, or neutral are NULL
+ * @return AML_SUCCESS if creation succeeded.
+ **/
+int aml_layout_pad_create(struct aml_layout **layout,
+                          const int order,
+                          struct aml_layout *target,
+                          const size_t *dims,
+                          void *neutral);
 
-void aml_layout_pad_destroy(struct aml_layout **layout);
+void aml_layout_pad_destroy(struct aml_layout *layout);
 
 /**
  * Pre-existing operators for padded layout

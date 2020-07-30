@@ -106,8 +106,8 @@ int main(int argc, char *argv[])
 	aml_dma_linux_par_destroy(&dma);
 	aml_tiling_resize_destroy(&src_tiling);
 	aml_tiling_resize_destroy(&scratch_tiling);
-	aml_layout_dense_destroy(&source);
-	aml_layout_dense_destroy(&scratch_layout);
+	aml_layout_destroy(&source);
+	aml_layout_destroy(&scratch_layout);
 	aml_area_munmap(&aml_area_linux, dst, TILESIZE*_SC_PAGE_SIZE*NBTILES);
 	aml_area_munmap(&aml_area_linux, src, TILESIZE*_SC_PAGE_SIZE*NBTILES);
 	aml_finalize();

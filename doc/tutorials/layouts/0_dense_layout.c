@@ -70,8 +70,8 @@ int main(int argc, char **argv)
 	aml_layout_fprintf(stderr, "layout_f", layout_f);
 	print_layout(layout_f);
 
-	aml_layout_dense_destroy(&layout_c);
-	aml_layout_dense_destroy(&layout_f);
+	aml_layout_destroy(&layout_c);
+	aml_layout_destroy(&layout_f);
 	aml_area_munmap(area, array, sizeof(double) * x * y);
 
 	aml_finalize();

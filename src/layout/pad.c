@@ -106,12 +106,13 @@ int aml_layout_pad_create(struct aml_layout **layout, const int order,
 	return AML_SUCCESS;
 }
 
-void aml_layout_pad_destroy(struct aml_layout **l)
+void aml_layout_pad_destroy(struct aml_layout *l)
 {
-	if (l == NULL || *l == NULL)
-		return;
-	free(*l);
-	*l = NULL;
+	assert(l != NULL);
+
+	struct aml_layout_pad *data = (struct aml_layout_pad *)l->data;
+	aml_layout_destroy(&data->target);
+	free(l);
 }
 
 /*******************************************************************************
@@ -198,18 +199,19 @@ int aml_layout_pad_column_fprintf(const struct aml_layout_data *data,
 }
 
 struct aml_layout_ops aml_layout_pad_column_ops = {
-	aml_layout_pad_column_deref,
-	aml_layout_pad_column_deref,
-	aml_layout_pad_rawptr,
-	aml_layout_pad_column_order,
-	aml_layout_pad_column_dims,
-	aml_layout_pad_column_dims,
-	aml_layout_pad_ndims,
-	aml_layout_pad_element_size,
-	NULL,
-	NULL,
-	NULL,
-	aml_layout_pad_column_fprintf,
+        aml_layout_pad_column_deref,
+        aml_layout_pad_column_deref,
+        aml_layout_pad_rawptr,
+        aml_layout_pad_column_order,
+        aml_layout_pad_column_dims,
+        aml_layout_pad_column_dims,
+        aml_layout_pad_ndims,
+        aml_layout_pad_element_size,
+        NULL,
+        NULL,
+        NULL,
+        aml_layout_pad_column_fprintf,
+        aml_layout_pad_destroy,
 };
 
 /*******************************************************************************
@@ -285,17 +287,17 @@ int aml_layout_pad_row_fprintf(const struct aml_layout_data *data,
 }
 
 struct aml_layout_ops aml_layout_pad_row_ops = {
-	aml_layout_pad_row_deref,
-	aml_layout_pad_column_deref,
-	aml_layout_pad_rawptr,
-	aml_layout_pad_row_order,
-	aml_layout_pad_row_dims,
-	aml_layout_pad_column_dims,
-	aml_layout_pad_ndims,
-	aml_layout_pad_element_size,
-	NULL,
-	NULL,
-	NULL,
-	aml_layout_pad_row_fprintf,
+        aml_layout_pad_row_deref,
+        aml_layout_pad_column_deref,
+        aml_layout_pad_rawptr,
+        aml_layout_pad_row_order,
+        aml_layout_pad_row_dims,
+        aml_layout_pad_column_dims,
+        aml_layout_pad_ndims,
+        aml_layout_pad_element_size,
+        NULL,
+        NULL,
+        NULL,
+        aml_layout_pad_row_fprintf,
+        aml_layout_pad_destroy,
 };
-

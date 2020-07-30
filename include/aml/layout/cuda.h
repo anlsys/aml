@@ -80,14 +80,6 @@ int aml_layout_cuda_create(struct aml_layout **out,
                            const size_t *stride,
                            const size_t *pitch);
 
-/**
- * Destroy a layout obtained with aml_layout_cuda_create().
- * @param[in, out] layout: A pointer to the layout to destroy.
- * On exit, the pointer content is set to NULL.
- * @return AML_SUCCESS or -AML_EINVAL if layout or *layout is NULL.
- **/
-int aml_layout_cuda_destroy(struct aml_layout **layout);
-
 /** Always returns the pointer to device_ptr, whatever the coordinates. **/
 void *aml_layout_cuda_deref(const struct aml_layout_data *data,
                             const size_t *coords);

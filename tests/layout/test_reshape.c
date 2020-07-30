@@ -75,9 +75,8 @@ static void test_reshape_discontiguous(void)
 						assert(i == *(int *)ptr);
 					}
 
-	free(a);
-	free(b);
-	free(c);
+	aml_layout_destroy(&b);
+	aml_layout_destroy(&c);
 
 	assert(aml_layout_dense_create(&a,
 				       (void *)memory,
@@ -111,9 +110,8 @@ static void test_reshape_discontiguous(void)
 						assert(i == *(int *)ptr);
 					}
 
-	free(a);
-	free(b);
-	free(c);
+	aml_layout_destroy(&b);
+	aml_layout_destroy(&c);
 }
 
 static void test_reshape_strided(void)
@@ -172,9 +170,8 @@ static void test_reshape_strided(void)
 					assert(i == *(int *)ptr);
 				}
 
-	free(a);
-	free(b);
-	free(c);
+	aml_layout_destroy(&b);
+	aml_layout_destroy(&c);
 
 	assert(aml_layout_dense_create(&a,
 				       (void *)memory,
@@ -204,9 +201,8 @@ static void test_reshape_strided(void)
 					assert(i == *(int *)ptr);
 				}
 
-	free(a);
-	free(b);
-	free(c);
+	aml_layout_destroy(&b);
+	aml_layout_destroy(&c);
 }
 
 int main(int argc, char *argv[])

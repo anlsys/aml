@@ -107,9 +107,11 @@ destroy your layout when you're done using it.
 
 .. code-block:: c
 
-   aml_layout_dense_destroy(&layout_c);
-   aml_layout_dense_destroy(&layout_f);
+   aml_layout_destroy(&layout_c);
+   aml_layout_destroy(&layout_f);
 
+Note that destroy is one of many operations that are generic to the layout
+type.
 
 Generic operations on an AML layout
 -----------------------------------

@@ -165,7 +165,6 @@ aml_tiling_pad_column_index(const struct aml_tiling_data *t,
 		int order = aml_layout_order(d->layout);
 
 		if (AML_LAYOUT_ORDER(order) == AML_LAYOUT_ORDER_COLUMN_MAJOR) {
-			/* WARNING: OWNERSHIP!!! */
 			aml_layout_pad_create(&p_layout,
 					      AML_LAYOUT_ORDER_COLUMN_MAJOR,
 					      ret, d->tile_dims, d->neutral);
@@ -174,7 +173,6 @@ aml_tiling_pad_column_index(const struct aml_tiling_data *t,
 
 			for (size_t i = 0; i < ndims; i++)
 				row_dims[i] = d->tile_dims[ndims - i - 1];
-			/* WARNING: OWNERSHIP!!! */
 			aml_layout_pad_create(&p_layout,
 					      AML_LAYOUT_ORDER_ROW_MAJOR,
 					      ret, row_dims, d->neutral);
@@ -342,7 +340,6 @@ aml_tiling_pad_row_index(const struct aml_tiling_data *t, const size_t *coords)
 		int order = aml_layout_order(d->layout);
 
 		if (AML_LAYOUT_ORDER(order) == AML_LAYOUT_ORDER_COLUMN_MAJOR) {
-			/* WARNING: OWNERSHIP!!! */
 			aml_layout_pad_create(&p_layout,
 					      AML_LAYOUT_ORDER_COLUMN_MAJOR,
 					      ret, d->tile_dims, d->neutral);
@@ -351,7 +348,6 @@ aml_tiling_pad_row_index(const struct aml_tiling_data *t, const size_t *coords)
 
 			for (size_t i = 0; i < ndims; i++)
 				row_dims[i] = d->tile_dims[ndims - i - 1];
-			/* WARNING: OWNERSHIP!!! */
 			aml_layout_pad_create(&p_layout,
 					      AML_LAYOUT_ORDER_ROW_MAJOR,
 					      ret, row_dims, d->neutral);

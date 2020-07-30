@@ -43,8 +43,7 @@ void test_pad(int (*layout_create) (struct aml_layout **layout,
 	ret_dims[1] = 12;
 	assert(*(float *)aml_layout_deref(b, ret_dims) == one);
 	test_layout_fprintf(stderr, "test-pad", b);
-	aml_layout_pad_destroy(&b);
-	free(a);
+	aml_layout_destroy(&b);
 }
 
 int main(int argc, char *argv[])

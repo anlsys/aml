@@ -451,6 +451,11 @@ struct aml_layout_ops {
 	 **/
 	int (*fprintf)(const struct aml_layout_data *data,
 		       FILE *stream, const char *prefix);
+
+	/**
+	 * Destroys the layout and frees all associated memory.
+	 **/
+	void (*destroy)(struct aml_layout *);
 };
 
 /**
@@ -617,6 +622,11 @@ int aml_layout_slice(const struct aml_layout *layout,
 int aml_layout_fprintf(FILE *stream, const char *prefix,
 		       const struct aml_layout *layout);
 
+/**
+ * Destroy (free) a layout, irrespective of its type.
+ * @param[in,out] layout the layout to destroy. NULL on return.
+ **/
+void aml_layout_destroy(struct aml_layout **layout);
 
 ////////////////////////////////////////////////////////////////////////////////
 

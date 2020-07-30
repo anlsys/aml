@@ -77,8 +77,8 @@ main(void)
 		return 1;
 
 	// cleanup
-	aml_layout_dense_destroy(&src_layout);
-	aml_layout_dense_destroy(&dst_layout);
+	aml_layout_destroy(&src_layout);
+	aml_layout_destroy(&dst_layout);
 	aml_dma_linux_par_destroy(&dma);
 
 	return 0;
