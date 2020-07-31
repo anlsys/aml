@@ -100,7 +100,10 @@ int dgemm_tiled(struct aml_tiling *tiling_a, struct aml_tiling *tiling_b,
 						       (size_t[]){l, j});
 				dgemm_layout(mt, nt, kt, ltile_a, ltile_b,
 					     ltile_c);
+				aml_layout_destroy(&ltile_a);
+				aml_layout_destroy(&ltile_b);
 			}
+			aml_layout_destroy(&ltile_c);
 		}
 	}
 	return AML_SUCCESS;
@@ -183,6 +186,7 @@ int main(int argc, char **argv)
 	free(a);
 	free(b);
 	free(c);
+	free(c_ref);
 
 	aml_finalize();
 
