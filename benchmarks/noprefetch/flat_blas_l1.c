@@ -25,7 +25,7 @@
 
 /* Look into another way to define these parameters */
 
-#define DEFAULT_ARRAY_SIZE (1UL << 20)
+#define DEFAULT_ARRAY_SIZE (1UL << 15)
 
 #ifdef NTIMES
 #if NTIMES <= 1
@@ -43,8 +43,6 @@
 #ifndef MAX
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif
-
-extern int omp_get_num_threads(void);
 
 static double *a, *b, *c;
 

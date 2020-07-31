@@ -24,11 +24,11 @@
 struct aml_task_out *aml_task_mockup_work(struct aml_task_in *in)
 {
 	(void)in;
-	struct timespec us;
+	long int us = 1000 * (rand() % 10);
+	long int count = 0;
+	for (long int i = 0; i < us; i++)
+		count += i ^ (count + i * 42);
 
-	us.tv_sec = 0;
-	us.tv_nsec = 1000 * (rand() % 10);
-	nanosleep(&us, NULL);
 	return NULL;
 }
 

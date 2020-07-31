@@ -409,7 +409,7 @@ void aml_active_sched_destroy(struct aml_sched **sched)
 {
 	struct aml_active_sched *data;
 
-	if (sched == NULL || *sched != NULL)
+	if (sched == NULL || *sched == NULL)
 		return;
 
 	data = (struct aml_active_sched *) (*sched)->data;

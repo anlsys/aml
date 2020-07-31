@@ -126,6 +126,7 @@ int main(int argc, char **argv)
 	aml_layout_destroy(&lay_part);
 	aml_layout_destroy(&layout_elements);
 	aml_layout_destroy(&new_layout);
+	aml_layout_destroy(&layout_energy);
 	aml_area_munmap(area, particles, sizeof(struct particle) * size);
 	free(array_coords);
 

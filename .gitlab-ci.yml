@@ -118,6 +118,33 @@ make:out-of-tree:
       - config.log
       - tests/*.log
 
+make:valgrind:
+  tags:
+    - nix
+    - kvm
+  stage: build
+  except:
+    - /^wip.*/
+    - /^WIP.*/
+  variables:
+    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter -Wno-builtin-declaration-mismatch"
+    VERBOSE: "1"
+    OMP_NUM_THREADS: "1"
+  script:
+    - |
+      nix-shell --run bash <<< '
+        ./autogen.sh
+        mkdir build
+        ./configure --prefix=`pwd`/build --enable-valgrind
+        make
+        make check-valgrind
+      '
+  artifacts:
+    when: on_failure
+    paths:
+      - config.log
+      - tests/*.log
+
 make:knl:
   stage: build
   except:

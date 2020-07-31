@@ -10,7 +10,6 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <omp.h>
 #include <stdio.h>
 #include <unistd.h>
 
@@ -48,8 +47,6 @@
 #ifndef abs
 #define abs(a) ((a) >= 0 ? (a) : -(a))
 #endif
-
-extern int omp_get_num_threads(void);
 
 static double *pt;
 
@@ -227,7 +224,7 @@ double run_idmax(size_t tilesize,
 
 #pragma omp parallel
 	{
-		double local_max;
+		double local_max = -DBL_MAX;
 		size_t local_maxid;
 #pragma omp parallel for
 		for (size_t i = 0; i < ntiles; i++) {

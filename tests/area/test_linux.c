@@ -150,5 +150,6 @@ int main(void)
 	test_multiple_nodes();
 
 	close(fd);
+	numa_bitmask_free(nodeset);
 	return 0;
 }
