@@ -125,6 +125,33 @@ int aml_layout_reshape_create(struct aml_layout **layout,
 	return AML_SUCCESS;
 }
 
+int aml_layout_reshape_duplicate(const struct aml_layout *layout,
+                                 struct aml_layout **dest)
+{
+	const struct aml_layout_data_reshape *data;
+	struct aml_layout_data_reshape *dret;
+	struct aml_layout *ret;
+	int err;
+
+	data = (const struct aml_layout_data_reshape *)layout->data;
+
+	if (layout->data == NULL || dest == NULL)
+		return -AML_EINVAL;
+
+	err = aml_layout_reshape_alloc(&ret, data->ndims, data->target_ndims);
+	if (err)
+		return err;
+
+	ret->ops = layout->ops;
+	dret = (struct aml_layout_data_reshape *)ret->data;
+	aml_layout_duplicate(data->target, &dret->target);
+	/* small optimization, copying all data at the end of the structure */
+	memcpy(dret->dims, data->dims,
+	       (2 * data->ndims + data->target_ndims) * sizeof(size_t));
+	*dest = ret;
+	return AML_SUCCESS;
+}
+
 void aml_layout_reshape_destroy(struct aml_layout *l)
 {
 	assert(l != NULL);
@@ -246,6 +273,7 @@ struct aml_layout_ops aml_layout_reshape_column_ops = {
         NULL,
         NULL,
         aml_layout_reshape_column_fprintf,
+        aml_layout_reshape_duplicate,
         aml_layout_reshape_destroy,
 };
 
@@ -337,5 +365,6 @@ struct aml_layout_ops aml_layout_reshape_row_ops = {
         NULL,
         NULL,
         aml_layout_reshape_row_fprintf,
+        aml_layout_reshape_duplicate,
         aml_layout_reshape_destroy,
 };

@@ -128,6 +128,35 @@ int aml_layout_dense_create(struct aml_layout **layout,
 	return AML_SUCCESS;
 }
 
+int aml_layout_dense_duplicate(const struct aml_layout *layout,
+                               struct aml_layout **dest)
+{
+	const struct aml_layout_dense *data;
+	struct aml_layout_dense *dret;
+	struct aml_layout *ret;
+	int err;
+
+	data = (const struct aml_layout_dense *)layout->data;
+
+	if (layout->data == NULL || dest == NULL)
+		return -AML_EINVAL;
+
+	err = aml_layout_dense_alloc(&ret, data->ndims);
+	if (err)
+		return err;
+
+	ret->ops = layout->ops;
+	dret = (struct aml_layout_dense *)ret->data;
+	dret->ptr = data->ptr;
+
+	/* small optimization by copying the contents of the end part of our
+	 * single allocation (everything after the _data struct).
+	 */
+	memcpy(dret->dims, data->dims, 3 * data->ndims * sizeof(size_t));
+	*dest = ret;
+	return AML_SUCCESS;
+}
+
 /*******************************************************************************
  * COLUMN OPERATORS:
  ******************************************************************************/
@@ -387,7 +416,7 @@ int aml_layout_column_fprintf(const struct aml_layout_data *data,
 }
 
 struct aml_layout_ops aml_layout_column_ops = {
-        aml_layout_column_deref,
+        .deref = aml_layout_column_deref,
         aml_layout_column_deref,
         aml_layout_dense_rawptr,
         aml_layout_column_order,
@@ -399,6 +428,7 @@ struct aml_layout_ops aml_layout_column_ops = {
         aml_layout_column_slice,
         aml_layout_column_slice,
         aml_layout_column_fprintf,
+        aml_layout_dense_duplicate,
         NULL,
 };
 
@@ -587,7 +617,7 @@ int aml_layout_row_fprintf(const struct aml_layout_data *data,
 }
 
 struct aml_layout_ops aml_layout_row_ops = {
-        aml_layout_row_deref,
+        .deref = aml_layout_row_deref,
         aml_layout_column_deref,
         aml_layout_dense_rawptr,
         aml_layout_row_order,
@@ -599,5 +629,6 @@ struct aml_layout_ops aml_layout_row_ops = {
         aml_layout_row_slice,
         aml_layout_row_slice_native,
         aml_layout_row_fprintf,
+        aml_layout_dense_duplicate,
         NULL,
 };

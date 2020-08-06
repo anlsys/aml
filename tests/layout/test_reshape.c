@@ -56,6 +56,7 @@ static void test_reshape_discontiguous(void)
 				  AML_LAYOUT_ORDER_COLUMN_MAJOR,
 				  5, new_dims_col);
 	test_layout_fprintf(stderr, "test-reshape", c);
+	test_layout_duplicate(c);
 	i = 0;
 	for (size_t j = 0; j < 3; j++)
 		for (size_t k = 0; k < 2; k++)
@@ -91,6 +92,7 @@ static void test_reshape_discontiguous(void)
 				  a,
 				  AML_LAYOUT_ORDER_ROW_MAJOR, 5, new_dims_row);
 	test_layout_fprintf(stderr, "test-reshape", c);
+	test_layout_duplicate(c);
 	i = 0;
 	for (size_t j = 0; j < 3; j++)
 		for (size_t k = 0; k < 2; k++)

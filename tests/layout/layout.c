@@ -134,3 +134,10 @@ void test_layout_fprintf(FILE *stream, const char *prefix,
 {
 	assert(!aml_layout_fprintf(stream, prefix, layout));
 }
+
+void test_layout_duplicate(struct aml_layout *layout)
+{
+	struct aml_layout *l;
+	assert(!aml_layout_duplicate(layout, &l));
+	aml_layout_destroy(&l);
+}

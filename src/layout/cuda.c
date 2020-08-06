@@ -159,5 +159,6 @@ struct aml_layout_ops aml_layout_cuda_ops = {
         .slice = NULL,
         .slice_native = NULL,
         .fprintf = NULL,
+        .duplicate = NULL,
         .destroy = NULL,
 };
