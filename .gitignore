@@ -61,11 +61,8 @@ features.h
 /m4/lt~obsolete.m4
 
 # autotest
-tests/**/*.trs
-tests/**/*.log
-*.test.*
-doc/tutorials/**/*.trs
-doc/tutorials/**/*.log
+*.trs
+*.log
 
 # libtool
 /libtool

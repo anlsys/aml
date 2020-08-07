@@ -103,6 +103,10 @@ void test_layout_base(struct aml_layout *layout);
 void test_layout_fprintf(FILE *stream, const char *prefix,
 			 struct aml_layout *layout);
 
+/**
+ * Duplicate for layouts. Check that we can copy the layout.
+ **/
+void test_layout_duplicate(struct aml_layout *layout);
 //------------------------------------------------------------------------------
 // Testing a dense layout.
 //------------------------------------------------------------------------------

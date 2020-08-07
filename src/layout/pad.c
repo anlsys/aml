@@ -106,6 +106,37 @@ int aml_layout_pad_create(struct aml_layout **layout, const int order,
 	return AML_SUCCESS;
 }
 
+int aml_layout_pad_duplicate(const struct aml_layout *layout,
+                             struct aml_layout **dest)
+{
+	const struct aml_layout_pad *data;
+	struct aml_layout_pad *dret;
+	struct aml_layout *ret;
+	size_t sz;
+	int err;
+
+	data = (const struct aml_layout_pad *)layout->data;
+
+	if (layout->data == NULL || dest == NULL)
+		return -AML_EINVAL;
+
+	err = aml_layout_pad_alloc(&ret, data->ndims, data->element_size);
+	if (err)
+		return err;
+
+	ret->ops = layout->ops;
+	dret = (struct aml_layout_pad *)ret->data;
+	aml_layout_duplicate(data->target, &dret->target);
+	dret->tags = data->tags;
+	/* small optimization to copy everything at the end of our single
+	 * allocation, but careful about neutral and the arrays having a gap
+	 **/
+	sz = ((char *)dret->neutral - (char *)dret->dims) + data->element_size;
+	memcpy(dret->dims, data->dims, sz);
+	*dest = ret;
+	return AML_SUCCESS;
+}
+
 void aml_layout_pad_destroy(struct aml_layout *l)
 {
 	assert(l != NULL);
@@ -211,6 +242,7 @@ struct aml_layout_ops aml_layout_pad_column_ops = {
         NULL,
         NULL,
         aml_layout_pad_column_fprintf,
+        aml_layout_pad_duplicate,
         aml_layout_pad_destroy,
 };
 
@@ -299,5 +331,6 @@ struct aml_layout_ops aml_layout_pad_row_ops = {
         NULL,
         NULL,
         aml_layout_pad_row_fprintf,
+        aml_layout_pad_duplicate,
         aml_layout_pad_destroy,
 };

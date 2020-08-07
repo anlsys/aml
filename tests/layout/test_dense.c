@@ -198,7 +198,8 @@ void test_generics(void)
 	test_slice_dense(layout);
 	test_layout_reshape(layout, 2, new_dims_col);
 	test_layout_fprintf(stderr, "test-dense", layout);
-	free(layout);
+	test_layout_duplicate(layout);
+	aml_layout_destroy(&layout);
 
 	// Test slice and reshape layout row major.
 	assert(aml_layout_dense_create
@@ -207,7 +208,7 @@ void test_generics(void)
 	test_slice_dense(layout);
 	test_layout_reshape(layout, 2, new_dims_row);
 	test_layout_fprintf(stderr, "test-dense", layout);
-	free(layout);
+	aml_layout_destroy(&layout);
 }
 
 int main(int argc, char *argv[])
