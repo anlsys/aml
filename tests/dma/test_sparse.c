@@ -16,6 +16,7 @@
 #include "aml/layout/sparse.h"
 #include "aml/utils/features.h"
 #if HAVE_CUDA != 0
+#include "aml/area/cuda.h"
 #include "aml/dma/cuda.h"
 #include "aml/layout/cuda.h"
 #endif
@@ -120,12 +121,11 @@ void test_dma_cuda()
 	struct aml_dma *dma_to_device, *dma_to_host;
 	struct aml_layout_sparse *ssrc = (struct aml_layout_sparse *)src->data;
 	int device_id = 0;
-	size_t data[ssrc->nptr];
 	void *ptrs[ssrc->nptr];
 
 	// Setup
 	for (size_t i = 0; i < ssrc->nptr; i++)
-		ptrs[i] = data + i;
+		ptrs[i] = aml_area_mmap(&aml_area_cuda, sizeof(size_t), NULL);
 	assert(aml_layout_sparse_create(&dst, ssrc->nptr, ptrs, ssrc->sizes,
 	                                &device_id,
 	                                sizeof(device_id)) == AML_SUCCESS);
@@ -142,6 +142,8 @@ void test_dma_cuda()
 	aml_layout_destroy(&dst);
 	aml_dma_cuda_destroy(&dma_to_device);
 	aml_dma_cuda_destroy(&dma_to_host);
+	for (size_t i = 0; i < ssrc->nptr; i++)
+		aml_area_munmap(&aml_area_cuda, ptrs[i], sizeof(size_t));
 }
 #endif
 
