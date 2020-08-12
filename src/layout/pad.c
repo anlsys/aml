@@ -107,7 +107,7 @@ int aml_layout_pad_create(struct aml_layout **layout, const int order,
 }
 
 int aml_layout_pad_duplicate(const struct aml_layout *layout,
-                             struct aml_layout **dest)
+                             struct aml_layout **out)
 {
 	const struct aml_layout_pad *data;
 	struct aml_layout_pad *dret;
@@ -117,7 +117,7 @@ int aml_layout_pad_duplicate(const struct aml_layout *layout,
 
 	data = (const struct aml_layout_pad *)layout->data;
 
-	if (layout->data == NULL || dest == NULL)
+	if (layout->data == NULL || out == NULL)
 		return -AML_EINVAL;
 
 	err = aml_layout_pad_alloc(&ret, data->ndims, data->element_size);
@@ -133,7 +133,7 @@ int aml_layout_pad_duplicate(const struct aml_layout *layout,
 	 **/
 	sz = ((char *)dret->neutral - (char *)dret->dims) + data->element_size;
 	memcpy(dret->dims, data->dims, sz);
-	*dest = ret;
+	*out = ret;
 	return AML_SUCCESS;
 }
 

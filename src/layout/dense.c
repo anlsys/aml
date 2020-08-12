@@ -129,7 +129,7 @@ int aml_layout_dense_create(struct aml_layout **layout,
 }
 
 int aml_layout_dense_duplicate(const struct aml_layout *layout,
-                               struct aml_layout **dest)
+                               struct aml_layout **out)
 {
 	const struct aml_layout_dense *data;
 	struct aml_layout_dense *dret;
@@ -138,7 +138,7 @@ int aml_layout_dense_duplicate(const struct aml_layout *layout,
 
 	data = (const struct aml_layout_dense *)layout->data;
 
-	if (layout->data == NULL || dest == NULL)
+	if (layout->data == NULL || out == NULL)
 		return -AML_EINVAL;
 
 	err = aml_layout_dense_alloc(&ret, data->ndims);
@@ -153,7 +153,7 @@ int aml_layout_dense_duplicate(const struct aml_layout *layout,
 	 * single allocation (everything after the _data struct).
 	 */
 	memcpy(dret->dims, data->dims, 3 * data->ndims * sizeof(size_t));
-	*dest = ret;
+	*out = ret;
 	return AML_SUCCESS;
 }
 

@@ -126,7 +126,7 @@ int aml_layout_reshape_create(struct aml_layout **layout,
 }
 
 int aml_layout_reshape_duplicate(const struct aml_layout *layout,
-                                 struct aml_layout **dest)
+                                 struct aml_layout **out)
 {
 	const struct aml_layout_data_reshape *data;
 	struct aml_layout_data_reshape *dret;
@@ -135,7 +135,7 @@ int aml_layout_reshape_duplicate(const struct aml_layout *layout,
 
 	data = (const struct aml_layout_data_reshape *)layout->data;
 
-	if (layout->data == NULL || dest == NULL)
+	if (layout->data == NULL || out == NULL)
 		return -AML_EINVAL;
 
 	err = aml_layout_reshape_alloc(&ret, data->ndims, data->target_ndims);
@@ -148,7 +148,7 @@ int aml_layout_reshape_duplicate(const struct aml_layout *layout,
 	/* small optimization, copying all data at the end of the structure */
 	memcpy(dret->dims, data->dims,
 	       (2 * data->ndims + data->target_ndims) * sizeof(size_t));
-	*dest = ret;
+	*out = ret;
 	return AML_SUCCESS;
 }
 
