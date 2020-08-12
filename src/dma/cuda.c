@@ -225,8 +225,6 @@ int aml_layout_cuda_copy_sparse(struct aml_layout *dst,
 {
 	struct aml_layout_sparse *ssrc = (struct aml_layout_sparse *)src->data;
 	struct aml_layout_sparse *sdst = (struct aml_layout_sparse *)dst->data;
-	int src_dev = *(int *)ssrc->metadata;
-	int dst_dev = *(int *)sdst->metadata;
 	struct aml_dma_cuda_data *dma_data = (struct aml_dma_cuda_data *)arg;
 	(void)arg;
 
@@ -241,6 +239,8 @@ int aml_layout_cuda_copy_sparse(struct aml_layout *dst,
 			                    dma_data->stream) != cudaSuccess)
 				return -AML_FAILURE;
 	} else if (dma_data->kind == cudaMemcpyDeviceToDevice) {
+		int src_dev = ssrc->metadata ? *(int *)ssrc->metadata : 0;
+		int dst_dev = sdst->metadata ? *(int *)sdst->metadata : 0;
 		for (size_t i = 0; i < ssrc->nptr; i++)
 			if (cudaMemcpyPeerAsync(
 			            sdst->ptrs[i], dst_dev, sdst->ptrs[i],

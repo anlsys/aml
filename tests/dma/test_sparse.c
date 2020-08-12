@@ -136,7 +136,7 @@ void test_dma_cuda()
 
 	// Test
 	test_dma_copy(src, dst, cmp, dma_to_device, dma_to_host,
-	              aml_layout_linux_copy_sparse, NULL);
+	              aml_layout_cuda_copy_sparse, NULL);
 
 	// Cleanup
 	aml_layout_destroy(&dst);
