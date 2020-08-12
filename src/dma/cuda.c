@@ -12,6 +12,7 @@
 
 #include "aml/dma/cuda.h"
 #include "aml/layout/cuda.h"
+#include "aml/layout/sparse.h"
 
 /**
  * Callback on dma stream to update all requests status
@@ -215,6 +216,40 @@ int aml_dma_cuda_copy_1D(struct aml_layout *dst,
 			return -AML_FAILURE;
 	} else
 		memcpy(dst_ptr, src_ptr, size);
+	return AML_SUCCESS;
+}
+
+int aml_layout_cuda_copy_sparse(struct aml_layout *dst,
+                                const struct aml_layout *src,
+                                void *arg)
+{
+	struct aml_layout_sparse *ssrc = (struct aml_layout_sparse *)src->data;
+	struct aml_layout_sparse *sdst = (struct aml_layout_sparse *)dst->data;
+	int src_dev = *(int *)ssrc->metadata;
+	int dst_dev = *(int *)sdst->metadata;
+	struct aml_dma_cuda_data *dma_data = (struct aml_dma_cuda_data *)arg;
+	(void)arg;
+
+	assert(ssrc->nptr == sdst->nptr);
+	assert(!memcmp(ssrc->sizes, sdst->sizes, sizeof(size_t) * ssrc->nptr));
+
+	if (dma_data->kind == cudaMemcpyHostToDevice ||
+	    dma_data->kind == cudaMemcpyDeviceToHost) {
+		for (size_t i = 0; i < ssrc->nptr; i++)
+			if (cudaMemcpyAsync(sdst->ptrs[i], ssrc->ptrs[i],
+			                    ssrc->sizes[i], dma_data->kind,
+			                    dma_data->stream) != cudaSuccess)
+				return -AML_FAILURE;
+	} else if (dma_data->kind == cudaMemcpyDeviceToDevice) {
+		for (size_t i = 0; i < ssrc->nptr; i++)
+			if (cudaMemcpyPeerAsync(
+			            sdst->ptrs[i], dst_dev, sdst->ptrs[i],
+			            src_dev, ssrc->sizes[i],
+			            dma_data->stream) != cudaSuccess)
+				return -AML_FAILURE;
+	} else
+		for (size_t i = 0; i < ssrc->nptr; i++)
+			memcpy(sdst->ptrs[i], ssrc->ptrs[i], ssrc->sizes[i]);
 	return AML_SUCCESS;
 }
 

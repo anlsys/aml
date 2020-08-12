@@ -11,6 +11,8 @@
 #ifndef AML_LAYOUT_CUDA_H
 #define AML_LAYOUT_CUDA_H
 
+#include <aml/layout/sparse.h>
+
 /**
  * @defgroup aml_layout_cuda "AML Layout Cuda"
  * @brief Layout on device pointer.
@@ -79,6 +81,32 @@ int aml_layout_cuda_create(struct aml_layout **out,
                            const size_t *dims,
                            const size_t *stride,
                            const size_t *pitch);
+
+/**
+ * Create a new sparse layout on a specific device with a set
+ * of pointers allocated on this device.
+ * Destroy with aml_layout_destroy() or free.
+ * @see aml_layout_sparse_create()
+ * @param[out] layout: A pointer where to store a newly allocated layout.
+ * @param[in] nptr: The number of pointers in the layout.
+ * @param[in] ptrs: The pointer to the data structure described by this layout.
+ * dimension. If NULL, pitch is set to the number of elements in each dimension.
+ * @param[in] sizes: The size of memory area pointed to by each pointer.
+ * @param[in] device_id: The device number where pointers are allocated.
+ * @return -AML_ENOMEM if layout allocation failed.
+ * @return -AML_EINVAL if layout is NULL.
+ * @return AML_SUCCESS if creation succeeded.
+ * @see aml_layout_sparse
+ */
+inline int aml_layout_cuda_sparse_create(struct aml_layout **layout,
+                                         const size_t nptr,
+                                         void **ptrs,
+                                         const size_t *sizes,
+                                         int device_id)
+{
+	return aml_layout_sparse_create(layout, nptr, ptrs, sizes, &device_id,
+	                                sizeof(int));
+}
 
 /** Always returns the pointer to device_ptr, whatever the coordinates. **/
 void *aml_layout_cuda_deref(const struct aml_layout_data *data,

@@ -58,7 +58,8 @@ LAYOUT_TESTS = \
 TILING_TESTS = tiling/test_tiling
 
 DMA_TESTS = dma/test_dma_linux_seq \
-		  dma/test_dma_linux_par
+		  dma/test_dma_linux_par \
+		  dma/test_sparse
 
 SCRATCH_TESTS = scratch/test_scratch_seq \
 		scratch/test_scratch_par

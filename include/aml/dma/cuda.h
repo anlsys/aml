@@ -110,6 +110,12 @@ int aml_dma_cuda_destroy(struct aml_dma **dma);
 int aml_dma_cuda_copy_1D(struct aml_layout *dst,
                          const struct aml_layout *src,
                          void *arg);
+
+/** aml_dma_cuda copy operator between sparse layouts **/
+int aml_layout_cuda_copy_sparse(struct aml_layout *dst,
+                                const struct aml_layout *src,
+                                void *arg);
+
 /**
  * @}
  **/

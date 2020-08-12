@@ -110,7 +110,22 @@ void aml_dma_linux_seq_destroy(struct aml_dma **dma);
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_linux_seq_do_copy(struct aml_dma_linux_seq_data *dma,
-			      struct aml_dma_request_linux_seq *req);
+                              struct aml_dma_request_linux_seq *req);
+
+/**
+ * Dma operator for copying between sparse layouts allocated
+ * in linux areas.
+ * @param dst: A sparse layout to where data is to be copied.
+ * @param src: A sparse layout from where data is to be copied.
+ * src and dst layouts must have the same number of pointers and
+ * pointers must be of the same size and arranged in the same order
+ * in the layout.
+ * @param arg: Unused.
+ * @return AML_SUCCESS.
+ **/
+int aml_layout_linux_copy_sparse(struct aml_layout *dst,
+                                 const struct aml_layout *src,
+                                 void *arg);
 
 /**
  * @}

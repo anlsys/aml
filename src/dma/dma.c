@@ -8,10 +8,12 @@
  * SPDX-License-Identifier: BSD-3-Clause
 *******************************************************************************/
 
-#include "aml.h"
-#include "aml/layout/native.h"
-
 #include <assert.h>
+
+#include "aml.h"
+
+#include "aml/layout/native.h"
+#include "aml/layout/sparse.h"
 
 /*******************************************************************************
  * Generic DMA Copy implementations
@@ -66,6 +68,24 @@ int aml_copy_layout_generic(struct aml_layout *dst,
 	aml_copy_layout_generic_helper(d, dst, src, elem_number, elem_size,
 				       coords);
 	return 0;
+}
+
+int aml_layout_linux_copy_sparse(struct aml_layout *dst,
+                                 const struct aml_layout *src,
+                                 void *arg)
+{
+	struct aml_layout_sparse *ssrc, *sdst;
+	(void)arg;
+
+	ssrc = (struct aml_layout_sparse *)src->data;
+	sdst = (struct aml_layout_sparse *)dst->data;
+	assert(ssrc->nptr == sdst->nptr);
+	assert(!memcmp(ssrc->sizes, sdst->sizes, sizeof(size_t) * ssrc->nptr));
+
+	for (size_t i = 0; i < ssrc->nptr; i++)
+		memcpy(sdst->ptrs[i], ssrc->ptrs[i], ssrc->sizes[i]);
+
+	return AML_SUCCESS;
 }
 
 static inline void aml_copy_layout_transform_generic_helper(
