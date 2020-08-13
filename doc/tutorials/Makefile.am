@@ -1,6 +1,6 @@
 AM_COLOR_TESTS = yes
 
-AM_CFLAGS = -I$(top_srcdir)/include $(PTHREAD_CFLAGS)
+AM_CFLAGS = -I$(top_srcdir)/include $(PTHREAD_CFLAGS) $(OPENMP_CFLAGS)
 AM_LDFLAGS = $(top_builddir)/src/libaml.la $(PTHREAD_LIBS)
 
 if HAVE_CUDA
@@ -35,7 +35,9 @@ LAYOUT_TESTS = \
 
 DMA_TESTS = \
 	      dma/0_example \
-	      dma/1_reduction
+	      dma/1_reduction \
+	      dma/2_target_mapper_omp \
+	      dma/2_target_mapper_aml
 
 TILING_TESTS = \
 	       tiling/0_generic_resize_tiling \
