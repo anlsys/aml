@@ -986,6 +986,10 @@ struct aml_dma {
 
 /**
  * Requests a synchronous data copy between two different buffers.
+ *
+ * Layouts are copied internally if necessary, avoiding the need for users to
+ * keep the layouts alive during the request.
+ *
  * @param dma: an initialized DMA structure.
  * @param dest: layout describing the destination.
  * @param src: layout describing the source.
@@ -999,6 +1003,10 @@ int aml_dma_copy_custom(struct aml_dma *dma, struct aml_layout *dest,
 /**
  * Requests a data copy between two different buffers.This is an asynchronous
  * version of aml_dma_copy().
+ *
+ * Layouts are copied internally if necessary, avoiding the need for users to
+ * keep the layouts alive during the request.
+ *
  * @param dma: an initialized DMA structure.
  * @param req: an address where the pointer to the newly assigned DMA request
  *        will be stored.
