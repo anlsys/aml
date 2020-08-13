@@ -37,8 +37,8 @@ int aml_dma_request_linux_seq_copy_init(struct aml_dma_request_linux_seq *req,
 {
 	assert(req != NULL);
 	req->type = AML_DMA_REQUEST_TYPE_LAYOUT;
-	req->dest = dest;
-	req->src = src;
+	aml_layout_duplicate(dest, &req->dest);
+	aml_layout_duplicate(src, &req->src);
 	req->op = op;
 	req->op_arg = op_arg;
 	return 0;
@@ -47,6 +47,8 @@ int aml_dma_request_linux_seq_copy_init(struct aml_dma_request_linux_seq *req,
 int aml_dma_request_linux_seq_copy_destroy(struct aml_dma_request_linux_seq *r)
 {
 	assert(r != NULL);
+	aml_layout_destroy(&r->src);
+	aml_layout_destroy(&r->dest);
 	return 0;
 }
 
@@ -229,21 +231,22 @@ int aml_dma_linux_seq_create(struct aml_dma **dma, size_t nbreqs,
 	return 0;
 }
 
-void aml_dma_linux_seq_destroy(struct aml_dma **dma)
+void aml_dma_linux_seq_destroy(struct aml_dma **d)
 {
-	struct aml_dma *d;
-	struct aml_dma_linux_seq *l;
+	struct aml_dma_linux_seq *dma;
 
-	if (dma == NULL)
-		return;
-	d = *dma;
-	if (d == NULL)
+	if (d == NULL || *d == NULL)
 		return;
 
-	assert(d->data != NULL);
-	l = (struct aml_dma_linux_seq *)d->data;
-	aml_vector_destroy(&l->data.requests);
-	pthread_mutex_destroy(&l->data.lock);
-	free(d);
-	*dma = NULL;
+	dma = (struct aml_dma_linux_seq *)(*d)->data;
+	for (size_t i = 0; i < aml_vector_size(dma->data.requests); i++) {
+		struct aml_dma_request_linux_seq *req;
+
+		req = aml_vector_get(dma->data.requests, i);
+		aml_dma_request_linux_seq_copy_destroy(req);
+	}
+	aml_vector_destroy(&dma->data.requests);
+	pthread_mutex_destroy(&dma->data.lock);
+	free(*d);
+	*d = NULL;
 }

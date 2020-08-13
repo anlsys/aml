@@ -36,8 +36,8 @@ int aml_dma_request_linux_par_copy_init(struct aml_dma_request_linux_par *req,
 {
 	assert(req != NULL);
 	req->type = AML_DMA_REQUEST_TYPE_LAYOUT;
-	req->dest = dest;
-	req->src = src;
+	aml_layout_duplicate(dest, &req->dest);
+	aml_layout_duplicate(src, &req->src);
 	req->op = op;
 	req->op_arg = op_arg;
 	return 0;
@@ -46,6 +46,8 @@ int aml_dma_request_linux_par_copy_init(struct aml_dma_request_linux_par *req,
 int aml_dma_request_linux_par_copy_destroy(struct aml_dma_request_linux_par *r)
 {
 	assert(r != NULL);
+	aml_layout_destroy(&r->src);
+	aml_layout_destroy(&r->dest);
 	return 0;
 }
 
