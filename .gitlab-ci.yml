@@ -1,6 +1,7 @@
 variables:
   ARGOPKGS : "https://xgitlab.cels.anl.gov/argo/argopkgs/-/archive/master/argopkgs-master.tar.gz"
   DEFAULT_MERGE_TARGET: "origin/staging"
+  GIT_SUBMODULE_STRATEGY: "normal"
 
 stages:
   - style

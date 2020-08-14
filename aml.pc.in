@@ -6,5 +6,5 @@ includedir=@includedir@
 Name: libaml
 Description: AML: Building Blocks for Memory Management
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -laml
+Libs: -L${libdir} -laml -lexcit
 Cflags: -I${includedir}

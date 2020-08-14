@@ -20,6 +20,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <excit.h>
 #include <inttypes.h>
 #include <numa.h>
 #include <numaif.h>
@@ -33,14 +34,14 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include "aml/utils/async.h"
 #include "aml/utils/bitmap.h"
 #include "aml/utils/error.h"
-#include "aml/utils/inner-malloc.h"
-#include "aml/utils/vector.h"
-#include "aml/utils/queue.h"
-#include "aml/utils/async.h"
-#include "aml/utils/version.h"
 #include "aml/utils/features.h"
+#include "aml/utils/inner-malloc.h"
+#include "aml/utils/queue.h"
+#include "aml/utils/vector.h"
+#include "aml/utils/version.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 
