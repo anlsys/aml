@@ -11,6 +11,7 @@ LIBS += $(CUDA_CFLAGS)
 LIBS += $(CUDA_LIBS)
 AM_CFLAGS += $(CUDA_CFLAGS)
 AM_LDFLAGS += $(CUDA_LIBS)
+CUDA_FLAGS=--x=cu
 endif
 
 if HAVE_HWLOC
@@ -44,7 +45,15 @@ TILING_TESTS = \
 	       tiling/1_dgemm
 
 if HAVE_CUDA
+EXTRA_DIST=dma/2_target_mapper_aml_cuda.cu
+nodist_check_SOURCES=dma/2_target_mapper_aml_cuda.c
+BUILT_SOURCES = dma/2_target_mapper_aml_cuda.c
+
+dma/2_target_mapper_aml_cuda: dma/2_target_mapper_aml_cuda.cu
+	$(NVCC) -I$(top_builddir)/include -o $@ $< -L $(top_builddir)/src/.libs -laml -lhwloc $(CUDA_LIBS)
+
 AREA_TESTS += area/0_aml_area_cuda
+DMA_TESTS = dma/2_target_mapper_aml_cuda
 endif
 
 if HAVE_HWLOC
