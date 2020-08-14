@@ -110,6 +110,25 @@ struct aml_layout *aml_tiling_index_byid(const struct aml_tiling *t,
 	return aml_tiling_index_native(t, coords);
 }
 
+struct aml_layout *aml_tiling_index_byiter(const struct aml_tiling *t,
+                                           const_excit_t iterator)
+{
+	if (t == NULL || t->ops == NULL || iterator == NULL)
+		return NULL;
+
+	ssize_t ncoords;
+	size_t ndims = aml_tiling_ndims(t);
+
+	assert(!excit_dimension(iterator, &ncoords));
+	if ((size_t)ncoords != ndims)
+		return NULL;
+
+	ssize_t coords[ncoords];
+	assert(!excit_peek(iterator, coords));
+
+	return aml_tiling_index_native(t, (size_t *)coords);
+}
+
 int aml_tiling_fprintf(FILE *stream, const char *prefix,
 		       const struct aml_tiling *tiling)
 {
