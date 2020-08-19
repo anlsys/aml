@@ -181,7 +181,8 @@ make:chimera:
     - ./autogen.sh
     - mkdir build
     - ./configure --prefix=`pwd`/build --with-cuda=yes
-    - make -j check
+    - make -j
+    - make check
   artifacts:
     when: on_failure
     paths:
