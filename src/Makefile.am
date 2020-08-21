@@ -1,5 +1,5 @@
 SUFFIXES=.c .cu
-AM_CPPFLAGS = -I$(top_srcdir)/include $(PTHREAD_CFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS)
 AM_LDFLAGS = $(PTHREAD_LIBS)
 noinst_LTLIBRARIES=
 

@@ -2,6 +2,7 @@ variables:
   NMC_FE1_SLURM_PARAMETERS: "--nodes=1 --partition=ecp-p9-4v100"
   ANL_THETA_PROJECT_SERVICE_USER: "cscstss"
   ANL_THETA_SCHEDULER_PARAMETERS: "-A CSC250STPR19 -n 1 -t 20 -q debug-flat-quad"
+  GIT_SUBMODULE_STRATEGY: "normal"
 
 stages:
   - build

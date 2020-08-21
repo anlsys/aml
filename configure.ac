@@ -180,6 +180,8 @@ AM_EXTRA_RECURSIVE_TARGETS([check-programs])
 # Output
 ########
 
+AC_CONFIG_SUBDIRS([excit])
+
 AC_CONFIG_HEADERS([include/config.h])
 
 AC_CONFIG_FILES([Makefile

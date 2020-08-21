@@ -1,6 +1,7 @@
 variables:
   ARGOPKGS : "https://xgitlab.cels.anl.gov/argo/argopkgs/-/archive/master/argopkgs-master.tar.gz"
   DEFAULT_MERGE_TARGET: "origin/staging"
+  GIT_SUBMODULE_STRATEGY: "normal"
 
 stages:
   - style
@@ -180,7 +181,8 @@ make:chimera:
     - ./autogen.sh
     - mkdir build
     - ./configure --prefix=`pwd`/build --with-cuda=yes
-    - make -j check
+    - make -j
+    - make check
   artifacts:
     when: on_failure
     paths:

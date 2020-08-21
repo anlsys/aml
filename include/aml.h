@@ -20,6 +20,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <excit.h>
 #include <inttypes.h>
 #include <numa.h>
 #include <numaif.h>
@@ -33,14 +34,14 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include "aml/utils/async.h"
 #include "aml/utils/bitmap.h"
 #include "aml/utils/error.h"
-#include "aml/utils/inner-malloc.h"
-#include "aml/utils/vector.h"
-#include "aml/utils/queue.h"
-#include "aml/utils/async.h"
-#include "aml/utils/version.h"
 #include "aml/utils/features.h"
+#include "aml/utils/inner-malloc.h"
+#include "aml/utils/queue.h"
+#include "aml/utils/vector.h"
+#include "aml/utils/version.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -840,6 +841,16 @@ int aml_tiling_tileid(const struct aml_tiling *tiling, const size_t *coords);
  */
 struct aml_layout *aml_tiling_index_byid(const struct aml_tiling *tiling,
 					 const int uuid);
+
+/**
+ * Return the tile at the coordinates at the current position of the input
+ * iterator.
+ * @param[in] tiling: an initialized tiling
+ * @param[in] iterator: an initialized iterator
+ * @return the tile as a layout on success, NULL on error.
+ */
+struct aml_layout *aml_tiling_index_byiter(const struct aml_tiling *tiling,
+                                           const_excit_t iterator);
 
 /**
  * Print on the file handle the metadata associated with this tiling.
