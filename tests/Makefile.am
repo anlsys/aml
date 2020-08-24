@@ -60,9 +60,6 @@ TILING_TESTS = tiling/test_tiling
 DMA_TESTS = dma/test_dma_linux_seq \
 		  dma/test_dma_linux_par
 
-SCRATCH_TESTS = scratch/test_scratch_seq \
-		scratch/test_scratch_par
-
 if HAVE_CUDA
 AREA_TESTS += area/test_cuda
 DMA_TESTS += dma/test_cuda
@@ -78,8 +75,7 @@ UNIT_TESTS = $(UTILS_TESTS) \
 	     $(LAYOUT_TESTS) \
 	     $(BINDING_TESTS) \
 	     $(AREA_TESTS) \
-	     $(DMA_TESTS) \
-	     $(SCRATCH_TESTS)
+	     $(DMA_TESTS)
 
 # all tests
 TST_PROGS = $(UNIT_TESTS)
