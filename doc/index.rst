@@ -37,7 +37,6 @@ AML currently implements the following abstractions:
 * :doc:`Layout <pages/layout>`, a description of data structure organization,
 * :doc:`Tiling <pages/tilings>`, a description of data blocking (decomposition)
 * :doc:`DMA <pages/dmas>`, an engine to asynchronously move data structures between areas,
-* :doc:`Scratchpad <pages/scratchs>`, a stage-in, stage-out abstraction for prefetching.
 
 Each of these abstractions has several implementations. For instance, areas
 may refer to the usual DRAM or its subset, to GPU memory, or to non-volatile memory.
@@ -136,4 +135,3 @@ for more info.
    pages/tilings
    pages/layout
    pages/dmas
-   pages/scratchs

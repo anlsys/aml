@@ -15,11 +15,6 @@ include_aml_dma_HEADERS = \
 			      aml/dma/linux-seq.h \
 			      aml/dma/linux-par.h
 
-include_aml_scratchdir=$(includedir)/aml/scratch
-include_aml_scratch_HEADERS = \
-			      aml/scratch/seq.h \
-			      aml/scratch/par.h
-
 include_aml_tilingdir=$(includedir)/aml/tiling
 include_aml_tiling_HEADERS = \
 			     aml/tiling/native.h \
