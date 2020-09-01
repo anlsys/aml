@@ -3,6 +3,9 @@ include_HEADERS=aml.h
 include_aml_areadir=$(includedir)/aml/area
 include_aml_area_HEADERS = aml/area/linux.h
 
+include_aml_replicasetdir=$(includedir)/aml/higher/replicaset
+include_aml_replicaset_HEADERS = aml/higher/replicaset.h
+
 include_aml_layoutdir=$(includedir)/aml/layout
 include_aml_layout_HEADERS = \
 			      aml/layout/native.h \
@@ -35,6 +38,7 @@ include_amlutils_HEADERS = \
 
 if HAVE_HWLOC
 include_aml_area_HEADERS+= aml/area/hwloc.h
+include_aml_replicaset_HEADERS += aml/higher/replicaset/hwloc.h
 endif
 
 if HAVE_CUDA

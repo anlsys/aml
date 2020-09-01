@@ -1,7 +1,7 @@
 AM_COLOR_TESTS = yes
 
-AM_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS)
-AM_LDFLAGS = ../src/libaml.la $(top_builddir)/excit/src/libexcit.la $(PTHREAD_LIBS)
+AM_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS) $(OPENMP_CFLAGS)
+AM_LDFLAGS = ../src/libaml.la $(top_builddir)/excit/src/libexcit.la $(PTHREAD_LIBS) $(OPENMP_CFLAGS)
 
 if HAVE_CUDA
 # LIBS is used instead of AM_LDFLAGS on purpose
@@ -60,6 +60,8 @@ TILING_TESTS = tiling/test_tiling
 DMA_TESTS = dma/test_dma_linux_seq \
 		  dma/test_dma_linux_par
 
+REPLICASET_TESTS =
+
 if HAVE_CUDA
 AREA_TESTS += area/test_cuda
 DMA_TESTS += dma/test_cuda
@@ -67,6 +69,7 @@ endif
 
 if HAVE_HWLOC
 AREA_TESTS += area/test_hwloc
+REPLICASET_TESTS += replicaset/test_hwloc
 endif
 
 # unit tests
@@ -75,6 +78,7 @@ UNIT_TESTS = $(UTILS_TESTS) \
 	     $(LAYOUT_TESTS) \
 	     $(BINDING_TESTS) \
 	     $(AREA_TESTS) \
+	     $(REPLICASET_TESTS) \
 	     $(DMA_TESTS)
 
 # all tests

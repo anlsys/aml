@@ -795,7 +795,6 @@ INPUT                  = ../include \
                          ../include/aml/layout \			 
 			 ../include/aml/tiling \
 			 ../include/aml/dma \
-			 ../include/aml/scratch \
 			 ../include/aml/utils \
 			 ../CONTRIBUTING.markdown
 
