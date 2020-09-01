@@ -1,7 +1,7 @@
 AM_COLOR_TESTS = yes
 
-AM_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS)
-AM_LDFLAGS = $(top_builddir)/src/libaml.la $(top_builddir)/excit/src/libexcit.la $(PTHREAD_LIBS)
+AM_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS)  $(OPENMP_CFLAGS)
+AM_LDFLAGS = $(top_builddir)/src/libaml.la $(top_builddir)/excit/src/libexcit.la $(PTHREAD_LIBS) $(OPENMP_CFLAGS)
 
 if HAVE_CUDA
 # LIBS is used instead of AM_LDFLAGS on purpose

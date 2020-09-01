@@ -269,10 +269,10 @@ void *aml_area_hwloc_preferred_mmap(const struct aml_area_data *area_data,
 	        (struct aml_area_hwloc_preferred_data *)area_data;
 
 	// Allocate data
-	void *ptr =
-	        mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, -1, 0);
+	void *ptr = mmap(NULL, size, PROT_READ | PROT_WRITE,
+	                 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
-	if (ptr == NULL) {
+	if (ptr == NULL || ptr == MAP_FAILED) {
 		aml_errno = AML_ENOMEM;
 		return NULL;
 	}
@@ -777,12 +777,10 @@ int aml_area_hwloc_preferred_create(struct aml_area **area,
 	return AML_SUCCESS;
 }
 
-int aml_area_hwloc_preferred_local_create(struct aml_area **area,
-                                          enum hwloc_distances_kind_e kind)
+int aml_hwloc_local_initiator(hwloc_obj_t *out)
 {
 	int err;
 	hwloc_cpuset_t cpuset;
-	hwloc_obj_t initiator;
 
 	/** Collect cpuset binding of current thread **/
 	cpuset = hwloc_bitmap_alloc();
@@ -797,20 +795,33 @@ int aml_area_hwloc_preferred_local_create(struct aml_area **area,
 	}
 
 	/** Match cpuset with a location on machine **/
-	err = hwloc_get_largest_objs_inside_cpuset(aml_topology, cpuset,
-	                                           &initiator, 1);
+	err = hwloc_get_largest_objs_inside_cpuset(aml_topology, cpuset, out,
+	                                           1);
 	if (err == -1) {
 		err = -AML_FAILURE;
 		goto err_with_cpuset;
 	}
-	hwloc_bitmap_free(cpuset);
 
-	/** Build area with found initiator **/
-	return aml_area_hwloc_preferred_create(area, initiator, kind);
+	hwloc_bitmap_free(cpuset);
+	return AML_SUCCESS;
 
 err_with_cpuset:
 	hwloc_bitmap_free(cpuset);
 	return err;
+}
+
+int aml_area_hwloc_preferred_local_create(struct aml_area **area,
+                                          enum hwloc_distances_kind_e kind)
+{
+	int err;
+	hwloc_obj_t initiator;
+
+	err = aml_hwloc_local_initiator(&initiator);
+	if (err != AML_SUCCESS)
+		return err;
+
+	/** Build area with found initiator **/
+	return aml_area_hwloc_preferred_create(area, initiator, kind);
 }
 
 struct aml_area_ops aml_area_hwloc_preferred_ops = {

@@ -1,6 +1,6 @@
 SUFFIXES=.c .cu
-AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS)
-AM_LDFLAGS = $(PTHREAD_LIBS)
+AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS) $(OPENMP_CFLAGS)
+AM_LDFLAGS = $(PTHREAD_LIBS) $(OPENMP_CFLAGS)
 noinst_LTLIBRARIES=
 
 #############################################
@@ -39,12 +39,15 @@ UTILS_SOURCES = \
 		utils/async.c \
 		utils/features.c
 
+REPLICASET_SOURCES = replicaset/replicaset.c
+
 LIB_SOURCES = \
 	      $(AREA_SOURCES) \
 	      $(DMA_SOURCES) \
 	      $(TILING_SOURCES) \
 	      $(LAYOUT_SOURCES) \
 	      $(UTILS_SOURCES) \
+	      $(REPLICASET_SOURCES) \
 	      aml.c
 
 lib_LTLIBRARIES = libaml.la
@@ -86,5 +89,5 @@ if HAVE_HWLOC
 AM_CPPFLAGS += $(HWLOC_CFLAGS)
 AM_LDFLAGS += $(HWLOC_LIBS)
 
-libaml_la_SOURCES+=area/hwloc.c
+libaml_la_SOURCES+=area/hwloc.c replicaset/hwloc.c
 endif
