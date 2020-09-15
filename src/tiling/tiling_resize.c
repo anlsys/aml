@@ -160,37 +160,10 @@ void *aml_tiling_resize_column_rawptr(const struct aml_tiling_data *t,
 	return aml_layout_deref_native(d->layout, offsets);
 }
 
-int aml_tiling_resize_column_tileid(const struct aml_tiling_data *t,
-				    const size_t *coords)
-{
-	const struct aml_tiling_resize *d =
-		(const struct aml_tiling_resize *)t;
-
-	assert(d != NULL);
-	int ret = 0;
-	size_t ndims = d->ndims;
-
-	for (size_t i = 0; i < ndims; i++)
-		ret = (ret * d->dims[i]) + coords[i];
-	return ret;
-}
-
 int aml_tiling_resize_column_order(const struct aml_tiling_data *t)
 {
 	(void)t;
 	return AML_TILING_ORDER_COLUMN_MAJOR;
-}
-
-int aml_tiling_resize_column_tile_dims(const struct aml_tiling_data *t,
-					size_t *tile_dims)
-{
-	const struct aml_tiling_resize *d =
-	    (const struct aml_tiling_resize *)t;
-
-	assert(d != NULL);
-	memcpy((void *)tile_dims, (void *)d->tile_dims,
-	       sizeof(size_t)*d->ndims);
-	return 0;
 }
 
 int aml_tiling_resize_column_dims(const struct aml_tiling_data *l,
@@ -255,9 +228,7 @@ struct aml_tiling_ops aml_tiling_resize_column_ops = {
 	aml_tiling_resize_column_index,
 	aml_tiling_resize_column_index,
 	aml_tiling_resize_column_rawptr,
-	aml_tiling_resize_column_tileid,
 	aml_tiling_resize_column_order,
-	aml_tiling_resize_column_tile_dims,
 	aml_tiling_resize_column_dims,
 	aml_tiling_resize_column_dims,
 	aml_tiling_resize_column_ndims,
@@ -317,37 +288,10 @@ void *aml_tiling_resize_row_rawptr(const struct aml_tiling_data *t,
 	return aml_layout_deref_native(d->layout, offsets);
 }
 
-int aml_tiling_resize_row_tileid(const struct aml_tiling_data *t,
-				 const size_t *coords)
-{
-	const struct aml_tiling_resize *d =
-		(const struct aml_tiling_resize *)t;
-
-	assert(d != NULL);
-	int ret = 0;
-	size_t ndims = d->ndims;
-
-	for (size_t i = 0; i < ndims; i++)
-		ret = (ret * d->dims[i]) + coords[ndims - i - 1];
-	return ret;
-}
-
 int aml_tiling_resize_row_order(const struct aml_tiling_data *t)
 {
 	(void)t;
 	return AML_TILING_ORDER_ROW_MAJOR;
-}
-
-int aml_tiling_resize_row_tile_dims(const struct aml_tiling_data *t,
-				    size_t *tile_dims)
-{
-	const struct aml_tiling_resize *d =
-	    (const struct aml_tiling_resize *)t;
-
-	assert(d != NULL);
-	for (size_t i = 0; i < d->ndims; i++)
-		tile_dims[i] = d->tile_dims[d->ndims - i - 1];
-	return 0;
 }
 
 int aml_tiling_resize_row_dims(const struct aml_tiling_data *t,
@@ -401,9 +345,7 @@ struct aml_tiling_ops aml_tiling_resize_row_ops = {
 	aml_tiling_resize_row_index,
 	aml_tiling_resize_column_index,
 	aml_tiling_resize_row_rawptr,
-	aml_tiling_resize_row_tileid,
 	aml_tiling_resize_row_order,
-	aml_tiling_resize_row_tile_dims,
 	aml_tiling_resize_row_dims,
 	aml_tiling_resize_column_dims,
 	aml_tiling_resize_row_ndims,

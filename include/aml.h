@@ -735,9 +735,7 @@ struct aml_tiling_ops {
 					   const size_t *coords);
 	void *(*rawptr)(const struct aml_tiling_data *t,
 			const size_t *coords);
-	int (*tileid)(const struct aml_tiling_data *t, const size_t *coords);
 	int (*order)(const struct aml_tiling_data *t);
-	int (*tile_dims)(const struct aml_tiling_data *t, size_t *dims);
 	int (*dims)(const struct aml_tiling_data *t, size_t *dims);
 	int (*dims_native)(const struct aml_tiling_data *t, size_t *dims);
 	size_t (*ndims)(const struct aml_tiling_data *t);
@@ -786,20 +784,24 @@ int aml_tiling_order(const struct aml_tiling *tiling);
 int aml_tiling_dims(const struct aml_tiling *tiling, size_t *dims);
 
 /**
- * Return the dimensions of a tile in the tiling, in the user order.
- * @param[in] tiling: An initialized tiling.
- * @param[out] dims: A non-NULL array of dimensions to fill. It is
- * supposed to be large enough to contain aml_tiling_ndims() elements.
- * @return AML_SUCCESS on success, else an AML error code.
- **/
-int aml_tiling_tile_dims(const struct aml_tiling *tiling, size_t *dims);
-
-/**
  * Provide the number of dimensions in a tiling.
  * @param tiling: an initialized tiling structure.
  * @return the number of dimensions in the tiling.
  **/
 size_t aml_tiling_ndims(const struct aml_tiling *tiling);
+
+/**
+ * Get the dimensions of a specific tile in the tiling.
+ * @param[in] tiling: The tiling to inspect.
+ * @param[in] coords: The coordinate of the tile to lookup.
+ * If NULL, the first tile is used.
+ * @param[out] dims: The tile dimensions.
+ * @return AML_SUCCESS on success.
+ * @return The result of aml_tiling_index on error.
+ */
+int aml_tiling_tile_dims(const struct aml_tiling *tiling,
+                         const size_t *coords,
+                         size_t *dims);
 
 /**
  * Provide the number of tiles in a tiling.
@@ -824,23 +826,6 @@ struct aml_layout *aml_tiling_index(const struct aml_tiling *tiling,
  * @return a raw pointer to the start of the buffer for a tile, NULL on error.
  */
 void *aml_tiling_rawptr(const struct aml_tiling *tiling, const size_t *coords);
-
-/**
- * Return a unique identifier for a tile based on coordinates in the tiling
- * @param tiling: an initialized tiling
- * @param coords: the coordinates for the tile
- * @return a uuid for the tile.
- */
-int aml_tiling_tileid(const struct aml_tiling *tiling, const size_t *coords);
-
-/**
- * Return the tile with this identifier
- * @param tiling: an initialized tiling
- * @param uuid: a unique identifier for this tile
- * @return the tiling as a layout on success, NULL on error.
- */
-struct aml_layout *aml_tiling_index_byid(const struct aml_tiling *tiling,
-					 const int uuid);
 
 /**
  * Return the tile at the coordinates at the current position of the input

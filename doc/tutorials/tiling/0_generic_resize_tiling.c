@@ -8,11 +8,14 @@
  * SPDX-License-Identifier: BSD-3-Clause
  ******************************************************************************/
 
+#include <excit.h>
+#include <stdio.h>
+
 #include <aml.h>
+
 #include "aml/area/linux.h"
 #include "aml/layout/dense.h"
 #include "aml/tiling/resize.h"
-#include <stdio.h>
 
 void print_matrix(double *mat, size_t rows, size_t cols)
 {
@@ -24,53 +27,64 @@ void print_matrix(double *mat, size_t rows, size_t cols)
 	fprintf(stderr, "\n");
 }
 
+excit_t tiling_iterator(struct aml_tiling *tiling)
+{
+	size_t ndims = aml_tiling_ndims(tiling);
+	size_t dims[ndims];
+	excit_t it, iterator = excit_alloc(EXCIT_PRODUCT);
+
+	assert(iterator != NULL);
+	assert(aml_tiling_dims(tiling, dims) == AML_SUCCESS);
+
+	for (size_t d = 0; d < ndims; d++) {
+		it = excit_alloc(EXCIT_RANGE);
+		assert(excit_range_init(it, 0, dims[d] - 1, 1) ==
+		       EXCIT_SUCCESS);
+		assert(excit_product_add(iterator, it) == EXCIT_SUCCESS);
+	}
+
+	return iterator;
+}
+
 /* Initialize a given tiling with arbitrary values.
  * Use of
  *	aml_tiling_ndims
- *	aml_tiling_tile_dims
  *	aml_tiling_dims
  *	aml_tiling_ntiles
- *	aml_tiling_index_byid
  *
  */
 int fill_tiling(struct aml_tiling *tiling)
 {
-	int err;
 	size_t ndims = aml_tiling_ndims(tiling);
-	size_t ntiles = aml_tiling_ntiles(tiling);
 	size_t dims[ndims];
-	size_t tile_dims[ndims];
 	size_t coords[ndims];
 	double *a;
 	double count = 1;
 
-	err = aml_tiling_dims(tiling, dims);
-	if (err != AML_SUCCESS)
-		return err;
-
-	aml_tiling_tile_dims(tiling, tile_dims);
+	aml_tiling_tile_dims(tiling, NULL, dims);
+	// Create a tiling iterator
+	excit_t iterator = tiling_iterator(tiling);
 
 	// Going through the tiling tile by tile
-	for (size_t i = 0; i < ntiles; i++) {
-		struct aml_layout *ltile;
-
-		// We get the layout associated with the current tile
-		ltile = aml_tiling_index_byid(tiling, i);
+	struct aml_layout *ltile;
+	while (excit_next(iterator, (ssize_t *)coords) != EXCIT_STOPIT) {
+		ltile = aml_tiling_index(tiling, coords);
 		assert(ltile != NULL);
 
 		// Then we fill the layout element by element
-		for (size_t j = 0; j < tile_dims[0]; j++) {
+		for (size_t j = 0; j < dims[0]; j++) {
 			coords[0] = j;
-			for (size_t k = 0; k < tile_dims[1]; k++) {
+			for (size_t k = 0; k < dims[1]; k++) {
 				coords[1] = k;
 				a = aml_layout_deref(ltile, coords);
 				*a = count;
 				count++;
 			}
 		}
-
 		aml_layout_destroy(&ltile);
 	}
+
+	excit_free(iterator);
 	return AML_SUCCESS;
 }
 

@@ -76,8 +76,8 @@ int dgemm_tiled(struct aml_tiling *tiling_a, struct aml_tiling *tiling_b,
 	size_t tiling_b_dims[ndims];
 	size_t tiling_c_dims[ndims];
 
-	aml_tiling_tile_dims(tiling_a, tile_a_dims);
-	aml_tiling_tile_dims(tiling_b, tile_b_dims);
+	aml_tiling_tile_dims(tiling_a, NULL, tile_a_dims);
+	aml_tiling_tile_dims(tiling_b, NULL, tile_b_dims);
 	mt = tile_a_dims[0];
 	kt = tile_a_dims[1];
 	nt = tile_b_dims[1];
