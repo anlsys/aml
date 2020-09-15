@@ -20,12 +20,30 @@ int aml_tiling_order(const struct aml_tiling *t)
 	return t->ops->order(t->data);
 }
 
-int aml_tiling_tile_dims(const struct aml_tiling *t, size_t *dims)
+int aml_tiling_tile_dims(const struct aml_tiling *t,
+                         const size_t *coords,
+                         size_t *dims)
 {
 	if (t == NULL || t->ops == NULL || dims == NULL)
 		return -AML_EINVAL;
 
-	return t->ops->tile_dims(t->data, dims);
+	int err;
+	struct aml_layout *layout;
+	size_t ndims = aml_tiling_ndims(t);
+	size_t coordinates[ndims];
+
+	if (coords != NULL)
+		memcpy(coordinates, coords, ndims * sizeof(*coords));
+	else
+		for (size_t i = 0; i < ndims; i++)
+			coordinates[i] = 0;
+	layout = aml_tiling_index(t, coordinates);
+	if (layout == NULL)
+		return -aml_errno;
+	err = aml_layout_dims(layout, dims);
+	aml_layout_destroy(&layout);
+
+	return err;
 }
 
 int aml_tiling_dims(const struct aml_tiling *t, size_t *dims)
@@ -73,16 +91,6 @@ void *aml_tiling_rawptr(const struct aml_tiling *t, const size_t *coords)
 	return t->ops->rawptr(t->data, coords);
 }
 
-int aml_tiling_tileid(const struct aml_tiling *t,
-		      const size_t *coords)
-{
-	if (t == NULL || t->ops == NULL || coords == NULL)
-		return -AML_EINVAL;
-
-	return t->ops->tileid(t->data, coords);
-}
-
-
 struct aml_layout *aml_tiling_index_native(const struct aml_tiling *t,
 					   const size_t *coords)
 {
@@ -90,24 +98,6 @@ struct aml_layout *aml_tiling_index_native(const struct aml_tiling *t,
 		return NULL;
 
 	return t->ops->index_native(t->data, coords);
-}
-
-struct aml_layout *aml_tiling_index_byid(const struct aml_tiling *t,
-					 int uuid)
-{
-	if (t == NULL || t->ops == NULL || uuid < 0)
-		return NULL;
-
-	size_t ndims = aml_tiling_ndims(t);
-	size_t coords[ndims];
-	size_t dims[ndims];
-
-	aml_tiling_dims_native(t, dims);
-	for (size_t i = 0; i < ndims; i++) {
-		coords[i] = uuid % dims[i];
-		uuid /= dims[i];
-	}
-	return aml_tiling_index_native(t, coords);
 }
 
 struct aml_layout *aml_tiling_index_byiter(const struct aml_tiling *t,

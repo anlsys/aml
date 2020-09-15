@@ -169,7 +169,7 @@ void test_tiling_even(void)
 
 	size_t dims[3];
 
-	aml_tiling_tile_dims(t, dims);
+	aml_tiling_tile_dims(t, NULL, dims);
 	assert(memcmp(dims, dims_tile_col, 3*sizeof(size_t)) == 0);
 	aml_tiling_dims(t, dims);
 	assert(memcmp(dims, expected_dims_col, 3*sizeof(size_t)) == 0);
@@ -212,7 +212,7 @@ void test_tiling_even(void)
 	assert(aml_tiling_order(t) == AML_TILING_ORDER_ROW_MAJOR);
 	assert(aml_tiling_ndims(t) == 3);
 
-	aml_tiling_tile_dims(t, dims);
+	aml_tiling_tile_dims(t, NULL, dims);
 	assert(memcmp(dims, dims_tile_row, 3*sizeof(size_t)) == 0);
 	aml_tiling_dims(t, dims);
 	assert(memcmp(dims, expected_dims_row, 3*sizeof(size_t)) == 0);
@@ -373,7 +373,7 @@ void test_tiling_uneven(void)
 
 	size_t dims[3];
 
-	aml_tiling_tile_dims(t, dims);
+	aml_tiling_tile_dims(t, NULL, dims);
 	assert(memcmp(dims, dims_tile_col, 3*sizeof(size_t)) == 0);
 	aml_tiling_dims(t, dims);
 	assert(memcmp(dims, expected_dims_col, 3*sizeof(size_t)) == 0);
@@ -415,7 +415,7 @@ void test_tiling_uneven(void)
 	assert(aml_tiling_order(t) == AML_TILING_ORDER_ROW_MAJOR);
 	assert(aml_tiling_ndims(t) == 3);
 
-	aml_tiling_tile_dims(t, dims);
+	aml_tiling_tile_dims(t, NULL, dims);
 	assert(memcmp(dims, dims_tile_row, 3*sizeof(size_t)) == 0);
 	aml_tiling_dims(t, dims);
 	assert(memcmp(dims, expected_dims_row, 3*sizeof(size_t)) == 0);
@@ -498,7 +498,7 @@ void test_tiling_pad_even(void)
 
 	size_t dims[3];
 
-	aml_tiling_tile_dims(t, dims);
+	aml_tiling_tile_dims(t, NULL, dims);
 	assert(memcmp(dims, dims_tile_col, 3*sizeof(size_t)) == 0);
 	aml_tiling_dims(t, dims);
 	assert(memcmp(dims, expected_dims_col, 3*sizeof(size_t)) == 0);
@@ -540,7 +540,7 @@ void test_tiling_pad_even(void)
 	assert(aml_tiling_order(t) == AML_TILING_ORDER_ROW_MAJOR);
 	assert(aml_tiling_ndims(t) == 3);
 
-	aml_tiling_tile_dims(t, dims);
+	aml_tiling_tile_dims(t, NULL, dims);
 	assert(memcmp(dims, dims_tile_row, 3*sizeof(size_t)) == 0);
 	aml_tiling_dims(t, dims);
 	assert(memcmp(dims, expected_dims_row, 3*sizeof(size_t)) == 0);
@@ -628,7 +628,7 @@ void test_tiling_pad_uneven(void)
 
 	size_t dims[3];
 
-	aml_tiling_tile_dims(t, dims);
+	aml_tiling_tile_dims(t, NULL, dims);
 	assert(memcmp(dims, dims_tile_col, 3*sizeof(size_t)) == 0);
 	aml_tiling_dims(t, dims);
 	assert(memcmp(dims, expected_dims_col, 3*sizeof(size_t)) == 0);
@@ -680,8 +680,7 @@ void test_tiling_pad_uneven(void)
 	assert(aml_tiling_order(t) == AML_TILING_ORDER_ROW_MAJOR);
 	assert(aml_tiling_ndims(t) == 3);
 
-
-	aml_tiling_tile_dims(t, dims);
+	aml_tiling_tile_dims(t, NULL, dims);
 	assert(memcmp(dims, dims_tile_row, 3*sizeof(size_t)) == 0);
 	aml_tiling_dims(t, dims);
 	assert(memcmp(dims, expected_dims_row, 3*sizeof(size_t)) == 0);
