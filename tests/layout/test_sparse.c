@@ -47,7 +47,7 @@ void test_functional()
 
 	// Duplicate
 	struct aml_layout *dup;
-	assert(aml_layout_duplicate(layout, &dup) == AML_SUCCESS);
+	assert(aml_layout_duplicate(layout, &dup, NULL) == AML_SUCCESS);
 	test_common(dup, nptr, data);
 
 	// Cleanup

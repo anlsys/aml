@@ -130,10 +130,14 @@ size_t aml_layout_sparse_element_size(const struct aml_layout_data *data);
  * @param[in] layout: The input sparse layout.
  * @param[out] dest: A pointer where layout duplicate will be
  * allocated.
+ * @param[in] ptr: If not NULL use these pointers as the new layout raw pointer.
+ * ptr is casted to (void**) and shall contain one new pointer per rawptr of
+ * this layout.
  * @return same as aml_layout_sparse_create().
  */
 int aml_layout_sparse_duplicate(const struct aml_layout *layout,
-                                struct aml_layout **dest);
+                                struct aml_layout **dest,
+                                void *ptr);
 
 /**
  * Pre-existing operators for sparse layout.

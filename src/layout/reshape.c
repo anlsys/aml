@@ -126,7 +126,8 @@ int aml_layout_reshape_create(struct aml_layout **layout,
 }
 
 int aml_layout_reshape_duplicate(const struct aml_layout *layout,
-                                 struct aml_layout **out)
+                                 struct aml_layout **out,
+                                 void *ptr)
 {
 	const struct aml_layout_data_reshape *data;
 	struct aml_layout_data_reshape *dret;
@@ -144,7 +145,7 @@ int aml_layout_reshape_duplicate(const struct aml_layout *layout,
 
 	ret->ops = layout->ops;
 	dret = (struct aml_layout_data_reshape *)ret->data;
-	aml_layout_duplicate(data->target, &dret->target);
+	aml_layout_duplicate(data->target, &dret->target, ptr);
 	/* small optimization, copying all data at the end of the structure */
 	memcpy(dret->dims, data->dims,
 	       (2 * data->ndims + data->target_ndims) * sizeof(size_t));

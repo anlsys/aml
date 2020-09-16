@@ -460,13 +460,16 @@ struct aml_layout_ops {
 	 * copied too.
 	 * @param[in] layout a non-NULL handle to a layout to copy.
 	 * @param[out] out a pointer to where to store the new layout.
+	 * @param[in] ptr: If not NULL use this pointer as the new layout raw
+	 *pointer.
 	 * @return -AML_ENOTSUP if operation is not available.
 	 * @return -AML_ENOMEM if layout allocation failed.
 	 * @return -AML_EINVAL if src or dest are NULL.
 	 * @return AML_SUCCESS if copy succeeded.
 	 **/
 	int (*duplicate)(const struct aml_layout *layout,
-	                 struct aml_layout **out);
+	                 struct aml_layout **out,
+	                 void *ptr);
 
 	/**
 	 * Destroys the layout and frees all associated memory.
@@ -643,11 +646,14 @@ int aml_layout_fprintf(FILE *stream, const char *prefix,
  * no user data is actually copied).
  * @param[in] src the layout to duplicate
  * @param[out] out a pointer to where to store the new layout
+ * @param[in] ptr: If not NULL use this pointer as the new layout raw pointer.
  * @return -AML_ENOMEM if layout allocation failed.
  * @return -AML_EINVAL if src or dest are NULL.
  * @return AML_SUCCESS if copy succeeded.
  **/
-int aml_layout_duplicate(const struct aml_layout *src, struct aml_layout **out);
+int aml_layout_duplicate(const struct aml_layout *src,
+                         struct aml_layout **out,
+                         void *ptr);
 
 /**
  * Destroy (free) a layout, irrespective of its type.
