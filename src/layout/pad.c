@@ -107,7 +107,8 @@ int aml_layout_pad_create(struct aml_layout **layout, const int order,
 }
 
 int aml_layout_pad_duplicate(const struct aml_layout *layout,
-                             struct aml_layout **out)
+                             struct aml_layout **out,
+                             void *ptr)
 {
 	const struct aml_layout_pad *data;
 	struct aml_layout_pad *dret;
@@ -126,7 +127,7 @@ int aml_layout_pad_duplicate(const struct aml_layout *layout,
 
 	ret->ops = layout->ops;
 	dret = (struct aml_layout_pad *)ret->data;
-	aml_layout_duplicate(data->target, &dret->target);
+	aml_layout_duplicate(data->target, &dret->target, ptr);
 	dret->tags = data->tags;
 	/* small optimization to copy everything at the end of our single
 	 * allocation, but careful about neutral and the arrays having a gap

@@ -298,14 +298,15 @@ int aml_layout_fprintf(FILE *stream, const char *prefix,
 }
 
 int aml_layout_duplicate(const struct aml_layout *layout,
-                         struct aml_layout **dest)
+                         struct aml_layout **dest,
+                         void *ptr)
 {
 	assert(layout != NULL && layout->ops != NULL);
 
 	if (layout->ops->duplicate == NULL)
 		return -AML_ENOTSUP;
 	else
-		return layout->ops->duplicate(layout, dest);
+		return layout->ops->duplicate(layout, dest, ptr);
 }
 
 void aml_layout_destroy(struct aml_layout **layout)

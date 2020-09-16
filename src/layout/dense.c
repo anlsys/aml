@@ -129,7 +129,8 @@ int aml_layout_dense_create(struct aml_layout **layout,
 }
 
 int aml_layout_dense_duplicate(const struct aml_layout *layout,
-                               struct aml_layout **out)
+                               struct aml_layout **out,
+                               void *ptr)
 {
 	const struct aml_layout_dense *data;
 	struct aml_layout_dense *dret;
@@ -147,7 +148,7 @@ int aml_layout_dense_duplicate(const struct aml_layout *layout,
 
 	ret->ops = layout->ops;
 	dret = (struct aml_layout_dense *)ret->data;
-	dret->ptr = data->ptr;
+	dret->ptr = ptr ? ptr : data->ptr;
 
 	/* small optimization by copying the contents of the end part of our
 	 * single allocation (everything after the _data struct).

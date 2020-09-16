@@ -53,12 +53,15 @@ int aml_layout_sparse_create(struct aml_layout **layout,
 }
 
 int aml_layout_sparse_duplicate(const struct aml_layout *layout,
-                                struct aml_layout **dest)
+                                struct aml_layout **dest,
+                                void *ptr)
 {
 	struct aml_layout_sparse *src =
 	        (struct aml_layout_sparse *)layout->data;
-	return aml_layout_sparse_create(dest, src->nptr, src->ptrs, src->sizes,
-	                                src->metadata, src->metadata_size);
+	return aml_layout_sparse_create(dest, src->nptr,
+	                                ptr ? (void **)ptr : src->ptrs,
+	                                src->sizes, src->metadata,
+	                                src->metadata_size);
 }
 
 void *aml_layout_sparse_deref(const struct aml_layout_data *data,
