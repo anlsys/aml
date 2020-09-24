@@ -196,7 +196,7 @@ void *aml_replicaset_hwloc_local_replica(struct aml_replicaset *replicaset)
 		return NULL;
 	while (initiator != NULL &&
 	       hwloc_get_nbobjs_by_depth(aml_topology, initiator->depth) >
-	               replicaset->n)
+	               data->num_ptr)
 		initiator = initiator->parent;
 
 	if (initiator == NULL)
