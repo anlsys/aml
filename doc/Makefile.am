@@ -1,37 +1,34 @@
-DATA_INSTALL_DIR=$(datadir)/aml
-DOXYGEN_BUILD_DIR=./build-doxygen
-SPHINX_BUILD_DIR=./build-sphinx
-
+DOXYGEN_BUILD_DIR=$(srcdir)/build-doxygen
+SPHINX_BUILD_DIR=$(srcdir)/build-sphinx
 
 SUBDIRS = tutorials
 
-
-if BUILD_DOCS
-build-docs:
+$(SPHINX_BUILD_DIR): aml.doxy conf.py
 	$(DOXYGEN) aml.doxy
 	cp img/*png build-doxygen/xml
 	$(SPHINXBUILD) -v -W -b html -a . $(SPHINX_BUILD_DIR)
 
-dist-hook: build-docs
-	cp -r $(SPHINX_BUILD_DIR) $(distdir)
+if BUILD_DOCS
+
+build-docs: $(SPHINX_BUILD_DIR)
+
+install-doc-html: $(SPHINX_BUILD_DIR)
+	$(MKDIR_P) $(docdir)/html
+	cp -r $(SPHINX_BUILD_DIR)/. $(docdir)/html
 else
+
 build-docs:
 	@echo "not building documentation"
 
-dist-hook: build-docs
+install-doc-html:
+
 endif
 
-create-doc-dir:
-	mkdir -p $(DATA_INSTALL_DIR)
+html-local: build-docs
 
-install-doc-html: build-docs
-	if [ -d $(SPHINX_BUILD_DIR) ]; then \
-	cp -r $(SPHINX_BUILD_DIR)/. $(DATA_INSTALL_DIR)/html; \
-	fi
+install-html-local: html-local install-doc-html
 
-install-data-local: create-doc-dir install-doc-html
-uninstall-local:
-	rm -rf $(DATA_INSTALL_DIR)
+install-data-local: install-html-local
 
 clean-local:
 	rm -rf $(DOXYGEN_BUILD_DIR) $(SPHINX_BUILD_DIR)
