@@ -173,6 +173,9 @@ void create_topology()
 	// Same values
 	assert(!memcmp(hops->values, xml_hops->values,
 	               hops->nbobjs * sizeof(*hops->values)));
+
+	hwloc_distances_release(aml_topology, xml_hops);
+	free(hops);
 }
 
 void test_preferred()

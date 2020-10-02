@@ -78,7 +78,7 @@ int aml_area_cuda_mmap_opts(void **out,
 			    const size_t size,
 			    const int device, const int flags, void **ptr_map)
 {
-	int current_device;
+	int current_device = -1;
 	int error = AML_SUCCESS;
 	int cuda_flags;
 
