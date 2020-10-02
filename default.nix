@@ -6,6 +6,18 @@ let
     overlays = [
       (_: pkgs: {
 
+        doxygen = pkgs.doxygen.overrideAttrs (old: rec {
+          name = "doxygen-1.8.14";
+          src = pkgs.fetchurl {
+            urls = [
+              "mirror://sourceforge/doxygen/${name}.src.tar.gz"
+              "http://doxygen.nl/files/${name}.src.tar.gz"
+            ];
+            sha256 = "0XV+AnVe9vVv1F8fQ5hZi5IDgZSNb8+lj1ymqlb1nU0=";
+          };
+
+        });
+
         hwloc = pkgs.hwloc.overrideAttrs (old: {
           name = "hwloc-2";
           src = pkgs.fetchurl {
