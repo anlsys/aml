@@ -7,7 +7,7 @@ stages:
   - style
   - build
   - docs
-  - release
+  - distribution
 
 repoquality:
   stage: style
@@ -205,3 +205,26 @@ readthedocs:
   script:
     - nix run nixpkgs.curl -c curl -X POST -d "branches=$CI_COMMIT_REF_NAME" -d "token=$READTHEDOCS_TOKEN" https://readthedocs.org/api/v2/webhook/argo-aml/83161/
 
+distcheck:
+  tags:
+    - nix
+    - kvm
+  stage: distribution
+  except:
+    - /^wip.*/
+    - /^WIP.*/
+  variables:
+    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter -Wno-builtin-declaration-mismatch"
+  script:
+    - |
+      nix-shell --run bash <<< '
+        ./autogen.sh
+        mkdir build
+        ./configure --prefix=`pwd`/build
+        make distcheck
+      '
+  artifacts:
+    when: on_failure
+    paths:
+      - config.log
+      - tests/*.log
