@@ -364,12 +364,14 @@ static int aml_hwloc_distances_alloc(const hwloc_obj_type_t t0,
 	}
 
 	*out = AML_INNER_MALLOC_EXTRA(n, hwloc_obj_t,
-																n*n*sizeof(*((*out)->values)),
-																struct hwloc_distances_s);
+	                              n * n * sizeof(*((*out)->values)),
+	                              struct hwloc_distances_s);
 	if (*out == NULL)
 		return -AML_ENOMEM;
-	(*out)->objs = AML_INNER_MALLOC_GET_ARRAY(*out, hwloc_obj_t, struct hwloc_distances_s);
-	(*out)->values = AML_INNER_MALLOC_GET_EXTRA(*out, n, hwloc_obj_t, struct hwloc_distances_s);
+	(*out)->objs = AML_INNER_MALLOC_GET_ARRAY(*out, hwloc_obj_t,
+	                                          struct hwloc_distances_s);
+	(*out)->values = AML_INNER_MALLOC_GET_EXTRA(*out, n, hwloc_obj_t,
+	                                            struct hwloc_distances_s);
 	(*out)->nbobjs = n;
 
 	for (unsigned it0 = 0; it0 < *nt0; it0++)
@@ -654,7 +656,7 @@ int aml_hwloc_get_NUMA_distance(const hwloc_obj_type_t type,
 		// We pick any distance
 		if (dist == NULL)
 			dist = handle[i];
-		
+
 		// If we found a matrix with same type as initiator type
 		// then we pick this one.
 		else if (handle[i]->objs[0]->type == type) {
@@ -670,10 +672,9 @@ int aml_hwloc_get_NUMA_distance(const hwloc_obj_type_t type,
 		// If we find a distance that is finer grain than default,
 		// then we chose this one.
 		else if (dist->objs[0]->type != HWLOC_OBJ_NUMANODE &&
-		    dist->objs[0]->depth < handle[i]->objs[0]->depth)
+		         dist->objs[0]->depth < handle[i]->objs[0]->depth)
 			dist = handle[i];
 	}
-
 
 	// If we were not able to find any matrix, we craft one.
 	if (dist == NULL) {
@@ -689,9 +690,9 @@ int aml_hwloc_get_NUMA_distance(const hwloc_obj_type_t type,
 	    AML_SUCCESS)
 		err = -AML_ENOMEM;
 
-	out:
-	for (i=0; i < nr; i++)
-			hwloc_distances_release(aml_topology, handle[i]);
+out:
+	for (i = 0; i < nr; i++)
+		hwloc_distances_release(aml_topology, handle[i]);
 	return err;
 }
 
