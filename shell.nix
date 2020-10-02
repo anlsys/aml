@@ -1,6 +1,11 @@
 # development shell, includes aml dependencies and dev-related helpers
 # defined by argopkgs nix pkg record
-{ pkgs ? import (builtins.fetchTarball "https://xgitlab.cels.anl.gov/argo/argopkgs/-/archive/master/argopkgs-master.tar.gz") {} }:
+{ pkgs ? import (
+  builtins.fetchGit {
+    url = "https://xgitlab.cels.anl.gov/argo/argopkgs.git";
+    ref = "master";
+    rev = "56f18ba59462dd7e073417bef9ff15c739905c8c";
+  }) {} }:
 with pkgs;
 pkgs.mkShell {
 	name = "aml";
