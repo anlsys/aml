@@ -8,6 +8,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  ******************************************************************************/
 
+#include "config.h"
+
 #include <sys/mman.h>
 
 #include "aml.h"
@@ -361,18 +363,15 @@ static int aml_hwloc_distances_alloc(const hwloc_obj_type_t t0,
 		n = *nt0 + *nt1;
 	}
 
-	*out = malloc(sizeof(**out));
+	*out = AML_INNER_MALLOC_EXTRA(n, hwloc_obj_t,
+	                              n * n * sizeof(*((*out)->values)),
+	                              struct hwloc_distances_s);
 	if (*out == NULL)
 		return -AML_ENOMEM;
-
-	(*out)->objs = malloc(n * sizeof(hwloc_obj_t));
-	if ((*out)->objs == NULL)
-		goto err_with_distances;
-
-	(*out)->values = malloc(n * n * sizeof(*((*out)->values)));
-	if ((*out)->values == NULL)
-		goto err_with_objs;
-
+	(*out)->objs = AML_INNER_MALLOC_GET_ARRAY(*out, hwloc_obj_t,
+	                                          struct hwloc_distances_s);
+	(*out)->values = AML_INNER_MALLOC_GET_EXTRA(*out, n, hwloc_obj_t,
+	                                            struct hwloc_distances_s);
 	(*out)->nbobjs = n;
 
 	for (unsigned it0 = 0; it0 < *nt0; it0++)
@@ -385,12 +384,6 @@ static int aml_hwloc_distances_alloc(const hwloc_obj_type_t t0,
 			        hwloc_get_obj_by_type(aml_topology, t1, it1);
 	}
 	return AML_SUCCESS;
-
-err_with_objs:
-	free((*out)->objs);
-err_with_distances:
-	free(*out);
-	return -AML_ENOMEM;
 }
 
 #define OBJ_DIST(dist, i, j, row_stride, col_stride)                           \
@@ -398,13 +391,6 @@ err_with_distances:
 	               col_stride + (j)->logical_index]
 
 #define IND_DIST(dist, i, j) (dist)->values[(i) * (dist)->nbobjs + (j)]
-
-static void aml_hwloc_distances_free(struct hwloc_distances_s *dist)
-{
-	free(dist->objs);
-	free(dist->values);
-	free(dist);
-}
 
 /**
  * Get distance matrix in hops between two types of objects.
@@ -635,7 +621,7 @@ static int aml_hwloc_distances_reshape(struct hwloc_distances_s *dist,
 	return AML_SUCCESS;
 
 err_with_out:
-	aml_hwloc_distances_free(*out);
+	free(*out);
 	return -AML_FAILURE;
 }
 
@@ -651,8 +637,9 @@ int aml_hwloc_get_NUMA_distance(const hwloc_obj_type_t type,
                                 enum hwloc_distances_kind_e kind,
                                 struct hwloc_distances_s **out)
 {
+	int err = AML_SUCCESS;
 	// number of hwloc matrices to return in handle
-	unsigned int nr = 32;
+	unsigned int i, nr = 32;
 	// hwloc distance matrix
 	struct hwloc_distances_s *handle[nr], *dist = NULL;
 
@@ -665,24 +652,27 @@ int aml_hwloc_get_NUMA_distance(const hwloc_obj_type_t type,
 		return 0;
 	}
 
-	for (unsigned i = 0; i < nr; i++) {
-		// If we found a matrix with same type as initiator type
-		// then we pick this one.
-		if (handle[i]->objs[0]->type == type) {
-			dist = handle[i];
-			break;
-		}
+	for (i = 0; i < nr; i++) {
 		// We pick any distance
 		if (dist == NULL)
 			dist = handle[i];
+
+		// If we found a matrix with same type as initiator type
+		// then we pick this one.
+		else if (handle[i]->objs[0]->type == type) {
+			dist = handle[i];
+			break;
+		}
+
 		// If we find one that is a NUMANODE distance, we chose this one
 		// over a default choice.
-		if (handle[i]->objs[0]->type == HWLOC_OBJ_NUMANODE)
+		else if (handle[i]->objs[0]->type == HWLOC_OBJ_NUMANODE)
 			dist = handle[i];
+
 		// If we find a distance that is finer grain than default,
 		// then we chose this one.
-		if (dist->objs[0]->type != HWLOC_OBJ_NUMANODE &&
-		    dist->objs[0]->depth < handle[i]->objs[0]->depth)
+		else if (dist->objs[0]->type != HWLOC_OBJ_NUMANODE &&
+		         dist->objs[0]->depth < handle[i]->objs[0]->depth)
 			dist = handle[i];
 	}
 
@@ -690,16 +680,20 @@ int aml_hwloc_get_NUMA_distance(const hwloc_obj_type_t type,
 	if (dist == NULL) {
 		if (aml_hwloc_distance_hop_matrix(type, HWLOC_OBJ_NUMANODE,
 		                                  out) != AML_SUCCESS)
-			return -AML_ENOMEM;
-		return AML_SUCCESS;
+			err = -AML_ENOMEM;
+		goto out;
 	}
 
 	// We reshape whatever matrix we got to be a distance to NUMANODEs
 	// matrix.
 	if (aml_hwloc_distances_reshape(dist, out, type, HWLOC_OBJ_NUMANODE) !=
 	    AML_SUCCESS)
-		return -AML_ENOMEM;
-	return AML_SUCCESS;
+		err = -AML_ENOMEM;
+
+out:
+	for (i = 0; i < nr; i++)
+		hwloc_distances_release(aml_topology, handle[i]);
+	return err;
 }
 
 int aml_area_hwloc_preferred_create(struct aml_area **area,
@@ -770,8 +764,7 @@ int aml_area_hwloc_preferred_create(struct aml_area **area,
 	}
 
 	// Cleanup
-	aml_hwloc_distances_free(dist);
-
+	free(dist);
 	// Success !
 	*area = ar;
 	return AML_SUCCESS;

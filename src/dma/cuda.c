@@ -152,6 +152,8 @@ int aml_dma_cuda_request_wait(struct aml_dma_data *data,
 	// the provided dma did not create the provided request.
 	if (dma_req->status != AML_DMA_CUDA_REQUEST_STATUS_DONE)
 		return -AML_EINVAL;
+
+	aml_dma_cuda_request_destroy(data, req);
 	return AML_SUCCESS;
 }
 

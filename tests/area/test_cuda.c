@@ -198,6 +198,8 @@ void test_unified_mmap(const int device)
 
 		assert(!aml_area_munmap(area, unified_data, size));
 	}
+
+	aml_area_cuda_destroy(&area);
 	free(host_copy);
 }
 
