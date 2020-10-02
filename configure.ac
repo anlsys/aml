@@ -71,7 +71,7 @@ AC_CHECK_LIB(numa, mbind,,[AC_MSG_ERROR([AML requires libnuma.])])
 ###############
 
 PKG_CHECK_MODULES([HWLOC], \
-                  [hwloc >= 2.0],   \
+                  [hwloc >= 2.1],   \
                   [have_hwloc=1], \
                   [have_hwloc=0])
 if test "$have_hwloc" == "1"; then
