@@ -37,7 +37,6 @@ if HAVE_CUDA
 AREA_TESTS += area/test_cuda
 endif
 
-noinst_LTLIBRARIES = liblayout_test.la libreplicaset_test.la
 liblayout_test_la_SOURCES = \
 	layout/test_layout.h \
 	layout/coords.c \
@@ -88,6 +87,7 @@ UNIT_TESTS = $(UTILS_TESTS) \
 # all tests
 TST_PROGS = $(UNIT_TESTS)
 check_PROGRAMS = $(TST_PROGS)
+check_LTLIBRARIES = liblayout_test.la libreplicaset_test.la
 TESTS = $(TST_PROGS)
 
 # phony target to allow us to compile the check programs without running the
