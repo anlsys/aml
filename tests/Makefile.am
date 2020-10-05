@@ -37,17 +37,19 @@ if HAVE_CUDA
 AREA_TESTS += area/test_cuda
 endif
 
-noinst_LTLIBRARIES = liblayout_test.la
-liblayout_test_la_CPPFLAGS =
-liblayout_test_la_LDFLAGS =
+noinst_LTLIBRARIES = liblayout_test.la libreplicaset_test.la
 liblayout_test_la_SOURCES = \
 	layout/test_layout.h \
 	layout/coords.c \
 	layout/dense.c \
 	layout/layout.c \
 	layout/reshape.c
-liblayout_test_la_LIBADD = ../src/libaml.la
-LDADD = liblayout_test.la
+
+libreplicaset_test_la_SOURCES = \
+	replicaset/test_replicaset.h \
+	replicaset/common.c
+
+LDADD = liblayout_test.la libreplicaset_test.la
 
 LAYOUT_TESTS = \
 	layout/test_coords \
@@ -60,6 +62,7 @@ TILING_TESTS = tiling/test_tiling
 
 DMA_TESTS = dma/test_dma_linux_seq \
 		  dma/test_dma_linux_par
+
 
 REPLICASET_TESTS =
 
