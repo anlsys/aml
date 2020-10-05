@@ -41,6 +41,7 @@ noinst_LTLIBRARIES = liblayout_test.la
 liblayout_test_la_CPPFLAGS =
 liblayout_test_la_LDFLAGS =
 liblayout_test_la_SOURCES = \
+	layout/test_layout.h \
 	layout/coords.c \
 	layout/dense.c \
 	layout/layout.c \
