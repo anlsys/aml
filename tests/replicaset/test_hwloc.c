@@ -8,11 +8,9 @@
  * SPDX-License-Identifier: BSD-3-Clause
  ******************************************************************************/
 
-#include "test_replicaset.c"
+#include "test_replicaset.h"
 
 #include <stdlib.h>
-
-#include "aml.h"
 
 #include "aml/higher/replicaset/hwloc.h"
 

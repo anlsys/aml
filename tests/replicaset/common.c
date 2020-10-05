@@ -8,15 +8,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  ******************************************************************************/
 
-#include <assert.h>
+#include "test_replicaset.h"
 
-#include "aml.h"
-
-#include "aml/higher/replicaset.h"
-
-/**
- * Common replicaset test.
- */
 void test_replicaset(struct aml_replicaset *replicaset,
                      const void *src,
                      int (*comp)(const void *, const void *, size_t))
