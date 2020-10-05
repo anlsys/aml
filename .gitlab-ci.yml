@@ -222,6 +222,7 @@ distcheck:
         mkdir build
         ./configure --prefix=`pwd`/build
         make distcheck
+        chmod -R +w aml-*
       '
   artifacts:
     when: on_failure
