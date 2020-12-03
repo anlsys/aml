@@ -27,6 +27,11 @@
  **/
 extern struct aml_dma_ops aml_dma_linux_seq_ops;
 
+/**
+ * Default sequential linux dma initialized at aml_init().
+ **/
+extern struct aml_dma *aml_dma_linux_sequential;
+
 /** Inside of a sequential request for linux movement. **/
 struct aml_dma_request_linux_seq {
 	/**
