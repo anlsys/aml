@@ -27,6 +27,11 @@
  **/
 extern struct aml_dma_ops aml_dma_linux_par_ops;
 
+/**
+ * Default parallel linux dma initialized at aml_init().
+ **/
+extern struct aml_dma *aml_dma_linux_parallel;
+
 /** Inside of a parallel request for linux movement. **/
 struct aml_dma_request_linux_par {
 	/**

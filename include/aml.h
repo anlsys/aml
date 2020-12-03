@@ -46,7 +46,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * @}
  * @defgroup aml "AML Library functions"
  * @brief Initialize/Finalize library.
  *
