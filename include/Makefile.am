@@ -44,6 +44,5 @@ endif
 
 if HAVE_CUDA
 include_aml_area_HEADERS += aml/area/cuda.h
-include_aml_layout_HEADERS += aml/layout/cuda.h
 include_aml_dma_HEADERS += aml/dma/cuda.h
 endif

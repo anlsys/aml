@@ -62,7 +62,7 @@ if HAVE_CUDA
 
 AM_CPPFLAGS += $(CUDA_CFLAGS)
 AM_LDFLAGS += $(CUDA_LIBS)
-libaml_la_SOURCES+=area/cuda.c layout/cuda.c dma/cuda.c
+libaml_la_SOURCES+=area/cuda.c dma/cuda.c
 
 endif
 

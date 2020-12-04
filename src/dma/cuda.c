@@ -11,7 +11,6 @@
 #include "aml.h"
 
 #include "aml/dma/cuda.h"
-#include "aml/layout/cuda.h"
 
 /**
  * Callback on dma stream to update all requests status
@@ -190,16 +189,16 @@ int aml_dma_cuda_copy_1D(struct aml_layout *dst,
                          void *arg)
 {
 	int err;
+	int src_device;
+	int dst_device;
+
 	const void *src_ptr = aml_layout_rawptr(src);
 	void *dst_ptr = aml_layout_rawptr(dst);
 	struct aml_dma_cuda_data *dma_data = (struct aml_dma_cuda_data *)arg;
-	const struct aml_layout_cuda_data *cu_src =
-	        (struct aml_layout_cuda_data *)(src->data);
-	struct aml_layout_cuda_data *cu_dst =
-	        (struct aml_layout_cuda_data *)(dst->data);
 	size_t n = 0;
 	size_t size = 0;
 
+	AML_DMA_CUDA_DEVICE_FROM_PAIR(arg, src_device, dst_device);
 	err = aml_layout_dims(src, &n);
 	if (err != AML_SUCCESS)
 		return err;
@@ -211,8 +210,8 @@ int aml_dma_cuda_copy_1D(struct aml_layout *dst,
 		                    dma_data->stream) != cudaSuccess)
 			return -AML_FAILURE;
 	} else if (dma_data->kind == cudaMemcpyDeviceToDevice) {
-		if (cudaMemcpyPeerAsync(dst_ptr, cu_dst->device, src_ptr,
-		                        cu_src->device, size,
+		if (cudaMemcpyPeerAsync(dst_ptr, dst_device, src_ptr,
+		                        src_device, size,
 		                        dma_data->stream) != cudaSuccess)
 			return -AML_FAILURE;
 	} else

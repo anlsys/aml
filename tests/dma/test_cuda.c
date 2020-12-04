@@ -14,7 +14,6 @@
 #include "aml.h"
 
 #include "aml/dma/cuda.h"
-#include "aml/layout/cuda.h"
 #include "aml/layout/dense.h"
 
 // Data
@@ -47,10 +46,10 @@ void setup()
 	                               AML_LAYOUT_ORDER_COLUMN_MAJOR,
 	                               element_size, ndims, &dims, &stride,
 	                               &pitch) == AML_SUCCESS);
-	assert(aml_layout_cuda_create(&device_layout, device_data, 0,
-	                              element_size,
-	                              AML_LAYOUT_ORDER_COLUMN_MAJOR, ndims,
-	                              &dims, &stride, &pitch) == AML_SUCCESS);
+	assert(aml_layout_dense_create(&device_layout, device_data,
+	                               AML_LAYOUT_ORDER_COLUMN_MAJOR,
+	                               element_size, ndims, &dims, &stride,
+	                               &pitch) == AML_SUCCESS);
 
 	// Dma
 	assert(aml_dma_cuda_create(&host_device, cudaMemcpyHostToDevice) ==
@@ -66,7 +65,7 @@ void teardown()
 	cudaFree(device_data);
 
 	// Layout
-	aml_layout_destroy(&device_layout);
+	aml_layout_destroy(&host_layout);
 	aml_layout_destroy(&device_layout);
 
 	// Dma
