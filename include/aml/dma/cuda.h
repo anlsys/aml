@@ -106,7 +106,29 @@ int aml_dma_cuda_destroy(struct aml_dma **dma);
 
 //--- DMA copy operators --------------------------------------------------//
 
-/** aml_dma_cuda copy operator for 1D to 1D layouts **/
+/**
+ * Embed a pair of devices in a void* to use as dma copy_operator argument
+ * when copying from device to device.
+ **/
+#define AML_DMA_CUDA_DEVICE_PAIR(src, dst)                                     \
+	(void *)(((intptr_t)dst << 32) | ((intptr_t)src))
+
+/**
+ * Translate back a pair of device ids stored in `pair` (void*) into to
+ * device id integers.
+ **/
+#define AML_DMA_CUDA_DEVICE_FROM_PAIR(pair, src, dst)                          \
+	src = dst = 0;                                                         \
+	src = ((intptr_t)pair & 0xffffffff);                                   \
+	dst = ((intptr_t)pair >> 32);
+
+/**
+ * aml_dma_cuda copy operator for 1D to 1D layouts.
+ * @param [in] dst: The destination layout of the copy.
+ * @param [in] src: The source layout of the copy.
+ * @param [in] arg: Either a device id (int). or two device ids
+ * @return an AML error code.
+ **/
 int aml_dma_cuda_copy_1D(struct aml_layout *dst,
                          const struct aml_layout *src,
                          void *arg);

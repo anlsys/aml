@@ -198,5 +198,4 @@ AC_CONFIG_FILES([Makefile
 		 aml.pc
 		 include/aml/utils/version.h
 		 include/aml/utils/features.h])
-AC_CONFIG_FILES([o2lo], [chmod +x o2lo])
 AC_OUTPUT
