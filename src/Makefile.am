@@ -62,23 +62,7 @@ if HAVE_CUDA
 
 AM_CPPFLAGS += $(CUDA_CFLAGS)
 AM_LDFLAGS += $(CUDA_LIBS)
-
-# Build .c sources using cuda runtime library.
 libaml_la_SOURCES+=area/cuda.c layout/cuda.c dma/cuda.c
-
-# Build .cu sources containing device code.
-# CUDA_LO_FILES= # .lo files result of .cu files.
-# CUDA_FLAGS=--x=cu
-#
-# .cu.lo: .cu
-# 	$(NVCC) $(CUDA_FLAGS) -I$(top_srcdir)/include -dc -o $<.cu.o $<
-# 	$(NVCC) $(CUDA_FLAGS) -I$(top_srcdir)/include -c -o $<.o $<
-# 	$(top_builddir)/o2lo $@ $<.cu.o $<.o
-#
-# libamlcuda.la: $(CUDA_LO_FILES)
-# 	$(LIBTOOL) --tag=CC --mode=link $(NVCC) -dlink -o $@ $< -lcudart
-#
-# libaml_la_LIBADD+=libamlcuda.la
 
 endif
 
