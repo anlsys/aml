@@ -4,67 +4,20 @@ variables:
 stages:
   - build
 
-nmc:batch:env:
+make:ascent:
   stage: build
   tags:
-    - nmc
+    - batch
   only:
-    refs:
-      - master
-      - staging
+    - web
     variables:
-      - $ECP_MIRROR == "NMC"
-  script:
-    - uname -a
-    - module avail
-    - lspci
-    - module load hwloc numactl cuda
-    - module avail
-    - lstopo
-    - env
-    - which gcc
-    - gcc --version
-    - compgen -c gcc
-
-make:nmc-cuda-check:
-  stage: build
-  tags:
-    - nmc
-  only:
-    refs:
-      - master
-      - staging
-    variables:
-      - $ECP_MIRROR == "NMC"
+      - $ECP_MIRROR == "ASCENT"
+  variables:
+    SCHEDULER_PARAMETERS: "-P CSC390 -W 10 -nnodes 1 -alloc_flags gpumps"
   script:
     - module load numactl hwloc cuda
-    - env | grep -i cuda
-    - cat /proc/self/status
     - ./autogen.sh
-    - ./configure
-    - make -j
-    - make check VERBOSE=1
-  artifacts:
-    when: on_failure
-    paths:
-      - tests/test-suite.log
-      - config.log
-
-make:nmc-cuda-home:
-  stage: build
-  tags:
-    - nmc
-  only:
-    refs:
-      - master
-      - staging
-    variables:
-      - $ECP_MIRROR == "NMC"
-  script:
-    - module load numactl hwloc cuda
-    - env | grep -i cuda
-    - ./autogen.sh
-    - ./configure --with-cuda=$CUDA_HOME
+    - ./configure --enable-cuda
     - make -j
     - make check VERBOSE=1
   artifacts:
