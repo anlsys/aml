@@ -47,15 +47,20 @@ TILING_TESTS = \
 	       tiling/0_generic_resize_tiling \
 	       tiling/1_dgemm
 
+HIGHER_TESTS = \
+	       higher/0_deepcopy_linux
+
 if HAVE_CUDA
 AREA_TESTS += area/0_aml_area_cuda
+HIGHER_TESTS += higher/1_deepcopy_cuda
 endif
 
 if HAVE_HWLOC
 AREA_TESTS += area/2_aml_area_hwloc
 endif
 
-UNIT_TESTS = $(HELLO_TESTS) $(AREA_TESTS) $(LAYOUT_TESTS) $(DMA_TESTS) $(TILING_TESTS)
+UNIT_TESTS = $(HELLO_TESTS) $(AREA_TESTS) $(LAYOUT_TESTS) $(DMA_TESTS) $(TILING_TESTS) \
+	       $(HIGHER_TESTS)
 
 check_PROGRAMS = $(UNIT_TESTS)
 TESTS = $(UNIT_TESTS)
