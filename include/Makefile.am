@@ -24,7 +24,6 @@ include_aml_tiling_HEADERS = \
 			     aml/tiling/pad.h \
 			     aml/tiling/resize.h
 
-
 include_amlutilsdir=$(includedir)/aml/utils
 include_amlutils_HEADERS = \
 			   aml/utils/bitmap.h \
