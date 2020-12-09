@@ -10,7 +10,7 @@ Download
 
 .. code-block:: console
   
-  $ git clone https://xgitlab.cels.anl.gov/argo/aml.git
+  $ git clone --recurse-submodules https://xgitlab.cels.anl.gov/argo/aml.git
   $ git checkout staging
 
 Requirements:

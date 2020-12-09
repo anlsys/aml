@@ -52,7 +52,7 @@ Download
 
 .. code-block:: console
   
-  $ git clone --recurse-submodules git@xgitlab.cels.anl.gov:argo/aml.git
+  $ git clone --recurse-submodules https://xgitlab.cels.anl.gov/argo/aml.git
 
 Requirements:
 ~~~~~~~~~~~~~
