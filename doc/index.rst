@@ -52,7 +52,7 @@ Download
 
 .. code-block:: console
   
-  $ git clone --recurse-submodules git@xgitlab.cels.anl.gov:argo/aml.git
+  $ git clone --recurse-submodules https://xgitlab.cels.anl.gov/argo/aml.git
 
 Requirements:
 ~~~~~~~~~~~~~
@@ -61,6 +61,7 @@ Requirements:
 * automake
 * libtool
 * libnuma
+* hwloc (>2.1)
 
 Installation
 ~~~~~~~~~~~~
@@ -92,7 +93,7 @@ Check the AML version:
       return 1;
   }
 
-Initialize and clean up the AML:
+Initialize and clean up the library:
 
 .. code-block:: c
   
