@@ -121,6 +121,11 @@ extern struct aml_area_ops aml_area_cuda_ops;
  **/
 extern struct aml_area aml_area_cuda;
 
+/**
+ * Cuda area allocating unified memory.
+ **/
+extern struct aml_area aml_area_cuda_unified;
+
 /** Implementation of aml_area_data for cuda areas. **/
 struct aml_area_cuda_data {
 	/** Area allocation flags. **/

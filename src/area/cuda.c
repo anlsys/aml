@@ -290,6 +290,11 @@ struct aml_area_cuda_data aml_area_cuda_data_default = {
 	.device = -1,
 };
 
+struct aml_area_cuda_data aml_area_cuda_data_unified = {
+        .flags = AML_AREA_CUDA_FLAG_ALLOC_UNIFIED,
+        .device = -1,
+};
+
 struct aml_area_ops aml_area_cuda_ops = {
 	.mmap = aml_area_cuda_mmap,
 	.munmap = aml_area_cuda_munmap,
@@ -300,3 +305,7 @@ struct aml_area aml_area_cuda = {
 	.ops = &aml_area_cuda_ops,
 	.data = (struct aml_area_data *)(&aml_area_cuda_data_default)
 };
+
+struct aml_area aml_area_cuda_unified = {
+        .ops = &aml_area_cuda_ops,
+        .data = (struct aml_area_data *)(&aml_area_cuda_data_unified)};
