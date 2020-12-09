@@ -17,7 +17,6 @@ AREA_SOURCES = \
 LAYOUT_SOURCES = \
 	       layout/layout.c \
 	       layout/dense.c \
-	       layout/sparse.c \
 	       layout/pad.c \
 	       layout/reshape.c
 

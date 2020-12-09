@@ -53,7 +53,6 @@ LDADD = liblayout_test.la libreplicaset_test.la
 LAYOUT_TESTS = \
 	layout/test_coords \
 	layout/test_dense \
-	layout/test_sparse \
 	layout/test_reshape \
 	layout/test_pad
 
