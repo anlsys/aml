@@ -92,16 +92,13 @@ int main(void)
 		return 77;
 
 	const size_t size = (2 << 16);	// 16 pages
-	void *host_buf = mmap(NULL, size,
-			      PROT_READ | PROT_WRITE,
-			      MAP_PRIVATE | MAP_ANONYMOUS,
-			      0, 0);
+	void *host_buf = malloc(size);
 	if (host_buf == NULL)
 		return 1;
 
 	test_default_area(size, host_buf);
 	test_custom_area(size, host_buf);
 
-	munmap(host_buf, size);
+	free(host_buf);
 	return 0;
 }
