@@ -9,13 +9,14 @@ make:ascent:
   tags:
     - batch
   only:
-    - web
+    refs:
+      - web
     variables:
       - $ECP_MIRROR == "ASCENT"
   variables:
     SCHEDULER_PARAMETERS: "-P CSC390 -W 10 -nnodes 1 -alloc_flags gpumps"
   script:
-    - module load numactl hwloc cuda
+    - module load numactl cuda
     - ./autogen.sh
     - ./configure --enable-cuda
     - make -j
