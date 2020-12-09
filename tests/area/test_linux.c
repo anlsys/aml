@@ -6,23 +6,26 @@
  * For more info, see https://xgitlab.cels.anl.gov/argo/aml
  *
  * SPDX-License-Identifier: BSD-3-Clause
-*******************************************************************************/
+ *******************************************************************************/
 
 #include "config.h"
-#include "aml.h"
-#include "aml/area/linux.h"
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+
+#include <assert.h>
 #include <fcntl.h>
 #include <numa.h>
 #include <numaif.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
-#include <assert.h>
+
+#include "aml.h"
+
+#include "aml/area/linux.h"
 
 int fd;
 
-const size_t sizes[3] = { 1, 1 << 12, 1 << 20 };
+const size_t sizes[3] = {1, 1 << 12, 1 << 20};
 
 struct aml_bitmap mems_allowed;
 int last_node;
@@ -39,17 +42,16 @@ void test_area(struct aml_area *area, struct aml_area_mmap_options *options)
 	}
 }
 
-
 void test_case(const struct aml_bitmap *nodemask,
-	       const enum aml_area_linux_policy policy,
-	       const int flags)
+               const enum aml_area_linux_policy policy,
+               const int flags)
 {
 	struct aml_area_linux_mmap_options options = {
-		.ptr = NULL,
-		.flags = MAP_ANONYMOUS | flags,
-		.mode = PROT_READ | PROT_WRITE,
-		.fd = fd,
-		.offset = 0,
+	        .ptr = NULL,
+	        .flags = MAP_ANONYMOUS | flags,
+	        .mode = PROT_READ | PROT_WRITE,
+	        .fd = -1,
+	        .offset = 0,
 	};
 
 	struct aml_area *area;
@@ -63,13 +65,13 @@ void test_case(const struct aml_bitmap *nodemask,
 
 	// Map file test.
 	options.flags = flags;
+	options.fd = fd;
 	test_area(area, (struct aml_area_mmap_options *)(&options));
 
 	aml_area_linux_destroy(&area);
 }
 
-void test_policies(const struct aml_bitmap *nodemask,
-		   const int flags)
+void test_policies(const struct aml_bitmap *nodemask, const int flags)
 {
 	test_case(nodemask, AML_AREA_LINUX_POLICY_BIND, flags);
 	test_case(nodemask, AML_AREA_LINUX_POLICY_PREFERRED, flags);
@@ -105,7 +107,7 @@ void test_multiple_nodes(void)
 	first = aml_bitmap_first(&mems_allowed);
 	aml_bitmap_set(&bitmap, first);
 
-	for (int i = first+1; i <= last_node; i++) {
+	for (int i = first + 1; i <= last_node; i++) {
 		if (aml_bitmap_isset(&mems_allowed, i)) {
 			aml_bitmap_set(&bitmap, i);
 			test_flags(&bitmap);
@@ -116,8 +118,10 @@ void test_multiple_nodes(void)
 
 int main(void)
 {
-	char tmp_name[] = "test_area_linux_XXXXXX";
-	size_t size = sizes[sizeof(sizes)/sizeof(*sizes) - 1];
+	/* have to create the file in /tmp, otherwise we might end up running on
+	 * a file system that doesn't like mmap */
+	char tmp_name[] = "/tmp/test_area_linux_XXXXXX";
+	size_t size = sizes[sizeof(sizes) / sizeof(*sizes) - 1];
 	ssize_t nw = 0;
 	char *buf;
 
@@ -138,13 +142,14 @@ int main(void)
 
 	struct bitmask *nodeset = numa_get_mems_allowed();
 
-	aml_bitmap_copy_from_ulong(&mems_allowed,
-				   nodeset->maskp, nodeset->size);
+	aml_bitmap_copy_from_ulong(&mems_allowed, nodeset->maskp,
+	                           nodeset->size);
 	last_node = aml_bitmap_last(&mems_allowed);
 
 	test_single_node();
 	test_multiple_nodes();
 
 	close(fd);
+	numa_bitmask_free(nodeset);
 	return 0;
 }

@@ -55,6 +55,15 @@ void *aml_layout_deref_safe(const struct aml_layout *layout,
 	return layout->ops->deref(layout->data, coords);
 }
 
+void *aml_layout_rawptr(const struct aml_layout *layout)
+{
+	assert(layout != NULL &&
+	       layout->ops != NULL &&
+	       layout->ops->rawptr != NULL);
+
+	return layout->ops->rawptr(layout->data);
+}
+
 void *aml_layout_deref_native(const struct aml_layout *layout,
 			      const size_t *coords)
 {
@@ -266,8 +275,8 @@ int aml_layout_slice_native(const struct aml_layout *layout,
 
 	assert(aml_check_layout_slice(layout,
 				      layout->ops->dims_native,
-				      dims,
 				      offsets,
+				      dims,
 				      strides) == AML_SUCCESS);
 
 	err = layout->ops->slice_native(layout->data,
@@ -276,4 +285,39 @@ int aml_layout_slice_native(const struct aml_layout *layout,
 		*reshaped_layout = result;
 
 	return err;
+}
+
+int aml_layout_fprintf(FILE *stream, const char *prefix,
+		       const struct aml_layout *layout)
+{
+	assert(layout != NULL && layout->ops != NULL && stream != NULL);
+
+	const char *p = (prefix == NULL) ? "" : prefix;
+
+	return layout->ops->fprintf(layout->data, stream, p);
+}
+
+int aml_layout_duplicate(const struct aml_layout *layout,
+                         struct aml_layout **dest,
+                         void *ptr)
+{
+	assert(layout != NULL && layout->ops != NULL);
+
+	if (layout->ops->duplicate == NULL)
+		return -AML_ENOTSUP;
+	else
+		return layout->ops->duplicate(layout, dest, ptr);
+}
+
+void aml_layout_destroy(struct aml_layout **layout)
+{
+	if (layout == NULL || *layout == NULL)
+		return;
+
+	struct aml_layout *l = *layout;
+	if (l->ops->destroy != NULL)
+		l->ops->destroy(l);
+	else
+		free(l);
+	*layout = NULL;
 }

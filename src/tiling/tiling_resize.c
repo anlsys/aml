@@ -21,31 +21,29 @@ static int aml_tiling_resize_alloc(struct aml_tiling **ret, size_t ndims)
 	struct aml_tiling *tiling;
 	struct aml_tiling_resize *data;
 
-	tiling = AML_INNER_MALLOC_EXTRA(struct aml_tiling,
-					struct aml_tiling_resize,
-					size_t, 3*ndims);
+	tiling = AML_INNER_MALLOC_ARRAY(3*ndims, size_t,
+					struct aml_tiling,
+					struct aml_tiling_resize);
 
 	if (tiling == NULL) {
 		*ret = NULL;
 		return -AML_ENOMEM;
 	}
 
-	data = AML_INNER_MALLOC_NEXTPTR(tiling,
-					struct aml_tiling,
-					struct aml_tiling_resize);
+	data = AML_INNER_MALLOC_GET_FIELD(tiling,
+					  2,
+					  struct aml_tiling,
+					  struct aml_tiling_resize);
 	tiling->data = (struct aml_tiling_data *)data;
-	data->tile_dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(tiling,
-						 struct aml_tiling,
-						 struct aml_tiling_resize,
-						 size_t, 0);
-	data->dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(tiling,
-						    struct aml_tiling,
-						    struct aml_tiling_resize,
-						    size_t, ndims);
-	data->border_tile_dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(tiling,
-						    struct aml_tiling,
-						    struct aml_tiling_resize,
-						    size_t, 2*ndims);
+
+	data->tile_dims = AML_INNER_MALLOC_GET_ARRAY(tiling,
+						     size_t,
+						     struct aml_tiling,
+						     struct aml_tiling_resize);
+
+	data->dims = data->tile_dims + ndims;
+	data->border_tile_dims = data->dims + ndims;
+
 	data->layout = NULL;
 	data->ndims = ndims;
 	*ret = tiling;
@@ -144,37 +142,28 @@ aml_tiling_resize_column_index(const struct aml_tiling_data *t,
 	return ret;
 }
 
-int aml_tiling_resize_column_tileid(const struct aml_tiling_data *t,
-				    const size_t *coords)
+void *aml_tiling_resize_column_rawptr(const struct aml_tiling_data *t,
+				      const size_t *coords)
 {
 	const struct aml_tiling_resize *d =
-		(const struct aml_tiling_resize *)t;
+	    (const struct aml_tiling_resize *)t;
 
 	assert(d != NULL);
-	int ret = 0;
 	size_t ndims = d->ndims;
+	size_t offsets[ndims];
 
-	for (size_t i = 0; i < ndims; i++)
-		ret = (ret * d->dims[i]) + coords[i];
-	return ret;
+	for (size_t i = 0; i < ndims; i++) {
+		assert(coords[i] < d->dims[i]);
+		offsets[i] = coords[i] * d->tile_dims[i];
+	}
+
+	return aml_layout_deref_native(d->layout, offsets);
 }
 
 int aml_tiling_resize_column_order(const struct aml_tiling_data *t)
 {
 	(void)t;
 	return AML_TILING_ORDER_COLUMN_MAJOR;
-}
-
-int aml_tiling_resize_column_tile_dims(const struct aml_tiling_data *t,
-					size_t *tile_dims)
-{
-	const struct aml_tiling_resize *d =
-	    (const struct aml_tiling_resize *)t;
-
-	assert(d != NULL);
-	memcpy((void *)tile_dims, (void *)d->tile_dims,
-	       sizeof(size_t)*d->ndims);
-	return 0;
 }
 
 int aml_tiling_resize_column_dims(const struct aml_tiling_data *l,
@@ -211,20 +200,44 @@ size_t aml_tiling_resize_column_ntiles(const struct aml_tiling_data *l)
 	return ret;
 }
 
+int aml_tiling_resize_column_fprintf(const struct aml_tiling_data *data,
+				     FILE *stream, const char *prefix)
+{
+	const struct aml_tiling_resize *d;
+
+	fprintf(stream, "%s: tiling-resize: %p: column-major\n", prefix,
+		(void *)data);
+	if (data == NULL)
+		return AML_SUCCESS;
+
+	d = (const struct aml_tiling_resize *)data;
+
+	fprintf(stream, "%s: tags: %d\n", prefix, d->tags);
+	fprintf(stream, "%s: ndims: %zu\n", prefix, d->ndims);
+	for (size_t i = 0; i < d->ndims; i++) {
+		fprintf(stream, "%s: %16zu: %16zu %16zu %16zu\n", prefix,
+			i, d->dims[i], d->tile_dims[i], d->border_tile_dims[i]);
+	}
+	fprintf(stream, "%s: layout: begin\n", prefix);
+	aml_layout_fprintf(stream, prefix, d->layout);
+	fprintf(stream, "%s: layout: end\n", prefix);
+	return AML_SUCCESS;
+}
+
 struct aml_tiling_ops aml_tiling_resize_column_ops = {
 	aml_tiling_resize_column_index,
 	aml_tiling_resize_column_index,
-	aml_tiling_resize_column_tileid,
+	aml_tiling_resize_column_rawptr,
 	aml_tiling_resize_column_order,
-	aml_tiling_resize_column_tile_dims,
 	aml_tiling_resize_column_dims,
 	aml_tiling_resize_column_dims,
 	aml_tiling_resize_column_ndims,
 	aml_tiling_resize_column_ntiles,
+	aml_tiling_resize_column_fprintf,
 };
 
 /*******************************************************************************
- * Column Implementation
+ * Row Implementation
  ******************************************************************************/
 
 struct aml_layout*
@@ -257,37 +270,28 @@ aml_tiling_resize_row_index(const struct aml_tiling_data *t,
 	return ret;
 }
 
-int aml_tiling_resize_row_tileid(const struct aml_tiling_data *t,
-				 const size_t *coords)
+void *aml_tiling_resize_row_rawptr(const struct aml_tiling_data *t,
+				      const size_t *coords)
 {
 	const struct aml_tiling_resize *d =
-		(const struct aml_tiling_resize *)t;
+	    (const struct aml_tiling_resize *)t;
 
 	assert(d != NULL);
-	int ret = 0;
 	size_t ndims = d->ndims;
+	size_t offsets[ndims];
 
-	for (size_t i = 0; i < ndims; i++)
-		ret = (ret * d->dims[i]) + coords[ndims - i - 1];
-	return ret;
+	for (size_t i = 0; i < ndims; i++) {
+		assert(coords[ndims - i - 1] < d->dims[i]);
+		offsets[i] = coords[ndims - i - 1] * d->tile_dims[i];
+	}
+
+	return aml_layout_deref_native(d->layout, offsets);
 }
 
 int aml_tiling_resize_row_order(const struct aml_tiling_data *t)
 {
 	(void)t;
 	return AML_TILING_ORDER_ROW_MAJOR;
-}
-
-int aml_tiling_resize_row_tile_dims(const struct aml_tiling_data *t,
-				    size_t *tile_dims)
-{
-	const struct aml_tiling_resize *d =
-	    (const struct aml_tiling_resize *)t;
-
-	assert(d != NULL);
-	for (size_t i = 0; i < d->ndims; i++)
-		tile_dims[i] = d->tile_dims[d->ndims - i - 1];
-	return 0;
 }
 
 int aml_tiling_resize_row_dims(const struct aml_tiling_data *t,
@@ -311,14 +315,40 @@ size_t aml_tiling_resize_row_ndims(const struct aml_tiling_data *t)
 	return d->ndims;
 }
 
+int aml_tiling_resize_row_fprintf(const struct aml_tiling_data *data,
+				  FILE *stream, const char *prefix)
+{
+	const struct aml_tiling_resize *d;
+
+	fprintf(stream, "%s: tiling-resize: %p: row-major\n", prefix,
+		(void *)data);
+	if (data == NULL)
+		return AML_SUCCESS;
+
+	d = (const struct aml_tiling_resize *)data;
+
+	fprintf(stream, "%s: tags: %d\n", prefix, d->tags);
+	fprintf(stream, "%s: ndims: %zu\n", prefix, d->ndims);
+	for (size_t i = 0; i < d->ndims; i++) {
+		size_t j = d->ndims - i - 1;
+
+		fprintf(stream, "%s: %16zu: %16zu %16zu %16zu\n", prefix,
+			i, d->dims[j], d->tile_dims[j], d->border_tile_dims[j]);
+	}
+	fprintf(stream, "%s: layout: begin\n", prefix);
+	aml_layout_fprintf(stream, prefix, d->layout);
+	fprintf(stream, "%s: layout: end\n", prefix);
+	return AML_SUCCESS;
+}
+
 struct aml_tiling_ops aml_tiling_resize_row_ops = {
 	aml_tiling_resize_row_index,
 	aml_tiling_resize_column_index,
-	aml_tiling_resize_row_tileid,
+	aml_tiling_resize_row_rawptr,
 	aml_tiling_resize_row_order,
-	aml_tiling_resize_row_tile_dims,
 	aml_tiling_resize_row_dims,
 	aml_tiling_resize_column_dims,
 	aml_tiling_resize_row_ndims,
 	aml_tiling_resize_column_ntiles,
+	aml_tiling_resize_row_fprintf,
 };

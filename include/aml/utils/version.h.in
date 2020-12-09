@@ -22,7 +22,7 @@
  * Major version changes in AML
  * denotes ABI changes which prevent
  * compatibility with previous major version ABI.
- * 
+ *
  **/
 #define	AML_VERSION_MAJOR @PACKAGE_VERSION_MAJOR@
 

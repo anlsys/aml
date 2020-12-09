@@ -6,5 +6,5 @@ includedir=@includedir@
 Name: libaml
 Description: AML: Building Blocks for Memory Management
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -laml
-Cflags: -I${includedir}
+Libs: -L${libdir} -laml -lexcit @HWLOC_LIBS@ @CUDA_LIBS@
+Cflags: -I${includedir} @HWLOC_CFLAGS@ @CUDA_CFLAGS@

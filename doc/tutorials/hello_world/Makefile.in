@@ -1,0 +1,14 @@
+CC=@CC@
+CFLAGS=-Wall -Wextra -Werror -pedantic -g -O0
+LDFLAGS=-L@prefix@/lib -laml -lnuma -lpthread
+
+SRC=0_hello.c
+BIN=$(patsubst %.c, %, $(SRC))
+
+all: $(BIN)
+
+%: %.c
+	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
+
+clean:
+	rm -rf $(BIN)

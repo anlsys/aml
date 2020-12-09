@@ -97,6 +97,16 @@ int aml_layout_isequal(const struct aml_layout *a,
  **/
 void test_layout_base(struct aml_layout *layout);
 
+/**
+ * Print test for layouts. Check that we can print the layout.
+ **/
+void test_layout_fprintf(FILE *stream, const char *prefix,
+			 struct aml_layout *layout);
+
+/**
+ * Duplicate for layouts. Check that we can copy the layout.
+ **/
+void test_layout_duplicate(struct aml_layout *layout);
 //------------------------------------------------------------------------------
 // Testing a dense layout.
 //------------------------------------------------------------------------------

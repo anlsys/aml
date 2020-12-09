@@ -18,37 +18,32 @@ static int aml_layout_dense_alloc(struct aml_layout **ret,
 	struct aml_layout *layout;
 	struct aml_layout_dense *data;
 
-	layout = AML_INNER_MALLOC_EXTRA(struct aml_layout,
-					struct aml_layout_dense,
-					size_t, 3*ndims);
+	layout = AML_INNER_MALLOC_ARRAY(3*ndims, size_t,
+					struct aml_layout,
+					struct aml_layout_dense);
 	if (layout == NULL) {
 		*ret = NULL;
 		return -AML_ENOMEM;
 	}
 
-	data = AML_INNER_MALLOC_NEXTPTR(layout,
-					struct aml_layout,
-					struct aml_layout_dense);
+	data = AML_INNER_MALLOC_GET_FIELD(layout, 2,
+					  struct aml_layout,
+					  struct aml_layout_dense);
 	layout->data = (struct aml_layout_data *) data;
 
 	data->ptr = NULL;
 	data->ndims = ndims;
 
-	data->dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
-						    struct aml_layout,
-						    struct aml_layout_dense,
-						    size_t, 0);
-	data->stride = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
-						      struct aml_layout,
-						      struct aml_layout_dense,
-						      size_t, ndims);
+	data->dims = AML_INNER_MALLOC_GET_ARRAY(layout,
+						size_t,
+						struct aml_layout,
+						struct aml_layout_dense);
+
+	data->stride = data->dims + ndims;
 	for (size_t i = 0; i < ndims; i++)
 		data->stride[i] = 1;
 
-	data->cpitch = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
-						      struct aml_layout,
-						      struct aml_layout_dense,
-						      size_t, ndims*2);
+	data->cpitch =  data->stride + ndims;
 	*ret = layout;
 	return AML_SUCCESS;
 }
@@ -133,12 +128,34 @@ int aml_layout_dense_create(struct aml_layout **layout,
 	return AML_SUCCESS;
 }
 
-void aml_layout_dense_destroy(struct aml_layout **l)
+int aml_layout_dense_duplicate(const struct aml_layout *layout,
+                               struct aml_layout **out,
+                               void *ptr)
 {
-	if (l == NULL || *l == NULL)
-		return;
-	free(*l);
-	*l = NULL;
+	const struct aml_layout_dense *data;
+	struct aml_layout_dense *dret;
+	struct aml_layout *ret;
+	int err;
+
+	data = (const struct aml_layout_dense *)layout->data;
+
+	if (layout->data == NULL || out == NULL)
+		return -AML_EINVAL;
+
+	err = aml_layout_dense_alloc(&ret, data->ndims);
+	if (err)
+		return err;
+
+	ret->ops = layout->ops;
+	dret = (struct aml_layout_dense *)ret->data;
+	dret->ptr = ptr ? ptr : data->ptr;
+
+	/* small optimization by copying the contents of the end part of our
+	 * single allocation (everything after the _data struct).
+	 */
+	memcpy(dret->dims, data->dims, 3 * data->ndims * sizeof(size_t));
+	*out = ret;
+	return AML_SUCCESS;
 }
 
 /*******************************************************************************
@@ -156,6 +173,15 @@ void *aml_layout_column_deref(const struct aml_layout_data *data,
 	for (size_t i = 0; i < d->ndims; i++)
 		ptr += coords[i]*d->cpitch[i]*d->stride[i];
 	return (void *)ptr;
+}
+
+void *aml_layout_dense_rawptr(const struct aml_layout_data *data)
+{
+	const struct aml_layout_dense *d;
+
+	d = (const struct aml_layout_dense *)data;
+
+	return d->ptr;
 }
 
 int aml_layout_column_order(const struct aml_layout_data *data)
@@ -369,17 +395,42 @@ int aml_layout_column_slice(const struct aml_layout_data *data,
 	return AML_SUCCESS;
 }
 
+int aml_layout_column_fprintf(const struct aml_layout_data *data,
+			      FILE *stream, const char *prefix)
+{
+	const struct aml_layout_dense *d;
+
+	fprintf(stream, "%s: layout-dense: %p: column-major\n", prefix,
+		(void *)data);
+	if (data == NULL)
+		return AML_SUCCESS;
+
+	d = (const struct aml_layout_dense *)data;
+
+	fprintf(stream, "%s: ptr: %p\n", prefix, d->ptr);
+	fprintf(stream, "%s: ndims: %zu\n", prefix, d->ndims);
+	for (size_t i = 0; i < d->ndims; i++) {
+		fprintf(stream, "%s: %16zu: %16zu %16zu %16zu\n", prefix,
+			i, d->dims[i], d->stride[i], d->cpitch[i]);
+	}
+	return AML_SUCCESS;
+}
+
 struct aml_layout_ops aml_layout_column_ops = {
-	aml_layout_column_deref,
-	aml_layout_column_deref,
-	aml_layout_column_order,
-	aml_layout_column_dims,
-	aml_layout_column_dims,
-	aml_layout_dense_ndims,
-	aml_layout_dense_element_size,
-	aml_layout_column_reshape,
-	aml_layout_column_slice,
-	aml_layout_column_slice,
+        .deref = aml_layout_column_deref,
+        aml_layout_column_deref,
+        aml_layout_dense_rawptr,
+        aml_layout_column_order,
+        aml_layout_column_dims,
+        aml_layout_column_dims,
+        aml_layout_dense_ndims,
+        aml_layout_dense_element_size,
+        aml_layout_column_reshape,
+        aml_layout_column_slice,
+        aml_layout_column_slice,
+        aml_layout_column_fprintf,
+        aml_layout_dense_duplicate,
+        NULL,
 };
 
 /*******************************************************************************
@@ -543,16 +594,42 @@ int aml_layout_row_slice_native(const struct aml_layout_data *data,
 	return AML_SUCCESS;
 }
 
-struct aml_layout_ops aml_layout_row_ops = {
-	aml_layout_row_deref,
-	aml_layout_column_deref,
-	aml_layout_row_order,
-	aml_layout_row_dims,
-	aml_layout_column_dims,
-	aml_layout_dense_ndims,
-	aml_layout_dense_element_size,
-	aml_layout_row_reshape,
-	aml_layout_row_slice,
-	aml_layout_row_slice_native
-};
+int aml_layout_row_fprintf(const struct aml_layout_data *data,
+			   FILE *stream, const char *prefix)
+{
+	const struct aml_layout_dense *d;
 
+	fprintf(stream, "%s: layout-dense: %p: row-major\n", prefix,
+		(void *)data);
+	if (data == NULL)
+		return AML_SUCCESS;
+
+	d = (const struct aml_layout_dense *)data;
+
+	fprintf(stream, "%s: ptr: %p\n", prefix, d->ptr);
+	fprintf(stream, "%s: ndims: %zu\n", prefix, d->ndims);
+	for (size_t i = 0; i < d->ndims; i++) {
+		size_t j = d->ndims - i - 1;
+
+		fprintf(stream, "%s: %16zu: %16zu %16zu %16zu\n", prefix,
+			i, d->dims[j], d->stride[j], d->cpitch[j]);
+	}
+	return AML_SUCCESS;
+}
+
+struct aml_layout_ops aml_layout_row_ops = {
+        .deref = aml_layout_row_deref,
+        aml_layout_column_deref,
+        aml_layout_dense_rawptr,
+        aml_layout_row_order,
+        aml_layout_row_dims,
+        aml_layout_column_dims,
+        aml_layout_dense_ndims,
+        aml_layout_dense_element_size,
+        aml_layout_row_reshape,
+        aml_layout_row_slice,
+        aml_layout_row_slice_native,
+        aml_layout_row_fprintf,
+        aml_layout_dense_duplicate,
+        NULL,
+};

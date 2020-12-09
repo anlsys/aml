@@ -36,8 +36,8 @@ int aml_dma_request_linux_par_copy_init(struct aml_dma_request_linux_par *req,
 {
 	assert(req != NULL);
 	req->type = AML_DMA_REQUEST_TYPE_LAYOUT;
-	req->dest = dest;
-	req->src = src;
+	aml_layout_duplicate(dest, &req->dest, NULL);
+	aml_layout_duplicate(src, &req->src, NULL);
 	req->op = op;
 	req->op_arg = op_arg;
 	return 0;
@@ -46,6 +46,8 @@ int aml_dma_request_linux_par_copy_init(struct aml_dma_request_linux_par *req,
 int aml_dma_request_linux_par_copy_destroy(struct aml_dma_request_linux_par *r)
 {
 	assert(r != NULL);
+	aml_layout_destroy(&r->src);
+	aml_layout_destroy(&r->dest);
 	return 0;
 }
 
@@ -154,10 +156,49 @@ int aml_dma_linux_par_wait_request(struct aml_dma_data *d,
 	return 0;
 }
 
+int aml_dma_linux_par_fprintf(const struct aml_dma_data *data,
+			      FILE *stream, const char *prefix)
+{
+	const struct aml_dma_linux_par *d;
+	size_t vsize;
+
+	fprintf(stream, "%s: dma-linux-par: %p:\n", prefix, (void *)data);
+	if (data == NULL)
+		return AML_SUCCESS;
+
+	d = (const struct aml_dma_linux_par *)data;
+
+	vsize = aml_vector_size(d->data.requests);
+	/* ugly cast because ISO C forbids function pointer to void * */
+	fprintf(stream, "%s: op: %p\n", prefix,
+		(void *) (intptr_t) d->data.default_op);
+	fprintf(stream, "%s: op-arg: %p\n", prefix, d->data.default_op_arg);
+	fprintf(stream, "%s: requests: %zu\n", prefix, vsize);
+	for (size_t i = 0; i < vsize; i++) {
+		const struct aml_dma_request_linux_par *r;
+
+		r = aml_vector_get(d->data.requests, i);
+		fprintf(stream, "%s: type: %d\n", prefix, r->type);
+		if (r->type == AML_DMA_REQUEST_TYPE_INVALID)
+			continue;
+
+		fprintf(stream, "%s: layout-dest: %p\n", prefix,
+			(void *)r->dest);
+		aml_layout_fprintf(stream, prefix, r->dest);
+		fprintf(stream, "%s: layout-src: %p\n", prefix, (void *)r->src);
+		aml_layout_fprintf(stream, prefix, r->src);
+		fprintf(stream, "%s: op: %p\n", prefix,
+			(void *) (intptr_t)r->op);
+		fprintf(stream, "%s: op-arg: %p\n", prefix, (void *)r->op_arg);
+	}
+	return AML_SUCCESS;
+}
+
 struct aml_dma_ops aml_dma_linux_par_ops = {
 	aml_dma_linux_par_create_request,
 	aml_dma_linux_par_destroy_request,
 	aml_dma_linux_par_wait_request,
+	aml_dma_linux_par_fprintf,
 };
 
 /*******************************************************************************
@@ -175,12 +216,13 @@ int aml_dma_linux_par_create(struct aml_dma **dma, size_t nbreqs,
 
 	*dma = NULL;
 
-	ret = AML_INNER_MALLOC_2(struct aml_dma, struct aml_dma_linux_par);
+	ret = AML_INNER_MALLOC(struct aml_dma, struct aml_dma_linux_par);
 	if (ret == NULL)
 		return -AML_ENOMEM;
 
-	ret->data = AML_INNER_MALLOC_NEXTPTR(ret, struct aml_dma,
-					     struct aml_dma_linux_par);
+	ret->data = AML_INNER_MALLOC_GET_FIELD(ret, 2,
+					       struct aml_dma,
+					       struct aml_dma_linux_par);
 	ret->ops = &aml_dma_linux_par_ops;
 	d = (struct aml_dma_linux_par *)ret->data;
 	d->ops = aml_dma_linux_par_inner_ops;

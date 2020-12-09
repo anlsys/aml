@@ -42,30 +42,14 @@ AC_SUBST([PACKAGE_VERSION_PATCH],[VERSION_PATCH])
 # support for testing with valgrind
 ###################################
 
-AC_ARG_ENABLE(valgrind,
-[AS_HELP_STRING([--enable-valgrind],[Also valgrind on checks (default is no).])],
-[valgrind=true],[valgrind=false])
+AX_VALGRIND_DFLT([helgrind], [off])
+AX_VALGRIND_DFLT([drd], [off])
+AX_VALGRIND_DFLT([sgcheck], [off])
+AX_VALGRIND_CHECK
 
-if [[ "x$valgrind" = xtrue ]]; then
-	AC_PATH_PROG(VALGRIND, valgrind, no)
-	if [[  "x$VALGRIND" = xno ]]; then
-		AC_MSG_ERROR([Valgrind not found in PATH. ])
-	fi
-fi
-AM_CONDITIONAL([TEST_VALGRIND],[test "x$valgrind" = xtrue])
-
-# support for compiling benchmarks
-##################################
-
-AC_ARG_ENABLE(benchmarks,
-[AS_HELP_STRING([--enable-benchmarks],[Compile additional benchmarks (default is no).])],
-[benchmarks=true],[benchmarks=false])
-
-if [[ "x$benchmarks" = xtrue ]]; then
-	AC_OPENMP
-	AC_CHECK_LIB(m, sqrt)
-fi
-AM_CONDITIONAL([ADD_BENCHMARKS],[test "x$benchmarks" = xtrue])
+AC_OPENMP
+AC_CHECK_HEADERS([math.h],,[AC_MSG_ERROR([AML requires libmath headers.])])
+AC_CHECK_LIB(m, sqrt,,[AC_MSG_ERROR([AML requires libmath.])])
 
 AC_CHECK_LIB(dl, dlopen)
 
@@ -82,6 +66,20 @@ CC="$PTHREAD_CC"
 AC_CHECK_HEADERS([numa.h],,[AC_MSG_ERROR([AML requires libnuma headers.])])
 AC_CHECK_HEADERS([numaif.h],,[AC_MSG_ERROR([AML requires libnuma headers.])])
 AC_CHECK_LIB(numa, mbind,,[AC_MSG_ERROR([AML requires libnuma.])])
+
+# Hwloc support
+###############
+
+PKG_CHECK_MODULES([HWLOC], \
+                  [hwloc >= 2.1],   \
+                  [have_hwloc=1], \
+                  [have_hwloc=0])
+if test "$have_hwloc" == "1"; then
+   AC_DEFINE([HAVE_HWLOC], [1], "hwloc library with ABI > 2.0 is installed.")
+fi
+AM_CONDITIONAL([HAVE_HWLOC], [test "$have_hwloc" = "1"])
+AC_DEFINE_UNQUOTED([HAVE_HWLOC], [$have_hwloc], [Whether aml support hwloc library calls.])
+AC_SUBST([HAVE_HWLOC],[$have_hwloc])
 
 # check doxygen + sphinx for documentation build
 ################################################
@@ -162,7 +160,7 @@ if [[ "x$have_nvcc" = xyes ]]; then
 			[AC_MSG_ERROR([could not find cuda.h])])
 	AC_CHECK_HEADER([cuda_runtime.h],,
 			[AC_MSG_ERROR([could not find cuda_runtime.h])])
-	AC_CHECK_LIB(cudart, cudaMalloc,,
+	AC_CHECK_LIB(cudart, cudaLaunchHostFunc,,
 		     AC_MSG_ERROR([could not find cudart library]))
 	LIBS=$saved_LIBS
 	CFLAGS=$saved_CFLAGS
@@ -176,8 +174,13 @@ AC_SUBST(CUDA_CFLAGS)
 AC_SUBST(CUDA_LIBS)
 AC_SUBST(NVCC)
 
+# Support for cross-compiling check programs
+AM_EXTRA_RECURSIVE_TARGETS([check-programs])
+
 # Output
 ########
+
+AC_CONFIG_SUBDIRS([excit])
 
 AC_CONFIG_HEADERS([include/config.h])
 
@@ -185,10 +188,14 @@ AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 include/Makefile
 		 tests/Makefile
+		 doc/tutorials/Makefile
 		 doc/Makefile
+		 doc/tutorials/hello_world/Makefile
+		 doc/tutorials/area/Makefile
+		 doc/tutorials/dma/Makefile
+		 doc/tutorials/layouts/Makefile
 		 benchmarks/Makefile
 		 aml.pc
 		 include/aml/utils/version.h
 		 include/aml/utils/features.h])
-AC_CONFIG_FILES([o2lo], [chmod +x o2lo])
 AC_OUTPUT

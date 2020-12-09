@@ -32,6 +32,7 @@ void test_map(const struct aml_area *area)
 		assert(ptr != NULL);
 		assert(aml_area_munmap(area, ptr, sizes[s]) == AML_SUCCESS);
 	}
+	assert(!aml_area_fprintf(stderr, "area", area));
 }
 
 void test_aml_area(struct aml_area *area)

@@ -55,7 +55,8 @@ static void test_reshape_discontiguous(void)
 				  a,
 				  AML_LAYOUT_ORDER_COLUMN_MAJOR,
 				  5, new_dims_col);
-
+	test_layout_fprintf(stderr, "test-reshape", c);
+	test_layout_duplicate(c);
 	i = 0;
 	for (size_t j = 0; j < 3; j++)
 		for (size_t k = 0; k < 2; k++)
@@ -75,9 +76,8 @@ static void test_reshape_discontiguous(void)
 						assert(i == *(int *)ptr);
 					}
 
-	free(a);
-	free(b);
-	free(c);
+	aml_layout_destroy(&b);
+	aml_layout_destroy(&c);
 
 	assert(aml_layout_dense_create(&a,
 				       (void *)memory,
@@ -91,7 +91,8 @@ static void test_reshape_discontiguous(void)
 	aml_layout_reshape_create(&c,
 				  a,
 				  AML_LAYOUT_ORDER_ROW_MAJOR, 5, new_dims_row);
-
+	test_layout_fprintf(stderr, "test-reshape", c);
+	test_layout_duplicate(c);
 	i = 0;
 	for (size_t j = 0; j < 3; j++)
 		for (size_t k = 0; k < 2; k++)
@@ -111,9 +112,8 @@ static void test_reshape_discontiguous(void)
 						assert(i == *(int *)ptr);
 					}
 
-	free(a);
-	free(b);
-	free(c);
+	aml_layout_destroy(&b);
+	aml_layout_destroy(&c);
 }
 
 static void test_reshape_strided(void)
@@ -172,9 +172,8 @@ static void test_reshape_strided(void)
 					assert(i == *(int *)ptr);
 				}
 
-	free(a);
-	free(b);
-	free(c);
+	aml_layout_destroy(&b);
+	aml_layout_destroy(&c);
 
 	assert(aml_layout_dense_create(&a,
 				       (void *)memory,
@@ -204,9 +203,8 @@ static void test_reshape_strided(void)
 					assert(i == *(int *)ptr);
 				}
 
-	free(a);
-	free(b);
-	free(c);
+	aml_layout_destroy(&b);
+	aml_layout_destroy(&c);
 }
 
 int main(int argc, char *argv[])

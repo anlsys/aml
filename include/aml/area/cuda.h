@@ -8,6 +8,9 @@
  * SPDX-License-Identifier: BSD-3-Clause
 *******************************************************************************/
 
+#ifndef AML_AREA_CUDA_H
+#define AML_AREA_CUDA_H
+
 /**
  * @defgroup aml_area_cuda "AML Cuda Areas"
  * @brief Cuda Implementation of Areas.
@@ -45,6 +48,17 @@
 #define AML_AREA_CUDA_FLAG_ALLOC_HOST (1 << 0)
 
 /**
+ * Unified memory flag.
+ * If this flag is set, then allocation will create
+ * a unified memory pointer usable on host and device.
+ * Additionally, AML_AREA_CUDA_FLAG_ALLOC_HOST and
+ * AML_AREA_CUDA_FLAG_ALLOC_MAPPED will be ignored.
+ *
+ * @see cudaMallocManaged()
+ **/
+#define	AML_AREA_CUDA_FLAG_ALLOC_UNIFIED (1 << 1)
+
+/**
  * Mapping flag.
  * Default behaviour is allocation not mapped.
  * If set, the pointer returned by mmap function
@@ -58,23 +72,12 @@
  *
  * @see cudaHostRegister(), cudaHostAlloc().
  **/
-#define AML_AREA_CUDA_FLAG_ALLOC_MAPPED (1 << 1)
-
-/**
- * Unified memory flag.
- * If this flag is set, then allocation will create
- * a unified memory pointer usable on host and device.
- * Additionally, AML_AREA_CUDA_FLAG_ALLOC_HOST and
- * AML_AREA_CUDA_FLAG_ALLOC_MAPPED will be ignored.
- *
- * @see cudaMallocManaged()
- **/
-#define	AML_AREA_CUDA_FLAG_ALLOC_UNIFIED (1 << 2)
+#define AML_AREA_CUDA_FLAG_ALLOC_MAPPED (1 << 2)
 
 /**
  * Unified memory setting flag.
  * If AML_AREA_CUDA_FLAG_ALLOC_UNIFIED is set,
- * then this flagged is looked to set
+ * then this flag is looked to set
  * cudaMallocManaged() flag cudaAttachGlobal.
  * Else if AML_AREA_CUDA_FLAG_ALLOC_MAPPED is set,
  * or AML_AREA_CUDA_FLAG_ALLOC_HOST flag is set,
@@ -117,6 +120,11 @@ extern struct aml_area_ops aml_area_cuda_ops;
  * and not mapped on host memory.
  **/
 extern struct aml_area aml_area_cuda;
+
+/**
+ * Cuda area allocating unified memory.
+ **/
+extern struct aml_area aml_area_cuda_unified;
 
 /** Implementation of aml_area_data for cuda areas. **/
 struct aml_area_cuda_data {
@@ -226,3 +234,5 @@ aml_area_cuda_munmap(const struct aml_area_data *area_data,
 /**
  * @}
  **/
+
+#endif // AML_AREA_CUDA_H

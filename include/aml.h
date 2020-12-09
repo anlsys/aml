@@ -20,6 +20,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <excit.h>
 #include <inttypes.h>
 #include <numa.h>
 #include <numaif.h>
@@ -33,17 +34,18 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include "aml/utils/async.h"
 #include "aml/utils/bitmap.h"
 #include "aml/utils/error.h"
+#include "aml/utils/features.h"
 #include "aml/utils/inner-malloc.h"
+#include "aml/utils/queue.h"
 #include "aml/utils/vector.h"
 #include "aml/utils/version.h"
-#include "aml/utils/features.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * @}
  * @defgroup aml "AML Library functions"
  * @brief Initialize/Finalize library.
  *
@@ -152,6 +154,16 @@ struct aml_area_ops {
 	int (*munmap)(const struct aml_area_data *data,
 		      void                       *ptr,
 		      size_t                      size);
+
+	/**
+	 * Print the implementation-specific information available
+	 * @param stream the stream to print to
+	 * @param prefix a prefix string to use on all lines
+	 * @param data non-NULL handle to area internal data.
+	 * @return 0 if successful, an error code otherwise.
+	 **/
+	int (*fprintf)(const struct aml_area_data *data,
+		       FILE *stream, const char *prefix);
 };
 
 /**
@@ -196,6 +208,16 @@ aml_area_munmap(const struct aml_area *area,
 		void                  *ptr,
 		size_t                 size);
 
+/**
+ * Print on the file handle the metadata associated with this area.
+ * @param stream the stream to print on
+ * @param prefix prefix to use on all lines
+ * @param area area to print
+ * @return 0 if successful, an error code otherwise.
+ */
+int aml_area_fprintf(FILE *stream, const char *prefix,
+		     const struct aml_area *area);
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -214,6 +236,9 @@ aml_area_munmap(const struct aml_area *area,
  * * A stride in between elements of a dimension.
  * * A pitch indicating the space between contiguous elements of a dimension.
  *
+ * For a definition of row and columns of matrices see :
+ * https://en.wikipedia.org/wiki/Matrix_(mathematics)
+ *
  * The figure below describes a 2D layout with a sub-layout
  * (obtained with aml_layout_slice()) operation. The sub-layout has a stride
  * of 1 element along the second dimension. The slice has an offset of 1 element
@@ -227,12 +252,13 @@ aml_area_munmap(const struct aml_area *area,
  * Access to specific elements of a layout can be done with
  * the aml_layout_deref() function. Access to an element is always done
  * relatively to the dimensions order set by at creation time.
- * However, internally, the library will store dimensions from the last
- * dimension to the first dimension such that elements along the first dimension
- * are contiguous in memory. This order is defined called with the value
- * AML_LAYOUT_ORDER_FORTRAN. Therefore, AML provides access to elements
- * without the overhead of user order choice through function suffixed
- * with "native".
+ * However, internally, the library will always store dimensions in such a way
+ * that elements along the first dimension
+ * are contiguous in memory. This order is defined with the value
+ * AML_LAYOUT_ORDER_COLUMN_MAJOR (AML_LAYOUT_ORDER_FORTRAN). See:
+ * https://en.wikipedia.org/wiki/Row-_and_column-major_order
+ * Additionally, AML provides access to elements without the overhead of user
+ * order choice through function suffixed with "native".
  * @see aml_layout_deref()
  * @see aml_layout_deref_native()
  * @see aml_layout_dims_native()
@@ -297,6 +323,15 @@ struct aml_layout_ops {
 	 **/
 	void *(*deref_native)(const struct aml_layout_data *data,
 			      const size_t *coords);
+
+	/**
+	 * Function to retrieve a pointer to the start of the actual memory
+	 * buffer under this layout.
+	 * @param data[in] the non-NULL handle to layout internal data.
+	 * @return a pointer to the buffer on success
+	 * @return NULL on failure, with aml_errno set to the error reason.
+	 **/
+	void *(*rawptr)(const struct aml_layout_data *data);
 
 	/**
 	 * Get the order in which dimensions of the layout are
@@ -379,8 +414,8 @@ struct aml_layout_ops {
 	 **/
 	int (*slice)(const struct aml_layout_data *data,
 		     struct aml_layout **output,
-		     const size_t *dims,
 		     const size_t *offsets,
+		     const size_t *dims,
 		     const size_t *strides);
 
 	/**
@@ -403,9 +438,42 @@ struct aml_layout_ops {
 	 **/
 	int (*slice_native)(const struct aml_layout_data *data,
 			    struct aml_layout **output,
-			    const size_t *dims,
 			    const size_t *offsets,
+			    const size_t *dims,
 			    const size_t *strides);
+	/**
+	 * Print the implementation-specific information available on a layout,
+	 * content excluded.
+	 * @param stream the stream to print to
+	 * @param prefix a prefix string to use on all lines
+	 * @param data non-NULL handle to layout internal data.
+	 * @return 0 if successful, an error code otherwise.
+	 **/
+	int (*fprintf)(const struct aml_layout_data *data,
+		       FILE *stream, const char *prefix);
+
+	/**
+	 * Duplicate a layout (does not copy data, but deep copy
+	 * metadata).
+	 * If the layout relies on sublayouts (e.g. pad, reshape), those will be
+	 * copied too.
+	 * @param[in] layout a non-NULL handle to a layout to copy.
+	 * @param[out] out a pointer to where to store the new layout.
+	 * @param[in] ptr: If not NULL use this pointer as the new layout raw
+	 *pointer.
+	 * @return -AML_ENOTSUP if operation is not available.
+	 * @return -AML_ENOMEM if layout allocation failed.
+	 * @return -AML_EINVAL if src or dest are NULL.
+	 * @return AML_SUCCESS if copy succeeded.
+	 **/
+	int (*duplicate)(const struct aml_layout *layout,
+	                 struct aml_layout **out,
+	                 void *ptr);
+
+	/**
+	 * Destroys the layout and frees all associated memory.
+	 **/
+	void (*destroy)(struct aml_layout *);
 };
 
 /**
@@ -415,7 +483,7 @@ struct aml_layout_ops {
  * This tag will store dimensions in the order provided by the user,
  * i.e., elements of the last dimension will be contiguous in memory.
  **/
-#define AML_LAYOUT_ORDER_C (0<<0)
+#define AML_LAYOUT_ORDER_FORTRAN (0<<0)
 
 /**
  * Tag specifying user storage of dimensions inside a layout.
@@ -426,17 +494,17 @@ struct aml_layout_ops {
  * in memory. This storage is the actual storage used by the library
  * inside the structure.
  **/
-#define AML_LAYOUT_ORDER_FORTRAN (1<<0)
-
-/**
- * This is equivalent to AML_LAYOUT_ORDER_C.
- * @see AML_LAYOUT_ORDER_C
- **/
-#define AML_LAYOUT_ORDER_COLUMN_MAJOR (0<<0)
+#define AML_LAYOUT_ORDER_C (1<<0)
 
 /**
  * This is equivalent to AML_LAYOUT_ORDER_FORTRAN.
  * @see AML_LAYOUT_ORDER_FORTRAN
+ **/
+#define AML_LAYOUT_ORDER_COLUMN_MAJOR (0<<0)
+
+/**
+ * This is equivalent to AML_LAYOUT_ORDER_C.
+ * @see AML_LAYOUT_ORDER_C
  **/
 #define AML_LAYOUT_ORDER_ROW_MAJOR (1<<0)
 
@@ -470,6 +538,13 @@ void *aml_layout_deref(const struct aml_layout *layout,
  **/
 void *aml_layout_deref_safe(const struct aml_layout *layout,
 			    const size_t *coords);
+
+/**
+ * Return a pointer to the first byte of the buffer this layout maps to.
+ * @param layout an initialized layout
+ * @return a raw pointer to the start of the layout, NULL on error.
+ */
+void *aml_layout_rawptr(const struct aml_layout *layout);
 
 /**
  * Get the order in which dimensions of the layout are supposed to be
@@ -551,9 +626,39 @@ int aml_layout_reshape(const struct aml_layout *layout,
  **/
 int aml_layout_slice(const struct aml_layout *layout,
 		     struct aml_layout **reshaped_layout,
-		     const size_t *dims,
 		     const size_t *offsets,
+		     const size_t *dims,
 		     const size_t *strides);
+
+/**
+ * Print on the file handle the metadata associated with this layout.
+ * @param stream the stream to print on
+ * @param prefix prefix to use on all lines
+ * @param layout layout to print
+ * @return 0 if successful, an error code otherwise.
+ */
+int aml_layout_fprintf(FILE *stream, const char *prefix,
+		       const struct aml_layout *layout);
+
+/**
+ * Creates a duplicate of the layout (independent deep copy of all its metadata,
+ * no user data is actually copied).
+ * @param[in] src the layout to duplicate
+ * @param[out] out a pointer to where to store the new layout
+ * @param[in] ptr: If not NULL use this pointer as the new layout raw pointer.
+ * @return -AML_ENOMEM if layout allocation failed.
+ * @return -AML_EINVAL if src or dest are NULL.
+ * @return AML_SUCCESS if copy succeeded.
+ **/
+int aml_layout_duplicate(const struct aml_layout *src,
+                         struct aml_layout **out,
+                         void *ptr);
+
+/**
+ * Destroy (free) a layout, irrespective of its type.
+ * @param[in,out] layout the layout to destroy. NULL on return.
+ **/
+void aml_layout_destroy(struct aml_layout **layout);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -579,7 +684,7 @@ int aml_layout_slice(const struct aml_layout *layout,
  * This tag will store dimensions in the order provided by the user,
  * i.e elements of the last dimension will be contiguous in memory.
  **/
-#define AML_TILING_ORDER_C (0<<0)
+#define AML_TILING_ORDER_FORTRAN (0<<0)
 
 /**
  * Tag specifying user storage of dimensions inside a layout.
@@ -590,17 +695,17 @@ int aml_layout_slice(const struct aml_layout *layout,
  * in memory. This storage is the actual storage used by the library
  * inside the structure.
  **/
-#define AML_TILING_ORDER_FORTRAN (1<<0)
-
-/**
- * This is equivalent to AML_TILING_ORDER_C.
- * @see AML_TILING_ORDER_C
- **/
-#define AML_TILING_ORDER_COLUMN_MAJOR (0<<0)
+#define AML_TILING_ORDER_C (1<<0)
 
 /**
  * This is equivalent to AML_TILING_ORDER_FORTRAN.
  * @see AML_TILING_ORDER_FORTRAN
+ **/
+#define AML_TILING_ORDER_COLUMN_MAJOR (0<<0)
+
+/**
+ * This is equivalent to AML_TILING_ORDER_C.
+ * @see AML_TILING_ORDER_C
  **/
 #define AML_TILING_ORDER_ROW_MAJOR (1<<0)
 
@@ -633,13 +738,24 @@ struct aml_tiling_ops {
 	/** retrieve a tile as a layout with coordinates in native order  **/
 	struct aml_layout* (*index_native)(const struct aml_tiling_data *t,
 					   const size_t *coords);
-	int (*tileid)(const struct aml_tiling_data *t, const size_t *coords);
+	void *(*rawptr)(const struct aml_tiling_data *t,
+			const size_t *coords);
 	int (*order)(const struct aml_tiling_data *t);
-	int (*tile_dims)(const struct aml_tiling_data *t, size_t *dims);
 	int (*dims)(const struct aml_tiling_data *t, size_t *dims);
 	int (*dims_native)(const struct aml_tiling_data *t, size_t *dims);
 	size_t (*ndims)(const struct aml_tiling_data *t);
 	size_t (*ntiles)(const struct aml_tiling_data *t);
+
+	/**
+	 * Print the implementation-specific information available on a tiling,
+	 * content excluded.
+	 * @param stream the stream to print to
+	 * @param prefix a prefix string to use on all lines
+	 * @param data non-NULL handle to tiling internal data.
+	 * @return 0 if successful, an error code otherwise.
+	 **/
+	int (*fprintf)(const struct aml_tiling_data *data,
+		       FILE *stream, const char *prefix);
 };
 
 /**
@@ -673,20 +789,24 @@ int aml_tiling_order(const struct aml_tiling *tiling);
 int aml_tiling_dims(const struct aml_tiling *tiling, size_t *dims);
 
 /**
- * Return the dimensions of a tile in the tiling, in the user order.
- * @param[in] tiling: An initialized tiling.
- * @param[out] dims: A non-NULL array of dimensions to fill. It is
- * supposed to be large enough to contain aml_tiling_ndims() elements.
- * @return AML_SUCCESS on success, else an AML error code.
- **/
-int aml_tiling_tile_dims(const struct aml_tiling *tiling, size_t *dims);
-
-/**
  * Provide the number of dimensions in a tiling.
  * @param tiling: an initialized tiling structure.
  * @return the number of dimensions in the tiling.
  **/
 size_t aml_tiling_ndims(const struct aml_tiling *tiling);
+
+/**
+ * Get the dimensions of a specific tile in the tiling.
+ * @param[in] tiling: The tiling to inspect.
+ * @param[in] coords: The coordinate of the tile to lookup.
+ * If NULL, the first tile is used.
+ * @param[out] dims: The tile dimensions.
+ * @return AML_SUCCESS on success.
+ * @return The result of aml_tiling_index on error.
+ */
+int aml_tiling_tile_dims(const struct aml_tiling *tiling,
+                         const size_t *coords,
+                         size_t *dims);
 
 /**
  * Provide the number of tiles in a tiling.
@@ -705,22 +825,32 @@ struct aml_layout *aml_tiling_index(const struct aml_tiling *tiling,
 				    const size_t *coords);
 
 /**
- * Return a unique identifier for a tile based on coordinates in the tiling
- * @param tiling: an initialized tiling
- * @param coords: the coordinates for the tile
- * @return a uuid for the tile.
+ * Return a pointer to the first valid coordinate in the underlying tile.
+ * @param tiling an initialized tiling
+ * @param coords the coordinates for the tile
+ * @return a raw pointer to the start of the buffer for a tile, NULL on error.
  */
-int aml_tiling_tileid(const struct aml_tiling *tiling, const size_t *coords);
+void *aml_tiling_rawptr(const struct aml_tiling *tiling, const size_t *coords);
 
 /**
- * Return the tile with this identifier
- * @param tiling: an initialized tiling
- * @param uuid: a unique identifier for this tile
- * @return the tiling as a layout on success, NULL on error.
+ * Return the tile at the coordinates at the current position of the input
+ * iterator.
+ * @param[in] tiling: an initialized tiling
+ * @param[in] iterator: an initialized iterator
+ * @return the tile as a layout on success, NULL on error.
  */
-struct aml_layout *aml_tiling_index_byid(const struct aml_tiling *tiling,
-					 const int uuid);
+struct aml_layout *aml_tiling_index_byiter(const struct aml_tiling *tiling,
+                                           const_excit_t iterator);
 
+/**
+ * Print on the file handle the metadata associated with this tiling.
+ * @param stream the stream to print on
+ * @param prefix prefix to use on all lines
+ * @param tiling tiling to print
+ * @return 0 if successful, an error code otherwise.
+ */
+int aml_tiling_fprintf(FILE *stream, const char *prefix,
+		       const struct aml_tiling *tiling);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -829,6 +959,16 @@ struct aml_dma_ops {
 	 **/
 	int (*wait_request)(struct aml_dma_data *dma,
 			    struct aml_dma_request **req);
+
+	/**
+	 * Print the implementation-specific information available on a dma.
+	 * @param stream the stream to print to
+	 * @param prefix a prefix string to use on all lines
+	 * @param data non-NULL handle to dma internal data.
+	 * @return 0 if successful, an error code otherwise.
+	 **/
+	int (*fprintf)(const struct aml_dma_data *data,
+		       FILE *stream, const char *prefix);
 };
 
 /**
@@ -847,6 +987,10 @@ struct aml_dma {
 
 /**
  * Requests a synchronous data copy between two different buffers.
+ *
+ * Layouts are copied internally if necessary, avoiding the need for users to
+ * keep the layouts alive during the request.
+ *
  * @param dma: an initialized DMA structure.
  * @param dest: layout describing the destination.
  * @param src: layout describing the source.
@@ -860,6 +1004,10 @@ int aml_dma_copy_custom(struct aml_dma *dma, struct aml_layout *dest,
 /**
  * Requests a data copy between two different buffers.This is an asynchronous
  * version of aml_dma_copy().
+ *
+ * Layouts are copied internally if necessary, avoiding the need for users to
+ * keep the layouts alive during the request.
+ *
  * @param dma: an initialized DMA structure.
  * @param req: an address where the pointer to the newly assigned DMA request
  *        will be stored.
@@ -895,6 +1043,16 @@ int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request **req);
 int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request **req);
 
 /**
+ * Print on the file handle the metadata associated with this dma.
+ * @param stream the stream to print on
+ * @param prefix prefix to use on all lines
+ * @param dma dma to print
+ * @return 0 if successful, an error code otherwise.
+ */
+int aml_dma_fprintf(FILE *stream, const char *prefix,
+		    const struct aml_dma *dma);
+
+/**
  * Generic helper to copy from one layout to another.
  * @param[out] dst: destination layout
  * @param[in] src: source layout
@@ -903,211 +1061,9 @@ int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request **req);
 int aml_copy_layout_generic(struct aml_layout *dst,
 			    const struct aml_layout *src, void *arg);
 
-
-////////////////////////////////////////////////////////////////////////////////
-
-/**
- * @}
- * @defgroup aml_scratch "AML Scratchpad"
- * @brief Stage-in, Stage-out High Level Abstraction.
- *
- * Scratchpad in an abstraction fro moving data back and forth from
- * a data representation in an area to another data representation in another
- * areas. This is especially usefull from moving to user data representation
- * to an architecure optimized representation for heavy computational work,
- * then returning the to user representation.
- * Data movement is performed with two dma engines from one area and tiling to
- * another area and tiling.
- *
- * @image html scratch.png width=600
- * @see aml_dma
- * @{
- **/
-
-////////////////////////////////////////////////////////////////////////////////
-
-/**
- * Scratch is mainly used to asynchronously move data back and forth between
- * two areas. aml_scratch_request is an opaque structure containing information
- * about ongoing requests for data movement.
- **/
-struct aml_scratch_request;
-
-/**
- * Opaque handle implemented by each scratches implementation.
- * Should not be used by end users.
- **/
-struct aml_scratch_data;
-
-/**
- * Scratchpad request types.
- * Invalid request type.  Used for marking inactive requests in the vector.
- **/
-#define AML_SCRATCH_REQUEST_TYPE_INVALID -1
-
-/**
- * Scratchpad request types.
- * Push from the scratchpad to regular memory.
- **/
-#define AML_SCRATCH_REQUEST_TYPE_PUSH 0
-
-/**
- * Scratchpad request types.
- * Pull from regular memory to the scratchpad.
- **/
-#define AML_SCRATCH_REQUEST_TYPE_PULL 1
-
-/**
- * Scratchpad request types.
- * No-op/empty request
- **/
-#define AML_SCRATCH_REQUEST_TYPE_NOOP 2
-
-/**
- * aml_scratch_ops contain a scratch implementation specific operations.
- * These operations implementation may vary depending on the source and
- * destination of data, and thus scratch implementations use different
- * operations.
- * Aware users may create or modify implementation by assembling
- * appropriate operations in such a structure.
- * @see struct aml_scratch
- **/
-struct aml_scratch_ops {
-	/**
-	 * \todo Doc
-	 **/
-	int (*create_request)(struct aml_scratch_data *scratch,
-			      struct aml_scratch_request **req, int type,
-			      struct aml_layout **dest, int *destid,
-			      struct aml_layout *src, int srcid);
-	/**
-	 * \todo Doc
-	 **/
-	int (*destroy_request)(struct aml_scratch_data *scratch,
-			       struct aml_scratch_request *req);
-	/**
-	 * \todo Doc
-	 **/
-	int (*wait_request)(struct aml_scratch_data *scratch,
-			    struct aml_scratch_request *req);
-	/**
-	 * \todo Doc
-	 **/
-	int (*release)(struct aml_scratch_data *scratch, int scratchid);
-};
-
-/**
- * An aml_scratch is abstraction aimed toward temporary use of a data structures
- * in a different area than the one where data currently resides. Scratches in
- * AML take care of asynchornously allocating and moving the data back and forth
- * between areas.
- **/
-struct aml_scratch {
-	/** @see aml_scratch_ops **/
-	struct aml_scratch_ops *ops;
-	/** @see aml_scratch_data **/
-	struct aml_scratch_data *data;
-};
-
-/**
- * Requests a synchronous pull from regular memory to the scratchpad.
- * @param scratch: an initialized scratchpad structure.
- * @param dest: destination layout (on the scratch)
- * @param scratchid: an argument of type int*; gets filled with the scratch tile
- *        identifier where the data will be pulled into.
- * @param src: the source layout.
- * @param srcid: an argument of type int; the source tile identifier.
- * @see aml_scratch_baseptr()
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_scratch_pull(struct aml_scratch *scratch,
-		     struct aml_layout **dest, int *scratchid,
-		     struct aml_layout *src, int srcid);
-
-/**
- * Requests a pull from regular memory to the scratchpad. This is an
- * asynchronous version of aml_scratch_pull().
- * @param scratch: an initialized scratchpad structure.
- * @param req: an address where the pointer to the newly assigned scratch
- *        request will be stored.
- * @param scratch_layout: the layout on the scratch
- * @param scratchid: an argument of type int*; gets filled with the scratch tile
- *        identifier where the data will be pulled into.
- * @param src_layout: the source layout to pull.
- * @param srcid: an argument of type int; the source tile identifier.
- * @return 0 if successful; an error code otherwise.
- * @see aml_scratch_pull()
- **/
-int aml_scratch_async_pull(struct aml_scratch *scratch,
-			   struct aml_scratch_request **req,
-			   struct aml_layout **scratch_layout, int *scratchid,
-			   struct aml_layout *src_layout, int srcid);
-/**
- * Requests a synchronous push from the scratchpad to regular memory.
- * @param scratch: an initialized scratchpad structure.
- * @param dest_layout: the destination layout
- * @param destid: an argument of type int*; gets filled with the destination
- * tile identifier where the data will be pushed into (and where it was pulled
- * from in the first place).
- * @param scratch_layout: the source layout on the scratch
- * @param scratchid: an argument of type int; the scratchpad tile identifier.
- * @return 0 if successful; an error code otherwise.
- * @see aml_scratch_baseptr()
- **/
-int aml_scratch_push(struct aml_scratch *scratch,
-		     struct aml_layout **dest_layout, int *destid,
-		     struct aml_layout *scratch_layout, int scratchid);
-
-/**
- * Requests a push from the scratchpad to regular memory.  This is an
- * asynchronous version of aml_scratch_push().
- * @param scratch: an initialized scratchpad structure.
- * @param req: an address where the pointer to the newly assigned scratch
- *        request will be stored.
- * @param dest_layout: the destination layout
- * @param destid: an argument of type int*; gets filled with the destination
- * tile identifier where the data will be pushed into (and where it was pulled
- * from in the first place).
- * @param scratch_layout: the source layout on the scratch
- * @param scratchid: an argument of type int; the scratchpad tile identifier.
- * @return 0 if successful; an error code otherwise.
- * @see aml_scratch_push()
- **/
-int aml_scratch_async_push(struct aml_scratch *scratch,
-			   struct aml_scratch_request **req,
-			   struct aml_layout **dest_layout, int *destid,
-			   struct aml_layout *scratch_layout, int scratchid);
-/**
- * Waits for an asynchronous scratch request to complete.
- * @param scratch: an initialized scratchpad structure.
- * @param req: a scratch request obtained using aml_scratch_async_*() calls.
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_scratch_wait(struct aml_scratch *scratch,
-		     struct aml_scratch_request *req);
-
-/**
- * Tears down an asynchronous scratch request before it completes.
- * @param scratch: an initialized scratchpad structure.
- * @param req: a scratch request obtained using aml_scratch_async_*() calls.
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_scratch_cancel(struct aml_scratch *scratch,
-		       struct aml_scratch_request *req);
-/**
- * Provides the location of the scratchpad.
- * @param scratch: an initialized scratchpad structure.
- * @return a base pointer to the scratchpad memory buffer.
- **/
-void *aml_scratch_baseptr(const struct aml_scratch *scratch);
-
-/**
- * Release a scratch tile for immediate reuse.
- * @param scratch: an initialized scratchpad structure.
- * @param scratchid: a scratchpad tile identifier.
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_scratch_release(struct aml_scratch *scratch, int scratchid);
+int aml_copy_layout_transform_generic(struct aml_layout *dst,
+				      const struct aml_layout *src,
+				      const size_t *target_dims);
 
 ////////////////////////////////////////////////////////////////////////////////
 

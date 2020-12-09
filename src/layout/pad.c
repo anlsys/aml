@@ -17,30 +17,30 @@ static int aml_layout_pad_alloc(struct aml_layout **ret,
 	struct aml_layout *layout;
 	struct aml_layout_pad *data;
 
-	layout = AML_INNER_MALLOC_4(struct aml_layout,
-				    struct aml_layout_pad,
-				    size_t, 2*ndims, element_size);
+	layout = AML_INNER_MALLOC_EXTRA(2*ndims, size_t,
+					element_size,
+					struct aml_layout,
+					struct aml_layout_pad);
 	if (layout == NULL) {
 		*ret = NULL;
 		return -AML_ENOMEM;
 	}
 
-	data = AML_INNER_MALLOC_NEXTPTR(layout,
-					struct aml_layout,
-					struct aml_layout_pad);
+	data = AML_INNER_MALLOC_GET_FIELD(layout, 2,
+					  struct aml_layout,
+					  struct aml_layout_pad);
 	layout->data = (struct aml_layout_data *) data;
-	data->dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
-						    struct aml_layout,
-						    struct aml_layout_pad,
-						    size_t, 0);
-	data->target_dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
-							struct aml_layout,
-							struct aml_layout_pad,
-							size_t, ndims);
-	data->neutral = AML_INNER_MALLOC_EXTRA_NEXTPTR(layout,
-						       struct aml_layout,
-						       struct aml_layout_pad,
-						       size_t, 2*ndims);
+
+	data->dims = AML_INNER_MALLOC_GET_ARRAY(layout,
+						size_t,
+						struct aml_layout,
+						struct aml_layout_pad);
+	data->target_dims = data->dims + ndims;
+
+	data->neutral = AML_INNER_MALLOC_GET_EXTRA(layout,
+						   2*ndims, size_t,
+						   struct aml_layout,
+						   struct aml_layout_pad);
 	data->target = NULL;
 	data->ndims = ndims;
 	data->element_size = element_size;
@@ -106,12 +106,45 @@ int aml_layout_pad_create(struct aml_layout **layout, const int order,
 	return AML_SUCCESS;
 }
 
-void aml_layout_pad_destroy(struct aml_layout **l)
+int aml_layout_pad_duplicate(const struct aml_layout *layout,
+                             struct aml_layout **out,
+                             void *ptr)
 {
-	if (l == NULL || *l == NULL)
-		return;
-	free(*l);
-	*l = NULL;
+	const struct aml_layout_pad *data;
+	struct aml_layout_pad *dret;
+	struct aml_layout *ret;
+	size_t sz;
+	int err;
+
+	data = (const struct aml_layout_pad *)layout->data;
+
+	if (layout->data == NULL || out == NULL)
+		return -AML_EINVAL;
+
+	err = aml_layout_pad_alloc(&ret, data->ndims, data->element_size);
+	if (err)
+		return err;
+
+	ret->ops = layout->ops;
+	dret = (struct aml_layout_pad *)ret->data;
+	aml_layout_duplicate(data->target, &dret->target, ptr);
+	dret->tags = data->tags;
+	/* small optimization to copy everything at the end of our single
+	 * allocation, but careful about neutral and the arrays having a gap
+	 **/
+	sz = ((char *)dret->neutral - (char *)dret->dims) + data->element_size;
+	memcpy(dret->dims, data->dims, sz);
+	*out = ret;
+	return AML_SUCCESS;
+}
+
+void aml_layout_pad_destroy(struct aml_layout *l)
+{
+	assert(l != NULL);
+
+	struct aml_layout_pad *data = (struct aml_layout_pad *)l->data;
+	aml_layout_destroy(&data->target);
+	free(l);
 }
 
 /*******************************************************************************
@@ -130,6 +163,15 @@ void *aml_layout_pad_column_deref(const struct aml_layout_data *data,
 			return d->neutral;
 	}
 	return d->target->ops->deref_native(d->target->data, coords);
+}
+
+void *aml_layout_pad_rawptr(const struct aml_layout_data *data)
+{
+	const struct aml_layout_pad *d;
+
+	d = (const struct aml_layout_pad *)data;
+
+	return d->target->ops->rawptr(d->target->data);
 }
 
 int aml_layout_pad_column_order(const struct aml_layout_data *data)
@@ -163,17 +205,46 @@ size_t aml_layout_pad_element_size(const struct aml_layout_data *data)
 	return d->element_size;
 }
 
+int aml_layout_pad_column_fprintf(const struct aml_layout_data *data,
+				  FILE *stream, const char *prefix)
+{
+	const struct aml_layout_pad *d;
+
+	fprintf(stream, "%s: layout-pad: %p: column-major\n", prefix,
+		(void *)data);
+	if (data == NULL)
+		return AML_SUCCESS;
+
+	d = (const struct aml_layout_pad *)data;
+
+	fprintf(stream, "%s: element size: %zu\n", prefix, d->element_size);
+	fprintf(stream, "%s: neutral: %p\n", prefix, d->neutral);
+	fprintf(stream, "%s: ndims: %zu\n", prefix, d->ndims);
+	for (size_t i = 0; i < d->ndims; i++) {
+		fprintf(stream, "%s: %16zu: %16zu %16zu\n", prefix,
+			i, d->dims[i], d->target_dims[i]);
+	}
+	fprintf(stream, "%s: target: begin\n", prefix);
+	aml_layout_fprintf(stream, prefix, d->target);
+	fprintf(stream, "%s: target: end\n", prefix);
+	return AML_SUCCESS;
+}
+
 struct aml_layout_ops aml_layout_pad_column_ops = {
-	aml_layout_pad_column_deref,
-	aml_layout_pad_column_deref,
-	aml_layout_pad_column_order,
-	aml_layout_pad_column_dims,
-	aml_layout_pad_column_dims,
-	aml_layout_pad_ndims,
-	aml_layout_pad_element_size,
-	NULL,
-	NULL,
-	NULL,
+        aml_layout_pad_column_deref,
+        aml_layout_pad_column_deref,
+        aml_layout_pad_rawptr,
+        aml_layout_pad_column_order,
+        aml_layout_pad_column_dims,
+        aml_layout_pad_column_dims,
+        aml_layout_pad_ndims,
+        aml_layout_pad_element_size,
+        NULL,
+        NULL,
+        NULL,
+        aml_layout_pad_column_fprintf,
+        aml_layout_pad_duplicate,
+        aml_layout_pad_destroy,
 };
 
 /*******************************************************************************
@@ -221,16 +292,46 @@ int aml_layout_pad_row_dims(const struct aml_layout_data *data, size_t *dims)
 	return 0;
 }
 
-struct aml_layout_ops aml_layout_pad_row_ops = {
-	aml_layout_pad_row_deref,
-	aml_layout_pad_column_deref,
-	aml_layout_pad_row_order,
-	aml_layout_pad_row_dims,
-	aml_layout_pad_column_dims,
-	aml_layout_pad_ndims,
-	aml_layout_pad_element_size,
-	NULL,
-	NULL,
-	NULL,
-};
+int aml_layout_pad_row_fprintf(const struct aml_layout_data *data,
+			       FILE *stream, const char *prefix)
+{
+	const struct aml_layout_pad *d;
 
+	fprintf(stream, "%s: layout-pad: %p: row-major\n", prefix,
+		(void *)data);
+	if (data == NULL)
+		return AML_SUCCESS;
+
+	d = (const struct aml_layout_pad *)data;
+
+	fprintf(stream, "%s: element size: %zu\n", prefix, d->element_size);
+	fprintf(stream, "%s: neutral: %p\n", prefix, d->neutral);
+	fprintf(stream, "%s: ndims: %zu\n", prefix, d->ndims);
+	for (size_t i = 0; i < d->ndims; i++) {
+		size_t j = d->ndims - i - 1;
+
+		fprintf(stream, "%s: %16zu: %16zu %16zu\n", prefix,
+			i, d->dims[j], d->target_dims[j]);
+	}
+	fprintf(stream, "%s: target: begin\n", prefix);
+	aml_layout_fprintf(stream, prefix, d->target);
+	fprintf(stream, "%s: target: end\n", prefix);
+	return AML_SUCCESS;
+}
+
+struct aml_layout_ops aml_layout_pad_row_ops = {
+        aml_layout_pad_row_deref,
+        aml_layout_pad_column_deref,
+        aml_layout_pad_rawptr,
+        aml_layout_pad_row_order,
+        aml_layout_pad_row_dims,
+        aml_layout_pad_column_dims,
+        aml_layout_pad_ndims,
+        aml_layout_pad_element_size,
+        NULL,
+        NULL,
+        NULL,
+        aml_layout_pad_row_fprintf,
+        aml_layout_pad_duplicate,
+        aml_layout_pad_destroy,
+};

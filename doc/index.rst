@@ -37,7 +37,6 @@ AML currently implements the following abstractions:
 * :doc:`Layout <pages/layout>`, a description of data structure organization,
 * :doc:`Tiling <pages/tilings>`, a description of data blocking (decomposition)
 * :doc:`DMA <pages/dmas>`, an engine to asynchronously move data structures between areas,
-* :doc:`Scratchpad <pages/scratchs>`, a stage-in, stage-out abstraction for prefetching.
 
 Each of these abstractions has several implementations. For instance, areas
 may refer to the usual DRAM or its subset, to GPU memory, or to non-volatile memory.
@@ -53,7 +52,7 @@ Download
 
 .. code-block:: console
   
-  $ git clone git@xgitlab.cels.anl.gov:argo/aml.git
+  $ git clone --recurse-submodules https://xgitlab.cels.anl.gov/argo/aml.git
 
 Requirements:
 ~~~~~~~~~~~~~
@@ -62,6 +61,7 @@ Requirements:
 * automake
 * libtool
 * libnuma
+* hwloc (>2.1)
 
 Installation
 ~~~~~~~~~~~~
@@ -93,7 +93,7 @@ Check the AML version:
       return 1;
   }
 
-Initialize and clean up the AML:
+Initialize and clean up the library:
 
 .. code-block:: c
   
@@ -128,11 +128,11 @@ well as code contributions. See the
 for more info.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Table of Contents
 
+   tutorials/tutorials
    pages/areas
    pages/tilings
    pages/layout
    pages/dmas
-   pages/scratchs

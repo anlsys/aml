@@ -23,40 +23,35 @@ static int aml_tiling_pad_alloc(struct aml_tiling **ret, size_t ndims,
 	struct aml_tiling *tiling;
 	struct aml_tiling_pad *data;
 
-	tiling = AML_INNER_MALLOC_EXTRA(struct aml_tiling,
-					struct aml_tiling_pad,
-					size_t, 4*ndims + neutral_size);
+	tiling = AML_INNER_MALLOC_EXTRA(4*ndims, size_t,
+					neutral_size,
+					struct aml_tiling,
+					struct aml_tiling_pad);
 
 	if (tiling == NULL) {
 		*ret = NULL;
 		return -AML_ENOMEM;
 	}
 
-	data = AML_INNER_MALLOC_NEXTPTR(tiling,
-					struct aml_tiling,
-					struct aml_tiling_pad);
-
+	data = AML_INNER_MALLOC_GET_FIELD(tiling, 2,
+					  struct aml_tiling,
+					  struct aml_tiling_pad);
 	tiling->data = (struct aml_tiling_data *)data;
-	data->tile_dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(tiling,
-							 struct aml_tiling,
-							 struct aml_tiling_pad,
-							 size_t, 0);
-	data->dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(tiling,
-						    struct aml_tiling,
-						    struct aml_tiling_pad,
-						    size_t, ndims);
-	data->border_tile_dims = AML_INNER_MALLOC_EXTRA_NEXTPTR(tiling,
-							struct aml_tiling,
-							struct aml_tiling_pad,
-							size_t, 2*ndims);
-	data->pad = AML_INNER_MALLOC_EXTRA_NEXTPTR(tiling,
+
+	data->tile_dims = AML_INNER_MALLOC_GET_ARRAY(tiling,
+						     size_t,
+						     struct aml_tiling,
+						     struct aml_tiling_pad);
+
+	data->dims = data->tile_dims + ndims;
+	data->border_tile_dims = data->dims + ndims;
+	data->pad = data->border_tile_dims + ndims;
+
+	data->neutral = AML_INNER_MALLOC_GET_EXTRA(tiling,
+						   4*ndims, size_t,
 						   struct aml_tiling,
-						   struct aml_tiling_pad,
-						   size_t, 3*ndims);
-	data->neutral = AML_INNER_MALLOC_EXTRA_NEXTPTR(tiling,
-						       struct aml_tiling,
-						       struct aml_tiling_pad,
-						       size_t, 4*ndims);
+						   struct aml_tiling_pad);
+
 	data->layout = NULL;
 	data->ndims = ndims;
 	*ret = tiling;
@@ -170,7 +165,6 @@ aml_tiling_pad_column_index(const struct aml_tiling_data *t,
 		int order = aml_layout_order(d->layout);
 
 		if (AML_LAYOUT_ORDER(order) == AML_LAYOUT_ORDER_COLUMN_MAJOR) {
-			/* WARNING: OWNERSHIP!!! */
 			aml_layout_pad_create(&p_layout,
 					      AML_LAYOUT_ORDER_COLUMN_MAJOR,
 					      ret, d->tile_dims, d->neutral);
@@ -178,8 +172,7 @@ aml_tiling_pad_column_index(const struct aml_tiling_data *t,
 			size_t row_dims[ndims];
 
 			for (size_t i = 0; i < ndims; i++)
-				row_dims[i] = d->tile_dims[i];
-			/* WARNING: OWNERSHIP!!! */
+				row_dims[i] = d->tile_dims[ndims - i - 1];
 			aml_layout_pad_create(&p_layout,
 					      AML_LAYOUT_ORDER_ROW_MAJOR,
 					      ret, row_dims, d->neutral);
@@ -189,35 +182,27 @@ aml_tiling_pad_column_index(const struct aml_tiling_data *t,
 		return ret;
 }
 
-int aml_tiling_pad_column_tileid(const struct aml_tiling_data *t,
-				 const size_t *coords)
+void *aml_tiling_pad_column_rawptr(const struct aml_tiling_data *t,
+				   const size_t *coords)
 {
 	const struct aml_tiling_pad *d = (const struct aml_tiling_pad *)t;
 
 	assert(d != NULL);
-	int ret = 0;
 	size_t ndims = d->ndims;
+	size_t offsets[ndims];
 
-	for (size_t i = 0; i < ndims; i++)
-		ret = (ret * d->dims[i]) + coords[i];
-	return ret;
+	for (size_t i = 0; i < ndims; i++) {
+		assert(coords[i] < d->dims[i]);
+		offsets[i] = coords[i] * d->tile_dims[i];
+	}
+
+	return aml_layout_deref_native(d->layout, offsets);
 }
 
 int aml_tiling_pad_column_order(const struct aml_tiling_data *t)
 {
 	(void)t;
 	return AML_TILING_ORDER_COLUMN_MAJOR;
-}
-
-int aml_tiling_pad_column_tile_dims(const struct aml_tiling_data *t,
-				    size_t *tile_dims)
-{
-	const struct aml_tiling_pad *d = (const struct aml_tiling_pad *)t;
-
-	assert(d != NULL);
-	memcpy((void *)tile_dims, (void *)d->tile_dims,
-	       sizeof(size_t)*d->ndims);
-	return 0;
 }
 
 int aml_tiling_pad_column_dims(const struct aml_tiling_data *t,
@@ -251,16 +236,42 @@ size_t aml_tiling_pad_column_ntiles(const struct aml_tiling_data *t)
 	return ret;
 }
 
+int aml_tiling_pad_column_fprintf(const struct aml_tiling_data *data,
+			      FILE *stream, const char *prefix)
+{
+	const struct aml_tiling_pad *d;
+
+	fprintf(stream, "%s: tiling-pad: %p: column-major\n", prefix,
+		(void *)data);
+	if (data == NULL)
+		return AML_SUCCESS;
+
+	d = (const struct aml_tiling_pad *)data;
+
+	fprintf(stream, "%s: tags: %d\n", prefix, d->tags);
+	fprintf(stream, "%s: ndims: %zu\n", prefix, d->ndims);
+	for (size_t i = 0; i < d->ndims; i++) {
+		fprintf(stream, "%s: %16zu: %16zu %16zu %16zu %16zu\n", prefix,
+			i, d->dims[i], d->tile_dims[i], d->border_tile_dims[i],
+			d->pad[i]);
+	}
+	fprintf(stream, "%s: neutral: %p\n", prefix, d->neutral);
+	fprintf(stream, "%s: layout: begin\n", prefix);
+	aml_layout_fprintf(stream, prefix, d->layout);
+	fprintf(stream, "%s: layout: end\n", prefix);
+	return AML_SUCCESS;
+}
+
 struct aml_tiling_ops aml_tiling_pad_column_ops = {
 	aml_tiling_pad_column_index,
 	aml_tiling_pad_column_index,
-	aml_tiling_pad_column_tileid,
+	aml_tiling_pad_column_rawptr,
 	aml_tiling_pad_column_order,
-	aml_tiling_pad_column_tile_dims,
 	aml_tiling_pad_column_dims,
 	aml_tiling_pad_column_dims,
 	aml_tiling_pad_column_ndims,
 	aml_tiling_pad_column_ntiles,
+	aml_tiling_pad_column_fprintf,
 };
 
 /*******************************************************************************
@@ -302,7 +313,6 @@ aml_tiling_pad_row_index(const struct aml_tiling_data *t, const size_t *coords)
 		int order = aml_layout_order(d->layout);
 
 		if (AML_LAYOUT_ORDER(order) == AML_LAYOUT_ORDER_COLUMN_MAJOR) {
-			/* WARNING: OWNERSHIP!!! */
 			aml_layout_pad_create(&p_layout,
 					      AML_LAYOUT_ORDER_COLUMN_MAJOR,
 					      ret, d->tile_dims, d->neutral);
@@ -311,7 +321,6 @@ aml_tiling_pad_row_index(const struct aml_tiling_data *t, const size_t *coords)
 
 			for (size_t i = 0; i < ndims; i++)
 				row_dims[i] = d->tile_dims[ndims - i - 1];
-			/* WARNING: OWNERSHIP!!! */
 			aml_layout_pad_create(&p_layout,
 					      AML_LAYOUT_ORDER_ROW_MAJOR,
 					      ret, row_dims, d->neutral);
@@ -321,35 +330,27 @@ aml_tiling_pad_row_index(const struct aml_tiling_data *t, const size_t *coords)
 		return ret;
 }
 
-int aml_tiling_pad_row_tileid(const struct aml_tiling_data *t,
-			      const size_t *coords)
+void *aml_tiling_pad_row_rawptr(const struct aml_tiling_data *t,
+				const size_t *coords)
 {
 	const struct aml_tiling_pad *d = (const struct aml_tiling_pad *)t;
 
 	assert(d != NULL);
-	int ret = 0;
 	size_t ndims = d->ndims;
+	size_t offsets[ndims];
 
-	for (size_t i = 0; i < ndims; i++)
-		ret = (ret * d->dims[i]) + coords[ndims - i - 1];
-	return ret;
+	for (size_t i = 0; i < ndims; i++) {
+		assert(coords[ndims - i - 1] < d->dims[i]);
+		offsets[i] = coords[ndims - i - 1] * d->tile_dims[i];
+	}
+
+	return aml_layout_deref_native(d->layout, offsets);
 }
 
 int aml_tiling_pad_row_order(const struct aml_tiling_data *t)
 {
 	(void)t;
 	return AML_TILING_ORDER_ROW_MAJOR;
-}
-
-int aml_tiling_pad_row_tile_dims(const struct aml_tiling_data *t,
-				 size_t *tile_dims)
-{
-	const struct aml_tiling_pad *d = (const struct aml_tiling_pad *)t;
-
-	assert(d != NULL);
-	for (size_t i = 0; i < d->ndims; i++)
-		tile_dims[i] = d->tile_dims[d->ndims - i - 1];
-	return 0;
 }
 
 int aml_tiling_pad_row_dims(const struct aml_tiling_data *t,
@@ -371,14 +372,42 @@ size_t aml_tiling_pad_row_ndims(const struct aml_tiling_data *t)
 	return d->ndims;
 }
 
+int aml_tiling_pad_row_fprintf(const struct aml_tiling_data *data,
+			       FILE *stream, const char *prefix)
+{
+	const struct aml_tiling_pad *d;
+
+	fprintf(stream, "%s: tiling-pad: %p: row-major\n", prefix,
+		(void *)data);
+	if (data == NULL)
+		return AML_SUCCESS;
+
+	d = (const struct aml_tiling_pad *)data;
+
+	fprintf(stream, "%s: tags: %d\n", prefix, d->tags);
+	fprintf(stream, "%s: ndims: %zu\n", prefix, d->ndims);
+	for (size_t i = 0; i < d->ndims; i++) {
+		size_t j = d->ndims - i - 1;
+
+		fprintf(stream, "%s: %16zu: %16zu %16zu %16zu %16zu\n", prefix,
+			i, d->dims[j], d->tile_dims[j], d->border_tile_dims[j],
+			d->pad[j]);
+	}
+	fprintf(stream, "%s: neutral: %p\n", prefix, d->neutral);
+	fprintf(stream, "%s: layout: begin\n", prefix);
+	aml_layout_fprintf(stream, prefix, d->layout);
+	fprintf(stream, "%s: layout: end\n", prefix);
+	return AML_SUCCESS;
+}
+
 struct aml_tiling_ops aml_tiling_pad_row_ops = {
 	aml_tiling_pad_row_index,
 	aml_tiling_pad_column_index,
-	aml_tiling_pad_row_tileid,
+	aml_tiling_pad_row_rawptr,
 	aml_tiling_pad_row_order,
-	aml_tiling_pad_row_tile_dims,
 	aml_tiling_pad_row_dims,
 	aml_tiling_pad_column_dims,
 	aml_tiling_pad_row_ndims,
 	aml_tiling_pad_column_ntiles,
+	aml_tiling_pad_row_fprintf,
 };

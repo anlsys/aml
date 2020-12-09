@@ -2,6 +2,7 @@ variables:
   NMC_FE1_SLURM_PARAMETERS: "--nodes=1 --partition=ecp-p9-4v100"
   ANL_THETA_PROJECT_SERVICE_USER: "cscstss"
   ANL_THETA_SCHEDULER_PARAMETERS: "-A CSC250STPR19 -n 1 -t 20 -q debug-flat-quad"
+  GIT_SUBMODULE_STRATEGY: "normal"
 
 stages:
   - build
@@ -86,21 +87,20 @@ make:theta-batch:
       - staging
     variables:
       - $ECP_MIRROR == "THETA"
+  variables:
+    CC: "icc"
+    CFLAGS: "-xKNL"
+    LDFLAGS: "-qopenmp-link=static"
   script:
-    - |
-      cat > aml-ci-script.sh << EOF
-      #!/bin/bash
-      module list
-      ./autogen.sh
-      ./configure
-      make -j63
-      make check VERBOSE=1
-      EOF
-    - cat aml-ci-script.sh
-    - chmod +x aml-ci-script.sh
-    - aprun aml-ci-script.sh
+    - ./autogen.sh
+    - ./configure --host=x86_64
+    - make
+    - make check-programs
+    - aprun make check VERBOSE=1
   artifacts:
     when: on_failure
     paths:
       - tests/*.log
+      - doc/tutorials/*.log
+      - benchmarks/*.log
       - config.log

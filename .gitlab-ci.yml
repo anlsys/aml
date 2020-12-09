@@ -1,11 +1,13 @@
 variables:
   ARGOPKGS : "https://xgitlab.cels.anl.gov/argo/argopkgs/-/archive/master/argopkgs-master.tar.gz"
+  DEFAULT_MERGE_TARGET: "origin/staging"
+  GIT_SUBMODULE_STRATEGY: "normal"
 
 stages:
   - style
   - build
   - docs
-  - release
+  - distribution
 
 repoquality:
   stage: style
@@ -13,7 +15,7 @@ repoquality:
     - /^wip.*/
     - /^WIP.*/
   script:
-    - git ls-files *.c *.h | grep -v -e benchmarks > .repoquality
+    - git ls-files '*.c' '*.h' > .repoquality
     - nix run -f "$ARGOPKGS" repoquality --command repoquality
   tags:
     - nix
@@ -23,7 +25,7 @@ repoquality:
     paths:
       - .repoquality
 
-checkpatch:
+clang-format:
   stage: style
   except:
     - /^wip.*/
@@ -32,8 +34,16 @@ checkpatch:
     - nix
     - kvm
   script:
-    - git ls-files *.c *.h | grep -v -e benchmarks >> .checkpatch.conf
-    - nix run -f "$ARGOPKGS" checkpatch --command checkpatch.pl
+    - rm -f clang-format-diff
+    - target=$(git rev-parse $DEFAULT_MERGE_TARGET)
+    - nix-shell --run "git-clang-format --quiet --diff $target > clang-format-diff"
+    - lint=$(grep -v --color=never "no modified files to format" clang-format-diff || true)
+    - if [ ! -z "$lint" ]; then echo "format errors, inspect the clang-format-diff artifact for info"; exit 1; else exit 0; fi
+  artifacts:
+    when: on_failure
+    paths:
+      - ./clang-format-diff
+    expire_in: 1 week
 
 style:docs:
   stage: style
@@ -45,12 +55,12 @@ style:docs:
     - kvm
   script:
     - |
-      nix-shell "$ARGOPKGS" -A aml-dist --arg aml-src ./. --run bash << EOF
-      ./autogen.sh
-      mkdir build
-      ./configure --prefix=`pwd`/build --enable-docs
-      make install-data
-      EOF
+      nix-shell --run bash <<< '
+        ./autogen.sh
+        mkdir build
+        ./configure --prefix=`pwd`/build --enable-docs
+        make install-data
+      '
   artifacts:
     when: on_failure
     paths:
@@ -58,20 +68,24 @@ style:docs:
 
 make:generic:
   tags:
-    - knl
+    - nix
+    - kvm
   stage: build
   except:
     - /^wip.*/
     - /^WIP.*/
   variables:
-    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter"
+    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter -Wno-builtin-declaration-mismatch"
   script:
-    - ./autogen.sh
-    - mkdir build
-    - ./configure --prefix=`pwd`/build
-    - make
-    - make check
-    - make install
+    - |
+      nix-shell --run bash <<< '
+        ./autogen.sh
+        mkdir build
+        ./configure --prefix=`pwd`/build
+        make
+        make check
+        make install
+      '
   artifacts:
     when: on_failure
     paths:
@@ -80,21 +94,52 @@ make:generic:
 
 make:out-of-tree:
   tags:
-    - knl
+    - nix
+    - kvm
   stage: build
   except:
     - /^wip.*/
     - /^WIP.*/
   variables:
-    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter"
+    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter -Wno-builtin-declaration-mismatch"
   script:
-    - ./autogen.sh
-    - mkdir out
-    - cd out
-    - mkdir build
-    - ../configure --prefix=`pwd`/build
-    - make
-    - make check
+    - |
+      nix-shell --run bash <<< '
+        ./autogen.sh
+        mkdir out
+        cd out
+        mkdir build
+        ../configure --prefix=`pwd`/build
+        make
+        make check
+      '
+  artifacts:
+    when: on_failure
+    paths:
+      - config.log
+      - tests/*.log
+
+make:valgrind:
+  tags:
+    - nix
+    - kvm
+  stage: build
+  except:
+    - /^wip.*/
+    - /^WIP.*/
+  variables:
+    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter -Wno-builtin-declaration-mismatch"
+    VERBOSE: "1"
+    OMP_NUM_THREADS: "1"
+  script:
+    - |
+      nix-shell --run bash <<< '
+        ./autogen.sh
+        mkdir build
+        ./configure --prefix=`pwd`/build --enable-valgrind
+        make
+        make check-valgrind
+      '
   artifacts:
     when: on_failure
     paths:
@@ -106,16 +151,38 @@ make:knl:
   except:
     - /^wip.*/
     - /^WIP.*/
+  variables:
+    CFLAGS: "-mkl -xhost"
+    CC: "icc"
   tags:
     - knl
   script:
     - source /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh intel64
     - ./autogen.sh
     - mkdir build
-    - CC=icc CFLAGS="-mkl -xhost" ./configure --prefix=`pwd`/build --enable-benchmarks
+    - ./configure --prefix=`pwd`/build
     - make -j64
-    - make check
+    - make -C tests check
     - make install
+  artifacts:
+    when: on_failure
+    paths:
+      - config.log
+      - tests/*.log
+
+make:chimera:
+  stage: build
+  except:
+    - /^wip.*/
+    - /^WIP.*/
+  tags:
+    - cuda
+  script:
+    - ./autogen.sh
+    - mkdir build
+    - ./configure --prefix=`pwd`/build --with-cuda=yes
+    - make -j
+    - make check
   artifacts:
     when: on_failure
     paths:
@@ -138,3 +205,27 @@ readthedocs:
   script:
     - nix run nixpkgs.curl -c curl -X POST -d "branches=$CI_COMMIT_REF_NAME" -d "token=$READTHEDOCS_TOKEN" https://readthedocs.org/api/v2/webhook/argo-aml/83161/
 
+distcheck:
+  tags:
+    - nix
+    - kvm
+  stage: distribution
+  except:
+    - /^wip.*/
+    - /^WIP.*/
+  variables:
+    CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter -Wno-builtin-declaration-mismatch"
+  script:
+    - |
+      nix-shell --run bash <<< '
+        ./autogen.sh
+        mkdir build
+        ./configure --prefix=`pwd`/build
+        make distcheck
+        chmod -R +w aml-*
+      '
+  artifacts:
+    when: on_failure
+    paths:
+      - config.log
+      - tests/*.log
