@@ -21,7 +21,7 @@
  * Mapper can then be used to map/allocate a structure in different memory
  * regions, and copy in between mappings with the associated `dma`. When
  *buidling a mapper tree of a structure, the process must start from the leaves
- *and go to the root
+ *and go to the root.
  * @{
  **/
 
@@ -94,6 +94,8 @@ void aml_mapper_destroy(struct aml_mapper **mapper);
  * @param mapper[in]: The mapper describing the struct pointed by `ptr`.
  * @param ptr[in]: A host pointer on which to perform a deep copy.
  * @param area[in]: The area where to allocate copy.
+ * `area` must yield pointer on which pointer arithmetic within bounds yields
+ * a valid pointer.
  * @see aml_area
  * @param opts[in]: Options specific to the area. May be NULL if the area
  * allows it.
