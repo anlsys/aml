@@ -11,7 +11,6 @@ include_aml_layout_HEADERS = \
 			      aml/layout/native.h \
 			      aml/layout/dense.h \
 			      aml/layout/pad.h \
-			      aml/layout/sparse.h \
 			      aml/layout/reshape.h
 
 include_aml_dmadir=$(includedir)/aml/dma
