@@ -20,7 +20,7 @@ make:ascent:
     - ./autogen.sh
     - ./configure --with-cuda=$CUDA_DIR
     - make -j
-    - make check VERBOSE=1
+    - jsrun -n1 -a1 -c1 -g1 make check VERBOSE=1
   artifacts:
     when: on_failure
     paths:
