@@ -18,7 +18,7 @@ make:ascent:
   script:
     - module load numactl cuda
     - ./autogen.sh
-    - ./configure --with-cuda=CUDA_DIR
+    - ./configure --with-cuda=$CUDA_DIR
     - make -j
     - make check VERBOSE=1
   artifacts:
