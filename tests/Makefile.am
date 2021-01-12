@@ -3,14 +3,10 @@ AM_COLOR_TESTS = yes
 AM_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS) $(OPENMP_CFLAGS)
 AM_LDFLAGS = ../src/libaml.la $(top_builddir)/excit/src/libexcit.la $(PTHREAD_LIBS) $(OPENMP_CFLAGS)
 
-if HAVE_CUDA
-# LIBS is used instead of AM_LDFLAGS on purpose
-# AM_LDFLAGS appends flags before libraries added before LDADD.
-# Thus, when linking with libaml.la, linking with cuda is not done.
-LIBS += $(CUDA_CFLAGS)
-LIBS += $(CUDA_LIBS)
-AM_CFLAGS += $(CUDA_CFLAGS)
-AM_LDFLAGS += $(CUDA_LIBS)
+if HAVE_OPENCL
+LIBS += $(OpenCL_LIBS)
+AM_CFLAGS += $(OpenCL_CFLAGS)
+AM_LDFLAGS += $(OpenCL_LIBS)
 endif
 
 if HAVE_HWLOC
@@ -33,9 +29,6 @@ UTILS_TESTS = \
 AREA_TESTS = \
 	area/test_area \
 	area/test_linux
-if HAVE_CUDA
-AREA_TESTS += area/test_cuda
-endif
 
 liblayout_test_la_SOURCES = \
 	layout/test_layout.h \
@@ -64,9 +57,8 @@ DMA_TESTS = dma/test_dma_linux_seq \
 
 REPLICASET_TESTS =
 
-if HAVE_CUDA
-AREA_TESTS += area/test_cuda
-DMA_TESTS += dma/test_cuda
+if HAVE_OPENCL
+AREA_TESTS += area/test_opencl
 endif
 
 if HAVE_HWLOC
@@ -85,6 +77,18 @@ UNIT_TESTS = $(UTILS_TESTS) \
 
 # all tests
 TST_PROGS = $(UNIT_TESTS)
+
+if HAVE_CUDA
+test_area_cuda_SOURCES=area/test_cuda.c
+test_area_cuda_CPPFLAGS= $(AM_CFLAGS) $(CUDA_CFLAGS)
+test_area_cuda_LDFLAGS=$(AM_LDFLAGS) $(CUDA_LIBS)
+
+test_dma_cuda_SOURCES=dma/test_cuda.c
+test_dma_cuda_CPPFLAGS= $(AM_CFLAGS) $(CUDA_CFLAGS)
+test_dma_cuda_LDFLAGS=$(AM_LDFLAGS) $(CUDA_LIBS)
+TST_PROGS+=test_dma_cuda test_area_cuda
+endif
+
 check_PROGRAMS = $(TST_PROGS)
 check_LTLIBRARIES = liblayout_test.la libreplicaset_test.la
 TESTS = $(TST_PROGS)

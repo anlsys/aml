@@ -81,6 +81,20 @@ AM_CONDITIONAL([HAVE_HWLOC], [test "$have_hwloc" = "1"])
 AC_DEFINE_UNQUOTED([HAVE_HWLOC], [$have_hwloc], [Whether aml support hwloc library calls.])
 AC_SUBST([HAVE_HWLOC],[$have_hwloc])
 
+# OpenCL support
+###############
+
+PKG_CHECK_MODULES([OpenCL], \
+                  [OpenCL >= 2.1],   \
+                  [have_opencl=1], \
+                  [have_opencl=0])
+if test "$have_opencl" == "1"; then
+   AC_DEFINE([HAVE_OPENCL], [1], "OpenCL library with ABI >= 2.1 is installed.")
+fi
+AM_CONDITIONAL([HAVE_OPENCL], [test "$have_opencl" = "1"])
+AC_DEFINE_UNQUOTED([HAVE_OPENCL], [$have_opencl], [Whether aml support opencl library calls.])
+AC_SUBST([HAVE_OPENCL],[$have_opencl])
+
 # check doxygen + sphinx for documentation build
 ################################################
 
