@@ -27,6 +27,8 @@
 #define AML_HAVE_BACKEND_LIBNUMA 1
 /** Whether aml had cuda capabilities at compile time **/
 #define AML_HAVE_BACKEND_CUDA @HAVE_CUDA@
+/** Whether aml had opencl capabilities at compile time **/
+#define AML_HAVE_BACKEND_OPENCL @HAVE_OPENCL@
 /** Whether aml had hwloc capabilities at compile time **/
 #define AML_HAVE_BACKEND_HWLOC @HAVE_HWLOC@
 
@@ -36,6 +38,8 @@
 #define AML_BACKEND_CUDA (1UL<<2)
 /** Flag for checking runtime suport for hwloc **/
 #define AML_BACKEND_HWLOC (1UL<<3)
+/** Flag for checking runtime suport for opencl **/
+#define AML_BACKEND_OPENCL (1UL<<4)
 
 /**
  * Check if a set of backends can be used at runtime.
