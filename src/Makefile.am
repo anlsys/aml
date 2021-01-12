@@ -55,14 +55,12 @@ libaml_la_LDFLAGS=
 libaml_la_SOURCES=$(LIB_SOURCES)
 
 #############################################
-# Cuda sources
+# opencl sources
 
-if HAVE_CUDA
-
-AM_CPPFLAGS += $(CUDA_CFLAGS)
-AM_LDFLAGS += $(CUDA_LIBS)
-libaml_la_SOURCES+=area/cuda.c dma/cuda.c
-
+if HAVE_OPENCL
+AM_CPPFLAGS += $(OpenCL_CFLAGS)
+AM_LDFLAGS += $(OpenCL_LIBS)
+libaml_la_SOURCES+=area/opencl.c
 endif
 
 #############################################
@@ -71,6 +69,16 @@ endif
 if HAVE_HWLOC
 AM_CPPFLAGS += $(HWLOC_CFLAGS)
 AM_LDFLAGS += $(HWLOC_LIBS)
-
 libaml_la_SOURCES+=area/hwloc.c replicaset/hwloc.c
+endif
+
+#############################################
+# Cuda sources
+
+if HAVE_CUDA
+libcuda_la_SOURCES=area/cuda.c dma/cuda.c
+noinst_LTLIBRARIES+=libcuda.la
+libcuda_la_CPPFLAGS=$(AM_CPPFLAGS) $(CUDA_CFLAGS)
+libcuda_la_LDFLAGS=$(AM_LDFLAGS) $(CUDA_LIBS)
+libaml_la_LIBADD=libcuda.la
 endif

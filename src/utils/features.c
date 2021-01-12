@@ -15,6 +15,9 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #endif
+#if HAVE_OPENCL == 1
+#include <CL/opencl.h>
+#endif
 #if HAVE_HWLOC == 1
 #include <hwloc.h>
 extern hwloc_topology_t aml_topology;
@@ -30,6 +33,20 @@ static int aml_support_cuda(void)
 	if (cudaGetDeviceCount(&x) != cudaSuccess || x <= 0)
 		return 0;
 
+	return 1;
+#endif
+}
+
+static int aml_support_opencl(void)
+{
+#if HAVE_OPENCL == 0
+	return 0;
+#else
+	cl_uint num_entries = 1;
+	cl_platform_id platforms;
+
+	if (clGetPlatformIDs(num_entries, &platforms, NULL) != CL_SUCCESS)
+		return 0;
 	return 1;
 #endif
 }
@@ -54,6 +71,12 @@ int aml_support_backends(const unsigned long backends)
 	// Cuda check: compilation support and runtime support must be present.
 	if ((backends & AML_BACKEND_CUDA) &&
 	    !(AML_HAVE_BACKEND_CUDA && aml_support_cuda()))
+		return 0;
+
+	// OpenCL check: compilation support and runtime support must be
+	// present.
+	if ((backends & AML_BACKEND_OPENCL) &&
+	    !(AML_HAVE_BACKEND_OPENCL && aml_support_opencl()))
 		return 0;
 
 	// hwloc check: compilation support and runtime support must be present.

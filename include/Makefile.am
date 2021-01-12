@@ -45,3 +45,8 @@ if HAVE_CUDA
 include_aml_area_HEADERS += aml/area/cuda.h
 include_aml_dma_HEADERS += aml/dma/cuda.h
 endif
+
+if HAVE_OPENCL
+include_aml_area_HEADERS += aml/area/opencl.h
+endif
+
