@@ -50,26 +50,48 @@ aml_mapper_decl(struct_C_mapper, struct C, b, n, &struct_B_mapper);
 //- Struct C Declaration ------------------------------------------------------
 
 struct BigStruct {
-	unsigned long *a;
-	unsigned na;
-	unsigned long *b;
-	unsigned nb;
-	unsigned long *c;
-	unsigned nc;
-	unsigned long *d;
-	unsigned nd;
-	unsigned long *e;
-	unsigned ne;
+	unsigned long *a0;
+	unsigned na0;
+	unsigned long *a1;
+	unsigned na1;
+	unsigned long *a2;
+	unsigned na2;
+	unsigned long *a3;
+	unsigned na3;
+	unsigned long *a4;
+	unsigned na4;
+	unsigned long *a5;
+	unsigned na5;
+	unsigned long *a6;
+	unsigned na6;
+	unsigned long *a7;
+	unsigned na7;
+	unsigned long *a8;
+	unsigned na8;
+	unsigned long *a9;
+	unsigned na9;
+	unsigned long *a10;
+	unsigned na10;
+	unsigned long *a11;
+	unsigned na11;
 };
 
 aml_final_mapper_decl(ulong_mapper, unsigned long);
 
+// Largest working mapper decl
 aml_mapper_decl(BigStruct_mapper, struct BigStruct,
-								a, na, &ulong_mapper,
-								b, nb, &ulong_mapper,
-								c, nc, &ulong_mapper,
-								d, nd, &ulong_mapper,
-								e, ne, &ulong_mapper);
+								a0, na0, &ulong_mapper,
+								a1, na1, &ulong_mapper,
+								a2, na2, &ulong_mapper,
+								a3, na3, &ulong_mapper,
+								a4, na4, &ulong_mapper,
+								a5, na5, &ulong_mapper,
+								a6, na6, &ulong_mapper,
+								a7, na7, &ulong_mapper,
+								a8, na8, &ulong_mapper,
+								a9, na9, &ulong_mapper,
+								a10, na10, &ulong_mapper,
+								a11, na11, &ulong_mapper);
 
 //- Equality test + Copy/Free -------------------------------------------------
 
