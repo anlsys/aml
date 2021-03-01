@@ -47,6 +47,30 @@ struct C {
 };
 aml_mapper_decl(struct_C_mapper, struct C, b, n, &struct_B_mapper);
 
+//- Struct C Declaration ------------------------------------------------------
+
+struct BigStruct {
+	unsigned long *a;
+	unsigned na;
+	unsigned long *b;
+	unsigned nb;
+	unsigned long *c;
+	unsigned nc;
+	unsigned long *d;
+	unsigned nd;
+	unsigned long *e;
+	unsigned ne;
+};
+
+aml_final_mapper_decl(ulong_mapper, unsigned long);
+
+aml_mapper_decl(BigStruct_mapper, struct BigStruct,
+								a, na, &ulong_mapper,
+								b, nb, &ulong_mapper,
+								c, nc, &ulong_mapper,
+								d, nd, &ulong_mapper,
+								e, ne, &ulong_mapper);
+
 //- Equality test + Copy/Free -------------------------------------------------
 
 int eq_struct(struct C *a, struct C *b)
