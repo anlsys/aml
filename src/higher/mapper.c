@@ -18,6 +18,7 @@
 #define PTR_OFF(ptr, sign, off) (void *)((intptr_t)(ptr)sign(intptr_t)(off))
 
 int aml_mapper_create(struct aml_mapper **out,
+                      uint64_t flags,
                       const size_t struct_size,
                       const size_t num_fields,
                       const size_t *fields_offset,
@@ -68,6 +69,7 @@ int aml_mapper_create(struct aml_mapper **out,
 			       num_fields * sizeof(*num_elements));
 		}
 	}
+	m->flags = flags;
 	*out = m;
 	return AML_SUCCESS;
 }
@@ -165,9 +167,12 @@ static ssize_t aml_mapper_map_field(struct aml_mapper *mapper,
 	void *ptr = PTR_OFF(dst, +, mapper->size * num), *_src;
 
 	// Copy the full pointer content.
-	err = aml_mapper_copy(src, dst, mapper->size * num, dma, op, op_arg);
-	if (err != AML_SUCCESS)
-		return err;
+	if (mapper->flags & AML_MAPPER_FLAG_COPY) {
+		err = aml_mapper_copy(src, dst, mapper->size * num, dma, op,
+		                      op_arg);
+		if (err != AML_SUCCESS)
+			return err;
+	}
 
 	// For each array element.
 	for (size_t i = 0; i < num; i++) {
@@ -309,9 +314,12 @@ static int aml_mapper_copy_back_recursive(struct aml_mapper *mapper,
 			        dst, +, i * mapper->size + mapper->offsets[j]);
 
 	// Do one big copy.
-	err = aml_mapper_copy(src, dst, mapper->size * num, dma, op, op_arg);
-	if (err != AML_SUCCESS)
-		return err;
+	if (mapper->flags & AML_MAPPER_FLAG_COPY) {
+		err = aml_mapper_copy(src, dst, mapper->size * num, dma, op,
+		                      op_arg);
+		if (err != AML_SUCCESS)
+			return err;
+	}
 
 	// Restore indirections and Recurse for each pointer.
 	for (size_t i = 0; i < num; i++)

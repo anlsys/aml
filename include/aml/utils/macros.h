@@ -318,10 +318,10 @@
 	         _)
 
 // Fills a static mapper structure at declaration.
-#define __AML_MAPPER_INIT(type, nf, off, num, fds)                             \
+#define __AML_MAPPER_INIT(f, type, nf, off, num, fds)                      \
 	{                                                                      \
-		.size = sizeof(type), .n_fields = nf, .offsets = off,          \
-		.num_elements = num, .fields = fds                             \
+	 .flags = f, .size = sizeof(type), .n_fields = nf,										\
+		.offsets = off, .num_elements = num, .fields = fds             \
 	}
 
 #define __AML_MAPPER_DECL_1(...)                                                 \
@@ -383,16 +383,16 @@
  * the field type.
  * @arg __VA_ARGS__: A list of (field, field_mapper).
  */
-#define __AML_MAPPER_DECL_2(name, type, ...)                                   \
+#define __AML_MAPPER_DECL_2(name, type, flags, ...)                            \
 	num_element_fn __NUM_ELEMENTS_FN_##name[PAIR_N(__VA_ARGS__)] = {       \
 	        REPLICATE(PAIR_N(__VA_ARGS__), NULL)};                         \
 	size_t __OFFSETS_##name[PAIR_N(__VA_ARGS__)] = {                       \
 	        OFFSETOF(type, EVEN(__VA_ARGS__))};                            \
 	struct aml_mapper *__FIELDS_##name[PAIR_N(__VA_ARGS__)] = {            \
 	        ODD(__VA_ARGS__)};                                             \
-	struct aml_mapper name =                                               \
-	        __AML_MAPPER_INIT(type, PAIR_N(__VA_ARGS__), __OFFSETS_##name, \
-	                          __NUM_ELEMENTS_FN_##name, __FIELDS_##name)
+	struct aml_mapper name = __AML_MAPPER_INIT(                            \
+	        flags, type, PAIR_N(__VA_ARGS__), __OFFSETS_##name,            \
+	        __NUM_ELEMENTS_FN_##name, __FIELDS_##name)
 
 #define TRIPLE_1_3(a, b, c) a
 #define TRIPLE_1_6(a, b, c, ...) a, TRIPLE_1_3(__VA_ARGS__)
@@ -527,7 +527,7 @@
  * the field type.
  * @arg __VA_ARGS__: A list of (field, num_elements, field_mapper).
  */
-#define __AML_MAPPER_DECL_3(name, type, ...)                                   \
+#define __AML_MAPPER_DECL_3(name, type, flags, ...)                            \
 	__AML_DECLARE_NELEM_FN(name, type, TRIPLE_2(__VA_ARGS__))              \
 	num_element_fn __NUM_ELEMENTS_FN_##name[TRIPLE_N(__VA_ARGS__)] = {     \
 	        __AML_NELEM_FN(name, TRIPLE_2(__VA_ARGS__))};                  \
@@ -536,7 +536,7 @@
 	struct aml_mapper *__FIELDS_##name[TRIPLE_N(__VA_ARGS__)] = {          \
 	        TRIPLE_3(__VA_ARGS__)};                                        \
 	struct aml_mapper name = __AML_MAPPER_INIT(                            \
-	        type, TRIPLE_N(__VA_ARGS__), __OFFSETS_##name,                 \
+	        flags, type, TRIPLE_N(__VA_ARGS__), __OFFSETS_##name,          \
 	        __NUM_ELEMENTS_FN_##name, __FIELDS_##name)
 
 /**
