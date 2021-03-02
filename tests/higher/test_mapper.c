@@ -79,19 +79,44 @@ struct BigStruct {
 aml_final_mapper_decl(ulong_mapper, unsigned long);
 
 // Largest working mapper decl
-aml_mapper_decl(BigStruct_mapper, struct BigStruct,
-								a0, na0, &ulong_mapper,
-								a1, na1, &ulong_mapper,
-								a2, na2, &ulong_mapper,
-								a3, na3, &ulong_mapper,
-								a4, na4, &ulong_mapper,
-								a5, na5, &ulong_mapper,
-								a6, na6, &ulong_mapper,
-								a7, na7, &ulong_mapper,
-								a8, na8, &ulong_mapper,
-								a9, na9, &ulong_mapper,
-								a10, na10, &ulong_mapper,
-								a11, na11, &ulong_mapper);
+aml_mapper_decl(BigStruct_mapper,
+                struct BigStruct,
+                a0,
+                na0,
+                &ulong_mapper,
+                a1,
+                na1,
+                &ulong_mapper,
+                a2,
+                na2,
+                &ulong_mapper,
+                a3,
+                na3,
+                &ulong_mapper,
+                a4,
+                na4,
+                &ulong_mapper,
+                a5,
+                na5,
+                &ulong_mapper,
+                a6,
+                na6,
+                &ulong_mapper,
+                a7,
+                na7,
+                &ulong_mapper,
+                a8,
+                na8,
+                &ulong_mapper,
+                a9,
+                na9,
+                &ulong_mapper,
+                a10,
+                na10,
+                &ulong_mapper,
+                a11,
+                na11,
+                &ulong_mapper);
 
 //- Equality test + Copy/Free -------------------------------------------------
 
@@ -120,6 +145,21 @@ ssize_t aml_mapper_size(struct aml_mapper *mapper,
 ssize_t get_size(struct C *c)
 {
 	return sizeof(struct C) + c->n * (sizeof(struct B) + sizeof(struct A));
+}
+
+void test_inner_mapper(struct C *c)
+{
+	size_t size;
+	struct C _c;
+	assert(aml_mapper_inner_mmap(&struct_C_mapper, c, &_c, &aml_area_linux,
+	                             NULL, aml_dma_linux_sequential, NULL, NULL,
+	                             &size) == AML_SUCCESS);
+
+	// Equality check
+	assert(eq_struct(c, &_c));
+
+	aml_mapper_inner_munmap(&struct_C_mapper, &_c, &aml_area_linux,
+	                        aml_dma_linux_sequential, NULL, NULL);
 }
 
 void test_mapper(struct C *c)
@@ -201,6 +241,7 @@ int main(int argc, char **argv)
 	init_struct(&c);
 
 	// Test
+	test_inner_mapper(c);
 	test_mapper(c);
 
 	// Cleanup

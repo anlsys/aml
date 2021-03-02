@@ -448,40 +448,40 @@
 		return *(size_t *)((size_t)ptr + offsetof(type, field));       \
 	}
 #define __AML_DECLARE_NELEM_FN_2(name, type, field, ...)                       \
-	__AML_DECLARE_NELEM_FN_1(name, type, field)															\
+	__AML_DECLARE_NELEM_FN_1(name, type, field)                            \
 	__AML_DECLARE_NELEM_FN_1(name, type, __VA_ARGS__)
 #define __AML_DECLARE_NELEM_FN_3(name, type, field, ...)                       \
-	__AML_DECLARE_NELEM_FN_1(name, type, field)                              \
+	__AML_DECLARE_NELEM_FN_1(name, type, field)                            \
 	__AML_DECLARE_NELEM_FN_2(name, type, __VA_ARGS__)
 #define __AML_DECLARE_NELEM_FN_4(name, type, field, ...)                       \
-	__AML_DECLARE_NELEM_FN_1(name, type, field)                              \
+	__AML_DECLARE_NELEM_FN_1(name, type, field)                            \
 	__AML_DECLARE_NELEM_FN_3(name, type, __VA_ARGS__)
 #define __AML_DECLARE_NELEM_FN_5(name, type, field, ...)                       \
-	__AML_DECLARE_NELEM_FN_1(name, type, field)                              \
+	__AML_DECLARE_NELEM_FN_1(name, type, field)                            \
 	__AML_DECLARE_NELEM_FN_4(name, type, __VA_ARGS__)
 #define __AML_DECLARE_NELEM_FN_6(name, type, field, ...)                       \
-	__AML_DECLARE_NELEM_FN_1(name, type, field)                              \
+	__AML_DECLARE_NELEM_FN_1(name, type, field)                            \
 	__AML_DECLARE_NELEM_FN_5(name, type, __VA_ARGS__)
 #define __AML_DECLARE_NELEM_FN_7(name, type, field, ...)                       \
-	__AML_DECLARE_NELEM_FN_1(name, type, field)                              \
+	__AML_DECLARE_NELEM_FN_1(name, type, field)                            \
 	__AML_DECLARE_NELEM_FN_6(name, type, __VA_ARGS__)
 #define __AML_DECLARE_NELEM_FN_8(name, type, field, ...)                       \
-	__AML_DECLARE_NELEM_FN_1(name, type, field)                              \
+	__AML_DECLARE_NELEM_FN_1(name, type, field)                            \
 	__AML_DECLARE_NELEM_FN_7(name, type, __VA_ARGS__)
 #define __AML_DECLARE_NELEM_FN_9(name, type, field, ...)                       \
-	__AML_DECLARE_NELEM_FN_1(name, type, field)                              \
+	__AML_DECLARE_NELEM_FN_1(name, type, field)                            \
 	__AML_DECLARE_NELEM_FN_8(name, type, __VA_ARGS__)
 #define __AML_DECLARE_NELEM_FN_10(name, type, field, ...)                      \
-	__AML_DECLARE_NELEM_FN_1(name, type, field)                              \
+	__AML_DECLARE_NELEM_FN_1(name, type, field)                            \
 	__AML_DECLARE_NELEM_FN_9(name, type, __VA_ARGS__)
 #define __AML_DECLARE_NELEM_FN_11(name, type, field, ...)                      \
-	__AML_DECLARE_NELEM_FN_1(name, type, field)                              \
+	__AML_DECLARE_NELEM_FN_1(name, type, field)                            \
 	__AML_DECLARE_NELEM_FN_10(name, type, __VA_ARGS__)
 #define __AML_DECLARE_NELEM_FN_12(name, type, field, ...)                      \
-	__AML_DECLARE_NELEM_FN_1(name, type, field)                              \
+	__AML_DECLARE_NELEM_FN_1(name, type, field)                            \
 	__AML_DECLARE_NELEM_FN_11(name, type, __VA_ARGS__)
 #define __AML_DECLARE_NELEM_FN_13(name, type, field, ...)                      \
-	__AML_DECLARE_NELEM_FN_1(name, type, field)                              \
+	__AML_DECLARE_NELEM_FN_1(name, type, field)                            \
 	__AML_DECLARE_NELEM_FN_12(name, type, __VA_ARGS__)
 #define __AML_DECLARE_NELEM_FN(name, type, ...)                                \
 	CONCATENATE(__AML_DECLARE_NELEM_FN_, VA_NARG(__VA_ARGS__))             \

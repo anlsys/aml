@@ -236,6 +236,60 @@ void *aml_mapper_mmap(struct aml_mapper *mapper,
 	return out;
 }
 
+int aml_mapper_inner_mmap(struct aml_mapper *mapper,
+                          void *src,
+                          void *dst,
+                          struct aml_area *area,
+                          struct aml_area_mmap_options *opts,
+                          struct aml_dma *dma,
+                          aml_dma_operator op,
+                          void *op_arg,
+                          size_t *size)
+{
+	if (dst == NULL || src == NULL || mapper == NULL || area == NULL ||
+	    dma == NULL) {
+		return -AML_EINVAL;
+	}
+
+	size_t s = 0;
+	ssize_t err;
+	void *out;
+
+	memcpy(dst, src, mapper->size);
+	for (size_t i = 0; i < mapper->n_fields; i++) {
+		s += aml_mapper_size(mapper->fields[i],
+		                     PTR_OFF(src, +, mapper->offsets[i]), NULL,
+		                     NULL, NULL);
+	}
+	*size = s;
+
+	if (s == 0)
+		return AML_SUCCESS;
+
+	out = aml_area_mmap(area, s, opts);
+	if (out == NULL)
+		return -AML_ENOMEM;
+
+	void *dst_ptr = out;
+	for (size_t i = 0; i < mapper->n_fields; i++) {
+		void *src_ptr = *(void **)PTR_OFF(src, +, mapper->offsets[i]);
+		// Advance dst_ptr
+		if (i > 0) // Err is set to previous field mmap size.
+			dst_ptr = PTR_OFF(dst_ptr, +, err);
+
+		err = aml_mapper_map_field(mapper->fields[i],
+		                           mapper->num_elements[i](src),
+		                           src_ptr, dst_ptr, dma, op, op_arg);
+		if (err < 0) {
+			aml_area_munmap(area, &out, s);
+			return err;
+		}
+		*(void **)PTR_OFF(dst, +, mapper->offsets[i]) = dst_ptr;
+	}
+
+	return AML_SUCCESS;
+}
+
 static int aml_mapper_copy_back_recursive(struct aml_mapper *mapper,
                                           size_t num,
                                           void *src,
@@ -298,4 +352,23 @@ void aml_mapper_munmap(struct aml_mapper *mapper,
 {
 	aml_area_munmap(area, &ptr,
 	                aml_mapper_size(mapper, ptr, dma, op, op_arg));
+}
+
+void aml_mapper_inner_munmap(struct aml_mapper *mapper,
+                             void *ptr,
+                             struct aml_area *area,
+                             struct aml_dma *dma,
+                             aml_dma_operator op,
+                             void *op_arg)
+{
+	size_t s = 0;
+	void *data_ptr = *(void **)PTR_OFF(ptr, +, mapper->offsets[0]);
+	for (size_t i = 0; i < mapper->n_fields; i++) {
+		s += aml_mapper_size(mapper->fields[i],
+		                     *(void **)PTR_OFF(ptr, +,
+		                                       mapper->offsets[i]),
+		                     dma, op, op_arg);
+	}
+	if (s > 0)
+		aml_area_munmap(area, &data_ptr, s);
 }
