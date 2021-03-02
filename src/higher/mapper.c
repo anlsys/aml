@@ -261,7 +261,8 @@ int aml_mapper_inner_mmap(struct aml_mapper *mapper,
 		                     PTR_OFF(src, +, mapper->offsets[i]), NULL,
 		                     NULL, NULL);
 	}
-	*size = s;
+	if (size != NULL)
+		*size = s;
 
 	if (s == 0)
 		return AML_SUCCESS;
