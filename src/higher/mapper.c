@@ -241,15 +241,15 @@ void *aml_mapper_mmap(struct aml_mapper *mapper,
 	return out;
 }
 
-int aml_mapper_inner_mmap(struct aml_mapper *mapper,
-                          void *src,
-                          void *dst,
-                          struct aml_area *area,
-                          struct aml_area_mmap_options *opts,
-                          struct aml_dma *dma,
-                          aml_dma_operator op,
-                          void *op_arg,
-                          size_t *size)
+int aml_mapper_shallow_mmap(struct aml_mapper *mapper,
+                            void *src,
+                            void *dst,
+                            struct aml_area *area,
+                            struct aml_area_mmap_options *opts,
+                            struct aml_dma *dma,
+                            aml_dma_operator op,
+                            void *op_arg,
+                            size_t *size)
 {
 	if (dst == NULL || src == NULL || mapper == NULL || area == NULL ||
 	    dma == NULL) {
@@ -296,13 +296,13 @@ int aml_mapper_inner_mmap(struct aml_mapper *mapper,
 	return AML_SUCCESS;
 }
 
-static int aml_mapper_copy_back_recursive(struct aml_mapper *mapper,
-                                          size_t num,
-                                          void *src,
-                                          void *dst,
-                                          struct aml_dma *dma,
-                                          aml_dma_operator op,
-                                          void *op_arg)
+static int aml_mapper_copy_recursive(struct aml_mapper *mapper,
+                                     size_t num,
+                                     void *src,
+                                     void *dst,
+                                     struct aml_dma *dma,
+                                     aml_dma_operator op,
+                                     void *op_arg)
 {
 	int err;
 	void *ptr[mapper->n_fields * num];
@@ -341,12 +341,12 @@ static int aml_mapper_copy_back_recursive(struct aml_mapper *mapper,
 	return AML_SUCCESS;
 }
 
-int aml_mapper_copy_back(struct aml_mapper *mapper,
-                         void *src,
-                         void *dst,
-                         struct aml_dma *dma,
-                         aml_dma_operator op,
-                         void *op_arg)
+int aml_mapper_copy(struct aml_mapper *mapper,
+                    void *src,
+                    void *dst,
+                    struct aml_dma *dma,
+                    aml_dma_operator op,
+                    void *op_arg)
 {
 	return aml_mapper_copy_back_recursive(mapper, 1, src, dst, dma, op,
 	                                      op_arg);
@@ -363,12 +363,12 @@ void aml_mapper_munmap(struct aml_mapper *mapper,
 	                aml_mapper_size(mapper, ptr, dma, op, op_arg));
 }
 
-void aml_mapper_inner_munmap(struct aml_mapper *mapper,
-                             void *ptr,
-                             struct aml_area *area,
-                             struct aml_dma *dma,
-                             aml_dma_operator op,
-                             void *op_arg)
+void aml_mapper_shallow_munmap(struct aml_mapper *mapper,
+                               void *ptr,
+                               struct aml_area *area,
+                               struct aml_dma *dma,
+                               aml_dma_operator op,
+                               void *op_arg)
 {
 	size_t s = 0;
 	void *data_ptr = *(void **)PTR_OFF(ptr, +, mapper->offsets[0]);

@@ -318,9 +318,9 @@
 	         _)
 
 // Fills a static mapper structure at declaration.
-#define __AML_MAPPER_INIT(f, type, nf, off, num, fds)                      \
+#define __AML_MAPPER_INIT(f, type, nf, off, num, fds)                          \
 	{                                                                      \
-	 .flags = f, .size = sizeof(type), .n_fields = nf,										\
+		.flags = f, .size = sizeof(type), .n_fields = nf,              \
 		.offsets = off, .num_elements = num, .fields = fds             \
 	}
 

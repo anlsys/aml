@@ -94,9 +94,32 @@ void aml_mapper_destroy(struct aml_mapper **mapper);
 //-----------------------------------------------------------------------------
 
 /**
- * Perform an allocation and a deep copy of a host struct into a new location.
- * This is a one shot copy, there is no implicit synchronization between
- * resulting mapping and source pointer.
+ * Perform a deep allocation from host struct to a new empty struct in a an
+ * area. If the new empty struct has fields that are dynamically allocated
+ * and these fields are described by a list of mappers stored into the parent
+ * struct mapper, then the deep allocation will cross the hierarchy of
+ * structures mapper to determine the size needed for allocation. The
+ * resulting allocation is a single chunk of contiguous memory.
+ * The nested structures mapped in this allocation will have their fields
+ * pointing to dynamically allocated child structures set to point to a
+ * dedicated space in the new allocation. If the mapper of a structure has
+ * the flag AML_MAPPER_FLAG_COPY set, then the content of the structure
+ * described by the mapper will also be copied but won't overwrite the new
+ * indirections of the newly allocated structure.
+ *
+ * There is no implicit synchronization between
+ * resulting mapping and source pointer. This is a one time explicit allocation,
+ * and possibly copy.
+ *
+ * This feature requires that the
+ * pointer yielded by area can be safely offseted (not dereferenced) from host
+ * as long as the result pointer is within the bounds of allocation. If the
+ * resulting pointer do not support this property, then using this function is
+ * undefined.
+ *
+ * If the structure to map is not a tree, e.g it has fields pointing at each
+ * others, then the behaviour of this function is undefined.
+ *
  * @param mapper[in]: The mapper describing the struct pointed by `ptr`.
  * @param ptr[in]: A host pointer on which to perform a deep copy.
  * @param area[in]: The area where to allocate copy.
@@ -126,10 +149,10 @@ void *aml_mapper_mmap(struct aml_mapper *mapper,
                       void *op_arg,
                       size_t *size);
 /**
- * Perform the same work as aml_mapper_inner_mmap() except it does not allocate
+ * Perform the same work as aml_mapper_mmap() except it does not allocate
  * the top level structure. This is intended for use cases where the top level
  * structure is used on the host and some fields are used on device.
- * @see aml_mapper_inner_mmap()
+ * @see aml_mapper_mmap()
  * @param mapper[in]: The mapper describing the struct pointed by `ptr`.
  * @param dst[in,out]: The destination pointer to top structure.
  * The pointer must be a host pointer large enough to fit the top level
@@ -147,29 +170,33 @@ void *aml_mapper_mmap(struct aml_mapper *mapper,
  * @param op[in]: A 1D copy operator for the dma engine.
  * @param op_arg[in]: Optional arguments to pass to the `op` operator.
  * @param size[out]: If not NULL, allocation size is stored here.
- * This may further be used with aml_area_inner_munmap() and `area` to cleanup
+ * This may further be used with aml_area_shallow_munmap() and `area` to cleanup
  * resulting pointer.
  */
-int aml_mapper_inner_mmap(struct aml_mapper *mapper,
-                          void *src,
-                          void *dst,
-                          struct aml_area *area,
-                          struct aml_area_mmap_options *opts,
-                          struct aml_dma *dma,
-                          aml_dma_operator op,
-                          void *op_arg,
-                          size_t *size);
+int aml_mapper_shallow_mmap(struct aml_mapper *mapper,
+                            void *src,
+                            void *dst,
+                            struct aml_area *area,
+                            struct aml_area_mmap_options *opts,
+                            struct aml_dma *dma,
+                            aml_dma_operator op,
+                            void *op_arg,
+                            size_t *size);
 
 /**
- * Perform a backward copy from a deepcopy structure to original structure on
- * host.
- * @param[in] mapper: The description of the mapped structure.
- * @param[in] src: A pointer to a structure created with aml_mapper_mmap() and
- * this mapper.
- * @param[in] dst: A pointer to the original structure used with
- * aml_mapper_mmap() and to create `src`.
- * @param dma[in]: A dma engine able to perform movement from `area` to
- * host.
+ * Perform a backward deepcopy from a structure to another.
+ * This feature requires that `src` and `dst` pointers can
+ * be safely offseted (not dereferenced) from host
+ * as long as the result pointer is within the bounds of allocation. If the
+ * pointers do not support this property, then using this function is
+ * undefined.
+ * If the structure to copy is not a tree, e.g it has fields pointing at each
+ * others, then the behaviour of this function is undefined.
+ * @param[in] mapper: The description of the structures to copy.
+ * @param[in] src: A pointer to a structure accurately described by mapper.
+ * @param[in] dst: A pointer to a structure accurately described by mapper.
+ * @param dma[in]: A dma engine able to perform contiguous copy
+ * from `src` to `dst`.
  * @see aml_dma
  * @param op[in]: A 1D copy operator for the dma engine.
  * @param op_arg[in] Optional arguments to pass to the `op` operator.
@@ -204,8 +231,8 @@ void aml_mapper_munmap(struct aml_mapper *mapper,
 /**
  * Unmap the content of structure pointed by ptr in area.
  * The content of ptr must have been previously allocated with
- * aml_mapper_inner_mmap().
- * @see aml_mapper_inner_mmap()
+ * aml_mapper_shallow_mmap().
+ * @see aml_mapper_shallow_mmap()
  * @param[in] mapper: The description of the mapped structure.
  * @param[in] ptr: The mapped pointer.
  * @param[in] area: The area used to map ptr.
@@ -214,12 +241,12 @@ void aml_mapper_munmap(struct aml_mapper *mapper,
  * @param op[in]: A 1D copy operator for the dma engine.
  * @param op_arg[in] Optional arguments to pass to the `op` operator.
  */
-void aml_mapper_inner_munmap(struct aml_mapper *mapper,
-                             void *ptr,
-                             struct aml_area *area,
-                             struct aml_dma *dma,
-                             aml_dma_operator op,
-                             void *op_arg);
+void aml_mapper_shallow_munmap(struct aml_mapper *mapper,
+                               void *ptr,
+                               struct aml_area *area,
+                               struct aml_dma *dma,
+                               aml_dma_operator op,
+                               void *op_arg);
 /**
  * Declare a static mapper for a structure type.
  * @param[in] name: The result mapper variable name.
@@ -256,6 +283,9 @@ void aml_mapper_inner_munmap(struct aml_mapper *mapper,
 #define aml_final_mapper_decl(name, type)                                      \
 	struct aml_mapper name = __AML_MAPPER_INIT(AML_MAPPER_FLAG_COPY, type, \
 	                                           0, NULL, NULL, NULL)
+
+#define aml_final_nocopy_mapper_decl(name, type)                               \
+	struct aml_mapper name = __AML_MAPPER_INIT(0, type, 0, NULL, NULL, NULL)
 
 /**
  * @}
