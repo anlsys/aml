@@ -270,8 +270,10 @@ int aml_mapper_shallow_mmap(struct aml_mapper *mapper,
 			     j++)
 				s += aml_mapper_size(
 				        mapper->fields[i],
-				        PTR_OFF(src, +, mapper->offsets[i]) +
-				                j * mapper->fields[i]->size,
+				        PTR_OFF(*(void **)PTR_OFF(
+				                        src, +,
+				                        mapper->offsets[i]),
+				                +, j * mapper->fields[i]->size),
 				        NULL, NULL, NULL);
 		}
 	}
