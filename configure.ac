@@ -74,7 +74,7 @@ PKG_CHECK_MODULES([HWLOC], \
                   [hwloc >= 2.1],   \
                   [have_hwloc=1], \
                   [have_hwloc=0])
-if test "$have_hwloc" == "1"; then
+if test "$have_hwloc" = "1"; then
    AC_DEFINE([HAVE_HWLOC], [1], "hwloc library with ABI > 2.0 is installed.")
 fi
 AM_CONDITIONAL([HAVE_HWLOC], [test "$have_hwloc" = "1"])
@@ -88,7 +88,7 @@ PKG_CHECK_MODULES([OpenCL], \
                   [OpenCL >= 2.1],   \
                   [have_opencl=1], \
                   [have_opencl=0])
-if test "$have_opencl" == "1"; then
+if test "$have_opencl" = "1"; then
    AC_DEFINE([HAVE_OPENCL], [1], "OpenCL library with ABI >= 2.1 is installed.")
 fi
 AM_CONDITIONAL([HAVE_OPENCL], [test "$have_opencl" = "1"])
@@ -103,18 +103,18 @@ AC_ARG_ENABLE(docs,
 		[Generate full html documentation (default is no).])],
 [docs=true],[docs=false])
 
-if [[ "x$docs" = xtrue ]]; then
+if test "x$docs" = "xtrue"; then
 	AC_CHECK_PROG([DOXYGEN], [doxygen], [doxygen], [no])
-	if [[ "x$DOXYGEN" == xno ]]; then
+	if test "x$DOXYGEN" = "xno"; then
 		AC_MSG_ERROR([Doxygen not found])
 	fi
 
 	AC_CHECK_PROG([SPHINXBUILD], [sphinx-build], [sphinx-build], [no])
-	if [[ "x$SPHINXBUILD" == xno ]]; then
+	if test "x$SPHINXBUILD" = "xno"; then
 		AC_MSG_ERROR([Sphinx not found])
 	fi
 fi
-AM_CONDITIONAL([BUILD_DOCS],[ test "x$docs" == xtrue ])
+AM_CONDITIONAL([BUILD_DOCS],[ test "x$docs" = "xtrue" ])
 
 # check CUDA compiler and libraries
 #####################################
@@ -125,9 +125,9 @@ AC_ARG_WITH([cuda],
 	[AS_HELP_STRING([--with-cuda@<:@=yes|no|DIR@:>@],
 		[support cuda inside the library (default is check)])],
 	[
-	if [[ "x$withval" = xno ]]; then
+	if test "x$withval" = "xno"; then
 		want_cuda="no"
-	elif [[ "x$withval" = xyes ]]; then
+	elif test "x$withval" = "xyes"; then
 		want_cuda="yes"
 		cuda_home_path="$CUDA_HOME"
 	else
@@ -140,26 +140,26 @@ AC_ARG_WITH([cuda],
 		cuda_home_path="$CUDA_HOME"
 	])
 
-if [[ "x$want_cuda" != xno ]]; then
+if test "x$want_cuda" != "xno"; then
 
 	AC_MSG_NOTICE([starting checks for CUDA])
-	if [[ -n "$cuda_home_path" ]]; then
+	if test -n "$cuda_home_path"; then
 		nvcc_search_dirs="$PATH$PATH_SEPARATOR$cuda_home_path/bin"
 	else
 		nvcc_search_dirs="$PATH"
 	fi
 
 	AC_PATH_PROG([NVCC], [nvcc], [], [$nvcc_search_dirs])
-	if [[ -n "$NVCC" ]]; then
+	if test -n "$NVCC"; then
 		have_nvcc="yes"
 	fi
 else
 	AC_MSG_NOTICE([will not check for CUDA])
 fi
 
-if [[ "x$have_nvcc" = xyes ]]; then
+if test "x$have_nvcc" = "xyes"; then
 
-	if [[ -n "$cuda_home_path" ]]; then
+	if test -n "$cuda_home_path"; then
 		CUDA_CFLAGS="-I$cuda_home_path/include"
 		CUDA_LIBS="-L$cuda_home_path/lib64 -lcudart"
 	else
@@ -183,7 +183,7 @@ fi
 
 AC_DEFINE_UNQUOTED([HAVE_CUDA], [$have_cuda], [Whether aml support cuda library calls.])
 AC_SUBST([HAVE_CUDA],[$have_cuda])
-AM_CONDITIONAL([HAVE_CUDA], [ test "$have_cuda" == "1" ])
+AM_CONDITIONAL([HAVE_CUDA], [ test "$have_cuda" = "1" ])
 AC_SUBST(CUDA_CFLAGS)
 AC_SUBST(CUDA_LIBS)
 AC_SUBST(NVCC)
