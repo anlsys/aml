@@ -43,9 +43,11 @@ struct aml_replicaset_hwloc_data {
 	/** Number of initiators */
 	unsigned num_ptr;
 	/**
-	 * Array of pointers to replica.
+	 * Array of pointers to replicas.
 	 * Contains one pointer per initiator of the topology.
-	 * Pointers or arranged per initiator logical index.
+	 * Pointers are ordered by initiator logical index.
+	 * Multiple initiators may have the same pointer, e.g
+	 * two neighbor cores pointing to data on closest NUMA node.
 	 */
 	void **ptr;
 };
@@ -54,14 +56,19 @@ struct aml_replicaset_hwloc_data {
 extern struct aml_replicaset_ops aml_replicaset_hwloc_ops;
 
 /**
- * Create data stored in generic replicaset structure.
+ * Create a replicaset abstraction where initiator can query the
+ * closest replica based on `kind` criterion.
+ * The replicaset is not initialized, i.e the replica pointers are
+ * allocated but are not initialized.
  * @param out[out]: A pointer where to allocate the replicaset.
  * @param size[in]: Size of replicas in bytes.
- * @param initiator_type[in]: One replica per initiator of this type will be
- * be created. Initiators must have a non empty cpuset.
+ * @param initiator_type[in]: The type of topology object used to
+ * compute distance to NUMA nodes. A list of unique NUMA nodes is computed
+ * where each initiator point to the closest NUMA Node. For each NUMA node
+ * in this list, a replica pointer is created.
  * @param kind[in]: A the kind of distance in topology to use. The NUMANODEs
  * maximizing performance for the criterion will be used for allocating
- *replicas.
+ * replicas.
  * @return -AML_ENOMEM if there was not enough memory to satisfy this call.
  * @return -AML EINVAL if initiators does not contain a cpuset.
  **/
