@@ -11,6 +11,10 @@
 #ifndef __AML_HIGHER_REPLICASET_HWLOC_H__
 #define __AML_HIGHER_REPLICASET_HWLOC_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <hwloc.h>
 
 /**
@@ -106,4 +110,7 @@ void *aml_replicaset_hwloc_local_replica(struct aml_replicaset *replicaset);
  * @}
  **/
 
+#ifdef __cplusplus
+}
+#endif
 #endif // __AML_HIGHER_REPLICASET_HWLOC_H__

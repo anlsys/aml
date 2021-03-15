@@ -11,6 +11,10 @@
 #ifndef AML_DMA_LINUX_PAR_H
 #define AML_DMA_LINUX_PAR_H 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_dma_linux_par "AML Parallel DMA"
  * @brief Parallel DMA implementation.
@@ -101,4 +105,8 @@ void aml_dma_linux_par_destroy(struct aml_dma **dma);
 /**
  * @}
  **/
+
+#ifdef __cplusplus
+}
+#endif
 #endif // AML_LINUX_DMA_LINUX_PAR_H

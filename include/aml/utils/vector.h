@@ -11,6 +11,10 @@
 #ifndef AML_VECTOR_H
 #define AML_VECTOR_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_vector "AML Vector API"
  * @brief AML Vector API
@@ -124,6 +128,10 @@ void aml_vector_destroy(struct aml_vector **vector);
 /**
  * @}
  **/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //AML_VECTOR_H
 

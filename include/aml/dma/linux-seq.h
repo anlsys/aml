@@ -11,6 +11,10 @@
 #ifndef AML_DMA_LINUX_SEQ_H
 #define AML_DMA_LINUX_SEQ_H 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_dma_linux_seq "AML Sequential DMA"
  * @brief Sequential DMA implementation.
@@ -120,4 +124,8 @@ int aml_dma_linux_seq_do_copy(struct aml_dma_linux_seq_data *dma,
 /**
  * @}
  **/
+
+#ifdef __cplusplus
+}
+#endif
 #endif // AML_DMA_LINUX_SEQ_H

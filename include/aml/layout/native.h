@@ -11,6 +11,10 @@
 #ifndef AML_AREA_LAYOUT_NATIVE_H
 #define AML_AREA_LAYOUT_NATIVE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_layout_native "AML Layout Internal API"
  * @brief Layout API for internal management of layouts.
@@ -76,5 +80,9 @@ int aml_layout_slice_native(const struct aml_layout *layout,
 /**
  * @}
  **/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

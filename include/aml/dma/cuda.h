@@ -11,6 +11,10 @@
 #ifndef AML_DMA_CUDA_H
 #define AML_DMA_CUDA_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_dma_cuda "AML DMA Cuda"
  * @brief dma between devices and host.
@@ -135,5 +139,9 @@ int aml_dma_cuda_copy_1D(struct aml_layout *dst,
 /**
  * @}
  **/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // AML_LAYOUT_CUDA_H
