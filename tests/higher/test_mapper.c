@@ -147,19 +147,20 @@ ssize_t get_size(struct C *c)
 	return sizeof(struct C) + c->n * (sizeof(struct B) + sizeof(struct A));
 }
 
-void test_inner_mapper(struct C *c)
+void test_shallow_mapper(struct C *c)
 {
 	size_t size;
 	struct C _c;
-	assert(aml_mapper_inner_mmap(&struct_C_mapper, c, &_c, &aml_area_linux,
-	                             NULL, aml_dma_linux_sequential, NULL, NULL,
-	                             &size) == AML_SUCCESS);
+	assert(aml_mapper_shallow_mmap(&struct_C_mapper, c, &_c,
+	                               &aml_area_linux, NULL,
+	                               aml_dma_linux_sequential, NULL, NULL,
+	                               &size) == AML_SUCCESS);
 
 	// Equality check
 	assert(eq_struct(c, &_c));
 
-	aml_mapper_inner_munmap(&struct_C_mapper, &_c, &aml_area_linux,
-	                        aml_dma_linux_sequential, NULL, NULL);
+	aml_mapper_shallow_munmap(&struct_C_mapper, &_c, &aml_area_linux,
+	                          aml_dma_linux_sequential, NULL, NULL);
 }
 
 void test_mapper(struct C *c)
@@ -241,7 +242,7 @@ int main(int argc, char **argv)
 	init_struct(&c);
 
 	// Test
-	test_inner_mapper(c);
+	test_shallow_mapper(c);
 	test_mapper(c);
 
 	// Cleanup

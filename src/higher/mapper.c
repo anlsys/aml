@@ -351,14 +351,13 @@ static int aml_mapper_copy_recursive(struct aml_mapper *mapper,
 }
 
 int aml_mapper_copy_back(struct aml_mapper *mapper,
-                    void *src,
-                    void *dst,
-                    struct aml_dma *dma,
-                    aml_dma_operator op,
-                    void *op_arg)
+                         void *src,
+                         void *dst,
+                         struct aml_dma *dma,
+                         aml_dma_operator op,
+                         void *op_arg)
 {
-	return aml_mapper_copy_recursive(mapper, 1, src, dst, dma, op,
-																	 op_arg);
+	return aml_mapper_copy_recursive(mapper, 1, src, dst, dma, op, op_arg);
 }
 
 void aml_mapper_munmap(struct aml_mapper *mapper,
