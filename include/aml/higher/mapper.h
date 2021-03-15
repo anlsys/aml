@@ -263,6 +263,9 @@ void aml_mapper_shallow_munmap(struct aml_mapper *mapper,
  *   - field: The name of a field to map in `type` struct;
  *   - num_elements: The name of the struct field that counts the number
  * of struct `field` contiguous elements pointed by struct field `field`.
+ * !! The type of the field that counts the number of elements must be a
+ * `size_t`. If it is a different size or different type, the behaviour of
+ * using the resulting mapper is undefined.
  *   - field_mapper: A pointer to a `struct aml_mapper` that maps
  * this field type.
  **/

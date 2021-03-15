@@ -445,7 +445,7 @@
 #define __AML_DECLARE_NELEM_FN_1(name, type, field)                            \
 	size_t name##_num_element_fn_##field(void *ptr)                        \
 	{                                                                      \
-		return *(size_t *)((size_t)ptr + offsetof(type, field));       \
+		return *(size_t *)((char*)ptr + offsetof(type, field));       \
 	}
 #define __AML_DECLARE_NELEM_FN_2(name, type, field, ...)                       \
 	__AML_DECLARE_NELEM_FN_1(name, type, field)                            \
