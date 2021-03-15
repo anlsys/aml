@@ -20,7 +20,7 @@ extern "C" {
  * @defgroup aml_replicaset "AML Replicaset"
  * @brief Maintain a copy of a data in several areas.
  *
- * Replicaset is a building block on top of areas and dmas to
+ * Replicaset is a building block on top of areas to
  * maintain a manage coherency of several copies of a data in several areas.
  * @{
  **/
@@ -49,8 +49,8 @@ struct aml_replicaset {
 };
 
 /**
- * aml_area_ops is a structure containing implementations
- * of area operations.
+ * aml_replicaset_ops is a structure containing implementations
+ * of replicaset operations.
  * Users may create or modify implementations by assembling
  * appropriate operations in such a structure.
  **/
@@ -59,10 +59,7 @@ struct aml_replicaset_ops {
 	 * Initialize replicas of a replicaset with some data.
 	 * @param replicaset[in]: The replicaset holding copies.
 	 * @param data[in]: The data to copy.
-	 * @param size[in]: The size of data top copy.
-	 * @param dma[in]: An array of copy functions to copy original data to
-	 *each replica.
-	 * @return A negative AML error code.
+	 * @return An AML error code.
 	 **/
 	int (*init)(struct aml_replicaset *replicaset, const void *data);
 
