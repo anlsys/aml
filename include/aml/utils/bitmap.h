@@ -11,6 +11,10 @@
 #ifndef AML_BITMAP_H
 #define AML_BITMAP_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_bitmap "AML Bitmap API"
  * @brief  AML Bitmap API
@@ -224,6 +228,10 @@ int aml_bitmap_dup(struct aml_bitmap **dst, const struct aml_bitmap *src);
 /**
  * @}
  **/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //AML_BITMAP_H
 

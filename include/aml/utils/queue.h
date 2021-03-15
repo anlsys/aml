@@ -11,6 +11,10 @@
 #ifndef AML_QUEUE_H
 #define AML_QUEUE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_queue "AML Queue API"
  * @brief AML Queue API
@@ -77,5 +81,9 @@ void *aml_queue_take(struct aml_queue *q, void *element);
 /**
  * @}
  **/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //AML_QUEUE_H

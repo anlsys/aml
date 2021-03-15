@@ -11,6 +11,10 @@
 #ifndef AML_AREA_CUDA_H
 #define AML_AREA_CUDA_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_area_cuda "AML Cuda Areas"
  * @brief Cuda Implementation of Areas.
@@ -235,4 +239,7 @@ aml_area_cuda_munmap(const struct aml_area_data *area_data,
  * @}
  **/
 
+#ifdef __cplusplus
+}
+#endif
 #endif // AML_AREA_CUDA_H

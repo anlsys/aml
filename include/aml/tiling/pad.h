@@ -11,6 +11,10 @@
 #ifndef AML_TILING_PAD_H
 #define AML_TILING_PAD_H 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_tiling_pad "AML Padded Tiling"
  * @brief tiling with padding at the border
@@ -46,5 +50,9 @@ void aml_tiling_pad_destroy(struct aml_tiling **t);
 /**
  * @}
  **/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* AML_TILING_PAD_H */

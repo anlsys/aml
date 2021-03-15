@@ -18,6 +18,10 @@
 #ifndef AML_H
 #define AML_H 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <assert.h>
 #include <errno.h>
 #include <excit.h>
@@ -1070,5 +1074,9 @@ int aml_copy_layout_transform_generic(struct aml_layout *dst,
 /**
  * @}
  **/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

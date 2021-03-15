@@ -11,6 +11,10 @@
 #ifndef __AML_HIGHER_REPLICASET_H_
 #define __AML_HIGHER_REPLICASET_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @}
  * @defgroup aml_replicaset "AML Replicaset"
@@ -81,5 +85,9 @@ int aml_replicaset_init(struct aml_replicaset *replicaset, const void *data);
  */
 int aml_replicaset_sync(struct aml_replicaset *replicaset,
                         const unsigned int id);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __AML_HIGHER_REPLICASET_H_

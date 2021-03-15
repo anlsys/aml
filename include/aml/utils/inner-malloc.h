@@ -11,6 +11,10 @@
 #ifndef AML_INNER_MALLOC_H
 #define AML_INNER_MALLOC_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_inner_malloc "AML Internal Allocation Management"
  * @brief AML helper functions to handle inner allocations
@@ -176,5 +180,9 @@
 /**
  * @}
  **/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //AML_INNER_MALLOC_H
