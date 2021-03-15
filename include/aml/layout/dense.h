@@ -11,6 +11,10 @@
 #ifndef AML_AREA_LAYOUT_DENSE_H
 #define AML_AREA_LAYOUT_DENSE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_layout_dense "AML Layout Dense"
  * @brief Default aml layout.
@@ -230,5 +234,9 @@ extern struct aml_layout_ops aml_layout_row_ops;
 /**
  * @}
  **/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

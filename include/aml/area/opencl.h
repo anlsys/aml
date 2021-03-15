@@ -11,6 +11,10 @@
 #ifndef AML_AREA_OPENCL_H
 #define AML_AREA_OPENCL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <CL/opencl.h>
 
 /**
@@ -178,4 +182,7 @@ void aml_area_opencl_destroy(struct aml_area **area);
  * @}
  **/
 
+#ifdef __cplusplus
+}
+#endif
 #endif // AML_AREA_OPENCL_H

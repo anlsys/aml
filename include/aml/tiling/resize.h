@@ -11,6 +11,10 @@
 #ifndef AML_TILING_RESIZE_H
 #define AML_TILING_RESIZE_H 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_tiling_resize "AML Resizable Tiling"
  * @brief tiling with not homogeneous tiles
@@ -45,5 +49,9 @@ void aml_tiling_resize_destroy(struct aml_tiling **t);
 /**
  * @}
  **/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* AML_TILING_RESIZE_H */

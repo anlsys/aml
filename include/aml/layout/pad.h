@@ -11,6 +11,10 @@
 #ifndef AML_LAYOUT_PAD_H
 #define AML_LAYOUT_PAD_H 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_layout_pad "AML Layout Pad"
  * @brief Padded layout.
@@ -82,5 +86,9 @@ extern struct aml_layout_ops aml_layout_pad_row_ops;
 /**
  * @}
  **/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

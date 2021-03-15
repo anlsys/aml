@@ -11,6 +11,10 @@
 #ifndef AML_ASYNC_H
 #define AML_ASYNC_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_async "AML Asynchronous work utils"
  * @brief AML Asynchronous work utils
@@ -108,5 +112,9 @@ int aml_active_sched_num_tasks(struct aml_sched *sched);
 /**
  * @}
  **/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //AML_ASYNC_H

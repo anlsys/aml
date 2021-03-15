@@ -11,6 +11,10 @@
 #ifndef AML_AREA_LINUX_NUMA_H
 #define AML_AREA_LINUX_NUMA_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_area_linux "AML Linux Areas"
  * @brief Linux Implementation of AML Areas.
@@ -188,4 +192,7 @@ aml_area_linux_munmap(const struct aml_area_data *area_data,
  * @}
  **/
 
+#ifdef __cplusplus
+}
+#endif
 #endif //AML_AREA_LINUX_NUMA_H

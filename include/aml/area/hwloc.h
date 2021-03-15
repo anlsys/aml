@@ -11,6 +11,10 @@
 #ifndef AML_AREA_HWLOC_H
 #define AML_AREA_HWLOC_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <hwloc.h>
 #include <hwloc/distances.h>
 
@@ -243,4 +247,7 @@ extern struct aml_area_ops aml_area_hwloc_preferred_ops;
  * @}
  **/
 
+#ifdef __cplusplus
+}
+#endif
 #endif // AML_AREA_HWLOC_H

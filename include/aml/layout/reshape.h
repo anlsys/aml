@@ -11,6 +11,10 @@
 #ifndef AML_AREA_LAYOUT_RESHAPE_H
 #define AML_AREA_LAYOUT_RESHAPE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_layout_reshape "AML Layout Reshape"
  * @brief Default aml layout.
@@ -64,5 +68,9 @@ extern struct aml_layout_ops aml_layout_reshape_column_ops;
 /**
  * @}
  **/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

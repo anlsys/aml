@@ -11,6 +11,10 @@
 #ifndef AML_ERROR_H
 #define AML_ERROR_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_error "AML Error Management"
  * @brief AML Error Codes and Functions
@@ -92,5 +96,9 @@ void aml_perror(const char *msg);
 /**
  * @}
  **/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //AML_ERROR_H

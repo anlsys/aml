@@ -11,6 +11,10 @@
 #ifndef AML_TILING_NATIVE_H
 #define AML_TILING_NATIVE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_tiling_native "AML Tiling Internal API"
  * @brief API for internal management of tilings.
@@ -28,5 +32,9 @@ int aml_tiling_dims_native(const struct aml_tiling *tiling, size_t *dims);
 /**
  * @}
  **/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // AML_TILING_NATIVE_H
