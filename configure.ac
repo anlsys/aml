@@ -95,6 +95,20 @@ AM_CONDITIONAL([HAVE_OPENCL], [test "$have_opencl" = "1"])
 AC_DEFINE_UNQUOTED([HAVE_OPENCL], [$have_opencl], [Whether aml support opencl library calls.])
 AC_SUBST([HAVE_OPENCL],[$have_opencl])
 
+# Level Zero Support
+####################
+
+PKG_CHECK_MODULES([libze_loader], \
+                  [libze_loader >= 1.0],   \
+                  [have_ze=1], \
+                  [have_ze=0])
+if test "$have_ze" = "1"; then
+   AC_DEFINE([HAVE_ZE], [1], "Level Zero library and headers are available")
+fi
+AM_CONDITIONAL([HAVE_ZE], [test "$have_ze" = "1"])
+AC_DEFINE_UNQUOTED([HAVE_ZE], [$have_ze], [Whether aml support intel level zero library calls.])
+AC_SUBST([HAVE_ZE],[$have_ze])
+
 # check doxygen + sphinx for documentation build
 ################################################
 

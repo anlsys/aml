@@ -27,6 +27,13 @@ int aml_errno;
 struct aml_dma *aml_dma_linux_sequential;
 struct aml_dma *aml_dma_linux_parallel;
 
+#if HAVE_ZE == 1
+#include "aml/area/ze.h"
+
+struct aml_area *aml_area_ze_host;
+struct aml_area *aml_area_ze_device;
+#endif
+
 #if HAVE_HWLOC == 1
 #include <hwloc.h>
 
@@ -73,7 +80,31 @@ int aml_init(int *argc, char **argv[])
 	if (err != AML_SUCCESS)
 		goto err_with_linux_par_dma;
 
-		// Initialize topology
+		// Initialize level zero backend.
+#if HAVE_ZE == 1
+	// Test initializes the lib with zeInit().
+	if (aml_support_backends(AML_BACKEND_ZE)) {
+		err = aml_area_ze_create(&aml_area_ze_host,
+		                         AML_AREA_ZE_MMAP_HOST_FLAGS,
+		                         ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED, 0,
+		                         NULL, 64);
+		if (err != ZE_RESULT_SUCCESS)
+			goto err_with_linux_par_dma;
+		err = aml_area_ze_create(&aml_area_ze_device,
+		                         AML_AREA_ZE_MMAP_DEVICE_FLAGS, 0,
+		                         ZE_DEVICE_MEM_ALLOC_FLAG_BIAS_CACHED,
+		                         NULL, 64);
+		if (err != ZE_RESULT_SUCCESS) {
+			aml_area_ze_destroy(&aml_area_ze_host);
+			goto err_with_linux_par_dma;
+		}
+	} else {
+		aml_area_ze_host = NULL;
+		aml_area_ze_device = NULL;
+	}
+#endif
+
+// Initialize topology
 #if HAVE_HWLOC == 1
 	int err_hwloc;
 	err_hwloc = aml_topology_init();
@@ -98,6 +129,13 @@ int aml_finalize(void)
 	// Destroy topology
 #if HAVE_HWLOC == 1
 	hwloc_topology_destroy(aml_topology);
+#endif
+
+#if HAVE_ZE == 1
+	if (aml_support_backends(AML_BACKEND_ZE)) {
+		aml_area_ze_destroy(&aml_area_ze_host);
+		aml_area_ze_destroy(&aml_area_ze_device);
+	}
 #endif
 	return 0;
 }
