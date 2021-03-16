@@ -82,3 +82,12 @@ libcuda_la_CPPFLAGS=$(AM_CPPFLAGS) $(CUDA_CFLAGS)
 libcuda_la_LDFLAGS=$(AM_LDFLAGS) $(CUDA_LIBS)
 libaml_la_LIBADD=libcuda.la
 endif
+
+#############################################
+# Level Zero sources
+
+if HAVE_ZE
+AM_LDFLAGS += $(libze_loader_LIBS)
+AM_CPPFLAGS += $(libze_loader_CFLAGS)
+libaml_la_SOURCES+=area/ze.c
+endif
