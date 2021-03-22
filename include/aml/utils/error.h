@@ -83,15 +83,21 @@ void aml_perror(const char *msg);
 #define AML_ENOTSUP     5
 
 /**
- * Invoked AML abstraction function is has failed
+ * Invoked AML abstraction function has failed
  * because the resource it works on was busy.
  **/
 #define AML_EBUSY       6
 
 /**
+ * Invoked AML abstraction function has failed
+ * because the user does not have required permissions.
+ **/
+#define AML_EPERM 7
+
+/**
  * Max allowed value for errors.
  **/
-#define AML_ERROR_MAX   7
+#define AML_ERROR_MAX 8
 
 /**
  * @}

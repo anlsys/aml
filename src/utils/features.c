@@ -22,6 +22,9 @@
 #include <hwloc.h>
 extern hwloc_topology_t aml_topology;
 #endif
+#if HAVE_ZE == 1
+#include <level_zero/ze_api.h>
+#endif
 
 static int aml_support_cuda(void)
 {
@@ -46,6 +49,32 @@ static int aml_support_opencl(void)
 	cl_platform_id platforms;
 
 	if (clGetPlatformIDs(num_entries, &platforms, NULL) != CL_SUCCESS)
+		return 0;
+	return 1;
+#endif
+}
+
+static int aml_support_ze(void)
+{
+#if HAVE_ZE == 0
+	return 0;
+#else
+	int err;
+	uint32_t count = 1;
+	ze_driver_handle_t driver;
+	ze_api_version_t version;
+
+	// According to the documentation, this is safe to call multiple times.
+	err = zeInit(0);
+	if (err != ZE_RESULT_SUCCESS)
+		return 0;
+	err = zeDriverGet(&count, &driver);
+	if (err != ZE_RESULT_SUCCESS)
+		return 0;
+	err = zeDriverGetApiVersion(driver, &version);
+	if (err != ZE_RESULT_SUCCESS)
+		return 0;
+	if (version != ZE_API_VERSION_CURRENT)
 		return 0;
 	return 1;
 #endif
@@ -77,6 +106,12 @@ int aml_support_backends(const unsigned long backends)
 	// present.
 	if ((backends & AML_BACKEND_OPENCL) &&
 	    !(AML_HAVE_BACKEND_OPENCL && aml_support_opencl()))
+		return 0;
+
+	// Level Zero check: compilation support and runtime support must be
+	// present.
+	if ((backends & AML_BACKEND_ZE) &&
+	    !(AML_HAVE_BACKEND_ZE && aml_support_ze()))
 		return 0;
 
 	// hwloc check: compilation support and runtime support must be present.

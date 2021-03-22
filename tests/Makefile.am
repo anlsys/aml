@@ -1,3 +1,4 @@
+
 AM_COLOR_TESTS = yes
 
 AM_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS) $(OPENMP_CFLAGS)
@@ -13,6 +14,12 @@ if HAVE_HWLOC
 LIBS += $(HWLOC_LIBS)
 AM_CFLAGS += $(HWLOC_CFLAGS)
 AM_LDFLAGS += $(HWLOC_LIBS)
+endif
+
+if HAVE_ZE
+LIBS += $(libze_loader_LIBS)
+AM_LDFLAGS += $(libze_loader_LIBS)
+AM_CFLAGS += $(libze_loader_CFLAGS)
 endif
 
 # valgrind support
@@ -59,6 +66,10 @@ REPLICASET_TESTS =
 
 if HAVE_OPENCL
 AREA_TESTS += area/test_opencl
+endif
+
+if HAVE_ZE
+AREA_TESTS += area/test_ze
 endif
 
 if HAVE_HWLOC

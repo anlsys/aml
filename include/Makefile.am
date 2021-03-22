@@ -50,3 +50,7 @@ if HAVE_OPENCL
 include_aml_area_HEADERS += aml/area/opencl.h
 endif
 
+if HAVE_ZE
+include_aml_area_HEADERS += aml/area/ze.h
+endif
+

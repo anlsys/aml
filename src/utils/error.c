@@ -11,14 +11,15 @@
 #include "aml.h"
 #include <stdio.h>
 
-static const char * const aml_error_strings[] = {
-	[AML_SUCCESS]	= "Success",
-	[AML_FAILURE]	= "Generic error",
-	[AML_ENOMEM]	= "Not enough memory",
-	[AML_EINVAL]	= "Invalid argument",
-	[AML_EDOM]	= "Value out of bound",
-	[AML_EBUSY]	= "Underlying resource is not available for operation",
-	[AML_ENOTSUP]	= "Operation not supported",
+static const char *const aml_error_strings[] = {
+        [AML_SUCCESS] = "Success",
+        [AML_FAILURE] = "Generic error",
+        [AML_ENOMEM] = "Not enough memory",
+        [AML_EINVAL] = "Invalid argument",
+        [AML_EDOM] = "Value out of bound",
+        [AML_EBUSY] = "Underlying resource is not available for operation",
+        [AML_ENOTSUP] = "Operation not supported",
+        [AML_EPERM] = "Insufficient permissions",
 };
 
 const char *aml_strerror(const int err)
