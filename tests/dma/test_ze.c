@@ -14,7 +14,7 @@
 #include "aml/layout/dense.h"
 
 // Data
-#define size (1 << 24) // 16 MB
+#define size (1 << 14) // 1KB
 void *host_data;
 void *device_data;
 
