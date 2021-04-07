@@ -10,7 +10,6 @@
 #include "aml.h"
 #include "config.h"
 #include "aml/area/cuda.h"
-#include "aml/utils/features.h"
 #include <stdlib.h>
 #include <string.h>
 #include <cuda.h>

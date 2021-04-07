@@ -84,7 +84,7 @@ AC_SUBST([HAVE_HWLOC],[$have_hwloc])
 # OpenCL support
 ###############
 
-PKG_CHECK_MODULES([OpenCL], \
+PKG_CHECK_MODULES([OPENCL], \
                   [OpenCL >= 2.1],   \
                   [have_opencl=1], \
                   [have_opencl=0])
@@ -98,7 +98,7 @@ AC_SUBST([HAVE_OPENCL],[$have_opencl])
 # Level Zero Support
 ####################
 
-PKG_CHECK_MODULES([libze_loader], \
+PKG_CHECK_MODULES([ZE], \
                   [libze_loader >= 1.0],   \
                   [have_ze=1], \
                   [have_ze=0])

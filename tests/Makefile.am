@@ -5,9 +5,9 @@ AM_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS) 
 AM_LDFLAGS = ../src/libaml.la $(top_builddir)/excit/src/libexcit.la $(PTHREAD_LIBS) $(OPENMP_CFLAGS)
 
 if HAVE_OPENCL
-LIBS += $(OpenCL_LIBS)
-AM_CFLAGS += $(OpenCL_CFLAGS)
-AM_LDFLAGS += $(OpenCL_LIBS)
+LIBS += $(OPENCL_LIBS)
+AM_CFLAGS += $(OPENCL_CFLAGS)
+AM_LDFLAGS += $(OPENCL_LIBS)
 endif
 
 if HAVE_HWLOC
@@ -17,9 +17,9 @@ AM_LDFLAGS += $(HWLOC_LIBS)
 endif
 
 if HAVE_ZE
-LIBS += $(libze_loader_LIBS)
-AM_LDFLAGS += $(libze_loader_LIBS)
-AM_CFLAGS += $(libze_loader_CFLAGS)
+LIBS += $(ZE_LIBS)
+AM_LDFLAGS += $(ZE_LIBS)
+AM_CFLAGS += $(ZE_CFLAGS)
 endif
 
 # valgrind support

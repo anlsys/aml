@@ -30,8 +30,11 @@ struct aml_dma *aml_dma_linux_parallel;
 #if HAVE_ZE == 1
 #include "aml/area/ze.h"
 
-struct aml_area *aml_area_ze_host;
 struct aml_area *aml_area_ze_device;
+struct aml_area *aml_area_ze_host;
+
+int aml_errno_from_ze_result(ze_result_t err);
+#define ZE(ze_call) aml_errno_from_ze_result(ze_call)
 #endif
 
 #if HAVE_HWLOC == 1
@@ -84,22 +87,31 @@ int aml_init(int *argc, char **argv[])
 #if HAVE_ZE == 1
 	// Test initializes the lib with zeInit().
 	if (aml_support_backends(AML_BACKEND_ZE)) {
-		err = aml_area_ze_create(&aml_area_ze_host,
-		                         AML_AREA_ZE_MMAP_HOST_FLAGS,
-		                         ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED, 0,
-		                         NULL, 64);
+		uint32_t ze_count = 1;
+		ze_driver_handle_t driver;
+		ze_device_handle_t device;
+
+		err = ZE(zeDriverGet(&ze_count, &driver));
+		if (err != AML_SUCCESS)
+			goto err_with_linux_par_dma;
+
+		ze_count = 1;
+		err = ZE(zeDeviceGet(driver, &ze_count, &device));
+		if (err != AML_SUCCESS)
+			goto err_with_linux_par_dma;
+
+		err = aml_area_ze_device_create(
+		        &aml_area_ze_device, device, 0,
+		        ZE_DEVICE_MEM_ALLOC_FLAG_BIAS_CACHED, 64,
+		        AML_AREA_ZE_MMAP_DEVICE_FLAGS);
 		if (err != ZE_RESULT_SUCCESS)
 			goto err_with_linux_par_dma;
-		err = aml_area_ze_create(&aml_area_ze_device,
-		                         AML_AREA_ZE_MMAP_DEVICE_FLAGS, 0,
-		                         ZE_DEVICE_MEM_ALLOC_FLAG_BIAS_CACHED,
-		                         NULL, 64);
-		if (err != ZE_RESULT_SUCCESS) {
-			aml_area_ze_destroy(&aml_area_ze_host);
-			goto err_with_linux_par_dma;
-		}
+		err = aml_area_ze_host_create(
+		        &aml_area_ze_host, ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED,
+		        64);
+		if (err != ZE_RESULT_SUCCESS)
+			goto err_with_ze_area_device;
 	} else {
-		aml_area_ze_host = NULL;
 		aml_area_ze_device = NULL;
 	}
 #endif
@@ -114,6 +126,11 @@ int aml_init(int *argc, char **argv[])
 #endif
 
 	return 0;
+
+#if HAVE_ZE == 1
+err_with_ze_area_device:
+	aml_area_ze_destroy(&aml_area_ze_device);
+#endif
 
 err_with_linux_par_dma:
 	aml_dma_linux_seq_destroy(&aml_dma_linux_sequential);
@@ -133,8 +150,8 @@ int aml_finalize(void)
 
 #if HAVE_ZE == 1
 	if (aml_support_backends(AML_BACKEND_ZE)) {
-		aml_area_ze_destroy(&aml_area_ze_host);
 		aml_area_ze_destroy(&aml_area_ze_device);
+		aml_area_ze_destroy(&aml_area_ze_host);
 	}
 #endif
 	return 0;
