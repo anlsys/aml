@@ -87,10 +87,6 @@ int aml_init(int *argc, char **argv[])
 
 		// Initialize level zero backend.
 #if HAVE_ZE == 1
-	ze_device_handle_t device;
-	ze_driver_handle_t driver;
-	uint32_t ze_count = 1;
-
 	// Test initializes the lib with zeInit().
 	if (aml_support_backends(AML_BACKEND_ZE)) {
 		uint32_t ze_count = 1;
