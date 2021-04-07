@@ -16,7 +16,6 @@
 #include "aml.h"
 
 #include "aml/area/opencl.h"
-#include "aml/utils/features.h"
 
 const size_t size = 1 << 20;
 

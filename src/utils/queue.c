@@ -9,7 +9,6 @@
 *******************************************************************************/
 
 #include "aml.h"
-#include "aml/utils/queue.h"
 
 struct aml_queue *aml_queue_create(const size_t max)
 {

@@ -7,17 +7,24 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *******************************************************************************/
-#include "config.h"
-
 #include <stdlib.h>
 #include <string.h>
 
 #include "aml.h"
 
 #include "aml/area/ze.h"
-#include "aml/utils/features.h"
 
 const size_t sizes[4] = {1, 32, 4096, 1 << 20};
+ze_driver_handle_t driver;
+ze_device_handle_t device;
+
+void setup()
+{
+	uint32_t ze_count = 1;
+	assert(zeDriverGet(&ze_count, &driver) == ZE_RESULT_SUCCESS);
+	ze_count = 1;
+	assert(zeDeviceGet(driver, &ze_count, &device) == ZE_RESULT_SUCCESS);
+}
 
 ze_command_list_handle_t get_command_list(struct aml_area *area)
 {
@@ -36,139 +43,99 @@ ze_command_list_handle_t get_command_list(struct aml_area *area)
 	};
 
 	assert(zeCommandListCreateImmediate(
-	               data->context, *data->device, &command_queue_desc,
+	               data->context, data->desc.device.device,
+	               &command_queue_desc,
 	               &command_list) == ZE_RESULT_SUCCESS);
 	return command_list;
 }
 
-void test_device_mmap()
+void test_device_mmap(size_t size)
 {
 	void *host_data;
 	void *host_copy;
 	void *device_data;
 	struct aml_area *area;
-	size_t ns = sizeof(sizes) / sizeof(*sizes);
-	int err;
-	size_t size;
 
-	assert(aml_area_ze_create(&area, AML_AREA_ZE_MMAP_DEVICE_FLAGS, 0,
-	                          ZE_DEVICE_MEM_ALLOC_FLAG_BIAS_CACHED, NULL,
-	                          64) == AML_SUCCESS);
+	assert(aml_area_ze_device_create(&area, device, 0, 0, 32,
+	                                 AML_AREA_ZE_MMAP_DEVICE_FLAGS) ==
+	       AML_SUCCESS);
 	ze_command_list_handle_t command_list = get_command_list(area);
 
-	host_data = malloc(sizes[ns - 1]);
+	// Alloc buffers
+	host_data = malloc(size);
 	assert(host_data != NULL);
-	host_copy = malloc(sizes[ns - 1]);
+	memset(host_data, 0, size);
+	host_copy = malloc(size);
 	assert(host_copy != NULL);
+	memset(host_copy, 1, size);
+	device_data = aml_area_mmap(area, size, NULL);
+	assert(device_data != NULL);
 
-	for (size_t i = 0; i < ns; i++) {
-		size = sizes[i];
-		memset(host_data, 0, size);
-		memset(host_copy, 1, size);
+	// Check copy to buffer allocated with aml area is working.
+	assert(zeCommandListAppendMemoryCopy(command_list, device_data,
+	                                     host_data, size, NULL, 0,
+	                                     NULL) == ZE_RESULT_SUCCESS);
 
-		device_data = aml_area_mmap(area, size, NULL);
-		assert(device_data);
+	assert(zeCommandListAppendMemoryCopy(command_list, host_copy,
+	                                     device_data, size, NULL, 0,
+	                                     NULL) == ZE_RESULT_SUCCESS);
 
-		err = zeCommandListAppendMemoryCopy(command_list, device_data,
-		                                    host_data, size, NULL, 0,
-		                                    NULL);
-		assert(err == ZE_RESULT_SUCCESS);
+	assert(!memcmp(host_data, host_copy, size));
 
-		err = zeCommandListAppendMemoryCopy(command_list, host_copy,
-		                                    device_data, size, NULL, 0,
-		                                    NULL);
-		assert(err == ZE_RESULT_SUCCESS);
-		assert(!memcmp(host_data, host_copy, size));
-		assert(aml_area_munmap(area, device_data, size) == AML_SUCCESS);
-	}
-
+	// Cleanup
+	assert(aml_area_munmap(area, device_data, size) == AML_SUCCESS);
 	free(host_data);
 	free(host_copy);
-
 	zeCommandListDestroy(command_list);
 	aml_area_ze_destroy(&area);
 }
 
-void test_host_mmap()
-{
-	void *host_data;
-	void *host_copy;
-	struct aml_area *area;
-	size_t ns = sizeof(sizes) / sizeof(*sizes);
-	size_t size;
-
-	assert(aml_area_ze_create(&area, AML_AREA_ZE_MMAP_HOST_FLAGS,
-	                          ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED, 0, NULL,
-	                          64) == AML_SUCCESS);
-	host_copy = malloc(sizes[ns - 1]);
-	assert(host_copy != NULL);
-
-	for (size_t i = 0; i < ns; i++) {
-		size = sizes[i];
-		memset(host_copy, 1, size);
-		host_data = aml_area_mmap(area, size, NULL);
-		assert(host_data);
-		memcpy(host_data, host_copy, size);
-		assert(!memcmp(host_data, host_copy, size));
-		assert(aml_area_munmap(area, host_data, size) == AML_SUCCESS);
-	}
-
-	free(host_copy);
-	aml_area_ze_destroy(&area);
-}
-
-void test_shared_mmap()
+void test_shared_mmap(size_t size)
 {
 	int err;
 	void *unified_data;
 	void *host_copy;
 	struct aml_area *area;
 	struct aml_area_ze_data *data;
-	size_t ns = sizeof(sizes) / sizeof(*sizes);
-	size_t size;
+
+	// Create area
+	assert(aml_area_ze_device_create(&area, device, 0, 0, 32,
+	                                 AML_AREA_ZE_MMAP_SHARED_FLAGS) ==
+	       AML_SUCCESS);
+	data = (struct aml_area_ze_data *)area->data;
 
 	// Data initialization
-	host_copy = malloc(sizes[ns - 1]);
+	host_copy = malloc(size);
 	assert(host_copy != NULL);
+	memset(host_copy, 1, size);
+	unified_data = aml_area_mmap(area, size, NULL);
+	assert(unified_data != NULL);
+	memset(unified_data, 0, size);
 
-	// Map existing host data.
-	assert(aml_area_ze_create(&area, AML_AREA_ZE_MMAP_SHARED_FLAGS,
-	                          ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED,
-	                          ZE_DEVICE_MEM_ALLOC_FLAG_BIAS_CACHED, NULL,
-	                          64) == AML_SUCCESS);
+	// Ensure write are observable
+	zeContextSystemBarrier(data->context, data->desc.device.device);
 
 	ze_command_list_handle_t command_list = get_command_list(area);
 
-	data = (struct aml_area_ze_data *)area->data;
-	for (size_t i = 0; i < ns; i++) {
-		size = sizes[i];
-		unified_data = aml_area_mmap(area, size, NULL);
-		assert(unified_data != NULL);
+	// Copy from device/shared buffer to host buffer
+	assert(zeCommandListAppendMemoryCopy(command_list, host_copy,
+	                                     unified_data, size, NULL, 0,
+	                                     NULL) == ZE_RESULT_SUCCESS);
+	assert(!memcmp(unified_data, host_copy, size));
 
-		memset(unified_data, 0, size);
-		memset(host_copy, 1, size);
+	// Reinitialize data
+	memset(unified_data, 0, size);
+	memset(host_copy, 1, size);
+	zeContextSystemBarrier(data->context, data->desc.device.device);
 
-		zeContextSystemBarrier(data->context, *data->device);
+	// Copy to device/shared buffer from host buffer
+	err = zeCommandListAppendMemoryCopy(command_list, unified_data,
+	                                    host_copy, size, NULL, 0, NULL);
+	assert(err == ZE_RESULT_SUCCESS);
+	assert(!memcmp(unified_data, host_copy, size));
 
-		err = zeCommandListAppendMemoryCopy(command_list, host_copy,
-		                                    unified_data, size, NULL, 0,
-		                                    NULL);
-		assert(err == ZE_RESULT_SUCCESS);
-		assert(!memcmp(unified_data, host_copy, size));
-
-		memset(unified_data, 0, size);
-		memset(host_copy, 1, size);
-		zeContextSystemBarrier(data->context, *data->device);
-
-		err = zeCommandListAppendMemoryCopy(command_list, unified_data,
-		                                    host_copy, size, NULL, 0,
-		                                    NULL);
-		assert(err == ZE_RESULT_SUCCESS);
-		assert(!memcmp(unified_data, host_copy, size));
-
-		assert(!aml_area_munmap(area, unified_data, size));
-	}
-
+	// Cleanup
+	assert(!aml_area_munmap(area, unified_data, size));
 	zeCommandListDestroy(command_list);
 	aml_area_ze_destroy(&area);
 	free(host_copy);
@@ -179,9 +146,9 @@ int main(void)
 	assert(aml_init(NULL, NULL) == AML_SUCCESS);
 	if (!aml_support_backends(AML_BACKEND_ZE))
 		return 77;
-	test_device_mmap();
-	test_host_mmap();
-	test_shared_mmap();
+	setup();
+	test_device_mmap(4096);
+	test_shared_mmap(4096);
 	aml_finalize();
 	return 0;
 }

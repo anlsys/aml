@@ -15,7 +15,6 @@
 #include <time.h>
 #include <unistd.h>
 #include "aml.h"
-#include "aml/utils/async.h"
 
 //----------------------------------------------------------------------------//
 // Task Mockup Implementation for Tests

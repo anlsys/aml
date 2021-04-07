@@ -18,6 +18,11 @@ AM_CFLAGS += $(HWLOC_CFLAGS)
 AM_LDFLAGS += $(HWLOC_LIBS)
 endif
 
+if HAVE_ZE
+AM_LDFLAGS += $(ZE_LIBS)
+AM_CFLAGS += $(ZE_CFLAGS)
+endif
+
 # valgrind support
 @VALGRIND_CHECK_RULES@
 
