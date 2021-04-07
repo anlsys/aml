@@ -11,7 +11,6 @@
 #include <sched.h>
 #include <pthread.h>
 #include "aml.h"
-#include "aml/utils/async.h"
 
 //----------------------------------------------------------------------------//
 // Generic API functions.

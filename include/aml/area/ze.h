@@ -37,76 +37,101 @@ extern "C" {
 
 // Area Configuration Flags
 
-/** Host mapping. */
-#define AML_AREA_ZE_MMAP_HOST_FLAGS (1UL << 0)
 /** Device mapping. */
-#define AML_AREA_ZE_MMAP_DEVICE_FLAGS (1UL << 1)
+#define AML_AREA_ZE_MMAP_DEVICE_FLAGS (1 << 0)
 /** Host and Device with Unified Pointer. */
-#define AML_AREA_ZE_MMAP_SHARED_FLAGS                                          \
-	(AML_AREA_ZE_MMAP_HOST_FLAGS | AML_AREA_ZE_MMAP_DEVICE_FLAGS)
+#define AML_AREA_ZE_MMAP_SHARED_FLAGS (1 << 1)
 
 /** Implementation of aml_area_data. **/
 struct aml_area_ze_data {
-	/** Handle to the backend driver */
-	ze_driver_handle_t driver;
 	/** Context use for memory mapping of this area. */
 	ze_context_handle_t context;
-	/** Flag for tuning device mapping. */
-	ze_device_mem_alloc_desc_t device_desc;
-	/** Flag for tuning host mapping. */
-	ze_host_mem_alloc_desc_t host_desc;
 	/** Alignment. */
 	size_t alignment;
-	/**
-	 * In case of device or shared allocator, this is
-	 * the device where device data is allocated.
-	 */
-	ze_device_handle_t *device;
+	union ze_area_desc {
+		struct ze_area_device_desc {
+			/** Flag for tuning device mapping. */
+			ze_device_mem_alloc_desc_t device_desc;
+			/** device used for allocation. */
+			ze_device_handle_t device;
+		} device;
+		struct ze_area_host_desc {
+			/** Flag for tuning device mapping. */
+			ze_host_mem_alloc_desc_t host_desc;
+		} host;
+	} desc;
 };
 
-/** Operation table for the aml_area_ze on host */
-extern struct aml_area_ops aml_area_ze_ops_host;
 /** Operation table for the aml_area_ze on device */
 extern struct aml_area_ops aml_area_ze_ops_device;
 /** Operation table for the aml_area_ze on host and device */
 extern struct aml_area_ops aml_area_ze_ops_shared;
+/** Operation table for the aml_area_ze on host */
+extern struct aml_area_ops aml_area_ze_ops_host;
 
-/** Default host mapper with cached allocation and 64 bytes alignment */
-extern struct aml_area *aml_area_ze_host;
-/** Default device mapper with cached allocation and 64 bytes alignment */
+/**
+ * Default device mapper with cached allocation and 64 bytes alignment
+ * The driver used to obtain devices is the first returned driver.
+ * @see zeDeviceGet()
+ */
 extern struct aml_area *aml_area_ze_device;
 
 /**
- * Instanciate a new area using level zero backend.
+ * Default hist mapper with cached allocation and 64 bytes alignment.
+ * The driver used to obtain devices is the first returned driver.
+ * @see zeDeviceGet()
+ */
+extern struct aml_area *aml_area_ze_host;
+
+/**
+ * Instanciate a new area for allocating device memory using level zero backend.
  * This area will use the first available driver handle.
  * This area has its own context handle.
  * @param[out] area: A pointer to the area to allocate. The resulting
  * area is stored in this pointer and can be freed with free or
  * `aml_area_ze_destroy()`.
- * @param[in] alloc_type: The target memory area: host device or both:
- * + AML_AREA_ZE_MMAP_HOST_FLAGS
- * + AML_AREA_ZE_MMAP_DEVICE_FLAGS
- * + AML_AREA_ZE_MMAP_SHARED_FLAGS
- * @param[in] host_flags: Extra flag tuning host allocator behaviour.
- * @see zeMemAllocHost().
+ * @param[in] device: The target device where data is to be allocated.
+ * @param[in] ordinal: "ordinal of the device’s local memory to allocate from."
  * @param[in] device_flags: Extra flag tuning device allocator behaviour.
  * @see zeMemAllocDevice()
- * @param[in] device: If NULL and `alloc_type` specify a device or
- * shared mapping, then the first available device of the driver is
- * selected. Else, this device is copied into the area and will be used
- * to allocate on device.
+ * @param[in] alignment: Alignment of mapped pointers. Must be a power of
+ * two.
+ * @param[in] flags: The allocation type among:
+ * + AML_AREA_ZE_MMAP_DEVICE_FLAGS
+ * + AML_AREA_ZE_MMAP_SHARED_FLAGS
+ * @return AML_SUCCESS on success.
+ * @return -AML_ENOMEM if there was not enough memory available to
+ * satisfy this call.
+ * @return A translated ze_result_t into AML error code if calls to ze backends
+ * failed: getting drivers or context creation.
+ */
+int aml_area_ze_device_create(struct aml_area **area,
+                              ze_device_handle_t device,
+                              uint32_t ordinal,
+                              ze_device_mem_alloc_flag_t device_flags,
+                              size_t alignment,
+                              int flags);
+
+/**
+ * Instanciate a new area for allocating host memory using level zero backend.
+ * This area will use the first available driver handle.
+ * This area has its own context handle.
+ * @param[out] area: A pointer to the area to allocate. The resulting
+ * area is stored in this pointer and can be freed with free or
+ * `aml_area_ze_destroy()`.
+ * @param[in] host_flags: Extra flag tuning device allocator behaviour.
+ * @see zeMemAllocHost()
  * @param[in] alignment: Alignment of mapped pointers. Must be a power of
  * two.
  * @return AML_SUCCESS on success.
  * @return -AML_ENOMEM if there was not enough memory available to
  * satisfy this call.
+ * @return A translated ze_result_t into AML error code if calls to ze backends
+ * failed: getting drivers or context creation.
  */
-int aml_area_ze_create(struct aml_area **area,
-                       unsigned long alloc_type,
-                       ze_host_mem_alloc_flag_t host_flags,
-                       ze_device_mem_alloc_flag_t device_flags,
-                       ze_device_handle_t *device,
-                       size_t alignment);
+int aml_area_ze_host_create(struct aml_area **area,
+                            ze_host_mem_alloc_flag_t host_flags,
+                            size_t alignment);
 
 /**
  * Free the memory associated with an area allocated
@@ -116,36 +141,12 @@ int aml_area_ze_create(struct aml_area **area,
 void aml_area_ze_destroy(struct aml_area **area);
 
 /**
- * `mmap()` method for `struct aml_area_ze_data` allocating data on host.
- * @param[in] area_data: A pointer to a valid `struct aml_area_ze_data`.
- * @param[in] size: The size of the memory region to map.
- * @param[in] options: unused.
- * @return A pointer to the mapped data on success.
- * @return If underlying call to `zeMemAllocHost` fails with a `ze_result_t`
- * the error value is translated into an AML error and stored into
- * `aml_errno` while the function will returns `NULL`.
- * Error codes are translated as followed:
- * + ZE_RESULT_ERROR_UNINITIALIZED -> AML_FAILURE
- * + ZE_RESULT_ERROR_DEVICE_LOST -> AML_FAILURE
- * + ZE_RESULT_ERROR_INVALID_NULL_HANDLE -> AML_EINVAL
- * + ZE_RESULT_ERROR_INVALID_NULL_POINTER -> AML_EINVAL
- * + ZE_RESULT_ERROR_INVALID_ENUMERATION -> AML_EINVAL
- * + ZE_RESULT_ERROR_UNSUPPORTED_SIZE -> AML_ENOTSUP
- * + ZE_RESULT_ERROR_UNSUPPORTED_ALIGNMENT -> AML_ENOTSUP
- * + ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY -> AML_ENOMEM
- * + ZE_RESULT_ERROR_OUT_OF_DEVICE_MEMORY  -> AML_ENOMEM
- */
-void *aml_area_ze_mmap_host(const struct aml_area_data *area_data,
-                            size_t size,
-                            struct aml_area_mmap_options *options);
-
-/**
  * `mmap()` method for `struct aml_area_ze_data` allocating data on device.
  * @param[in] area_data: A pointer to a valid `struct aml_area_ze_data`.
  * @param[in] size: The size of the memory region to map.
  * @param[in] options: unused.
  * @return A pointer to the mapped data on success.
- * @return If underlying call to `zeMemAllocDevice` fails with a `ze_result_t`
+ * @return If underlying call to `zeMemAllocDevice()` fails with a `ze_result_t`
  * the error value is translated into an AML error and stored into
  * `aml_errno` while the function will returns `NULL`.
  * Error codes are translated as followed:
@@ -170,7 +171,7 @@ void *aml_area_ze_mmap_device(const struct aml_area_data *area_data,
  * @param[in] size: The size of the memory region to map.
  * @param[in] options: unused.
  * @return A pointer to the mapped data on success.
- * @return If underlying call to `zeMemAllocShared` fails with a `ze_result_t`
+ * @return If underlying call to `zeMemAllocShared()` fails with a `ze_result_t`
  * the error value is translated into an AML error and stored into
  * `aml_errno` while the function will returns `NULL`.
  * Error codes are translated as followed:
@@ -187,6 +188,20 @@ void *aml_area_ze_mmap_device(const struct aml_area_data *area_data,
 void *aml_area_ze_mmap_shared(const struct aml_area_data *area_data,
                               size_t size,
                               struct aml_area_mmap_options *options);
+
+/**
+ * `mmap()` method for `struct aml_area_ze_data` aallocating data on host.
+ * @param[in] area_data: A pointer to a valid `struct aml_area_ze_data`.
+ * @param[in] size: The size of the memory region to map.
+ * @param[in] options: unused.
+ * @return A pointer to the mapped data on success.
+ * @return If underlying call to `zeMemAllocHost()` fails with a `ze_result_t`
+ * the error value is translated into an AML error and stored into
+ * `aml_errno` while the function will returns `NULL`.
+ */
+void *aml_area_ze_mmap_host(const struct aml_area_data *area_data,
+                            size_t size,
+                            struct aml_area_mmap_options *options);
 
 /**
  * `unmap()` method for `struct aml_area_ze_data` to unmap data

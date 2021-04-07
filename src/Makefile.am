@@ -58,8 +58,8 @@ libaml_la_SOURCES=$(LIB_SOURCES)
 # opencl sources
 
 if HAVE_OPENCL
-AM_CPPFLAGS += $(OpenCL_CFLAGS)
-AM_LDFLAGS += $(OpenCL_LIBS)
+AM_CPPFLAGS += $(OPENCL_CFLAGS)
+AM_LDFLAGS += $(OPENCL_LIBS)
 libaml_la_SOURCES+=area/opencl.c
 endif
 
@@ -87,7 +87,7 @@ endif
 # Level Zero sources
 
 if HAVE_ZE
-AM_LDFLAGS += $(libze_loader_LIBS)
-AM_CPPFLAGS += $(libze_loader_CFLAGS)
+AM_LDFLAGS += $(ZE_LIBS)
+AM_CPPFLAGS += $(ZE_CFLAGS)
 libaml_la_SOURCES+=area/ze.c
 endif
