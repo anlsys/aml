@@ -70,6 +70,7 @@ endif
 
 if HAVE_ZE
 AREA_TESTS += area/test_ze
+DMA_TESTS += dma/test_ze
 endif
 
 if HAVE_HWLOC
