@@ -90,4 +90,5 @@ if HAVE_ZE
 AM_LDFLAGS += $(ZE_LIBS)
 AM_CPPFLAGS += $(ZE_CFLAGS)
 libaml_la_SOURCES+=area/ze.c
+libaml_la_SOURCES+=dma/ze.c
 endif
