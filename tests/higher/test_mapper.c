@@ -17,11 +17,16 @@
 #include "aml/area/linux.h"
 #include "aml/dma/linux-seq.h"
 
+struct aml_mapper_args linux_mapper_args;
+
 // Mapper args (cuda)
 #if AML_HAVE_BACKEND_CUDA
 #include "aml/area/cuda.h"
 #include "aml/dma/cuda.h"
 #endif
+
+struct aml_mapper_args cuda_host_to_device_mapper_args;
+struct aml_mapper_args cuda_device_to_host_mapper_args;
 
 //- Struct A Declaration ------------------------------------------------------
 
@@ -72,8 +77,6 @@ struct BigStruct {
 	unsigned na9;
 	unsigned long *a10;
 	unsigned na10;
-	unsigned long *a11;
-	unsigned na11;
 };
 
 aml_final_mapper_decl(ulong_mapper, unsigned long);
@@ -113,9 +116,6 @@ aml_mapper_decl(BigStruct_mapper,
                 &ulong_mapper,
                 a10,
                 na10,
-                &ulong_mapper,
-                a11,
-                na11,
                 &ulong_mapper);
 
 //- Equality test + Copy/Free -------------------------------------------------
@@ -136,78 +136,36 @@ int eq_struct(struct C *a, struct C *b)
 	return 1;
 }
 
-ssize_t aml_mapper_size(struct aml_mapper *mapper,
-                        void *ptr,
-                        struct aml_dma *dma,
-                        aml_dma_operator op,
-                        void *op_arg);
-
-ssize_t get_size(struct C *c)
-{
-	return sizeof(struct C) + c->n * (sizeof(struct B) + sizeof(struct A));
-}
-
-void test_shallow_mapper(struct C *c)
-{
-	size_t size;
-	struct C _c;
-	assert(aml_mapper_shallow_mmap(&struct_C_mapper, c, &_c,
-	                               &aml_area_linux, NULL,
-	                               aml_dma_linux_sequential, NULL, NULL,
-	                               &size) == AML_SUCCESS);
-
-	// Equality check
-	assert(eq_struct(c, &_c));
-
-	aml_mapper_shallow_munmap(&struct_C_mapper, &_c, &aml_area_linux,
-	                          aml_dma_linux_sequential, NULL, NULL);
-}
-
 void test_mapper(struct C *c)
 {
-	size_t size;
-	struct C *_c = aml_mapper_mmap(&struct_C_mapper, c, &aml_area_linux,
-	                               NULL, aml_dma_linux_sequential, NULL,
-	                               NULL, &size);
+	struct C *_c;
 
-	// Equality check
-	assert(_c != NULL);
+	// Linux check
+	assert(aml_mapper_mmap(&struct_C_mapper, &linux_mapper_args, c, &_c,
+	                       1) == AML_SUCCESS);
 	assert(eq_struct(c, _c));
-
-	// Computed size check
-	assert(get_size(c) == (ssize_t)size);
-	assert(get_size(c) == aml_mapper_size(&struct_C_mapper, (void *)_c,
-	                                      aml_dma_linux_sequential, NULL,
-	                                      NULL));
+	aml_mapper_munmap(&struct_C_mapper, &linux_mapper_args, _c);
 
 	// Cuda check
 #if AML_HAVE_BACKEND_CUDA
 	if (aml_support_backends(AML_BACKEND_CUDA)) {
 		/* Copy c to cuda device */
-		struct C *__c =
-		        aml_mapper_mmap(&struct_C_mapper, c, &aml_area_cuda,
-		                        NULL, &aml_dma_cuda_host_to_device,
-		                        aml_dma_cuda_copy_1D, NULL, &size);
-		// Allocation worked
-		assert(__c != NULL);
+	  assert(aml_mapper_mmap(&struct_C_mapper,
+													 &cuda_host_to_device_mapper_args, c, &_c, 1) == AML_SUCCESS);
 
 		// Change _c to be different from c.
-		_c->b[0].a->val = 4565467567;
-		assert(!eq_struct(c, _c));
+		c->b[0].a->val = 4565467567;
 
 		/* Copy back __c into modified _c */
-		assert(aml_mapper_copy_back(&struct_C_mapper, __c, _c,
-		                            &aml_dma_cuda_device_to_host,
-		                            aml_dma_cuda_copy_1D,
-		                            NULL) == AML_SUCCESS);
+		assert(aml_mapper_copy_back(&struct_C_mapper,
+		                            &cuda_device_to_host_mapper_args,
+		                            _c, c, 1) == AML_SUCCESS);
 		assert(eq_struct(c, _c));
 
-		aml_mapper_munmap(&struct_C_mapper, __c, &aml_area_cuda,
-		                  &aml_dma_cuda_device_to_host,
-		                  aml_dma_cuda_copy_1D, NULL);
+		aml_mapper_munmap(&struct_C_mapper,
+		                  &cuda_device_to_host_mapper_args, _c);
 	}
 #endif
-	aml_area_munmap(&aml_area_linux, _c, size);
 }
 
 //- Application Data Initialization -------------------------------------------
@@ -241,8 +199,25 @@ int main(int argc, char **argv)
 	aml_init(&argc, &argv);
 	init_struct(&c);
 
+	linux_mapper_args.area = &aml_area_linux;
+	linux_mapper_args.area_opts = NULL;
+	linux_mapper_args.dma = aml_dma_linux_sequential;
+	linux_mapper_args.dma_op = NULL;
+	linux_mapper_args.dma_op_arg = NULL;
+
+	cuda_host_to_device_mapper_args.area = &aml_area_cuda;
+	cuda_host_to_device_mapper_args.area_opts = NULL;
+	cuda_host_to_device_mapper_args.dma = &aml_dma_cuda_host_to_device;
+	cuda_host_to_device_mapper_args.dma_op = aml_dma_cuda_copy_1D;
+	cuda_host_to_device_mapper_args.dma_op_arg = NULL;
+
+	cuda_device_to_host_mapper_args.area = &aml_area_cuda;
+	cuda_device_to_host_mapper_args.area_opts = NULL;
+	cuda_device_to_host_mapper_args.dma = &aml_dma_cuda_device_to_host;
+	cuda_device_to_host_mapper_args.dma_op = aml_dma_cuda_copy_1D;
+	cuda_device_to_host_mapper_args.dma_op_arg = NULL;
+
 	// Test
-	test_shallow_mapper(c);
 	test_mapper(c);
 
 	// Cleanup

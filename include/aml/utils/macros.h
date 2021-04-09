@@ -383,7 +383,7 @@
  * the field type.
  * @arg __VA_ARGS__: A list of (field, field_mapper).
  */
-#define __AML_MAPPER_DECL_2(name, type, flags, ...)                            \
+#define __AML_MAPPER_DECL_2(name, flags, type, ...)                            \
 	num_element_fn __NUM_ELEMENTS_FN_##name[PAIR_N(__VA_ARGS__)] = {       \
 	        REPLICATE(PAIR_N(__VA_ARGS__), NULL)};                         \
 	size_t __OFFSETS_##name[PAIR_N(__VA_ARGS__)] = {                       \
@@ -527,7 +527,7 @@
  * the field type.
  * @arg __VA_ARGS__: A list of (field, num_elements, field_mapper).
  */
-#define __AML_MAPPER_DECL_3(name, type, flags, ...)                            \
+#define __AML_MAPPER_DECL_3(name, flags, type, ...)                            \
 	__AML_DECLARE_NELEM_FN(name, type, TRIPLE_2(__VA_ARGS__))              \
 	num_element_fn __NUM_ELEMENTS_FN_##name[TRIPLE_N(__VA_ARGS__)] = {     \
 	        __AML_NELEM_FN(name, TRIPLE_2(__VA_ARGS__))};                  \
