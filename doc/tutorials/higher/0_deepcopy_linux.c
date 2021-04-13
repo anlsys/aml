@@ -58,6 +58,10 @@ aml_mapper_decl(struct_C_mapper,
                 nx,
                 &double_mapper);
 
+//- Mapping args ---------------------------------------------------------------
+
+struct aml_mapper_args linux_mapper_args;
+
 //- Application struct initialization ------------------------------------------
 
 struct C *init_struct()
@@ -115,20 +119,25 @@ int eq_struct(const struct C *c, const struct C *_c)
 #ifndef DEEP_COPY_CUDA // Disable in next tutorial
 int main(int argc, char **argv)
 {
-	size_t size;
 	struct C *c, *_c;
 
 	// Init
 	assert(aml_init(&argc, &argv) == AML_SUCCESS);
+	linux_mapper_args.area = &aml_area_linux;
+	linux_mapper_args.area_opts = NULL;
+	linux_mapper_args.dma = aml_dma_linux_sequential;
+	linux_mapper_args.dma_op = NULL;
+	linux_mapper_args.dma_op_arg = NULL;
+
 	c = init_struct();
 
 	// deepcopy
-	_c = aml_mapper_mmap(&struct_C_mapper, c, &aml_area_linux, NULL,
-	                     aml_dma_linux_sequential, NULL, NULL, &size);
+	assert(aml_mapper_mmap(&struct_C_mapper, &linux_mapper_args, c, &_c,
+	                       1) == AML_SUCCESS);
 	assert(eq_struct(c, _c));
 
 	// Cleanup
-	aml_area_munmap(&aml_area_linux, _c, size);
+	aml_mapper_munmap(&struct_C_mapper, &linux_mapper_args, _c);
 	free(c);
 	aml_finalize();
 	return 0;

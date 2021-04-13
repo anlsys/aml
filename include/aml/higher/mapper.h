@@ -168,15 +168,13 @@ void aml_mapper_destroy(struct aml_mapper **mapper);
  * @param size[out]: If not NULL, allocation size is stored here.
  * This is used with aml_area_munmap() and `area` to cleanup
  * resulting pointer.
- * @return On success, a pointer to a newly allocated deep copy of source
- * pointer. The result is allocated in a single chunk of memory of the same
- * size as source pointer requires.
+ * @return AML_SUCCESS.
  */
-ssize_t aml_mapper_mmap(struct aml_mapper *mapper,
-                        struct aml_mapper_args *args,
-                        void *src,
-                        void *dst,
-                        size_t num);
+int aml_mapper_mmap(struct aml_mapper *mapper,
+                    struct aml_mapper_args *args,
+                    void *src,
+                    void *dst,
+                    size_t num);
 
 /**
  * Perform a backward deepcopy from a structure to another.

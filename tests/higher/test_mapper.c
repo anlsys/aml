@@ -138,20 +138,20 @@ int eq_struct(struct C *a, struct C *b)
 
 void test_mapper(struct C *c)
 {
-	struct C *_c;
-
 	// Linux check
-	assert(aml_mapper_mmap(&struct_C_mapper, &linux_mapper_args, c, &_c,
+	struct C *host_c;
+	assert(aml_mapper_mmap(&struct_C_mapper, &linux_mapper_args, c, &host_c,
 	                       1) == AML_SUCCESS);
-	assert(eq_struct(c, _c));
-	aml_mapper_munmap(&struct_C_mapper, &linux_mapper_args, _c);
+	assert(eq_struct(c, host_c));
 
 	// Cuda check
 #if AML_HAVE_BACKEND_CUDA
 	if (aml_support_backends(AML_BACKEND_CUDA)) {
+		struct C *device_c;
 		/* Copy c to cuda device */
-	  assert(aml_mapper_mmap(&struct_C_mapper,
-													 &cuda_host_to_device_mapper_args, c, &_c, 1) == AML_SUCCESS);
+		assert(aml_mapper_mmap(&struct_C_mapper,
+		                       &cuda_host_to_device_mapper_args, c,
+		                       &device_c, 1) == AML_SUCCESS);
 
 		// Change _c to be different from c.
 		c->b[0].a->val = 4565467567;
@@ -159,13 +159,14 @@ void test_mapper(struct C *c)
 		/* Copy back __c into modified _c */
 		assert(aml_mapper_copy_back(&struct_C_mapper,
 		                            &cuda_device_to_host_mapper_args,
-		                            _c, c, 1) == AML_SUCCESS);
-		assert(eq_struct(c, _c));
+		                            device_c, c, 1) == AML_SUCCESS);
+		assert(eq_struct(c, host_c));
 
 		aml_mapper_munmap(&struct_C_mapper,
-		                  &cuda_device_to_host_mapper_args, _c);
+		                  &cuda_device_to_host_mapper_args, device_c);
 	}
 #endif
+	aml_mapper_munmap(&struct_C_mapper, &linux_mapper_args, host_c);
 }
 
 //- Application Data Initialization -------------------------------------------

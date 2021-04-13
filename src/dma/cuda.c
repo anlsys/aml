@@ -206,8 +206,9 @@ int aml_dma_cuda_copy_1D(struct aml_layout *dst,
 
 	if (dma_data->kind == cudaMemcpyHostToDevice ||
 	    dma_data->kind == cudaMemcpyDeviceToHost) {
-		if (cudaMemcpyAsync(dst_ptr, src_ptr, size, dma_data->kind,
-		                    dma_data->stream) != cudaSuccess)
+		err = cudaMemcpyAsync(dst_ptr, src_ptr, size, dma_data->kind,
+		                      dma_data->stream);
+		if (err != cudaSuccess)
 			return -AML_FAILURE;
 	} else if (dma_data->kind == cudaMemcpyDeviceToDevice) {
 		if (cudaMemcpyPeerAsync(dst_ptr, dst_device, src_ptr,
