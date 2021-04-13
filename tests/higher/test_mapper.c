@@ -206,6 +206,7 @@ int main(int argc, char **argv)
 	linux_mapper_args.dma_op = NULL;
 	linux_mapper_args.dma_op_arg = NULL;
 
+#if AML_HAVE_BACKEND_CUDA
 	cuda_host_to_device_mapper_args.area = &aml_area_cuda;
 	cuda_host_to_device_mapper_args.area_opts = NULL;
 	cuda_host_to_device_mapper_args.dma = &aml_dma_cuda_host_to_device;
@@ -217,6 +218,7 @@ int main(int argc, char **argv)
 	cuda_device_to_host_mapper_args.dma = &aml_dma_cuda_device_to_host;
 	cuda_device_to_host_mapper_args.dma_op = aml_dma_cuda_copy_1D;
 	cuda_device_to_host_mapper_args.dma_op_arg = NULL;
+#endif
 
 	// Test
 	test_mapper(c);
