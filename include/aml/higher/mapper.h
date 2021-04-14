@@ -19,9 +19,7 @@
  * A mapper should be able to be instanciated once per `struct` declaration
  * and accurately describe any dynamic instance of the same structure.
  * Mapper can then be used to map/allocate a structure in different memory
- * regions, and copy in between mappings with the associated `dma`. When
- *buidling a mapper tree of a structure, the process must start from the leaves
- *and go to the root.
+ * regions, and copy in between mappings with the associated `dma`.
  * @{
  **/
 
