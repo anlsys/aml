@@ -11,6 +11,10 @@
 #ifndef AML_MAPPER_H
 #define AML_MAPPER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup aml_mapper "AML Struct Mapper"
  * @brief Hierarchical description of structs.
@@ -190,6 +194,8 @@ int aml_mapper_mmap(struct aml_mapper *mapper,
 
 /**
  * Perform a backward deepcopy from a structure to another.
+ * Only the pieces that are marked with flag `AML_MAPPER_FLAG_COPY`
+ * will be copied.
  * This feature requires that `src` and `dst` pointers can
  * be safely offseted (not dereferenced) from host
  * as long as the result pointer is within the bounds of allocation. If the
@@ -291,4 +297,7 @@ ssize_t aml_mapper_munmap(struct aml_mapper *mapper,
  * @}
  **/
 
+#ifdef __cplusplus
+}
+#endif
 #endif // AML_MAPPER_H
