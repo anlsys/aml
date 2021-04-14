@@ -54,8 +54,10 @@ extern "C" {
  * top level structure of a mapped structure hierarchy.
  * When this flag is set, the `dst` pointer to map is assumed to be already
  * allocated ON HOST, and only its field are to be allocated. This flag can
- * only be used on the top level structure/mapper. If this flag is set in any
- * other mapper of a mapper hierarchy, it is silently ignored.
+ * only be used on the top level structure/mapper and connected descendant
+ * holding the same flag. If this flag is set in any mapper of a mapper
+ * hierarchy that is not connected to a mapper with the same flag, up to the
+ * root, then it is silently ignored.
  */
 #define AML_MAPPER_FLAG_SHALLOW 0x4
 
@@ -88,11 +90,11 @@ struct aml_mapper {
 
 /**
  * Struct mapper constructor.
- * User of this function must be careful as it may result in undefined 
+ * User of this function must be careful as it may result in undefined
  *  behaviour:
  * If the mapper structure `out` is not a tree, e.g it has mapper fields of the
- * same type as it self and mapper pointing at each others, then the behaviour 
- * of this function is undefined. 
+ * same type as it self and mapper pointing at each others, then the behaviour
+ * of this function is undefined.
  * This function does not implement cycles detection and
  * will loop on cycles, dereferencing data out of memory bounds and eventually
  * loop allocating all memory if a cycle is met.
@@ -151,14 +153,22 @@ void aml_mapper_destroy(struct aml_mapper **mapper);
  *
  * @param mapper[in]: The mapper describing the struct pointed by `ptr`.
  * @param src[in]: A host pointer on which to perform a deep copy.
- * @param dst[in,out]: If `mapper` has flag `AML_MAPPER_FLAG_SHALLOW` set
+ * @param dst[in,out]: A pointer (void**) that will be set to the newly
+ * allocated and mapped structure.
+ * If `mapper` has flag `AML_MAPPER_FLAG_SHALLOW` set
  * then dst is a pointer to a memory area on host with at least
  * `mapper->size * num` bytes of space available. If `mapper` has child fields
- * to map, and the mapper to these fields do not have flag
- * `AML_MAPPER_FLAG_SPLIT` set, then `dst` must also secure space for this
- * fields and recursively their child fields under the same condition.
- * Else, when mapper do not set flag `AML_MAPPER_FLAG_SHALLOW`, `dst` is
- * a `(void**)` pointer, and it is set point to the newly mapped structure.
+ * to map, and the mappers to these fields have flag
+ * `AML_MAPPER_FLAG_SHALLOW` set, then `dst` matching field is assumed to
+ * point to a host memory with enough space to map child field.
+ * If `mapper` has child fields to map, and the mapper to these fields have flag
+ * `AML_MAPPER_FLAG_SPLIT` set then the field will be mapped into a newly
+ * allocated memory region. `AML_MAPPER_FLAG_SHALLOW` flag disables
+ * `AML_MAPPER_FLAG_SPLIT` flag.
+ * If `mapper` has child fields to map, and the mapper to these fields have none
+ * of `AML_MAPPER_FLAG_SPLIT` or `AML_MAPPER_FLAG_SHALLOW` flags set,
+ * Then the mapper assumes that their is sufficient space, after
+ * `dst + mapper->size * num` to map all fields.
  * @param area[in]: The area where to allocate copy.
  * `area` must yield a pointer on which pointer arithmetic within bounds gives
  * a valid pointer.
@@ -221,12 +231,12 @@ int aml_mapper_mmap(struct aml_mapper *mapper,
  * same error code.
  */
 int aml_mapper_copy(struct aml_mapper *mapper,
-										void *src,
-										void *dst,
-										size_t num,
-										struct aml_dma *dma,
-										aml_dma_operator dma_op,
-										void *dma_op_arg);
+                    void *src,
+                    void *dst,
+                    size_t num,
+                    struct aml_dma *dma,
+                    aml_dma_operator dma_op,
+                    void *dma_op_arg);
 
 /**
  * Unmap the structure pointed by `ptr`.

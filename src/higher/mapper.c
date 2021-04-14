@@ -205,22 +205,6 @@ ssize_t aml_mapper_mmap_mapped(struct aml_mapper *mapper,
                                void *dst,
                                size_t num);
 
-static int aml_mapper_mmap_shallow(struct aml_mapper *mapper,
-                                   struct aml_mapper_args *args,
-                                   void *src,
-                                   void *dst,
-                                   size_t num)
-{
-	if (mapper->flags & AML_MAPPER_FLAG_COPY)
-		memcpy(dst, src, mapper->size * num);
-
-	ssize_t err = aml_mapper_mmap_mapped(mapper, args, src, dst, num);
-	if (err < 0)
-		return (int)err;
-
-	return AML_SUCCESS;
-}
-
 static int aml_mapper_mmap_host(struct aml_mapper *mapper,
                                 struct aml_mapper_args *args,
                                 void *src,
@@ -257,6 +241,78 @@ static int aml_mapper_mmap_host(struct aml_mapper *mapper,
 err_with_ptr:
 	aml_area_munmap(args->area, &out, size);
 	return (int)err;
+}
+
+static int aml_mapper_mmap_shallow(struct aml_mapper *mapper,
+                                   struct aml_mapper_args *args,
+                                   void *src,
+                                   void *dst,
+                                   size_t num)
+{
+	ssize_t err, n;
+	void *dst_ptr, *src_ptr;
+
+	// Save all indirections.
+	void *ptr[mapper->n_fields * num];
+	for (size_t i = 0; i < num; i++)
+		for (size_t j = 0; j < mapper->n_fields; j++)
+			ptr[i * mapper->n_fields + j] = *(void **)PTR_OFF(
+			        dst, +, i * mapper->size + mapper->offsets[j]);
+
+	// Do the copy
+	if (mapper->flags & AML_MAPPER_FLAG_COPY)
+		memcpy(dst, src, mapper->size * num);
+
+	// Descend child struct to map
+	for (size_t j = 0; j < mapper->n_fields; j++) {
+		n = get_num_elements(mapper, j, src);
+		for (size_t i = 0; i < num; i++) {
+			dst_ptr = PTR_OFF(
+			        dst, +, mapper->offsets[j] + i * mapper->size);
+			src_ptr = *(void **)PTR_OFF(
+			        dst, +, mapper->offsets[j] + i * mapper->size);
+
+			// Apply another round of shallow mapping
+			if (mapper->fields[j]->flags &
+			    AML_MAPPER_FLAG_SHALLOW) {
+				// Restore indirection from user.
+				// Since field is shallow as well, we do not
+				// allocate more and trust the user provided
+				// enough space.
+				*(void **)dst_ptr =
+				        ptr[i * mapper->n_fields + j];
+
+				err = aml_mapper_mmap_shallow(mapper->fields[j],
+				                              args, src_ptr,
+				                              *(void **)dst_ptr,
+				                              n);
+			}
+			// Allocate/map field and copy result pointer in host
+			// pointer of this shallow copy.
+			else if (mapper->fields[j]->flags &
+			         AML_MAPPER_FLAG_SPLIT)
+				err = aml_mapper_mmap_host(mapper->fields[j],
+				                           args, src_ptr,
+				                           dst_ptr, n);
+			// User `dst` pointer has extra space for mapping at the
+			// end of it.
+			else {
+				*(void **)dst_ptr =
+				        PTR_OFF(dst, +, num * mapper->size);
+				dst_ptr = *(void **)dst_ptr;
+				err = aml_mapper_mmap_mapped(mapper->fields[j],
+				                             args, src_ptr,
+				                             dst_ptr, num);
+			}
+
+			if (err < 0)
+				// No allocation performed here so no cleanup
+				// either.
+				return err;
+		}
+	}
+
+	return AML_SUCCESS;
 }
 
 static int aml_mapper_mmap_device(struct aml_mapper *mapper,
@@ -304,8 +360,10 @@ err_with_ptr:
  * Map `src` pointer containing `num` times the structure described by `mapper`
  * into mapped `dst` pointer and copying with dma engine in `args`.
  * `src` must be a host pointer because it is dereferenced.
- * Mapped `dst` pointer is assumed to contain enough space to contiguously
- * copy `num` times structure described by `mapper`.
+ * Mapped `dst` pointer is assumed to be a device pointer and contain enough
+ * space to contiguously copy `num` times structure described by `mapper`.
+ * Eventhough the copy is assumed to be already performed, copies of new field
+ * pointers as well as mapping of child struct remain to be done.
  */
 ssize_t aml_mapper_mmap_mapped(struct aml_mapper *mapper,
                                struct aml_mapper_args *args,
@@ -339,8 +397,7 @@ ssize_t aml_mapper_mmap_mapped(struct aml_mapper *mapper,
 			// If split flag is set then we need to allocate new
 			// space. It also applies if the structure is top level
 			// shallow copy.
-			if (mapper->fields[j]->flags & AML_MAPPER_FLAG_SPLIT ||
-			    mapper->flags & AML_MAPPER_FLAG_SHALLOW) {
+			if (mapper->fields[j]->flags & AML_MAPPER_FLAG_SPLIT) {
 				off = aml_mapper_mmap_device(mapper->fields[j],
 				                             args, src_field,
 				                             dst_field, n[j]);
@@ -393,6 +450,7 @@ ssize_t aml_mapper_mmap_mapped(struct aml_mapper *mapper,
 				for (size_t j = 0; j < mapper->n_fields; j++) {
 					CLEAN_PTR(dst, mapper, i, j, args->area,
 					          args->dma, args->dma_op,
+
 					          args->dma_op_arg);
 				}
 			return off;

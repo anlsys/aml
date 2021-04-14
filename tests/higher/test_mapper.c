@@ -56,6 +56,13 @@ aml_mapper_decl(struct_C_mapper,
                 n,
                 &struct_B_mapper);
 
+aml_mapper_decl(shallow_C_mapper,
+                AML_MAPPER_FLAG_COPY | AML_MAPPER_FLAG_SHALLOW,
+                struct C,
+                b,
+                n,
+                &struct_B_mapper);
+
 //- Struct C Declaration ------------------------------------------------------
 
 struct BigStruct {
@@ -180,6 +187,18 @@ void test_mapper(struct C *c)
 	                  aml_dma_linux_sequential, NULL, NULL);
 }
 
+void test_shallow_mapper(struct C *c)
+{
+	// Linux check
+	struct C host_c;
+	assert(aml_mapper_mmap(&shallow_C_mapper, c, &host_c, 1,
+	                       &aml_area_linux, NULL, aml_dma_linux_sequential,
+	                       NULL, NULL) == AML_SUCCESS);
+	assert(eq_struct(c, &host_c));
+	aml_mapper_munmap(&struct_C_mapper, &host_c, &aml_area_linux,
+	                  aml_dma_linux_sequential, NULL, NULL);
+}
+
 //- Application Data Initialization -------------------------------------------
 
 void init_struct(struct C **_c)
@@ -213,7 +232,7 @@ int main(int argc, char **argv)
 
 	// Test
 	test_mapper(c);
-
+	test_shallow_mapper(c);
 	// Cleanup
 	free(c);
 	aml_finalize();
