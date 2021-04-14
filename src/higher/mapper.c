@@ -17,6 +17,22 @@
 
 #define PTR_OFF(ptr, sign, off) (void *)((intptr_t)(ptr)sign(intptr_t)(off))
 
+/**
+ * Arguments passed to mapper functions to manage allocations and copies.
+ */
+struct aml_mapper_args {
+	/** Allocation block */
+	struct aml_area *area;
+	/** Allocation options */
+	struct aml_area_mmap_options *area_opts;
+	/** Copy block */
+	struct aml_dma *dma;
+	/** Copy function */
+	aml_dma_operator dma_op;
+	/** Copy args */
+	void *dma_op_arg;
+};
+
 int aml_mapper_create(struct aml_mapper **out,
                       uint64_t flags,
                       const size_t struct_size,
@@ -87,8 +103,12 @@ void aml_mapper_destroy(struct aml_mapper **mapper)
 	((m->num_elements && m->num_elements[i]) ? m->num_elements[i](ptr) : 1)
 
 // Helper function to copy src into dst.
-static int
-aml_mapper_copy(void *src, void *dst, size_t size, struct aml_mapper_args *args)
+static int aml_mapper_copy(void *src,
+                           void *dst,
+                           size_t size,
+                           struct aml_dma *dma,
+                           aml_dma_operator dma_op,
+                           void *dma_op_arg)
 {
 	int err;
 	struct aml_layout *_src, *_dst;
@@ -105,8 +125,7 @@ aml_mapper_copy(void *src, void *dst, size_t size, struct aml_mapper_args *args)
 		goto out_with_src;
 
 	// Submit request
-	err = aml_dma_copy_custom(args->dma, _dst, _src, args->dma_op,
-	                          args->dma_op_arg);
+	err = aml_dma_copy_custom(dma, _dst, _src, dma_op, dma_op_arg);
 
 	aml_layout_destroy(&_dst);
 out_with_src:
@@ -139,7 +158,8 @@ ssize_t aml_mapper_mapped_size(struct aml_mapper *mapper,
 
 	// Get a temporary host copy of ptr.
 	if (args != NULL) {
-		err = aml_mapper_copy(ptr, _ptr, sizeof(_ptr), args);
+		err = aml_mapper_copy(ptr, _ptr, sizeof(_ptr), args->dma,
+		                      args->dma_op, args->dma_op_arg);
 		if (err != AML_SUCCESS)
 			return (ssize_t)err;
 		p = _ptr;
@@ -172,10 +192,11 @@ ssize_t aml_mapper_mapped_size(struct aml_mapper *mapper,
 	*(void **)PTR_OFF(ptr, +, (n * mapper->size + mapper->offsets[field]))
 
 // Helper macro to cleanup in allocated host.
-#define CLEAN_PTR(ptr, mapper, args, n, field)                                 \
+#define CLEAN_PTR(ptr, mapper, n, field, ...)                                  \
 	if (mapper->fields[field]->flags & AML_MAPPER_FLAG_SPLIT) {            \
-		aml_mapper_munmap(mapper->fields[field], args,                 \
-		                  GET_PTR(ptr, mapper, n, field));             \
+		aml_mapper_munmap(mapper->fields[field],                       \
+		                  GET_PTR(ptr, mapper, n, field),              \
+		                  __VA_ARGS__);                                \
 	}
 
 ssize_t aml_mapper_mmap_mapped(struct aml_mapper *mapper,
@@ -219,7 +240,8 @@ static int aml_mapper_mmap_host(struct aml_mapper *mapper,
 	// If flag AML_MAPPER_FLAG_COPY is set, then copy the full
 	// pointer content.
 	if (mapper->flags & AML_MAPPER_FLAG_COPY) {
-		err = aml_mapper_copy(src, out, mapper->size * num, args);
+		err = aml_mapper_copy(src, out, mapper->size * num, args->dma,
+		                      args->dma_op, args->dma_op_arg);
 		if (err < 0)
 			goto err_with_ptr;
 	}
@@ -254,13 +276,15 @@ static int aml_mapper_mmap_device(struct aml_mapper *mapper,
 		return -AML_ENOMEM;
 
 	// Copy obtained pointer into target point.
-	err = aml_mapper_copy(&out, (void **)dst, sizeof(out), args);
+	err = aml_mapper_copy(&out, (void **)dst, sizeof(out), args->dma,
+	                      args->dma_op, args->dma_op_arg);
 	if (err < 0)
 		goto err_with_ptr;
 
 	// Copy struct content.
 	if (mapper->flags & AML_MAPPER_FLAG_COPY) {
-		err = aml_mapper_copy(src, out, mapper->size * num, args);
+		err = aml_mapper_copy(src, out, mapper->size * num, args->dma,
+		                      args->dma_op, args->dma_op_arg);
 		if (err < 0)
 			goto err_with_ptr;
 	}
@@ -333,14 +357,17 @@ ssize_t aml_mapper_mmap_mapped(struct aml_mapper *mapper,
 					off = aml_mapper_copy(
 					        src_field, ptr,
 					        mapper->fields[j]->size * n[j],
-					        args);
+					        args->dma, args->dma_op,
+					        args->dma_op_arg);
 					if (off < 0)
 						goto err;
 				}
 				// Copy pointer to available space value into
 				// the right field.
 				off = aml_mapper_copy(&ptr, dst_field,
-				                      sizeof(ptr), args);
+				                      sizeof(ptr), args->dma,
+				                      args->dma_op,
+				                      args->dma_op_arg);
 				if (off != AML_SUCCESS)
 					goto err;
 				// Recurse mapping of field src_field into free
@@ -359,10 +386,14 @@ ssize_t aml_mapper_mmap_mapped(struct aml_mapper *mapper,
 			// Handle errors and cleanup
 		err:
 			while (j--)
-				CLEAN_PTR(dst, mapper, args, i, j);
+				CLEAN_PTR(dst, mapper, i, j, args->area,
+				          args->dma, args->dma_op,
+				          args->dma_op_arg);
 			while (i--)
 				for (size_t j = 0; j < mapper->n_fields; j++) {
-					CLEAN_PTR(dst, mapper, args, i, j);
+					CLEAN_PTR(dst, mapper, i, j, args->area,
+					          args->dma, args->dma_op,
+					          args->dma_op_arg);
 				}
 			return off;
 		}
@@ -372,24 +403,39 @@ ssize_t aml_mapper_mmap_mapped(struct aml_mapper *mapper,
 }
 
 int aml_mapper_mmap(struct aml_mapper *mapper,
-                    struct aml_mapper_args *args,
                     void *src,
                     void *dst,
-                    size_t num)
+                    size_t num,
+                    struct aml_area *area,
+                    struct aml_area_mmap_options *area_opts,
+                    struct aml_dma *dma,
+                    aml_dma_operator dma_op,
+                    void *dma_op_arg)
 {
-	if (src == NULL || dst == NULL || mapper == NULL || args == NULL)
+	if (src == NULL || dst == NULL || mapper == NULL || area == NULL ||
+	    dma == NULL)
 		return -AML_EINVAL;
+	struct aml_mapper_args args = {.area = area,
+	                               .area_opts = area_opts,
+	                               .dma = dma,
+	                               .dma_op = dma_op,
+	                               .dma_op_arg = dma_op_arg};
+
 	if (mapper->flags & AML_MAPPER_FLAG_SHALLOW)
-		return aml_mapper_mmap_shallow(mapper, args, src, dst, num);
+		return aml_mapper_mmap_shallow(mapper, &args, src, dst, num);
 	else
-		return aml_mapper_mmap_host(mapper, args, src, dst, num);
+		return aml_mapper_mmap_host(mapper, &args, src, dst, num);
 }
 
 int aml_mapper_copy_back(struct aml_mapper *mapper,
-                         struct aml_mapper_args *args,
                          void *src,
                          void *dst,
-                         size_t num)
+                         size_t num,
+                         struct aml_area *area,
+                         struct aml_area_mmap_options *area_opts,
+                         struct aml_dma *dma,
+                         aml_dma_operator dma_op,
+                         void *dma_op_arg)
 {
 	int err;
 	void **dst_field;
@@ -414,8 +460,8 @@ int aml_mapper_copy_back(struct aml_mapper *mapper,
 		if (mapper->flags & AML_MAPPER_FLAG_SHALLOW) {
 			memcpy(dst, src, mapper->size * num);
 		} else {
-			err = aml_mapper_copy(src, dst, mapper->size * num,
-			                      args);
+			err = aml_mapper_copy(src, dst, mapper->size * num, dma,
+			                      dma_op, dma_op_arg);
 			if (err != AML_SUCCESS)
 				return err;
 		}
@@ -440,12 +486,15 @@ int aml_mapper_copy_back(struct aml_mapper *mapper,
 			// Get device pointer at position src_field and copy it
 			// in the same variable.
 			err = aml_mapper_copy(src_field, &src_field,
-			                      sizeof(src_field), args);
+			                      sizeof(src_field), dma, dma_op,
+			                      dma_op_arg);
 			if (err != AML_SUCCESS)
 				return err;
 
-			err = aml_mapper_copy_back(mapper->fields[j], args,
-			                           src_field, *dst_field, n[j]);
+			err = aml_mapper_copy_back(mapper->fields[j], src_field,
+			                           *dst_field, n[j], area,
+			                           area_opts, dma, dma_op,
+			                           dma_op_arg);
 			if (err != AML_SUCCESS)
 				return err;
 		}
@@ -453,24 +502,35 @@ int aml_mapper_copy_back(struct aml_mapper *mapper,
 	return AML_SUCCESS;
 }
 
-size_t aml_mapper_munmap(struct aml_mapper *mapper,
-                         struct aml_mapper_args *args,
-                         void *ptr)
+ssize_t aml_mapper_munmap(struct aml_mapper *mapper,
+                          void *ptr,
+                          struct aml_area *area,
+                          struct aml_dma *dma,
+                          aml_dma_operator dma_op,
+                          void *dma_op_arg)
 {
 	size_t s = 0;
 	void *field_ptr;
+	ssize_t err;
+
 	for (size_t i = 0; i < mapper->n_fields; i++) {
 		// Get pointer to child field.
-		aml_mapper_copy(PTR_OFF(ptr, +, mapper->offsets[i]), &field_ptr,
-		                sizeof(field_ptr), args);
+		err = aml_mapper_copy(PTR_OFF(ptr, +, mapper->offsets[i]),
+		                      &field_ptr, sizeof(field_ptr), dma,
+		                      dma_op, dma_op_arg);
+		if (err < 0)
+			return err;
+
 		// Recursively unmap
-		s += aml_mapper_munmap(mapper->fields[i], args, field_ptr);
+		if (field_ptr != NULL)
+			s += aml_mapper_munmap(mapper->fields[i], field_ptr,
+			                       area, dma, dma_op, dma_op_arg);
 	}
-	// If this structure was split, then break the recursion.
-	// Unmap data and return 0 so that parent calls do not
-	// account for this mapper size.
+
+	// If this structure was split, then break the recursion
+	// after unnmapping data.
 	if (mapper->flags & AML_MAPPER_FLAG_SPLIT) {
-		aml_area_munmap(args->area, &ptr, s);
+		aml_area_munmap(area, &ptr, s);
 		return 0;
 	}
 	// If this structure was not split, then return size of it

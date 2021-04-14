@@ -23,14 +23,14 @@
 
 //- Mapper for standard type --------------------------------------------------
 
-aml_final_mapper_decl(double_mapper, double);
+aml_final_mapper_decl(double_mapper, AML_MAPPER_FLAG_COPY, double);
 
 //- Mapper for simple struct --------------------------------------------------
 
 struct A {
 	size_t val;
 };
-aml_final_mapper_decl(struct_A_mapper, struct A);
+aml_final_mapper_decl(struct_A_mapper, AML_MAPPER_FLAG_COPY, struct A);
 
 //- Mapper for struct with descendants ----------------------------------------
 
@@ -39,7 +39,8 @@ struct B {
 	double dummy_double;
 	struct A *a;
 };
-aml_mapper_decl(struct_B_mapper, struct B, a, &struct_A_mapper);
+aml_mapper_decl(
+        struct_B_mapper, AML_MAPPER_FLAG_COPY, struct B, a, &struct_A_mapper);
 
 //- Mapper for struct with arrays ---------------------------------------------
 
@@ -50,6 +51,7 @@ struct C {
 	double *x;
 };
 aml_mapper_decl(struct_C_mapper,
+                AML_MAPPER_FLAG_COPY,
                 struct C,
                 b,
                 nb,
@@ -57,10 +59,6 @@ aml_mapper_decl(struct_C_mapper,
                 x,
                 nx,
                 &double_mapper);
-
-//- Mapping args ---------------------------------------------------------------
-
-struct aml_mapper_args linux_mapper_args;
 
 //- Application struct initialization ------------------------------------------
 
@@ -123,21 +121,18 @@ int main(int argc, char **argv)
 
 	// Init
 	assert(aml_init(&argc, &argv) == AML_SUCCESS);
-	linux_mapper_args.area = &aml_area_linux;
-	linux_mapper_args.area_opts = NULL;
-	linux_mapper_args.dma = aml_dma_linux_sequential;
-	linux_mapper_args.dma_op = NULL;
-	linux_mapper_args.dma_op_arg = NULL;
 
 	c = init_struct();
 
 	// deepcopy
-	assert(aml_mapper_mmap(&struct_C_mapper, &linux_mapper_args, c, &_c,
-	                       1) == AML_SUCCESS);
+	assert(aml_mapper_mmap(&struct_C_mapper, c, &_c, 1, &aml_area_linux,
+	                       NULL, aml_dma_linux_sequential, NULL,
+	                       NULL) == AML_SUCCESS);
 	assert(eq_struct(c, _c));
 
 	// Cleanup
-	aml_mapper_munmap(&struct_C_mapper, &linux_mapper_args, _c);
+	aml_mapper_munmap(&struct_C_mapper, _c, &aml_area_linux,
+	                  aml_dma_linux_sequential, NULL, NULL);
 	free(c);
 	aml_finalize();
 	return 0;

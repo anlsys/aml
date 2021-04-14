@@ -17,23 +17,18 @@
 #include "aml/area/linux.h"
 #include "aml/dma/linux-seq.h"
 
-struct aml_mapper_args linux_mapper_args;
-
 // Mapper args (cuda)
 #if AML_HAVE_BACKEND_CUDA
 #include "aml/area/cuda.h"
 #include "aml/dma/cuda.h"
 #endif
 
-struct aml_mapper_args cuda_host_to_device_mapper_args;
-struct aml_mapper_args cuda_device_to_host_mapper_args;
-
 //- Struct A Declaration ------------------------------------------------------
 
 struct A {
 	size_t val;
 };
-aml_final_mapper_decl(struct_A_mapper, struct A);
+aml_final_mapper_decl(struct_A_mapper, AML_MAPPER_FLAG_COPY, struct A);
 
 //- Struct B Declaratiion -----------------------------------------------------
 
@@ -42,7 +37,11 @@ struct B {
 	double dummy_double;
 	struct A *a;
 };
-aml_mapper_decl(struct_B_mapper, struct B, a, &struct_A_mapper);
+aml_mapper_decl(struct_B_mapper,
+                AML_MAPPER_FLAG_COPY | AML_MAPPER_FLAG_SPLIT,
+                struct B,
+                a,
+                &struct_A_mapper);
 
 //- Struct C Declaration ------------------------------------------------------
 
@@ -50,7 +49,12 @@ struct C {
 	size_t n;
 	struct B *b;
 };
-aml_mapper_decl(struct_C_mapper, struct C, b, n, &struct_B_mapper);
+aml_mapper_decl(struct_C_mapper,
+                AML_MAPPER_FLAG_COPY,
+                struct C,
+                b,
+                n,
+                &struct_B_mapper);
 
 //- Struct C Declaration ------------------------------------------------------
 
@@ -79,10 +83,11 @@ struct BigStruct {
 	unsigned na10;
 };
 
-aml_final_mapper_decl(ulong_mapper, unsigned long);
+aml_final_mapper_decl(ulong_mapper, AML_MAPPER_FLAG_COPY, unsigned long);
 
 // Largest working mapper decl
 aml_mapper_decl(BigStruct_mapper,
+                AML_MAPPER_FLAG_COPY,
                 struct BigStruct,
                 a0,
                 na0,
@@ -140,8 +145,9 @@ void test_mapper(struct C *c)
 {
 	// Linux check
 	struct C *host_c;
-	assert(aml_mapper_mmap(&struct_C_mapper, &linux_mapper_args, c, &host_c,
-	                       1) == AML_SUCCESS);
+	assert(aml_mapper_mmap(&struct_C_mapper, c, &host_c, 1, &aml_area_linux,
+	                       NULL, aml_dma_linux_sequential, NULL,
+	                       NULL) == AML_SUCCESS);
 	assert(eq_struct(c, host_c));
 
 	// Cuda check
@@ -149,24 +155,29 @@ void test_mapper(struct C *c)
 	if (aml_support_backends(AML_BACKEND_CUDA)) {
 		struct C *device_c;
 		/* Copy c to cuda device */
-		assert(aml_mapper_mmap(&struct_C_mapper,
-		                       &cuda_host_to_device_mapper_args, c,
-		                       &device_c, 1) == AML_SUCCESS);
+		assert(aml_mapper_mmap(&struct_C_mapper, c, &device_c, 1,
+		                       &aml_area_cuda, NULL,
+		                       &aml_dma_cuda_host_to_device,
+		                       aml_dma_cuda_copy_1D,
+		                       NULL) == AML_SUCCESS);
 
 		// Change _c to be different from c.
 		c->b[0].a->val = 4565467567;
 
 		/* Copy back __c into modified _c */
-		assert(aml_mapper_copy_back(&struct_C_mapper,
-		                            &cuda_device_to_host_mapper_args,
-		                            device_c, c, 1) == AML_SUCCESS);
+		assert(aml_mapper_copy_back(
+		               &struct_C_mapper, device_c, c, 1, &aml_area_cuda,
+		               NULL, &aml_dma_cuda_device_to_host,
+		               aml_dma_cuda_copy_1D, NULL) == AML_SUCCESS);
 		assert(eq_struct(c, host_c));
 
-		aml_mapper_munmap(&struct_C_mapper,
-		                  &cuda_device_to_host_mapper_args, device_c);
+		aml_mapper_munmap(&struct_C_mapper, device_c, &aml_area_cuda,
+		                  &aml_dma_cuda_device_to_host,
+		                  aml_dma_cuda_copy_1D, NULL);
 	}
 #endif
-	aml_mapper_munmap(&struct_C_mapper, &linux_mapper_args, host_c);
+	aml_mapper_munmap(&struct_C_mapper, host_c, &aml_area_linux,
+	                  aml_dma_linux_sequential, NULL, NULL);
 }
 
 //- Application Data Initialization -------------------------------------------
@@ -199,26 +210,6 @@ int main(int argc, char **argv)
 	// Init
 	aml_init(&argc, &argv);
 	init_struct(&c);
-
-	linux_mapper_args.area = &aml_area_linux;
-	linux_mapper_args.area_opts = NULL;
-	linux_mapper_args.dma = aml_dma_linux_sequential;
-	linux_mapper_args.dma_op = NULL;
-	linux_mapper_args.dma_op_arg = NULL;
-
-#if AML_HAVE_BACKEND_CUDA
-	cuda_host_to_device_mapper_args.area = &aml_area_cuda;
-	cuda_host_to_device_mapper_args.area_opts = NULL;
-	cuda_host_to_device_mapper_args.dma = &aml_dma_cuda_host_to_device;
-	cuda_host_to_device_mapper_args.dma_op = aml_dma_cuda_copy_1D;
-	cuda_host_to_device_mapper_args.dma_op_arg = NULL;
-
-	cuda_device_to_host_mapper_args.area = &aml_area_cuda;
-	cuda_device_to_host_mapper_args.area_opts = NULL;
-	cuda_device_to_host_mapper_args.dma = &aml_dma_cuda_device_to_host;
-	cuda_device_to_host_mapper_args.dma_op = aml_dma_cuda_copy_1D;
-	cuda_device_to_host_mapper_args.dma_op_arg = NULL;
-#endif
 
 	// Test
 	test_mapper(c);
