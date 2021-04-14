@@ -176,11 +176,8 @@ void test_mapper(struct C *c)
 
 //- Shallow mapper test ------------------------------------------------------
 
-aml_mapper_decl(shallow_B_mapper,
-                AML_MAPPER_FLAG_COPY,
-                struct B,
-                a,
-                &struct_A_mapper);
+aml_mapper_decl(
+        shallow_B_mapper, AML_MAPPER_FLAG_COPY, struct B, a, &struct_A_mapper);
 
 aml_mapper_decl(shallow_C_mapper,
                 AML_MAPPER_FLAG_COPY | AML_MAPPER_FLAG_SHALLOW,

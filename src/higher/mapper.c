@@ -177,9 +177,13 @@ ssize_t aml_mapper_mapped_size(struct aml_mapper *mapper,
 		if (mapper->fields[i]->flags & AML_MAPPER_FLAG_SPLIT)
 			continue;
 		n = get_num_elements(mapper, i, ptr);
+		if (n == 0)
+			continue;
 		for (size_t j = 0; j < num; j++) {
 			src = PTR_OFF(p, +,
 			              mapper->size * j + mapper->offsets[i]);
+			if (*src == NULL)
+				continue;
 			tot += aml_mapper_mapped_size(mapper->fields[i], args,
 			                              *src, n);
 		}
@@ -278,10 +282,14 @@ static int aml_mapper_mmap_shallow(struct aml_mapper *mapper,
 	// Descend child struct to map
 	for (size_t j = 0; j < mapper->n_fields; j++) {
 		n = get_num_elements(mapper, j, src);
+		if (n == 0)
+			continue;
 		for (size_t i = 0; i < num; i++) {
-			dst_ptr = PTR_OFF(
-			        dst, +, mapper->offsets[j] + i * mapper->size);
 			src_ptr = *(void **)PTR_OFF(
+			        dst, +, mapper->offsets[j] + i * mapper->size);
+			if (src_ptr == NULL)
+				continue;
+			dst_ptr = PTR_OFF(
 			        dst, +, mapper->offsets[j] + i * mapper->size);
 
 			// Apply another round of shallow mapping
@@ -408,14 +416,19 @@ ssize_t aml_mapper_mmap_mapped(struct aml_mapper *mapper,
 	for (size_t j = 0; j < mapper->n_fields; j++)
 		n[j] = get_num_elements(mapper, j, src);
 
-	// For each array element.
-	for (size_t i = 0; i < num; i++) {
-		// For each element field.
-		for (size_t j = 0; j < mapper->n_fields; j++) {
+	// For each element field.
+	for (size_t j = 0; j < mapper->n_fields; j++) {
+		if (n[j] == 0)
+			continue;
+		// For each array element.
+		for (size_t i = 0; i < num; i++) {
 			// Get offset of field.
 			inc = i * mapper->size + mapper->offsets[j];
 			// Get pointer to src/dst field structs.
 			src_field = *(void **)PTR_OFF(src, +, inc);
+			if (src_field == NULL)
+				continue;
+
 			dst_field = PTR_OFF(dst, +, inc); // cannot deref device
 			                                  // pointer.
 
@@ -558,8 +571,11 @@ int aml_mapper_copy(struct aml_mapper *mapper,
 	}
 
 	// Recurse for each pointer
-	for (size_t i = 0; i < num; i++)
-		for (size_t j = 0; j < mapper->n_fields; j++) {
+	for (size_t j = 0; j < mapper->n_fields; j++) {
+		if (n[j] == 0)
+			continue;
+		for (size_t i = 0; i < num; i++) {
+
 			dst_field = PTR_OFF(
 			        dst, +, i * mapper->size + mapper->offsets[j]);
 			src_field = PTR_OFF(
@@ -576,12 +592,16 @@ int aml_mapper_copy(struct aml_mapper *mapper,
 					return err;
 			}
 
+			if (src_field == NULL)
+				continue;
+
 			err = aml_mapper_copy(mapper->fields[j], src_field,
 			                      *dst_field, n[j], dma, dma_op,
 			                      dma_op_arg);
 			if (err != AML_SUCCESS)
 				return err;
 		}
+	}
 
 	return AML_SUCCESS;
 }
