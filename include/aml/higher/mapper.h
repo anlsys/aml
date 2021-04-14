@@ -36,7 +36,7 @@
  * to compute the total required size and allocate everything in a single packed
  * chunk of memory.
  * If this flag is set then the struct associated with this mapper and children
- * (with flag AML_MAPPER_FLAG_SPLIT unset) mappers is allocated in a separate
+ * mappers (with flag AML_MAPPER_FLAG_SPLIT unset) is allocated in a separate
  * chunk.
  * There are several use cases for this feature:
  * 1. Breaking down a big allocation in smaller pieces when the allocator
@@ -84,11 +84,13 @@ struct aml_mapper {
 
 /**
  * Struct mapper constructor.
- * User of this function must be useful as it may result in undefined behaviour:
- * If the mapper structure `out` is not a tree, e.g it has mapped fields of the
- * same type and mapper pointing at each others, then the behaviour of this
- * function is undefined. This function does not implement cycles detection and
- * will loop on cycles dereferencing data out of memory bounds and eventually
+ * User of this function must be careful as it may result in undefined 
+ *  behaviour:
+ * If the mapper structure `out` is not a tree, e.g it has mapper fields of the
+ * same type as it self and mapper pointing at each others, then the behaviour 
+ * of this function is undefined. 
+ * This function does not implement cycles detection and
+ * will loop on cycles, dereferencing data out of memory bounds and eventually
  * loop allocating all memory if a cycle is met.
  * @param[out] out: A pointer to where mapper should be allocated.
  * @param[in] flags: A ORed set of `AML_MAPPER_FLAG_*` to customize mapper
@@ -131,11 +133,7 @@ void aml_mapper_destroy(struct aml_mapper **mapper);
 /**
  * Perform a deep allocation from host struct to a new struct.
  * The nested structures mapped in this allocation will have their fields
- * pointing to dynamically allocated child structures set to point to a
- * dedicated space in the new allocation. If the mapper of a structure has
- * the flag AML_MAPPER_FLAG_COPY set, then the content of the structure
- * described by the mapper will also be copied but won't overwrite the new
- * indirections of the newly allocated structure.
+ * pointing to dynamically allocated child structures.
  *
  * There is no implicit synchronization between
  * resulting mapping and source pointer. This is a one time explicit allocation
@@ -158,10 +156,10 @@ void aml_mapper_destroy(struct aml_mapper **mapper);
  * Else, when mapper do not set flag `AML_MAPPER_FLAG_SHALLOW`, `dst` is
  * a `(void**)` pointer, and it is set point to the newly mapped structure.
  * @param area[in]: The area where to allocate copy.
- * `area` must yield pointer on which pointer arithmetic within bounds yields
+ * `area` must yield a pointer on which pointer arithmetic within bounds gives
  * a valid pointer.
  * @param num[in]: The number of contiguous elements represented by `mapper`
- * stored in `src`. For mapping a single struct, `num` is one. If `src` is an
+ * stored in `src`. For mapping of a single struct, `num` is one. If `src` is an
  * array of `num` structs, then this function will also map an array of `num`
  * structs in `dst`.
  * @param area[in]: The area used to allocate memory in order to store the
@@ -204,12 +202,8 @@ int aml_mapper_mmap(struct aml_mapper *mapper,
  * stored in `src`. For copying a single struct, `num` is one. If `src` is an
  * array of `num` structs, then this function will also copy an array of `num`
  * structs in `dst`.
- * @param area[in]: The area used to allocate memory in order to store the
- * mapped (array of) structure(s).
- * @see aml_area
- * @param area_opts[in]: Options to provide with area when allocating space.
- * @param dma[in]: A dma engine able to perform movement from device target
- * `area` to host.
+ * @param dma[in]: A dma engine able to perform movement from area of `src` to
+ * area of `dst`.
  * @see aml_dma
  * @param dma_op[in]: A copy operator that performs copy of continuous and
  * contiguous bytes to be used with the `dma` engine.
@@ -220,15 +214,13 @@ int aml_mapper_mmap(struct aml_mapper *mapper,
  * fails with eventually some pieces of `src` copie into `dst` and returns the
  * same error code.
  */
-int aml_mapper_copy_back(struct aml_mapper *mapper,
-                         void *src,
-                         void *dst,
-                         size_t num,
-                         struct aml_area *area,
-                         struct aml_area_mmap_options *area_opts,
-                         struct aml_dma *dma,
-                         aml_dma_operator dma_op,
-                         void *dma_op_arg);
+int aml_mapper_copy(struct aml_mapper *mapper,
+										void *src,
+										void *dst,
+										size_t num,
+										struct aml_dma *dma,
+										aml_dma_operator dma_op,
+										void *dma_op_arg);
 
 /**
  * Unmap the structure pointed by `ptr`.

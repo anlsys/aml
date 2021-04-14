@@ -165,10 +165,10 @@ void test_mapper(struct C *c)
 		c->b[0].a->val = 4565467567;
 
 		/* Copy back __c into modified _c */
-		assert(aml_mapper_copy_back(
-		               &struct_C_mapper, device_c, c, 1, &aml_area_cuda,
-		               NULL, &aml_dma_cuda_device_to_host,
-		               aml_dma_cuda_copy_1D, NULL) == AML_SUCCESS);
+		assert(aml_mapper_copy(&struct_C_mapper, device_c, c, 1,
+		                       &aml_dma_cuda_device_to_host,
+		                       aml_dma_cuda_copy_1D,
+		                       NULL) == AML_SUCCESS);
 		assert(eq_struct(c, host_c));
 
 		aml_mapper_munmap(&struct_C_mapper, device_c, &aml_area_cuda,

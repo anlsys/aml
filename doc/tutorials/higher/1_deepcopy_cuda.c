@@ -39,8 +39,8 @@ int main(int argc, char **argv)
 	assert(!eq_struct(c, __c));
 
 	// Deepcopy cuda copy back on host.
-	if (aml_mapper_copy_back(&struct_C_mapper, _c, c, 1, &aml_area_cuda,
-	                         NULL, &aml_dma_cuda_device_to_host,
+	if (aml_mapper_copy(&struct_C_mapper, _c, c, 1,
+	                         &aml_dma_cuda_device_to_host,
 	                         aml_dma_cuda_copy_1D, NULL) != AML_SUCCESS)
 		return 1;
 
