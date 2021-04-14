@@ -56,13 +56,6 @@ aml_mapper_decl(struct_C_mapper,
                 n,
                 &struct_B_mapper);
 
-aml_mapper_decl(shallow_C_mapper,
-                AML_MAPPER_FLAG_COPY | AML_MAPPER_FLAG_SHALLOW,
-                struct C,
-                b,
-                n,
-                &struct_B_mapper);
-
 //- Struct C Declaration ------------------------------------------------------
 
 struct BigStruct {
@@ -148,6 +141,8 @@ int eq_struct(struct C *a, struct C *b)
 	return 1;
 }
 
+//- Default mapper test ------------------------------------------------------
+
 void test_mapper(struct C *c)
 {
 	// Linux check
@@ -187,15 +182,51 @@ void test_mapper(struct C *c)
 	                  aml_dma_linux_sequential, NULL, NULL);
 }
 
+//- Shallow mapper test ------------------------------------------------------
+
+aml_mapper_decl(shallow_C_mapper,
+                AML_MAPPER_FLAG_COPY | AML_MAPPER_FLAG_SHALLOW,
+                struct C,
+                b,
+                n,
+                &struct_B_mapper);
+
 void test_shallow_mapper(struct C *c)
 {
-	// Linux check
 	struct C host_c;
+	// Linux check
 	assert(aml_mapper_mmap(&shallow_C_mapper, c, &host_c, 1,
 	                       &aml_area_linux, NULL, aml_dma_linux_sequential,
 	                       NULL, NULL) == AML_SUCCESS);
 	assert(eq_struct(c, &host_c));
-	aml_mapper_munmap(&struct_C_mapper, &host_c, &aml_area_linux,
+
+	// Cuda check
+#if AML_HAVE_BACKEND_CUDA
+	if (aml_support_backends(AML_BACKEND_CUDA)) {
+		struct C device_c;
+		/* Copy c to cuda device */
+		assert(aml_mapper_mmap(&shallow_C_mapper, c, &device_c, 1,
+		                       &aml_area_cuda, NULL,
+		                       &aml_dma_cuda_host_to_device,
+		                       aml_dma_cuda_copy_1D,
+		                       NULL) == AML_SUCCESS);
+
+		// Change _c to be different from c.
+		c->b[0].a->val = 4565467567;
+
+		/* Copy back __c into modified _c */
+		assert(aml_mapper_copy(&shallow_C_mapper, &device_c, c, 1,
+		                       &aml_dma_cuda_device_to_host,
+		                       aml_dma_cuda_copy_1D,
+		                       NULL) == AML_SUCCESS);
+		assert(eq_struct(c, &host_c));
+
+		aml_mapper_munmap(&shallow_C_mapper, &device_c, &aml_area_cuda,
+		                  &aml_dma_cuda_device_to_host,
+		                  aml_dma_cuda_copy_1D, NULL);
+	}
+#endif
+	aml_mapper_munmap(&shallow_C_mapper, &host_c, &aml_area_linux,
 	                  aml_dma_linux_sequential, NULL, NULL);
 }
 

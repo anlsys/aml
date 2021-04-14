@@ -157,14 +157,14 @@ ssize_t aml_mapper_mapped_size(struct aml_mapper *mapper,
 	size_t n;
 
 	// Get a temporary host copy of ptr.
-	if (args != NULL) {
+	if (mapper->flags & AML_MAPPER_FLAG_SHALLOW || args == NULL) {
+		p = ptr;
+	} else {
 		err = aml_mapper_memcpy(ptr, _ptr, sizeof(_ptr), args->dma,
 		                        args->dma_op, args->dma_op_arg);
 		if (err != AML_SUCCESS)
 			return (ssize_t)err;
 		p = _ptr;
-	} else {
-		p = ptr;
 	}
 
 	if (!(mapper->flags & AML_MAPPER_FLAG_SHALLOW))
@@ -250,14 +250,26 @@ static int aml_mapper_mmap_shallow(struct aml_mapper *mapper,
                                    size_t num)
 {
 	ssize_t err, n;
+	void *ptr, *off;
 	void *dst_ptr, *src_ptr;
 
+	ssize_t size = aml_mapper_mapped_size(mapper, args, src, num);
+	if (size < 0)
+		return size;
+	if (size > 0) {
+		off = ptr = aml_area_mmap(args->area, size, args->area_opts);
+		if (ptr == NULL)
+			return -AML_ENOMEM;
+	}
+
 	// Save all indirections.
-	void *ptr[mapper->n_fields * num];
+	void *indirections[mapper->n_fields * num];
 	for (size_t i = 0; i < num; i++)
 		for (size_t j = 0; j < mapper->n_fields; j++)
-			ptr[i * mapper->n_fields + j] = *(void **)PTR_OFF(
-			        dst, +, i * mapper->size + mapper->offsets[j]);
+			indirections[i * mapper->n_fields + j] =
+			        *(void **)PTR_OFF(dst, +,
+			                          i * mapper->size +
+			                                  mapper->offsets[j]);
 
 	// Do the copy
 	if (mapper->flags & AML_MAPPER_FLAG_COPY)
@@ -280,7 +292,7 @@ static int aml_mapper_mmap_shallow(struct aml_mapper *mapper,
 				// allocate more and trust the user provided
 				// enough space.
 				*(void **)dst_ptr =
-				        ptr[i * mapper->n_fields + j];
+				        indirections[i * mapper->n_fields + j];
 
 				err = aml_mapper_mmap_shallow(mapper->fields[j],
 				                              args, src_ptr,
@@ -294,25 +306,38 @@ static int aml_mapper_mmap_shallow(struct aml_mapper *mapper,
 				err = aml_mapper_mmap_host(mapper->fields[j],
 				                           args, src_ptr,
 				                           dst_ptr, n);
-			// User `dst` pointer has extra space for mapping at the
-			// end of it.
-			else {
-				*(void **)dst_ptr =
-				        PTR_OFF(dst, +, num * mapper->size);
-				dst_ptr = *(void **)dst_ptr;
-				err = aml_mapper_mmap_mapped(mapper->fields[j],
-				                             args, src_ptr,
-				                             dst_ptr, num);
-			}
 
-			if (err < 0)
-				// No allocation performed here so no cleanup
-				// either.
-				return err;
+			// Use packed allocation pointer on device to map this
+			// field.
+			else {
+				*(void **)dst_ptr = off;
+				// Copy field if needed
+				if (mapper->flags & AML_MAPPER_FLAG_COPY) {
+					err = aml_mapper_memcpy(
+					        src_ptr, off,
+					        mapper->fields[j]->size * n,
+					        args->dma, args->dma_op,
+					        args->dma_op_arg);
+					if (err < 0)
+						goto err_with_ptr;
+				}
+
+				// Apply mapping recursively on device pointer.
+				err = aml_mapper_mmap_mapped(mapper->fields[j],
+				                             args, src_ptr, off,
+				                             n);
+				if (err < 0)
+					goto err_with_ptr;
+				off = PTR_OFF(off, +, err);
+			}
 		}
 	}
 
 	return AML_SUCCESS;
+err_with_ptr:
+	if (size > 0)
+		aml_area_munmap(args->area, ptr, size);
+	return err;
 }
 
 static int aml_mapper_mmap_device(struct aml_mapper *mapper,
@@ -541,11 +566,15 @@ int aml_mapper_copy(struct aml_mapper *mapper,
 			        src, +, i * mapper->size + mapper->offsets[j]);
 			// Get device pointer at position src_field and copy it
 			// in the same variable.
-			err = aml_mapper_memcpy(src_field, &src_field,
-			                        sizeof(src_field), dma, dma_op,
-			                        dma_op_arg);
-			if (err != AML_SUCCESS)
-				return err;
+			if (mapper->flags & AML_MAPPER_FLAG_SHALLOW)
+				src_field = *(void **)src_field;
+			else {
+				err = aml_mapper_memcpy(src_field, &src_field,
+				                        sizeof(src_field), dma,
+				                        dma_op, dma_op_arg);
+				if (err != AML_SUCCESS)
+					return err;
+			}
 
 			err = aml_mapper_copy(mapper->fields[j], src_field,
 			                      *dst_field, n[j], dma, dma_op,

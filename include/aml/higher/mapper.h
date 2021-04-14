@@ -161,14 +161,6 @@ void aml_mapper_destroy(struct aml_mapper **mapper);
  * to map, and the mappers to these fields have flag
  * `AML_MAPPER_FLAG_SHALLOW` set, then `dst` matching field is assumed to
  * point to a host memory with enough space to map child field.
- * If `mapper` has child fields to map, and the mapper to these fields have flag
- * `AML_MAPPER_FLAG_SPLIT` set then the field will be mapped into a newly
- * allocated memory region. `AML_MAPPER_FLAG_SHALLOW` flag disables
- * `AML_MAPPER_FLAG_SPLIT` flag.
- * If `mapper` has child fields to map, and the mapper to these fields have none
- * of `AML_MAPPER_FLAG_SPLIT` or `AML_MAPPER_FLAG_SHALLOW` flags set,
- * Then the mapper assumes that their is sufficient space, after
- * `dst + mapper->size * num` to map all fields.
  * @param area[in]: The area where to allocate copy.
  * `area` must yield a pointer on which pointer arithmetic within bounds gives
  * a valid pointer.
