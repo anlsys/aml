@@ -253,7 +253,7 @@ static int aml_mapper_mmap_shallow(struct aml_mapper *mapper,
 	void *ptr, *off;
 	void *dst_ptr, *src_ptr;
 
-	ssize_t size = aml_mapper_mapped_size(mapper, args, src, num);
+	ssize_t size = aml_mapper_mapped_size(mapper, NULL, src, num);
 	if (size < 0)
 		return size;
 	if (size > 0) {

@@ -23,39 +23,6 @@
 #include "aml/dma/cuda.h"
 #endif
 
-//- Struct A Declaration ------------------------------------------------------
-
-struct A {
-	size_t val;
-};
-aml_final_mapper_decl(struct_A_mapper, AML_MAPPER_FLAG_COPY, struct A);
-
-//- Struct B Declaratiion -----------------------------------------------------
-
-struct B {
-	int dummy_int;
-	double dummy_double;
-	struct A *a;
-};
-aml_mapper_decl(struct_B_mapper,
-                AML_MAPPER_FLAG_COPY | AML_MAPPER_FLAG_SPLIT,
-                struct B,
-                a,
-                &struct_A_mapper);
-
-//- Struct C Declaration ------------------------------------------------------
-
-struct C {
-	size_t n;
-	struct B *b;
-};
-aml_mapper_decl(struct_C_mapper,
-                AML_MAPPER_FLAG_COPY,
-                struct C,
-                b,
-                n,
-                &struct_B_mapper);
-
 //- Struct C Declaration ------------------------------------------------------
 
 struct BigStruct {
@@ -123,7 +90,34 @@ aml_mapper_decl(BigStruct_mapper,
                 na10,
                 &ulong_mapper);
 
-//- Equality test + Copy/Free -------------------------------------------------
+//- Default mapper test ------------------------------------------------------
+
+struct A {
+	size_t val;
+};
+aml_final_mapper_decl(struct_A_mapper, AML_MAPPER_FLAG_COPY, struct A);
+
+struct B {
+	int dummy_int;
+	double dummy_double;
+	struct A *a;
+};
+aml_mapper_decl(struct_B_mapper,
+                AML_MAPPER_FLAG_COPY | AML_MAPPER_FLAG_SPLIT,
+                struct B,
+                a,
+                &struct_A_mapper);
+
+struct C {
+	size_t n;
+	struct B *b;
+};
+aml_mapper_decl(struct_C_mapper,
+                AML_MAPPER_FLAG_COPY,
+                struct C,
+                b,
+                n,
+                &struct_B_mapper);
 
 int eq_struct(struct C *a, struct C *b)
 {
@@ -140,8 +134,6 @@ int eq_struct(struct C *a, struct C *b)
 	}
 	return 1;
 }
-
-//- Default mapper test ------------------------------------------------------
 
 void test_mapper(struct C *c)
 {
@@ -184,12 +176,18 @@ void test_mapper(struct C *c)
 
 //- Shallow mapper test ------------------------------------------------------
 
+aml_mapper_decl(shallow_B_mapper,
+                AML_MAPPER_FLAG_COPY,
+                struct B,
+                a,
+                &struct_A_mapper);
+
 aml_mapper_decl(shallow_C_mapper,
                 AML_MAPPER_FLAG_COPY | AML_MAPPER_FLAG_SHALLOW,
                 struct C,
                 b,
                 n,
-                &struct_B_mapper);
+                &shallow_B_mapper);
 
 void test_shallow_mapper(struct C *c)
 {
@@ -262,7 +260,7 @@ int main(int argc, char **argv)
 	init_struct(&c);
 
 	// Test
-	test_mapper(c);
+	// test_mapper(c);
 	test_shallow_mapper(c);
 	// Cleanup
 	free(c);
