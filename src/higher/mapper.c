@@ -459,7 +459,7 @@ static ssize_t mapper_munmap_recursive(struct aml_mapper *mapper,
 
 	// If this structure was not split, then return size of it
 	// non-split children.
-	return mapper->size + s;
+	return mapper->size * num + s;
 }
 
 ssize_t aml_mapper_munmap(struct aml_mapper *mapper,
@@ -477,7 +477,8 @@ ssize_t aml_mapper_munmap(struct aml_mapper *mapper,
 		return s;
 
 	if (mapper->flags & AML_MAPPER_FLAG_SHALLOW)
-		aml_area_munmap(area, PTR_OFF(ptr, +, mapper->offsets[0]), s);
+		aml_area_munmap(area, PTR_OFF(ptr, +, mapper->offsets[0]),
+		                s - num * mapper->size);
 	else
 		aml_area_munmap(area, ptr, s);
 	return AML_SUCCESS;
