@@ -178,6 +178,7 @@ static ssize_t mapper_mmap_recursive(struct aml_mapper *mapper,
 {
 	ssize_t err, off = 0;
 	const size_t size = mapper->size * num;
+
 	// Keep track of all indirections for final copy.
 	void *indirections[mapper->n_fields * num];
 	memset(indirections, 0, sizeof(indirections));
@@ -409,23 +410,25 @@ int aml_mapper_copy(struct aml_mapper *mapper,
 	return AML_SUCCESS;
 }
 
-ssize_t aml_mapper_munmap(struct aml_mapper *mapper,
-                          void *ptr,
-                          size_t num,
-                          void *src,
-                          struct aml_area *area,
-                          struct aml_dma *dma,
-                          aml_dma_operator dma_op,
-                          void *dma_op_arg)
+static ssize_t mapper_munmap_recursive(struct aml_mapper *mapper,
+                                       void *ptr,
+                                       size_t num,
+                                       void *src,
+                                       struct aml_area *area,
+                                       struct aml_dma *dma,
+                                       aml_dma_operator dma_op,
+                                       void *dma_op_arg)
 {
 	size_t s = 0;
-	void *field_ptr;
+	void *field_ptr, *src_ptr;
 	ssize_t err;
 
 	// Recurse to unmap every children first.
 	for (size_t i = 0; i < mapper->n_fields; i++) {
 		size_t n = get_num_elements(mapper, i, src);
 		for (size_t j = 0; j < num; j++) {
+			src_ptr = *(void **)PTR_OFF(
+			        src, +, mapper->size * j + mapper->offsets[i]);
 			// Get pointer to child field.
 			err = aml_mapper_memcpy(
 			        PTR_OFF(ptr, +,
@@ -436,30 +439,46 @@ ssize_t aml_mapper_munmap(struct aml_mapper *mapper,
 				return err;
 			if (field_ptr == NULL)
 				continue;
-			err = aml_mapper_munmap(
-			        mapper->fields[i], field_ptr, n,
-			        *(void **)PTR_OFF(src, +,
-			                          mapper->size * j +
-			                                  mapper->offsets[i]),
-			        area, dma, dma_op, dma_op_arg);
+
+			if (mapper->fields[0]->flags & AML_MAPPER_FLAG_SPLIT) {
+				err = aml_mapper_munmap(mapper->fields[i],
+				                        field_ptr, n, src_ptr,
+				                        area, dma, dma_op,
+				                        dma_op_arg);
+			} else {
+				err = mapper_munmap_recursive(
+				        mapper->fields[i], field_ptr, n,
+				        src_ptr, area, dma, dma_op, dma_op_arg);
+			}
+
 			if (err < 0)
 				return err;
 			s += err;
 		}
 	}
 
-	// Unmap this one
-	// If this structure was split, then break the recursion
-	// after unmapping data.
-	if (mapper->flags & AML_MAPPER_FLAG_SPLIT) {
-		aml_area_munmap(area, &ptr, s + mapper->size * num);
-		return 0;
-	} else if (mapper->flags & AML_MAPPER_FLAG_SHALLOW &&
-	           mapper->n_fields > 0) {
-		aml_area_munmap(area, PTR_OFF(ptr, +, mapper->offsets[0]), s);
-		return 0;
-	}
 	// If this structure was not split, then return size of it
 	// non-split children.
 	return mapper->size + s;
+}
+
+ssize_t aml_mapper_munmap(struct aml_mapper *mapper,
+                          void *ptr,
+                          size_t num,
+                          void *src,
+                          struct aml_area *area,
+                          struct aml_dma *dma,
+                          aml_dma_operator dma_op,
+                          void *dma_op_arg)
+{
+	ssize_t s = mapper_munmap_recursive(mapper, ptr, num, src, area, dma,
+	                                    dma_op, dma_op_arg);
+	if (s <= 0)
+		return s;
+
+	if (mapper->flags & AML_MAPPER_FLAG_SHALLOW)
+		aml_area_munmap(area, PTR_OFF(ptr, +, mapper->offsets[0]), s);
+	else
+		aml_area_munmap(area, ptr, s);
+	return AML_SUCCESS;
 }
