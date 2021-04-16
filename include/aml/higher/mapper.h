@@ -235,6 +235,11 @@ int aml_mapper_copy(struct aml_mapper *mapper,
  * @param[in] mapper: The description of the mapped structure.
  * @param[in] ptr: The mapped pointer.
  * `ptr` must have been allocated with the same `mapper` and `area`.
+ * @param[in] num: The number of contiguous elements stored in `ptr`, described
+ * by `mapper`. This value is usually 1.
+ * @param[in] src: The original pointer used to map `ptr`. This is required
+ * in order to compute array fields length without performing extra DMAs and
+ * rebuilding locally the equivalent of `src`.
  * @param area[in]: The area used to allocate memory in order to store the
  * mapped (array of) structure(s).
  * @see aml_area
@@ -252,6 +257,8 @@ int aml_mapper_copy(struct aml_mapper *mapper,
  */
 ssize_t aml_mapper_munmap(struct aml_mapper *mapper,
                           void *ptr,
+                          size_t num,
+                          void *src,
                           struct aml_area *area,
                           struct aml_dma *dma,
                           aml_dma_operator dma_op,

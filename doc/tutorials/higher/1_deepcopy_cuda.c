@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 	assert(eq_struct(c, __c));
 
 	// Cleanup
-	aml_mapper_munmap(&struct_C_mapper, _c, &aml_area_cuda,
+	aml_mapper_munmap(&struct_C_mapper, _c, 1, c, &aml_area_cuda,
 	                  &aml_dma_cuda_device_to_host, aml_dma_cuda_copy_1D,
 	                  NULL);
 	free(c);

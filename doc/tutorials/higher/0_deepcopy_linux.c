@@ -131,7 +131,7 @@ int main(int argc, char **argv)
 	assert(eq_struct(c, _c));
 
 	// Cleanup
-	aml_mapper_munmap(&struct_C_mapper, _c, &aml_area_linux,
+	aml_mapper_munmap(&struct_C_mapper, _c, 1, c, &aml_area_linux,
 	                  aml_dma_linux_sequential, NULL, NULL);
 	free(c);
 	aml_finalize();

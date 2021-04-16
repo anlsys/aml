@@ -165,12 +165,12 @@ void test_mapper(struct C *c)
 		                       NULL) == AML_SUCCESS);
 		assert(eq_struct(c, host_c));
 
-		aml_mapper_munmap(&struct_C_mapper, device_c, &aml_area_cuda,
-		                  &aml_dma_cuda_device_to_host,
+		aml_mapper_munmap(&struct_C_mapper, device_c, 1, c,
+		                  &aml_area_cuda, &aml_dma_cuda_device_to_host,
 		                  aml_dma_cuda_copy_1D, NULL);
 	}
 #endif
-	aml_mapper_munmap(&struct_C_mapper, host_c, &aml_area_linux,
+	aml_mapper_munmap(&struct_C_mapper, host_c, 1, c, &aml_area_linux,
 	                  aml_dma_linux_sequential, NULL, NULL);
 }
 
@@ -216,12 +216,12 @@ void test_shallow_mapper(struct C *c)
 		                       NULL) == AML_SUCCESS);
 		assert(eq_struct(c, &host_c));
 
-		aml_mapper_munmap(&shallow_C_mapper, &device_c, &aml_area_cuda,
-		                  &aml_dma_cuda_device_to_host,
+		aml_mapper_munmap(&shallow_C_mapper, &device_c, 1, c,
+		                  &aml_area_cuda, &aml_dma_cuda_device_to_host,
 		                  aml_dma_cuda_copy_1D, NULL);
 	}
 #endif
-	aml_mapper_munmap(&shallow_C_mapper, &host_c, &aml_area_linux,
+	aml_mapper_munmap(&shallow_C_mapper, &host_c, 1, c, &aml_area_linux,
 	                  aml_dma_linux_sequential, NULL, NULL);
 }
 
