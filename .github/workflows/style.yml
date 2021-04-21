@@ -20,3 +20,9 @@ jobs:
         shell: bash
       - name: output clang format diff
         run: cat ./clang-format-diff
+  license-check:
+    runs-on: ubuntu-latest
+    container: apache/skywalking-eyes
+    steps:
+      - uses: actions/checkout@v2
+      - run: /bin/license-eye -c .licenserc.yml -v debug header check
