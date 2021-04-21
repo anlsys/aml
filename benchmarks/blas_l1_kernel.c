@@ -106,11 +106,10 @@ double dswap(size_t n, double *a, double *b, double *c, double scalar)
 	(void)*c;
 	(void)scalar;
 	size_t i;
-	double temp;
 
 #pragma omp parallel for
 	for (i = 0; i < n; i++) {
-		temp = a[i];
+		double temp = a[i];
 		a[i] = b[i];
 		b[i] = temp;
 	}
@@ -145,12 +144,11 @@ double idmax(size_t n, double *a, double *b, double *c, double scalar)
 /* Plane rotation */
 void drot(size_t n, double *a, double *b, double x, double y)
 {
-	double temp;
 	size_t i;
 
 #pragma omp parallel for
 	for (i = 0; i < n; i++) {
-		temp = x * a[i] + y * b[i];
+		double temp = x * a[i] + y * b[i];
 		b[i] = x * b[i] - y * a[i];
 		a[i] = temp;
 	}
@@ -187,7 +185,7 @@ void drotg(double x, double y, double c, double s)
 
 void drotm(size_t n, double *a, double *b, double *param)
 {
-	double flag, h11, h12, h21, h22, w, z;
+	double flag, h11, h12, h21, h22;
 	size_t i;
 
 	flag = param[0];
@@ -212,8 +210,8 @@ void drotm(size_t n, double *a, double *b, double *param)
 
 #pragma omp parallel for
 	for (i = 0; i < n; i++) {
-		w = a[i];
-		z = b[i];
+		double w = a[i];
+		double z = b[i];
 		a[i] = w * h11 + z * h12;
 		b[i] = w * h21 + z * h22;
 	}
