@@ -15,11 +15,11 @@
 #define MAX(a, b) (((a) < (b)) ? (a) : (b))
 #define ABS(a) (((a) < 0) ? -(a) : (a))
 
-#define check_double(ref, value, ulp)                                          \
+#define check_double(ref, value, bits)                                         \
 	do {                                                                   \
-		double diff = ABS(ref - value);                                \
+		double diff = ABS((ref) - (value));                            \
 		assert(diff <= MAX(ABS(ref), ABS(value)) * DBL_EPSILON *       \
-		                       (1 << (ulp - 1)));                      \
+		                       ((1 << (bits)) - 1));                   \
 	} while (0)
 
 void init_arrays(size_t memsize, double *a, double *b, double *c)
