@@ -6,7 +6,8 @@
  * For more info, see https://github.com/anlsys/aml
  *
  * SPDX-License-Identifier: BSD-3-Clause
-*******************************************************************************/
+ ******************************************************************************/
+
 #include "aml.h"
 #include "config.h"
 #include "aml/area/cuda.h"

@@ -6,8 +6,10 @@
  * For more info, see https://github.com/anlsys/aml
  *
  * SPDX-License-Identifier: BSD-3-Clause
-*******************************************************************************/
+ ******************************************************************************/
+
 #include "config.h"
+
 #include "aml.h"
 
 #define AML_BITMAP_EMPTY       (0UL)

@@ -6,7 +6,7 @@
  * For more info, see https://github.com/anlsys/aml
  *
  * SPDX-License-Identifier: BSD-3-Clause
-*******************************************************************************/
+ ******************************************************************************/
 
 #define _POSIX_C_SOURCE 199309L // nanosleep
 

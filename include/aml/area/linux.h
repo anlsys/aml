@@ -6,7 +6,7 @@
  * For more info, see https://github.com/anlsys/aml
  *
  * SPDX-License-Identifier: BSD-3-Clause
-*******************************************************************************/
+ ******************************************************************************/
 
 #ifndef AML_AREA_LINUX_NUMA_H
 #define AML_AREA_LINUX_NUMA_H

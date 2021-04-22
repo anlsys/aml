@@ -6,7 +6,7 @@
  * For more info, see https://github.com/anlsys/aml
  *
  * SPDX-License-Identifier: BSD-3-Clause
-*******************************************************************************/
+ ******************************************************************************/
 
 /**
  * @defgroup aml_version "AML Version Management"
