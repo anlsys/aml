@@ -1,12 +1,12 @@
-/*************************************************************************
+/*******************************************************************************
  * Copyright 2019 UChicago Argonne, LLC.
  * (c.f. AUTHORS, LICENSE)
  *
  * This file is part of the AML project.
- * For more info, see https://xgitlab.cels.anl.gov/argo/aml
+ * For more info, see https://github.com/anlsys/aml
  *
  * SPDX-License-Identifier: BSD-3-Clause
-**************************************************************************/
+ ******************************************************************************/
 
 #ifndef AML_TILING_NATIVE_H
 #define AML_TILING_NATIVE_H

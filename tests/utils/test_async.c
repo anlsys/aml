@@ -3,10 +3,10 @@
  * (c.f. AUTHORS, LICENSE)
  *
  * This file is part of the AML project.
- * For more info, see https://xgitlab.cels.anl.gov/argo/aml
+ * For more info, see https://github.com/anlsys/aml
  *
  * SPDX-License-Identifier: BSD-3-Clause
-*******************************************************************************/
+ ******************************************************************************/
 
 #define _POSIX_C_SOURCE 199309L // nanosleep
 

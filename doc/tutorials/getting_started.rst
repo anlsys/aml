@@ -6,11 +6,11 @@ As of now, these tutorials assume a bleeding-edge version of AML.
 Download
 --------
 
-* `Development version <https://xgitlab.cels.anl.gov/argo/aml>`_:
+* `Development version <https://github.com/anlsys/aml>`_:
 
 .. code-block:: console
   
-  $ git clone --recurse-submodules https://xgitlab.cels.anl.gov/argo/aml.git
+  $ git clone --recurse-submodules https://github.com/anlsys/aml.git
   $ git checkout staging
 
 Requirements:

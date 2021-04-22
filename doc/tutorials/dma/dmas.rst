@@ -26,7 +26,7 @@ and CUDA streams on CUDA accelerators.
 The API for using AML DMA is broken down into two levels.
 
 - The `high-level API <../../pages/dmas.html>`_ provides generic functions that can be applied on all DMAs. It also describes the general structure of a DMA for implementers.
-- Implementation-specific methods, constructors, and static DMAs declarations reside in the second level of headers `<aml/dma/\*.h> <https://xgitlab.cels.anl.gov/argo/aml/tree/master/include/aml/dma>`_.
+- Implementation-specific methods, constructors, and static DMAs declarations reside in the second level of headers `<aml/dma/\*.h> <https://github.com/anlsys/aml/tree/master/include/aml/dma>`_.
 
 Examples of AML DMA Use Cases
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
