@@ -1,0 +1,111 @@
+name: builds
+on: [push, pull_request]
+env:
+  CFLAGS: "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter -Wno-builtin-declaration-mismatch"
+  VERBOSE: 1
+jobs:
+  generic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y gcc make autoconf automake libtool pkg-config libhwloc-dev
+      - name: configure
+        run: |
+          ./autogen.sh
+          mkdir build
+          ./configure --prefix=`pwd`/build
+      - run: make
+      - run: make check
+      - run: make install
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: generic
+          path: |
+            config.log
+            tests/*.log
+            benchmarks/*.log
+            doc/tutorials/*.log
+  out-of-tree:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y gcc make autoconf automake libtool pkg-config libhwloc-dev
+      - name: configure
+        run: |
+          ./autogen.sh
+          mkdir out
+          cd out
+          mkdir build
+          ../configure --prefix=`pwd`/build
+      - run: make
+        working-directory: out
+      - run: make check
+        working-directory: out
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: out-of-tree
+          path: |
+            out/config.log
+            out/tests/*.log
+            out/benchmarks/*.log
+            out/doc/tutorials/*.log
+  valgrind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y gcc make autoconf automake libtool pkg-config hwloc libhwloc-dev valgrind
+      - run: hwloc-gather-cpuid
+      - name: configure
+        run: |
+          ./autogen.sh
+          mkdir build
+          ./configure --prefix=`pwd`/build --enable-valgrind
+      - run: make
+      - run: make check-valgrind
+        env:
+          HWLOC_CPUID_PATH: ${{ github.workspace }}/cpuid
+          VALGRIND_SUPPRESSIONS_FILES: ${{ github.workspace }}/.valgrind.supp
+          OMP_NUM_THREADS: 1
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: valgrind
+          path: |
+            config.log
+            tests/*.log
+            benchmarks/*.log
+            doc/tutorials/*.log
+  distcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y gcc make autoconf automake libtool pkg-config libhwloc-dev
+      - name: configure
+        run: |
+          ./autogen.sh
+          mkdir build
+          ./configure --prefix=`pwd`/build
+      - run: make distcheck
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: distcheck
+          path: |
+            config.log
+            tests/*.log
+            benchmarks/*.log
+            doc/tutorials/*.log
