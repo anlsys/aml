@@ -9,6 +9,7 @@
  *******************************************************************************/
 
 #include "aml.h"
+
 #include "aml/area/ze.h"
 
 int aml_errno_from_ze_result(ze_result_t err);
