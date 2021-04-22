@@ -25,7 +25,7 @@ implementing better allocators.
 The API of AML Area is broken down into two levels.
 
 - The `high-level API <../../pages/areas.html>`_ provides generic functions that can be applied to all areas. It also describes the general structure of an area for implementers.
-- Implementation-specific methods, constructors, and static area declarations reside in the second level of headers `<aml/area/\*.h> <https://xgitlab.cels.anl.gov/argo/aml/tree/master/include/aml/area>`_.
+- Implementation-specific methods, constructors, and static area declarations reside in the second level of headers `<aml/area/\*.h> <https://github.com/anlsys/aml/tree/master/include/aml/area>`_.
 
 Use Cases
 -------------
@@ -88,21 +88,21 @@ at runtime, then you can use aml area features built on top of hwloc.
 
 .. code-block:: c
 
-	#include <aml/utils/features.h>
-	#if AML_HAVE_BACKEND_HWLOC == 1
-	#include <aml/area/hwloc.h>
-	...
-	if (aml_support_backends(AML_BACKEND_HWLOC)) {
-	...
-	}
-	...
-	#endif
+  #include <aml/utils/features.h>
+  #if AML_HAVE_BACKEND_HWLOC == 1
+  #include <aml/area/hwloc.h>
+  ...
+  if (aml_support_backends(AML_BACKEND_HWLOC)) {
+  ...
+  }
+  ...
+  #endif
 
 The backend provides static areas, e.g for interleaving data on all NUMA nodes:
 
 .. code-block:: c
 
-	void *data = aml_area_mmap(&aml_area_hwloc_interleave, size, NULL);
+  void *data = aml_area_mmap(&aml_area_hwloc_interleave, size, NULL);
 
 and areas constructor based on hwloc memory binding policies and nodeset.
 The backend may require that you provide objects from the current system
@@ -118,13 +118,13 @@ HWLOC_DISTANCES_KIND_FROM_OS.
 
 .. code-block:: c
 
-	// The object from which the bandwidth is maximized.
-	hwloc_obj_t initiator = hwloc_get_obj_by_type(aml_topology, HWLOC_OBJ_CORE, 0);
+  // The object from which the bandwidth is maximized.
+  hwloc_obj_t initiator = hwloc_get_obj_by_type(aml_topology, HWLOC_OBJ_CORE, 0);
 
-	aml_area_hwloc_preferred_create(&area, initiator,
-	                                HWLOC_DISTANCES_KIND_FROM_OS |
-																	HWLOC_DISTANCES_KIND_MEANS_BANDWIDTH |
-																	HWLOC_DISTANCES_KIND_HETEROGENEOUS_TYPES);
+  aml_area_hwloc_preferred_create(&area, initiator,
+                                  HWLOC_DISTANCES_KIND_FROM_OS |
+                                  HWLOC_DISTANCES_KIND_MEANS_BANDWIDTH |
+                                  HWLOC_DISTANCES_KIND_HETEROGENEOUS_TYPES);
 
 CUDA Area
 ---------

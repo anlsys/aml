@@ -48,11 +48,11 @@ Quick Start Guide
 Download
 ~~~~~~~~
 
-* `Development version <https://xgitlab.cels.anl.gov/argo/aml>`_:
+* `Development version <https://github.com/anlsys/aml>`_:
 
 .. code-block:: console
   
-  $ git clone --recurse-submodules https://xgitlab.cels.anl.gov/argo/aml.git
+  $ git clone --recurse-submodules https://github.com/anlsys/aml.git
 
 Requirements:
 ~~~~~~~~~~~~~
@@ -113,7 +113,7 @@ Support
 -------
 
 Support for AML is provided through the
-`gitlab issues interface <https://xgitlab.cels.anl.gov/argo/aml/issues>`_.
+`github issues interface <https://github.com/anlsys/aml/issues>`_.
 Alternatively you can contact directly the developers/maintainers:
 
 * Swann Perarnau (swann AT anl DOT gov)
@@ -124,7 +124,7 @@ Contributing
 
 AML welcomes comments, suggestions, bug reports, or feature requests, as
 well as code contributions. See the
-`contributing doc <https://xgitlab.cels.anl.gov/argo/aml/blob/master/CONTRIBUTING.markdown>`_
+`contributing doc <https://github.com/anlsys/aml/blob/master/CONTRIBUTING.markdown>`_
 for more info.
 
 .. toctree::
