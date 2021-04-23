@@ -318,7 +318,8 @@ int main(int argc, char *argv[])
 	size_t nb_reps;
 	size_t memsize, tilesize, ntiles;
 	size_t i, j, k;
-	double timing;
+	long long int timing;
+	struct timespec start, end;
 	double *a, *b, *c;
 	struct aml_layout *la, *lb, *lc;
 	struct aml_tiling *ta, *tb, *tc;
@@ -331,9 +332,10 @@ int main(int argc, char *argv[])
 	for (size_t i = 1; i < 5; i++)
 		param[i] = i;
 
-	double avgtime[10] = {0}, maxtime[10] = {0},
-	       mintime[10] = {FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX,
-	                      FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX};
+	long long int sumtime[10] = {0}, maxtime[10] = {0},
+	              mintime[10] = {LONG_MAX, LONG_MAX, LONG_MAX, LONG_MAX,
+	                             LONG_MAX, LONG_MAX, LONG_MAX, LONG_MAX,
+	                             LONG_MAX, LONG_MAX};
 	char *label[10] = {
 	        "Copy:	", "Scale:	", "Triad:	", "Asum:	",
 	        "Dot:	", "Norm:	", "Swap:	", "Max ID:	",
@@ -399,31 +401,34 @@ int main(int argc, char *argv[])
 		// Trying this array of functions thing
 		for (i = 0; i < 8; i++) {
 			init_arrays(memsize, a, b, c);
-			timing = mysecond();
+			clock_gettime(CLOCK_REALTIME, &start);
 			res = run_f[i](tilesize, ntiles, ta, tb, tc, scalar);
-			timing = mysecond() - timing;
+			clock_gettime(CLOCK_REALTIME, &end);
+			timing = aml_timediff(start, end);
 			verify_f[i](memsize, a, b, c, scalar, res);
-			avgtime[i] += timing;
+			sumtime[i] += timing;
 			mintime[i] = MIN(mintime[i], timing);
 			maxtime[i] = MAX(maxtime[i], timing);
 		}
 
 		// Rotations
 		init_arrays(memsize, a, b, c);
-		timing = mysecond();
+		clock_gettime(CLOCK_REALTIME, &start);
 		res = run_drot(tilesize, ntiles, ta, tb, tc, scal2, scalar);
-		timing = mysecond() - timing;
+		clock_gettime(CLOCK_REALTIME, &end);
+		timing = aml_timediff(start, end);
 		verify_drot(memsize, a, b, c, scal2, scalar, res);
-		avgtime[8] += timing;
+		sumtime[8] += timing;
 		mintime[8] = MIN(mintime[i], timing);
 		maxtime[8] = MAX(maxtime[i], timing);
 
 		init_arrays(memsize, a, b, c);
-		timing = mysecond();
+		clock_gettime(CLOCK_REALTIME, &start);
 		res = run_drotm(tilesize, ntiles, ta, tb, tc, param);
-		timing = mysecond() - timing;
+		clock_gettime(CLOCK_REALTIME, &end);
+		timing = aml_timediff(start, end);
 		verify_drotm(memsize, a, b, c, scal2, scalar, res);
-		avgtime[9] += timing;
+		sumtime[9] += timing;
 		mintime[9] = MIN(mintime[i], timing);
 		maxtime[9] = MAX(maxtime[i], timing);
 
@@ -436,9 +441,9 @@ int main(int argc, char *argv[])
 	/* SUMMARY */
 	printf("Function	Avg time	Min time	Max time\n");
 	for (j = 0; j < 10; j++) {
-		avgtime[j] = avgtime[j] / (double)(nb_reps - 1);
-		printf("%s	%11.6f	%11.6f	%11.6f\n", label[j], avgtime[j],
-		       mintime[j], maxtime[j]);
+		double avg = (double)sumtime[j] / (double)(nb_reps - 1);
+		printf("%s\t%11.6f\t%lld\t%lld\n", label[j], avg, mintime[j],
+		       maxtime[j]);
 	}
 
 	/* destroy everything */

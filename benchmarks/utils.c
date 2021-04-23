@@ -10,33 +10,9 @@
 
 #include "utils.h"
 
-static const char *namespace;
-static int active = 0;
-
-void log_init(const char *nm)
+long long int aml_timediff(struct timespec start, struct timespec end)
 {
-	(void)*nm;
-	char *debug = getenv("DEBUG");
-
-	if (debug)
-		active = atoi(debug);
-}
-
-void log_msg(const char *level, unsigned int line, const char *fmt, ...)
-{
-	va_list ap;
-
-	if (!active)
-		return;
-	printf("%s:\t%s:\t%u:\t", namespace, level, line);
-	va_start(ap, fmt);
-	vprintf(fmt, ap);
-	va_end(ap);
-}
-
-double mysecond(void)
-{
-	struct timeval tp;
-	gettimeofday(&tp, NULL);
-	return ((double)tp.tv_sec + (double)tp.tv_usec * 1.e-6);
+	long long int timediff = (end.tv_nsec - start.tv_nsec) +
+	                         1000000000 * (end.tv_sec - start.tv_sec);
+	return timediff;
 }

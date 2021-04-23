@@ -11,7 +11,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 
 #ifndef AML_BENCHS_UTILS_H
@@ -23,10 +23,6 @@
 #define omp_get_num_threads() 1
 #endif
 
-void log_init(const char *nm);
-void log_msg(const char *level, unsigned int line, const char *fmt, ...);
-double mysecond(void);
-
-#define debug(...) log_msg("debug", __LINE__, __VA_ARGS__)
+long long int aml_timediff(struct timespec start, struct timespec end);
 
 #endif // AML_BENCHS_UTILS_H
