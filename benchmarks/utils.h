@@ -11,7 +11,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 
 #ifndef AML_BENCHS_UTILS_H
@@ -23,10 +23,13 @@
 #define omp_get_num_threads() 1
 #endif
 
-void log_init(const char *nm);
-void log_msg(const char *level, unsigned int line, const char *fmt, ...);
-double mysecond(void);
+typedef struct timespec aml_time_t;
 
-#define debug(...) log_msg("debug", __LINE__, __VA_ARGS__)
+static inline void aml_gettime(aml_time_t *now)
+{
+	clock_gettime(CLOCK_REALTIME, now);
+}
+
+long long int aml_timediff(aml_time_t start, aml_time_t end);
 
 #endif // AML_BENCHS_UTILS_H
