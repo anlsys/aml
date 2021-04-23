@@ -319,7 +319,7 @@ int main(int argc, char *argv[])
 	size_t memsize, tilesize, ntiles;
 	size_t i, j, k;
 	long long int timing;
-	struct timespec start, end;
+	aml_time_t start, end;
 	double *a, *b, *c;
 	struct aml_layout *la, *lb, *lc;
 	struct aml_tiling *ta, *tb, *tc;
@@ -401,9 +401,9 @@ int main(int argc, char *argv[])
 		// Trying this array of functions thing
 		for (i = 0; i < 8; i++) {
 			init_arrays(memsize, a, b, c);
-			clock_gettime(CLOCK_REALTIME, &start);
+			aml_gettime(&start);
 			res = run_f[i](tilesize, ntiles, ta, tb, tc, scalar);
-			clock_gettime(CLOCK_REALTIME, &end);
+			aml_gettime(&end);
 			timing = aml_timediff(start, end);
 			verify_f[i](memsize, a, b, c, scalar, res);
 			sumtime[i] += timing;
@@ -413,9 +413,9 @@ int main(int argc, char *argv[])
 
 		// Rotations
 		init_arrays(memsize, a, b, c);
-		clock_gettime(CLOCK_REALTIME, &start);
+		aml_gettime(&start);
 		res = run_drot(tilesize, ntiles, ta, tb, tc, scal2, scalar);
-		clock_gettime(CLOCK_REALTIME, &end);
+		aml_gettime(&end);
 		timing = aml_timediff(start, end);
 		verify_drot(memsize, a, b, c, scal2, scalar, res);
 		sumtime[8] += timing;
@@ -423,9 +423,9 @@ int main(int argc, char *argv[])
 		maxtime[8] = MAX(maxtime[i], timing);
 
 		init_arrays(memsize, a, b, c);
-		clock_gettime(CLOCK_REALTIME, &start);
+		aml_gettime(&start);
 		res = run_drotm(tilesize, ntiles, ta, tb, tc, param);
-		clock_gettime(CLOCK_REALTIME, &end);
+		aml_gettime(&end);
 		timing = aml_timediff(start, end);
 		verify_drotm(memsize, a, b, c, scal2, scalar, res);
 		sumtime[9] += timing;

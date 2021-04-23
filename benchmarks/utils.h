@@ -23,6 +23,13 @@
 #define omp_get_num_threads() 1
 #endif
 
-long long int aml_timediff(struct timespec start, struct timespec end);
+typedef struct timespec aml_time_t;
+
+static inline void aml_gettime(aml_time_t *now)
+{
+	clock_gettime(CLOCK_REALTIME, now);
+}
+
+long long int aml_timediff(aml_time_t start, aml_time_t end);
 
 #endif // AML_BENCHS_UTILS_H

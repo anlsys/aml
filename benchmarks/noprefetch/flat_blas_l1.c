@@ -113,15 +113,15 @@ int main(int argc, char *argv[])
 		param[k] = k;
 	double res;
 
-	struct timespec start, end;
+	aml_time_t start, end;
 
 	for (k = 0; k < nb_reps; k++) {
 		// Trying this array of functions thing
 		for (i = 0; i < 8; i++) {
 			init_arrays(memsize, a, b, c);
-			clock_gettime(CLOCK_REALTIME, &start);
+			aml_gettime(&start);
 			res = run_f[i](memsize, a, b, c, dscalar);
-			clock_gettime(CLOCK_REALTIME, &end);
+			aml_gettime(&end);
 			timing = aml_timediff(start, end);
 			verify_f[i](memsize, a, b, c, dscalar, res);
 			sumtime[i] += timing;
@@ -131,9 +131,9 @@ int main(int argc, char *argv[])
 
 		// Rotations
 		init_arrays(memsize, a, b, c);
-		clock_gettime(CLOCK_REALTIME, &start);
+		aml_gettime(&start);
 		drot(memsize, a, b, x, y);
-		clock_gettime(CLOCK_REALTIME, &end);
+		aml_gettime(&end);
 		timing = aml_timediff(start, end);
 		verify_drot(memsize, a, b, c, x, y, res);
 		sumtime[8] += timing;
@@ -141,9 +141,9 @@ int main(int argc, char *argv[])
 		maxtime[8] = MAX(maxtime[i], timing);
 
 		init_arrays(memsize, a, b, c);
-		clock_gettime(CLOCK_REALTIME, &start);
+		aml_gettime(&start);
 		drotm(memsize, a, b, param);
-		clock_gettime(CLOCK_REALTIME, &end);
+		aml_gettime(&end);
 		timing = aml_timediff(start, end);
 		verify_drotm(memsize, a, b, c, x, y, res);
 		sumtime[9] += timing;
