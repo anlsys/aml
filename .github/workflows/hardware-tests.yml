@@ -1,0 +1,27 @@
+name: hardware
+on: [push, pull_request]
+env:
+  VERBOSE: 1
+jobs:
+  nvidia:
+    runs-on: [self-hosted, nvidia-gpu]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: configure
+        run: |
+          ./autogen.sh
+          mkdir build
+          ./configure --prefix=`pwd`/build --with-cuda=yes
+      - run: make
+      - run: make check
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: generic
+          path: |
+            config.log
+            tests/*.log
+            benchmarks/*.log
+            doc/tutorials/*.log
