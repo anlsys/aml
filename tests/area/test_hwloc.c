@@ -206,7 +206,7 @@ void test_preferred()
 	       AML_SUCCESS);
 
 	data = (struct aml_area_hwloc_preferred_data *)area->data;
-	assert(data->numanodes[data->num_nodes-1] == NUMANODE);
+	assert(data->numanodes[data->num_nodes - 1] == NUMANODE);
 
 	aml_area_hwloc_preferred_destroy(&area);
 }
