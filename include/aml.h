@@ -998,10 +998,10 @@ struct aml_dma {
  * @param[in] op_arg: optional argument to the operator
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_dma_copy_custom(struct aml_dma *dma, 
+int aml_dma_copy_custom(struct aml_dma *dma,
 			struct aml_layout *dest,
-			const struct aml_layout *src, 
-			aml_dma_operator op, 
+			const struct aml_layout *src,
+			aml_dma_operator op,
 			void *op_arg);
 
 /**
@@ -1020,7 +1020,7 @@ int aml_dma_copy_custom(struct aml_dma *dma,
  * @param[in] op_arg: optional argument to the operator
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_dma_async_copy_custom(struct aml_dma *dma, 
+int aml_dma_async_copy_custom(struct aml_dma *dma,
 			      struct aml_dma_request **req,
 			      struct aml_layout *dest,
 			      const struct aml_layout *src,
