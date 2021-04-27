@@ -15,6 +15,7 @@ jobs:
           mkdir build
           ./configure --prefix=`pwd`/build --with-cuda=yes
       - run: make
+      - run: echo toto
       - run: make check
       - uses: actions/upload-artifact@v2
         if: failure()
