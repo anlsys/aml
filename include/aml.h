@@ -67,7 +67,7 @@ extern "C" {
  * Initialize the library.
  * @param[in] argc: pointer to the main()'s argc argument; contents can get
  *        modified.
- * @param[in] argv: pointer to the main()'s argv argument; contents can get
+ * @param[inout] argv: pointer to the main()'s argv argument; contents can get
  *        modified.
  * @return 0 if successful; an error code otherwise.
  **/
@@ -159,7 +159,7 @@ struct aml_area_ops {
 
 	/**
 	 * Print the implementation-specific information available
-	 * @param[out] stream: the stream to print to
+	 * @param[in] stream: the stream to print to
 	 * @param[in] prefix: a prefix string to use on all lines
 	 * @param[in] data: non-NULL handle to area internal data.
 	 * @return 0 if successful, an error code otherwise.
@@ -209,7 +209,7 @@ int aml_area_munmap(const struct aml_area *area, void *ptr, size_t size);
 
 /**
  * Print on the file handle the metadata associated with this area.
- * @param[out] stream: the stream to print on
+ * @param[in] stream: the stream to print on
  * @param[in] prefix: prefix to use on all lines
  * @param[in] area: area to print
  * @return 0 if successful, an error code otherwise.
@@ -442,7 +442,7 @@ struct aml_layout_ops {
 	/**
 	 * Print the implementation-specific information available on a layout,
 	 * content excluded.
-	 * @param[out] stream: the stream to print to
+	 * @param[in] stream: the stream to print to
 	 * @param[in] prefix: a prefix string to use on all lines
 	 * @param[in] data: non-NULL handle to layout internal data.
 	 * @return 0 if successful, an error code otherwise.
@@ -628,7 +628,7 @@ int aml_layout_slice(const struct aml_layout *layout,
 
 /**
  * Print on the file handle the metadata associated with this layout.
- * @param[out] stream: the stream to print on
+ * @param[in] stream: the stream to print on
  * @param[in] prefix: prefix to use on all lines
  * @param[in] layout: layout to print
  * @return 0 if successful, an AML error code otherwise.
@@ -645,7 +645,7 @@ int aml_layout_fprintf(FILE *stream,
  * @param[in] ptr: if not NULL use this pointer as the new layout raw pointer.
  * @return -AML_ENOMEM if layout allocation failed.
  * @return -AML_EINVAL if src or dest are NULL.
- * @return -AML_SUCCESS if copy succeeded.
+ * @return AML_SUCCESS if copy succeeded.
  **/
 int aml_layout_duplicate(const struct aml_layout *src,
                          struct aml_layout **out,
@@ -745,7 +745,7 @@ struct aml_tiling_ops {
 	/**
 	 * Print the implementation-specific information available on a tiling,
 	 * content excluded.
-	 * @param[out] stream: the stream to print to
+	 * @param[in] stream: the stream to print to
 	 * @param[in] prefix: a prefix string to use on all lines
 	 * @param[in] data: non-NULL handle to tiling internal data.
 	 * @return 0 if successful, an error code otherwise.
@@ -841,7 +841,7 @@ struct aml_layout *aml_tiling_index_byiter(const struct aml_tiling *tiling,
 
 /**
  * Print on the file handle the metadata associated with this tiling.
- * @param[out] stream: the stream to print on
+ * @param[in] stream: the stream to print on
  * @param[in] prefix: prefix to use on all lines
  * @param[in] tiling: tiling to print
  * @return 0 if successful, an error code otherwise.
@@ -924,8 +924,8 @@ struct aml_dma_ops {
 	/**
 	 * Initiate a data movement, from a source pointer to a destination
 	 * pointer, and output a request handler for managing the transfer.
-	 * @param[in, out] dma: dma_implementation internal data.
-	 * @param[in, out] req: the request handle to manage termination
+	 * @param[inout] dma: dma_implementation internal data.
+	 * @param[out] req: the request handle to manage termination
 	 *        of the movement.
 	 * @param[out] dest: layout describing the destination.
 	 * @param[in] src: layout describing the source.
@@ -943,7 +943,7 @@ struct aml_dma_ops {
 	 * then cancel it.
 	 *
 	 * @param[in] dma: dma_implementation internal data.
-	 * @param[in] req: the request handle to manage termination of the
+	 * @param[inout] req: the request handle to manage termination of the
 	 *movement.
 	 * @return an AML error code.
 	 **/
@@ -955,7 +955,7 @@ struct aml_dma_ops {
 	 * handle.
 	 *
 	 * @param[in] dma: dma_implementation internal data.
-	 * @param[in] req: the request handle to manage termination of the
+	 * @param[inout] req: the request handle to manage termination of the
 	 *movement.
 	 * @return an AML error code.
 	 **/
@@ -964,7 +964,7 @@ struct aml_dma_ops {
 
 	/**
 	 * Print the implementation-specific information available on a dma.
-	 * @param[out] stream: the stream to print to
+	 * @param[in] stream: the stream to print to
 	 * @param[in] prefix: a prefix string to use on all lines
 	 * @param[in] data: non-NULL handle to dma internal data.
 	 * @return 0 if successful, an error code otherwise.
@@ -1052,7 +1052,7 @@ int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request **req);
 
 /**
  * Print on the file handle the metadata associated with this dma.
- * @param[out] stream: the stream to print on
+ * @param[in] stream: the stream to print on
  * @param[in] prefix: prefix to use on all lines
  * @param[in] dma: DMA to print
  * @return 0 if successful, an error code otherwise.
