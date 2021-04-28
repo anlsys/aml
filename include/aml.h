@@ -65,7 +65,7 @@ extern "C" {
 
 /**
  * Initialize the library.
- * @param[in] argc: pointer to the main()'s argc argument; contents can get
+ * @param[inout] argc: pointer to the main()'s argc argument; contents can get
  *        modified.
  * @param[inout] argv: pointer to the main()'s argv argument; contents can get
  *        modified.
