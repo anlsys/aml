@@ -64,17 +64,17 @@ extern "C" {
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Initializes the library.
- * @param argc: pointer to the main()'s argc argument; contents can get
+ * Initialize the library.
+ * @param[inout] argc: pointer to the main()'s argc argument; contents can get
  *        modified.
- * @param argv: pointer to the main()'s argv argument; contents can get
+ * @param[inout] argv: pointer to the main()'s argv argument; contents can get
  *        modified.
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_init(int *argc, char **argv[]);
 
 /**
- * Terminates the library.
+ * Terminate the library.
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_finalize(void);
@@ -129,45 +129,44 @@ struct aml_area_ops {
 	/**
 	 * Building block for coarse grain allocator of virtual memory.
 	 *
-	 * @param[in] data: Opaque handle to implementation specific data.
-	 * @param[in] size: The minimum size of allocation.
+	 * @param[in] data: opaque handle to implementation specific data.
+	 * @param[in] size: the minimum size of allocation.
 	 *        Is greater than 0. Must not fail unless not enough
 	 *        memory is available, or ptr argument does not point to a
 	 *        suitable address.
 	 *        In case of failure, aml_errno must be set to an appropriate
 	 *        value.
-	 * @param opts: Opaque handle to pass additional options to area
+	 * @param[in] opts: opaque handle to pass additional options to area
 	 *        mmap hook. Can be NULL and must work with NULL opts.
 	 * @return a pointer to allocated memory object.
 	 **/
-	void* (*mmap)(const struct aml_area_data  *data,
-		      size_t                       size,
-		      struct aml_area_mmap_options *opts);
+	void *(*mmap)(const struct aml_area_data *data,
+	              size_t size,
+	              struct aml_area_mmap_options *opts);
 
 	/**
 	 * Building block for unmapping of virtual memory mapped with mmap()
 	 * of the same area.
 	 *
-	 * @param data: An opaque handle to implementation specific data.
-	 * @param ptr: Pointer to data mapped in physical memory. Cannot be
+	 * @param[in] data: an opaque handle to implementation specific data.
+	 * @param[in] ptr: pointer to data mapped in physical memory. Cannot be
 	 *        NULL.
-	 * @param size: The size of data. Cannot be 0.
+	 * @param[in] size: the size of data. Cannot be 0.
 	 * @return: AML_AREA_* error code.
 	 * @see mmap()
 	 **/
-	int (*munmap)(const struct aml_area_data *data,
-		      void                       *ptr,
-		      size_t                      size);
+	int (*munmap)(const struct aml_area_data *data, void *ptr, size_t size);
 
 	/**
 	 * Print the implementation-specific information available
-	 * @param stream the stream to print to
-	 * @param prefix a prefix string to use on all lines
-	 * @param data non-NULL handle to area internal data.
+	 * @param[in] stream: the stream to print to
+	 * @param[in] prefix: a prefix string to use on all lines
+	 * @param[in] data: non-NULL handle to area internal data.
 	 * @return 0 if successful, an error code otherwise.
 	 **/
 	int (*fprintf)(const struct aml_area_data *data,
-		       FILE *stream, const char *prefix);
+	               FILE *stream,
+	               const char *prefix);
 };
 
 /**
@@ -186,50 +185,47 @@ struct aml_area {
 
 /**
  * Low-level function for obtaining memory from an area.
- * @param[in] area: A valid area implementing access to the target memory.
- * @param[in] size: The usable size of memory to obtain.
- * @param[in, out] opts: Opaque handle to pass additional options to the area.
+ * @param[in] area: a valid area implementing access to the target memory.
+ * @param[in] size: the usable size of memory to obtain.
+ * @param[in, out] opts: opaque handle to pass additional options to the area.
  * @return a pointer to the memory range of the requested size allocated
- * within the area.
- * @return NULL on failure, with aml_errno set to the appropriate error
- * code.
+ * within the area ; NULL on failure, with aml_errno set to the appropriate
+ * error code.
  **/
-void *aml_area_mmap(const struct aml_area        *area,
-		    size_t                        size,
-		    struct aml_area_mmap_options *opts);
+void *aml_area_mmap(const struct aml_area *area,
+                    size_t size,
+                    struct aml_area_mmap_options *opts);
 
 /**
- * Releases memory region obtained with aml_area_mmap().
- * @param area: A valid area implementing access to the target memory.
- * @param ptr: A pointer to the memory obtained with aml_area_mmap()
+ * Release memory region obtained with aml_area_mmap().
+ * @param[in] area: a valid area implementing access to the target memory.
+ * @param[in, out] ptr: a pointer to the memory obtained with aml_area_mmap()
  *        using the same "area" and "size" parameters.
- * @param size: The size of the memory region pointed to by "ptr".
+ * @param[in] size: the size of the memory region pointed to by "ptr".
  * @return 0 if successful, an error code otherwise.
  * @see aml_area_mmap()
  **/
-int
-aml_area_munmap(const struct aml_area *area,
-		void                  *ptr,
-		size_t                 size);
+int aml_area_munmap(const struct aml_area *area, void *ptr, size_t size);
 
 /**
  * Print on the file handle the metadata associated with this area.
- * @param stream the stream to print on
- * @param prefix prefix to use on all lines
- * @param area area to print
+ * @param[in] stream: the stream to print on
+ * @param[in] prefix: prefix to use on all lines
+ * @param[in] area: area to print
  * @return 0 if successful, an error code otherwise.
  */
-int aml_area_fprintf(FILE *stream, const char *prefix,
-		     const struct aml_area *area);
+int aml_area_fprintf(FILE *stream,
+                     const char *prefix,
+                     const struct aml_area *area);
 
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
  * @}
  * @defgroup aml_layout "AML Layout"
- * @brief Low level description of data orrganization at the byte granularity.
+ * @brief Low level description of data organization at the byte granularity.
  *
- * Layout describes how contiguous element of a flat memory address space are
+ * Layout describes how contiguous elements of a flat memory address space are
  * organized into a multidimensional array of elements of a fixed size.
  * The abstraction provide functions to build layouts, access elements,
  * reshape a layout, or subset a layout.
@@ -255,7 +251,7 @@ int aml_area_fprintf(FILE *stream, const char *prefix,
  *
  * Access to specific elements of a layout can be done with
  * the aml_layout_deref() function. Access to an element is always done
- * relatively to the dimensions order set by at creation time.
+ * relatively to the dimensions' order set by the user at creation time.
  * However, internally, the library will always store dimensions in such a way
  * that elements along the first dimension
  * are contiguous in memory. This order is defined with the value
@@ -277,7 +273,6 @@ int aml_area_fprintf(FILE *stream, const char *prefix,
  * @image html reshape.png "2D layout turned into a 3D layout." width=700cm
  *
  * @see aml_layout_dense
- * @see aml_layout_pad
  * @{
  **/
 
@@ -304,34 +299,34 @@ struct aml_layout_ops {
 	 * Of the dimensions provided by the user in the constructor.
 	 * However, dimensions are always stored internally in the
 	 * AML_LAYOUT_ORDER_FORTRAN order.
-	 * @param data[in]: The non-NULL handle to layout internal data.
-	 * @param coords[in]: The non-NULL coordinates on which to access data.
+	 * @param data[in]: the non-NULL handle to layout internal data.
+	 * @param coords[in]: the non-NULL coordinates on which to access data.
 	 * Coordinates are checked to be valid in aml_layout_deref().
-	 * @return A pointer to the dereferenced element on success.
+	 * @return a pointer to the dereferenced element on success.
 	 * @return NULL on failure with aml_errno set to the error reason.
 	 **/
 	void *(*deref)(const struct aml_layout_data *data,
-		       const size_t *coords);
+	               const size_t *coords);
 
 	/**
 	 * Function for derefencing elements of a layout inside the library.
 	 * Layout assumes data is always stored in AML_LAYOUT_ORDER_FORTRAN
 	 * order. Coordinates provided by the library will match the same
 	 * order, i.e last dimension first.
-	 * @param data[in]: The non-NULL handle to layout internal data.
-	 * @param coords[in]: The non-NULL coordinates on which to access data.
+	 * @param data[in]: the non-NULL handle to layout internal data.
+	 * @param coords[in]: the non-NULL coordinates on which to access data.
 	 * The first coordinate should be the last dimensions and so on to the
 	 * last, coordinate, last dimension.
-	 * @return A pointer to the dereferenced element on success.
+	 * @return a pointer to the dereferenced element on success.
 	 * @return NULL on failure with aml_errno set to the error reason.
 	 **/
 	void *(*deref_native)(const struct aml_layout_data *data,
-			      const size_t *coords);
+	                      const size_t *coords);
 
 	/**
 	 * Function to retrieve a pointer to the start of the actual memory
 	 * buffer under this layout.
-	 * @param data[in] the non-NULL handle to layout internal data.
+	 * @param[in] data: the non-NULL handle to layout internal data.
 	 * @return a pointer to the buffer on success
 	 * @return NULL on failure, with aml_errno set to the error reason.
 	 **/
@@ -340,8 +335,8 @@ struct aml_layout_ops {
 	/**
 	 * Get the order in which dimensions of the layout are
 	 * supposed to be accessed by the user.
-	 * @param data[in]: The non-NULL handle to layout internal data.
-	 * @return Order value. It is a bitmask with order bit set (or not set).
+	 * @param[in] data: the non-NULL handle to layout internal data.
+	 * @return order value. It is a bitmask with order bit set (or not set).
 	 * Output value can be further checked against order AML_LAYOUT_ORDER
 	 * flags by using the macro AML_LAYOUT_ORDER() on output value.
 	 * @see AML_LAYOUT_ORDER()
@@ -350,8 +345,8 @@ struct aml_layout_ops {
 
 	/**
 	 * Return the layout dimensions in the user order.
-	 * @param data[in]: The non-NULL handle to layout internal data.
-	 * @param dims[out]: The non-NULL array of dimensions to fill. It is
+	 * @param[in] data: the non-NULL handle to layout internal data.
+	 * @param[out] dims: the non-NULL array of dimensions to fill. It is
 	 * supposed to be large enough to contain ndims() elements.
 	 * @return AML_SUCCESS on success, else an AML error code.
 	 **/
@@ -360,25 +355,24 @@ struct aml_layout_ops {
 	/**
 	 * Return the layout dimensions in the order they are actually stored
 	 * in the library.
-	 * @param data[in]: The non-NULL handle to layout internal data.
-	 * @param dims[out]: The non-NULL array of dimensions to fill. It is
+	 * @param[in] data: the non-NULL handle to layout internal data.
+	 * @param[out] dims: the non-NULL array of dimensions to fill. It is
 	 * supposed to be large enough to contain ndims() elements.
 	 * @return AML_SUCCESS on success, else an AML error code.
 	 **/
-	int (*dims_native)(const struct aml_layout_data *data,
-			   size_t *dims);
+	int (*dims_native)(const struct aml_layout_data *data, size_t *dims);
 
 	/**
 	 * Return the number of dimensions in a layout.
-	 * @param data[in]: The non-NULL handle to layout internal data.
-	 * @return The number of dimensions in the layout.
+	 * @param[in] data: the non-NULL handle to layout internal data.
+	 * @return the number of dimensions in the layout.
 	 **/
 	size_t (*ndims)(const struct aml_layout_data *data);
 
 	/**
 	 * Return the size of layout elements.
-	 * @param data[in]: The non-NULL handle to layout internal data.
-	 * @return The size of elements stored with this layout.
+	 * @param[in] data: the non-NULL handle to layout internal data.
+	 * @return the size of elements stored with this layout.
 	 **/
 	size_t (*element_size)(const struct aml_layout_data *data);
 
@@ -386,84 +380,85 @@ struct aml_layout_ops {
 	 * Reshape the layout with different dimensions.
 	 * Layout dimensions are checked in aml_layout_reshape() to store
 	 * the exact same number of elements.
-	 * @param data[in]: The non-NULL handle to layout internal data.
-	 * @param output[out]: A non NULL pointer to a layout where to allocate
+	 * @param[in] data: the non-NULL handle to layout internal data.
+	 * @param[out] output: a non NULL pointer to a layout where to allocate
 	 * a new layout resulting from the reshape operation.
-	 * @param ndims[in]: The number of dimensions of the new layout.
-	 * @param dims[in]: The number of elements along each dimension of
+	 * @param[in] ndims: the number of dimensions of the new layout.
+	 * @param[in] dims: the number of elements along each dimension of
 	 * the new layout.
 	 * @return AML_SUCCESS on success, else an AML error code (<0).
 	 **/
 	int (*reshape)(const struct aml_layout_data *data,
-		       struct aml_layout **output,
-		       const size_t ndims,
-		       const size_t *dims);
+	               struct aml_layout **output,
+	               const size_t ndims,
+	               const size_t *dims);
 
 	/**
 	 * Return a layout that is a subset of another layout.
 	 * Slice arguments compatibility with the original layout are
 	 * checked in aml_layout_slice().
-	 * @param data[in]: The non-NULL handle to layout internal data.
-	 * @param output[out]: A non NULL pointer to a layout where to allocate
+	 * @param[in] data: the non-NULL handle to layout internal data.
+	 * @param[out] output: a non NULL pointer to a layout where to allocate
 	 * a new layout resulting from the slice operation.
-	 * @param dims[in]: The number of elements of the slice along each
+	 * @param[in] dims: the number of elements of the slice along each
 	 * dimension .
-	 * @param offsets[in]: The index of the first element of the slice
+	 * @param[in] offsets: the index of the first element of the slice
 	 * in each dimension.
-	 * @param strides[in]: The displacement (in number of elements) between
+	 * @param[in] strides: the displacement (in number of elements) between
 	 * elements of the slice.
-	 * @return A newly allocated layout with the queried subset of the
+	 * @return a newly allocated layout with the queried subset of the
 	 * original layout on succes.
 	 * @return NULL on error with aml_errno set to the failure reason.
 	 **/
 	int (*slice)(const struct aml_layout_data *data,
-		     struct aml_layout **output,
-		     const size_t *offsets,
-		     const size_t *dims,
-		     const size_t *strides);
+	             struct aml_layout **output,
+	             const size_t *offsets,
+	             const size_t *dims,
+	             const size_t *strides);
 
 	/**
 	 * Return a layout that is a subset of another layout, assuming
 	 * dimensions are stored with AML_LAYOUT_ORDER_FORTRAN.
 	 * Slice arguments compatibility with the original layout are
 	 * checked in aml_layout_slice().
-	 * @param data[in]: The non-NULL handle to layout internal data.
-	 * @param output[out]: A non NULL pointer to a layout where to allocate
+	 * @param[in] data: the non-NULL handle to layout internal data.
+	 * @param[out] output: a non NULL pointer to a layout where to allocate
 	 * a new layout resulting from the slice operation.
-	 * @param dims[in]: The number of elements of the slice along each
+	 * @param[in] dims: the number of elements of the slice along each
 	 * dimension .
-	 * @param offsets[in]: The index of the first element of the slice
+	 * @param[in] offsets: the index of the first element of the slice
 	 * in each dimension.
-	 * @param strides[in]: The displacement (in number of elements) between
+	 * @param[in] strides: the displacement (in number of elements) between
 	 * elements of the slice.
-	 * @return A newly allocated layout with the queried subset of the
+	 * @return a newly allocated layout with the queried subset of the
 	 * original layout on succes.
 	 * @return NULL on error with aml_errno set to the failure reason.
 	 **/
 	int (*slice_native)(const struct aml_layout_data *data,
-			    struct aml_layout **output,
-			    const size_t *offsets,
-			    const size_t *dims,
-			    const size_t *strides);
+	                    struct aml_layout **output,
+	                    const size_t *offsets,
+	                    const size_t *dims,
+	                    const size_t *strides);
 	/**
 	 * Print the implementation-specific information available on a layout,
 	 * content excluded.
-	 * @param stream the stream to print to
-	 * @param prefix a prefix string to use on all lines
-	 * @param data non-NULL handle to layout internal data.
+	 * @param[in] stream: the stream to print to
+	 * @param[in] prefix: a prefix string to use on all lines
+	 * @param[in] data: non-NULL handle to layout internal data.
 	 * @return 0 if successful, an error code otherwise.
 	 **/
 	int (*fprintf)(const struct aml_layout_data *data,
-		       FILE *stream, const char *prefix);
+	               FILE *stream,
+	               const char *prefix);
 
 	/**
 	 * Duplicate a layout (does not copy data, but deep copy
 	 * metadata).
 	 * If the layout relies on sublayouts (e.g. pad, reshape), those will be
 	 * copied too.
-	 * @param[in] layout a non-NULL handle to a layout to copy.
-	 * @param[out] out a pointer to where to store the new layout.
-	 * @param[in] ptr: If not NULL use this pointer as the new layout raw
+	 * @param[in] layout: a non-NULL handle to a layout to copy.
+	 * @param[out] out: a pointer to where to store the new layout.
+	 * @param[in] ptr: if not NULL use this pointer as the new layout raw
 	 *pointer.
 	 * @return -AML_ENOTSUP if operation is not available.
 	 * @return -AML_ENOMEM if layout allocation failed.
@@ -475,7 +470,7 @@ struct aml_layout_ops {
 	                 void *ptr);
 
 	/**
-	 * Destroys the layout and frees all associated memory.
+	 * Destroy the layout and frees all associated memory.
 	 **/
 	void (*destroy)(struct aml_layout *);
 };
@@ -487,7 +482,7 @@ struct aml_layout_ops {
  * This tag will store dimensions in the order provided by the user,
  * i.e., elements of the last dimension will be contiguous in memory.
  **/
-#define AML_LAYOUT_ORDER_FORTRAN (0<<0)
+#define AML_LAYOUT_ORDER_FORTRAN (0 << 0)
 
 /**
  * Tag specifying user storage of dimensions inside a layout.
@@ -498,54 +493,57 @@ struct aml_layout_ops {
  * in memory. This storage is the actual storage used by the library
  * inside the structure.
  **/
-#define AML_LAYOUT_ORDER_C (1<<0)
+#define AML_LAYOUT_ORDER_C (1 << 0)
 
 /**
  * This is equivalent to AML_LAYOUT_ORDER_FORTRAN.
  * @see AML_LAYOUT_ORDER_FORTRAN
  **/
-#define AML_LAYOUT_ORDER_COLUMN_MAJOR (0<<0)
+#define AML_LAYOUT_ORDER_COLUMN_MAJOR (0 << 0)
 
 /**
  * This is equivalent to AML_LAYOUT_ORDER_C.
  * @see AML_LAYOUT_ORDER_C
  **/
-#define AML_LAYOUT_ORDER_ROW_MAJOR (1<<0)
+#define AML_LAYOUT_ORDER_ROW_MAJOR (1 << 0)
 
 /**
  * Get the order bit of an integer bitmask.
  * The value can be further checked for equality
  * with AML_LAYOUT_ORDER_* values.
- * @param x: An integer with the first bit set
+ * @param[in] x: an integer with the first bit set
  * to the order value.
- * @return An integer containing only the bit order.
+ * @return an integer containing only the bit order.
  **/
-#define AML_LAYOUT_ORDER(x) ((x) & (1<<0))
+#define AML_LAYOUT_ORDER(x) ((x) & (1 << 0))
 
 /**
  * Dereference an element of a layout by its coordinates.
- * @param[in] layout: An initialized layout.
- * @param[in] coords: The coordinates on which to access data.
- * @return A pointer to the dereferenced element on success.
- * @return NULL on failure with aml_errno set to the error reason:
+ * @param[in] layout: an initialized layout.
+ * @param[in] coords: the coordinates on which to access data.
+ * @return a pointer to the dereferenced element on success ; NULL on failure
+ * with aml_errno set to the error reason:
  * * AML_EINVAL if coordinate are out of bound
  * * See specific implementation of layout for further information
  * on possible error codes.
  **/
-void *aml_layout_deref(const struct aml_layout *layout,
-		       const size_t *coords);
+void *aml_layout_deref(const struct aml_layout *layout, const size_t *coords);
 
 /**
  * Equivalent to aml_layout_deref() but with bound checking
  * on coordinates.
+ * @param[in] layout: an initialized layout.
+ * @param[in] coords: the coordinates on which to access data.
+ * @return a pointer to dereferenced element on success ; NULL on failure
+ * with aml_errno set to the error reason.
  * @see aml_layout_deref()
  **/
 void *aml_layout_deref_safe(const struct aml_layout *layout,
-			    const size_t *coords);
+                            const size_t *coords);
 
 /**
  * Return a pointer to the first byte of the buffer this layout maps to.
- * @param layout an initialized layout
+ * @param[in] layout: an initialized layout
  * @return a raw pointer to the start of the layout, NULL on error.
  */
 void *aml_layout_rawptr(const struct aml_layout *layout);
@@ -553,61 +551,55 @@ void *aml_layout_rawptr(const struct aml_layout *layout);
 /**
  * Get the order in which dimensions of the layout are supposed to be
  * accessed by the user.
- * @param[in] layout: An initialized layout.
- * @return The order (>0) on success, an AML error (<0) on failure.
- * @return On success, a bitmask with order bit set (or not set).
- * Output value can be further checked against order AML_LAYOUT_ORDER
- * flags by using the macro AML_LAYOUT_ORDER() on the output value.
+ * @param[in] layout: an initialized layout.
+ * @return a bitmask with order bit on success, an AML error (<0) on failure.
+ *	Output value can be further checked against order AML_LAYOUT_ORDER
+ *	flags by using the macro AML_LAYOUT_ORDER() on the output value.
  * @see AML_LAYOUT_ORDER()
  **/
 int aml_layout_order(const struct aml_layout *layout);
 
 /**
  * Return the layout dimensions in the user order.
- * @param[in] layout: An initialized layout.
- * @param[out] dims: A non-NULL array of dimensions to fill. It is
+ * @param[in] layout: an initialized layout.
+ * @param[out] dims: a non-NULL array of dimensions to fill. It is
  * supposed to be large enough to contain aml_layout_ndims() elements.
- * @return AML_SUCCESS on success, else an AML error code.
+ * @return 0 on success, else an AML error code.
  **/
 int aml_layout_dims(const struct aml_layout *layout, size_t *dims);
 
 /**
- * Return the number of dimensions in a layout.
- * @param[in] layout: An initialized layout.
- * @return The number of dimensions in the layout.
+ * Provide the number of dimensions in the layout.
+ * @param[in] layout: an initialized layout.
+ * @return the number of dimensions in the layout.
  **/
 size_t aml_layout_ndims(const struct aml_layout *layout);
 
 /**
- * @brief Return the size of layout elements.
- * @param[in] layout: An initialized layout.
- * @return The size of elements stored with this layout.
+ * Return the size of layout elements.
+ * @param[in] layout: an initialized layout.
+ * @return the size of elements stored with this layout.
  **/
 size_t aml_layout_element_size(const struct aml_layout *layout);
 
 /**
- * @brief Reshape the layout with different dimensions.
+ * Reshape the layout with different dimensions.
  * This function checks that the number of elements of
  * the reshaped layout matches the number of elements
  * in the original layout. Additional constraint may apply
  * depending on the layout implementation.
- * @param[in] layout: An initialized layout.
- * @param[out] reshaped_layout: A newly allocated layout
+ * @param[in] layout: an initialized layout.
+ * @param[out] reshaped_layout: a newly allocated layout
  * with the queried shape on succes.
- * @param[in] ndims: The number of dimensions of the new layout.
- * @param[in] dims: The number of elements along each dimension of
+ * @param[in] ndims: the number of dimensions of the new layout.
+ * @param[in] dims: the number of elements along each dimension of
  * the new layout.
- * @return AML_SUCCESS on success.
- * @return AML_EINVAL if reshape dimensions are not compatible
- * with original layout dimensions.
- * @return AML_ENOMEM if AML failed to allocate the new structure.
- * @return Another aml_error code. Refer to the layout
- * implementation of reshape function.
+ * @return 0 on success, an AML error code otherwise.
  **/
 int aml_layout_reshape(const struct aml_layout *layout,
-		       struct aml_layout **reshaped_layout,
-		       const size_t ndims,
-		       const size_t *dims);
+                       struct aml_layout **reshaped_layout,
+                       const size_t ndims,
+                       const size_t *dims);
 
 /**
  * Return a layout that is a subset of another layout.
@@ -616,40 +608,41 @@ int aml_layout_reshape(const struct aml_layout *layout,
  * This function checks that the number of elements along
  * each dimension of the slice actually fits in the original
  * layout.
- * @param[in] layout: An initialized layout.
+ * @param[in] layout: an initialized layout.
  * @param[out] reshaped_layout: a pointer where to store the address of a
  * newly allocated layout with the queried subset of the
  * original layout on succes.
- * @param[in] dims: The number of elements of the slice along each
+ * @param[in] dims: the number of elements of the slice along each
  * dimension.
- * @param[in] offsets: The index of the first element of the slice
+ * @param[in] offsets: the index of the first element of the slice
  * in each dimension. If NULL, offset is set to 0.
- * @param[in] strides: The displacement (in number of elements) between
+ * @param[in] strides: the displacement (in number of elements) between
  * elements of the slice. If NULL, stride is set to 1.
- * @return AML_SUCCESS on success, else an AML error code (<0).
+ * @return 0 on success, else an AML error code (<0).
  **/
 int aml_layout_slice(const struct aml_layout *layout,
-		     struct aml_layout **reshaped_layout,
-		     const size_t *offsets,
-		     const size_t *dims,
-		     const size_t *strides);
+                     struct aml_layout **reshaped_layout,
+                     const size_t *offsets,
+                     const size_t *dims,
+                     const size_t *strides);
 
 /**
  * Print on the file handle the metadata associated with this layout.
- * @param stream the stream to print on
- * @param prefix prefix to use on all lines
- * @param layout layout to print
- * @return 0 if successful, an error code otherwise.
+ * @param[in] stream: the stream to print on
+ * @param[in] prefix: prefix to use on all lines
+ * @param[in] layout: layout to print
+ * @return 0 if successful, an AML error code otherwise.
  */
-int aml_layout_fprintf(FILE *stream, const char *prefix,
-		       const struct aml_layout *layout);
+int aml_layout_fprintf(FILE *stream,
+                       const char *prefix,
+                       const struct aml_layout *layout);
 
 /**
- * Creates a duplicate of the layout (independent deep copy of all its metadata,
+ * Create a duplicate of the layout (independent deep copy of all its metadata,
  * no user data is actually copied).
- * @param[in] src the layout to duplicate
- * @param[out] out a pointer to where to store the new layout
- * @param[in] ptr: If not NULL use this pointer as the new layout raw pointer.
+ * @param[in] src: the layout to duplicate
+ * @param[out] out: a pointer to where to store the new layout
+ * @param[in] ptr: if not NULL use this pointer as the new layout raw pointer.
  * @return -AML_ENOMEM if layout allocation failed.
  * @return -AML_EINVAL if src or dest are NULL.
  * @return AML_SUCCESS if copy succeeded.
@@ -660,7 +653,7 @@ int aml_layout_duplicate(const struct aml_layout *src,
 
 /**
  * Destroy (free) a layout, irrespective of its type.
- * @param[in,out] layout the layout to destroy. NULL on return.
+ * @param[in,out] layout: the layout to destroy. NULL on return.
  **/
 void aml_layout_destroy(struct aml_layout **layout);
 
@@ -688,7 +681,7 @@ void aml_layout_destroy(struct aml_layout **layout);
  * This tag will store dimensions in the order provided by the user,
  * i.e elements of the last dimension will be contiguous in memory.
  **/
-#define AML_TILING_ORDER_FORTRAN (0<<0)
+#define AML_TILING_ORDER_FORTRAN (0 << 0)
 
 /**
  * Tag specifying user storage of dimensions inside a layout.
@@ -699,29 +692,29 @@ void aml_layout_destroy(struct aml_layout **layout);
  * in memory. This storage is the actual storage used by the library
  * inside the structure.
  **/
-#define AML_TILING_ORDER_C (1<<0)
+#define AML_TILING_ORDER_C (1 << 0)
 
 /**
  * This is equivalent to AML_TILING_ORDER_FORTRAN.
  * @see AML_TILING_ORDER_FORTRAN
  **/
-#define AML_TILING_ORDER_COLUMN_MAJOR (0<<0)
+#define AML_TILING_ORDER_COLUMN_MAJOR (0 << 0)
 
 /**
  * This is equivalent to AML_TILING_ORDER_C.
  * @see AML_TILING_ORDER_C
  **/
-#define AML_TILING_ORDER_ROW_MAJOR (1<<0)
+#define AML_TILING_ORDER_ROW_MAJOR (1 << 0)
 
 /**
  * Get the order bit of an integer bitmask.
  * The value can be further checked for equality
  * with AML_TILING_ORDER_* values.
- * @param x: An integer with the first bit set
+ * @param[out] x: an integer with the first bit set
  * to the order value.
- * @return An integer containing only the bit order.
+ * @return an integer containing only the bit order.
  **/
-#define AML_TILING_ORDER(x) ((x) & (1<<0))
+#define AML_TILING_ORDER(x) ((x) & (1 << 0))
 
 /**
  * aml_tiling_data is an opaque handle defined by each aml_tiling
@@ -737,13 +730,12 @@ struct aml_tiling_data;
  **/
 struct aml_tiling_ops {
 	/** retrieve a tile as a layout **/
-	struct aml_layout* (*index)(const struct aml_tiling_data *t,
-				    const size_t *coords);
+	struct aml_layout *(*index)(const struct aml_tiling_data *t,
+	                            const size_t *coords);
 	/** retrieve a tile as a layout with coordinates in native order  **/
-	struct aml_layout* (*index_native)(const struct aml_tiling_data *t,
-					   const size_t *coords);
-	void *(*rawptr)(const struct aml_tiling_data *t,
-			const size_t *coords);
+	struct aml_layout *(*index_native)(const struct aml_tiling_data *t,
+	                                   const size_t *coords);
+	void *(*rawptr)(const struct aml_tiling_data *t, const size_t *coords);
 	int (*order)(const struct aml_tiling_data *t);
 	int (*dims)(const struct aml_tiling_data *t, size_t *dims);
 	int (*dims_native)(const struct aml_tiling_data *t, size_t *dims);
@@ -753,13 +745,14 @@ struct aml_tiling_ops {
 	/**
 	 * Print the implementation-specific information available on a tiling,
 	 * content excluded.
-	 * @param stream the stream to print to
-	 * @param prefix a prefix string to use on all lines
-	 * @param data non-NULL handle to tiling internal data.
+	 * @param[in] stream: the stream to print to
+	 * @param[in] prefix: a prefix string to use on all lines
+	 * @param[in] data: non-NULL handle to tiling internal data.
 	 * @return 0 if successful, an error code otherwise.
 	 **/
 	int (*fprintf)(const struct aml_tiling_data *data,
-		       FILE *stream, const char *prefix);
+	               FILE *stream,
+	               const char *prefix);
 };
 
 /**
@@ -774,19 +767,19 @@ struct aml_tiling {
 /**
  * Get the order in which dimensions of the tiling are supposed to be
  * accessed by the user.
- * @param[in] tiling: An initialized tiling.
- * @return The order (>0) on success, an AML error (<0) on failure.
- * @return On success, a bitmask with order bit set (or not set).
- * Output value can be further checked against order AML_TILING_ORDER
- * flags by using the macro AML_TILING_ORDER() on the output value.
+ * @param[in] tiling: an initialized tiling.
+ * @return a bitmask with order bit set (or not set) on success, an AML error
+ *         (<0) on failure.
+ *	   Output value can be further checked against order AML_TILING_ORDER
+ *	   flags by using the macro AML_TILING_ORDER() on the output value.
  * @see AML_TILING_ORDER()
  **/
 int aml_tiling_order(const struct aml_tiling *tiling);
 
 /**
  * Return the tiling dimensions in the user order.
- * @param[in] tiling: An initialized tiling.
- * @param[out] dims: A non-NULL array of dimensions to fill. It is
+ * @param[in] tiling: an initialized tiling.
+ * @param[out] dims: a non-NULL array of dimensions to fill. It is
  * supposed to be large enough to contain aml_tiling_ndims() elements.
  * @return AML_SUCCESS on success, else an AML error code.
  **/
@@ -794,19 +787,19 @@ int aml_tiling_dims(const struct aml_tiling *tiling, size_t *dims);
 
 /**
  * Provide the number of dimensions in a tiling.
- * @param tiling: an initialized tiling structure.
+ * @param[in] tiling: an initialized tiling structure.
  * @return the number of dimensions in the tiling.
  **/
 size_t aml_tiling_ndims(const struct aml_tiling *tiling);
 
 /**
  * Get the dimensions of a specific tile in the tiling.
- * @param[in] tiling: The tiling to inspect.
- * @param[in] coords: The coordinate of the tile to lookup.
+ * @param[in] tiling: the tiling to inspect.
+ * @param[in] coords: the coordinate of the tile to lookup.
  * If NULL, the first tile is used.
- * @param[out] dims: The tile dimensions.
+ * @param[out] dims: the tile dimensions.
  * @return AML_SUCCESS on success.
- * @return The result of aml_tiling_index on error.
+ * @return the result of aml_tiling_index on error.
  */
 int aml_tiling_tile_dims(const struct aml_tiling *tiling,
                          const size_t *coords,
@@ -814,24 +807,24 @@ int aml_tiling_tile_dims(const struct aml_tiling *tiling,
 
 /**
  * Provide the number of tiles in a tiling.
- * @param tiling: an initialized tiling structure.
+ * @param[in] tiling: an initialized tiling structure.
  * @return the number of tiles in the tiling.
  **/
 size_t aml_tiling_ntiles(const struct aml_tiling *tiling);
 
 /**
  * Return the tile at specified coordinates in the tiling
- * @param tiling: an initialized tiling
- * @param coords: the coordinates for the tile
+ * @param[in] tiling: an initialized tiling
+ * @param[in] coords: the coordinates for the tile
  * @return the tile as a layout on success, NULL on error.
  **/
 struct aml_layout *aml_tiling_index(const struct aml_tiling *tiling,
-				    const size_t *coords);
+                                    const size_t *coords);
 
 /**
  * Return a pointer to the first valid coordinate in the underlying tile.
- * @param tiling an initialized tiling
- * @param coords the coordinates for the tile
+ * @param[in] tiling: an initialized tiling
+ * @param[in] coords: the coordinates for the tile
  * @return a raw pointer to the start of the buffer for a tile, NULL on error.
  */
 void *aml_tiling_rawptr(const struct aml_tiling *tiling, const size_t *coords);
@@ -848,13 +841,14 @@ struct aml_layout *aml_tiling_index_byiter(const struct aml_tiling *tiling,
 
 /**
  * Print on the file handle the metadata associated with this tiling.
- * @param stream the stream to print on
- * @param prefix prefix to use on all lines
- * @param tiling tiling to print
+ * @param[in] stream: the stream to print on
+ * @param[in] prefix: prefix to use on all lines
+ * @param[in] tiling: tiling to print
  * @return 0 if successful, an error code otherwise.
  */
-int aml_tiling_fprintf(FILE *stream, const char *prefix,
-		       const struct aml_tiling *tiling);
+int aml_tiling_fprintf(FILE *stream,
+                       const char *prefix,
+                       const struct aml_tiling *tiling);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -906,12 +900,13 @@ struct aml_dma_data;
 
 /**
  * Type of the function used to perform the DMA between two layouts.
- * @param dst: destination layout
- * @param src: source layout
- * @param arg: extra argument needed by the operator
+ * @param[out] dst: destination layout
+ * @param[in] src: source layout
+ * @param[in, out] arg: extra argument needed by the operator
  **/
 typedef int (*aml_dma_operator)(struct aml_layout *dst,
-				const struct aml_layout *src, void *arg);
+                                const struct aml_layout *src,
+                                void *arg);
 
 /**
    aml_dma_ops is a structure containing operations for a specific
@@ -929,50 +924,54 @@ struct aml_dma_ops {
 	/**
 	 * Initiate a data movement, from a source pointer to a destination
 	 * pointer, and output a request handler for managing the transfer.
-	 * @param dma: dma_implementation internal data.
-	 * @param req[out]: the request handle to manage termination
+	 * @param[inout] dma: dma_implementation internal data.
+	 * @param[out] req: the request handle to manage termination
 	 *        of the movement.
-	 * @param dest: layout describing the destination.
-	 * @param src: layout describing the source.
+	 * @param[out] dest: layout describing the destination.
+	 * @param[in] src: layout describing the source.
 	 * @return an AML error code.
 	 **/
 	int (*create_request)(struct aml_dma_data *dma,
-			      struct aml_dma_request **req,
-			      struct aml_layout *dest,
-			      struct aml_layout *src,
-			      aml_dma_operator op, void *op_arg);
+	                      struct aml_dma_request **req,
+	                      struct aml_layout *dest,
+	                      struct aml_layout *src,
+	                      aml_dma_operator op,
+	                      void *op_arg);
 
 	/**
 	 * Destroy the request handle. If the data movement is still ongoing,
 	 * then cancel it.
 	 *
-	 * @param dma: dma_implementation internal data.
-	 * @param req: the request handle to manage termination of the movement.
+	 * @param[in] dma: dma_implementation internal data.
+	 * @param[inout] req: the request handle to manage termination of the
+	 *movement.
 	 * @return an AML error code.
 	 **/
 	int (*destroy_request)(struct aml_dma_data *dma,
-			       struct aml_dma_request **req);
+	                       struct aml_dma_request **req);
 
 	/**
 	 * Wait for termination of a data movement and destroy the request
 	 * handle.
 	 *
-	 * @param dma: dma_implementation internal data.
-	 * @param req: the request handle to manage termination of the movement.
+	 * @param[in] dma: dma_implementation internal data.
+	 * @param[inout] req: the request handle to manage termination of the
+	 *movement.
 	 * @return an AML error code.
 	 **/
 	int (*wait_request)(struct aml_dma_data *dma,
-			    struct aml_dma_request **req);
+	                    struct aml_dma_request **req);
 
 	/**
 	 * Print the implementation-specific information available on a dma.
-	 * @param stream the stream to print to
-	 * @param prefix a prefix string to use on all lines
-	 * @param data non-NULL handle to dma internal data.
+	 * @param[in] stream: the stream to print to
+	 * @param[in] prefix: a prefix string to use on all lines
+	 * @param[in] data: non-NULL handle to dma internal data.
 	 * @return 0 if successful, an error code otherwise.
 	 **/
 	int (*fprintf)(const struct aml_dma_data *data,
-		       FILE *stream, const char *prefix);
+	               FILE *stream,
+	               const char *prefix);
 };
 
 /**
@@ -990,71 +989,77 @@ struct aml_dma {
 };
 
 /**
- * Requests a synchronous data copy between two different buffers.
+ * Request a synchronous data copy between two different buffers.
  *
  * Layouts are copied internally if necessary, avoiding the need for users to
  * keep the layouts alive during the request.
  *
- * @param dma: an initialized DMA structure.
- * @param dest: layout describing the destination.
- * @param src: layout describing the source.
- * @param op: optional custom operator for this dma
- * @param op_arg: optional argument to the operator
+ * @param[in, out] dma: an initialized DMA structure.
+ * @param[out] dest: layout describing the destination.
+ * @param[in] src: layout describing the source.
+ * @param[in] op: optional custom operator for this dma
+ * @param[in] op_arg: optional argument to the operator
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_dma_copy_custom(struct aml_dma *dma, struct aml_layout *dest,
-		 struct aml_layout *src, aml_dma_operator op, void *op_arg);
+int aml_dma_copy_custom(struct aml_dma *dma,
+                        struct aml_layout *dest,
+                        struct aml_layout *src,
+                        aml_dma_operator op,
+                        void *op_arg);
 
 /**
- * Requests a data copy between two different buffers.This is an asynchronous
+ * Request a data copy between two different buffers.This is an asynchronous
  * version of aml_dma_copy().
  *
  * Layouts are copied internally if necessary, avoiding the need for users to
  * keep the layouts alive during the request.
  *
- * @param dma: an initialized DMA structure.
- * @param req: an address where the pointer to the newly assigned DMA request
- *        will be stored.
- * @param dest: layout describing the destination.
- * @param src: layout describing the source.
- * @param op: optional custom operator for this dma
- * @param op_arg: optional argument to the operator
+ * @param[in, out] dma: an initialized DMA structure.
+ * @param[in, out] req: an address where the pointer to the newly assigned DMA
+ *	  request will be stored.
+ * @param[out] dest: layout describing the destination.
+ * @param[in] src: layout describing the source.
+ * @param[in] op: optional custom operator for this dma
+ * @param[in] op_arg: optional argument to the operator
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_dma_async_copy_custom(struct aml_dma *dma, struct aml_dma_request **req,
-		       struct aml_layout *dest,
-		       struct aml_layout *src,
-		       aml_dma_operator op, void *op_arg);
+int aml_dma_async_copy_custom(struct aml_dma *dma,
+                              struct aml_dma_request **req,
+                              struct aml_layout *dest,
+                              struct aml_layout *src,
+                              aml_dma_operator op,
+                              void *op_arg);
 
 #define aml_dma_copy(dma, d, s) aml_dma_copy_custom(dma, d, s, NULL, NULL)
-#define aml_dma_async_copy(dma, r, d, s) \
+#define aml_dma_async_copy(dma, r, d, s)                                       \
 	aml_dma_async_copy_custom(dma, r, d, s, NULL, NULL)
 
 /**
- * Waits for an asynchronous DMA request to complete.
- * @param dma: an initialized DMA structure.
- * @param req: a DMA request obtained using aml_dma_async_*() calls.
+ * Wait for an asynchronous DMA request to complete.
+ * @param[in, out] dma: n initialized DMA structure.
+ * @param[in, out] req: a DMA request obtained using aml_dma_async_*() calls.
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request **req);
 
 /**
- * Tears down an asynchronous DMA request before it completes.
- * @param dma: an initialized DMA structure.
- * @param req: a DMA request obtained using aml_dma_async_*() calls.
+ * Tear down an asynchronous DMA request before it completes.
+ * @param[in, out] dma: an initialized DMA structure.
+ * @param[in, out] req: a DMA request obtained using aml_dma_async_*() calls.
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_cancel(struct aml_dma *dma, struct aml_dma_request **req);
 
 /**
  * Print on the file handle the metadata associated with this dma.
- * @param stream the stream to print on
- * @param prefix prefix to use on all lines
- * @param dma dma to print
+ * @param[in] stream: the stream to print on
+ * @param[in] prefix: prefix to use on all lines
+ * @param[in] dma: DMA to print
  * @return 0 if successful, an error code otherwise.
  */
-int aml_dma_fprintf(FILE *stream, const char *prefix,
-		    const struct aml_dma *dma);
+int aml_dma_fprintf(FILE *stream,
+                    const char *prefix,
+                    const struct aml_dma *dma);
 
 /**
  * Generic helper to copy from one layout to another.
@@ -1063,11 +1068,19 @@ int aml_dma_fprintf(FILE *stream, const char *prefix,
  * @param[in] arg: unused (should be NULL)
  */
 int aml_copy_layout_generic(struct aml_layout *dst,
-			    const struct aml_layout *src, void *arg);
+                            const struct aml_layout *src,
+                            void *arg);
 
+/**
+ * Helper to copy from one layout to another layout with different dimensions.
+ * @param[out] dst: destination layout
+ * @param[in] src: source layout
+ * @param[in] target_dims: a non_NULL array with the dimensions of the
+ * destination layout.
+ */
 int aml_copy_layout_transform_generic(struct aml_layout *dst,
-				      const struct aml_layout *src,
-				      const size_t *target_dims);
+                                      const struct aml_layout *src,
+                                      const size_t *target_dims);
 
 ////////////////////////////////////////////////////////////////////////////////
 
