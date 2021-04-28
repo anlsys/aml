@@ -8,14 +8,20 @@
  * SPDX-License-Identifier: BSD-3-Clause
  ******************************************************************************/
 
-#include <sys/syscall.h>
-#include <unistd.h>
+#include "config.h"
 
 #include "aml.h"
 
 #include "aml/area/hwloc.h"
 #include "aml/higher/replicaset.h"
 #include "aml/higher/replicaset/hwloc.h"
+
+#ifndef _GNU_SOURCE
+pid_t gettid(void)
+{
+	return getpid();
+}
+#endif
 
 extern hwloc_topology_t aml_topology;
 
@@ -212,7 +218,7 @@ void *aml_replicaset_hwloc_local_replica(struct aml_replicaset *replicaset)
 	// chose a child replica with a modulo on thread id.
 	if (hwloc_get_nbobjs_by_depth(aml_topology, initiator->depth) <
 	    data->num_ptr) {
-		pid_t tid = syscall(SYS_gettid);
+		pid_t tid = gettid();
 		int depth = hwloc_get_type_depth(aml_topology, data->type);
 		unsigned n = hwloc_get_nbobjs_inside_cpuset_by_depth(
 		        aml_topology, initiator->cpuset, depth);
