@@ -208,38 +208,34 @@ static ssize_t mapper_mmap_recursive(struct aml_mapper *mapper,
 					goto err_mmap;
 			}
 			// Else we recurse on field.
-			else {
-				if (mapper->fields[j]->flags &
-				    AML_MAPPER_FLAG_SHALLOW) {
-					void *dst_ptr = *(void **)PTR_OFF(
-					        dst, +,
-					        mapper->offsets[j] +
-					                i * mapper->size);
-					if (dst_ptr == NULL)
-						continue;
-					err = mapper_mmap_recursive(
-					        mapper->fields[j], src_ptr,
-					        dst_ptr, n,
-					        PTR_OFF(ptr, +, off), area,
-					        area_opts, dma, dma_op,
-					        dma_op_arg);
-					if (err < 0)
-						goto err_mmap;
-					indirections[j * num + i] = dst_ptr;
-				} else {
-					err = mapper_mmap_recursive(
-					        mapper->fields[j], src_ptr,
-					        PTR_OFF(ptr, +, off), n,
-					        PTR_OFF(ptr, +,
-					                off + n * mapper->fields[j]
-					                                        ->size),
-					        area, area_opts, dma, dma_op,
-					        dma_op_arg);
-					if (err < 0)
-						goto err_mmap;
-					indirections[j * num + i] =
-					        PTR_OFF(ptr, +, off);
-				}
+			else if (mapper->fields[j]->flags &
+			         AML_MAPPER_FLAG_SHALLOW) {
+				void *dst_ptr = *(void **)PTR_OFF(
+				        dst, +,
+				        mapper->offsets[j] + i * mapper->size);
+				if (dst_ptr == NULL)
+					continue;
+				err = mapper_mmap_recursive(
+				        mapper->fields[j], src_ptr, dst_ptr, n,
+				        PTR_OFF(ptr, +, off), area, area_opts,
+				        dma, dma_op, dma_op_arg);
+				if (err < 0)
+					goto err_mmap;
+				indirections[j * num + i] = dst_ptr;
+				off += err;
+			} else {
+				err = mapper_mmap_recursive(
+				        mapper->fields[j], src_ptr,
+				        PTR_OFF(ptr, +, off), n,
+				        PTR_OFF(ptr, +,
+				                off + n * mapper->fields[j]
+				                                        ->size),
+				        area, area_opts, dma, dma_op,
+				        dma_op_arg);
+				if (err < 0)
+					goto err_mmap;
+				indirections[j * num + i] =
+				        PTR_OFF(ptr, +, off);
 				off += err;
 			}
 		}
@@ -279,7 +275,7 @@ static ssize_t mapper_mmap_recursive(struct aml_mapper *mapper,
 	}
 
 	// Everything went fine! Return advances in pointer.
-	return off + (mapper->flags & AML_MAPPER_FLAG_SHALLOW) ? 0 : size;
+	return off + ((mapper->flags & AML_MAPPER_FLAG_SHALLOW) ? 0 : size);
 
 err_mmap:
 	for (size_t j = 0; j < mapper->n_fields; j++)
