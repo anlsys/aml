@@ -259,15 +259,13 @@ int aml_mapper_mmap(struct aml_mapper *mapper,
                     void *dma_op_arg);
 
 /**
- * Perform a backward deepcopy from a structure to another.
- * This feature requires that `src` and `dst` pointers can
- * be safely offseted (not dereferenced) from host
- * as long as the result pointer is within the bounds of allocation. If the
- * pointers do not support this property, then using this function is
- * undefined.
+ * Perform a backward deepcopy from a structure to another host structure.
  * @param[in] mapper: The description of the structures to copy.
  * @param[in] src: A pointer to a structure accurately described by mapper.
- * @param[in] dst: A pointer to a structure accurately described by mapper.
+ * `src` pointer must be safely offsetsable from host as long as the result
+ * pointer is within the bounds of allocation. If the pointer does not support
+ * this property, then using this function is undefined.
+ * @param[in] dst: A host pointer to a structure accurately described by mapper.
  * @param num[in]: The number of contiguous elements represented by `mapper`
  * stored in `src`. For copying a single struct, `num` is one. If `src` is an
  * array of `num` structs, then this function will also copy an array of `num`
