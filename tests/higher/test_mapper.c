@@ -23,6 +23,8 @@
 #include "aml/dma/cuda.h"
 #endif
 
+const size_t n = 8;
+
 //- Struct C Declaration ------------------------------------------------------
 
 struct BigStruct {
@@ -111,6 +113,25 @@ struct C {
 };
 aml_mapper_decl(struct_C_mapper, 0, struct C, b, n, &struct_B_mapper);
 
+void init_struct(struct C **_c)
+{
+	*_c = AML_INNER_MALLOC_EXTRA(n, struct B, n * sizeof(struct A),
+	                             struct C);
+	(*_c)->n = n;
+	(*_c)->b = AML_INNER_MALLOC_GET_ARRAY((*_c), struct B, struct C);
+
+	for (size_t i = 0; i < n; i++) {
+		struct A *a =
+		        (struct A *)((size_t)AML_INNER_MALLOC_GET_EXTRA(
+		                             (*_c), n, struct B, struct C) +
+		                     i * sizeof(struct A));
+		a->val = i;
+		(*_c)->b[i].a = a;
+		(*_c)->b[i].dummy_double = i;
+		(*_c)->b[i].dummy_int = -i;
+	}
+}
+
 int eq_struct(struct C *a, struct C *b)
 {
 	if (a->n != b->n)
@@ -168,7 +189,11 @@ void test_mapper(struct C *c)
 
 //- Shallow mapper test ------------------------------------------------------
 
-aml_mapper_decl(shallow_B_mapper, 0, struct B, a, &struct_A_mapper);
+aml_mapper_decl(shallow_B_mapper,
+                AML_MAPPER_FLAG_SHALLOW,
+                struct B,
+                a,
+                &struct_A_mapper);
 
 aml_mapper_decl(shallow_C_mapper,
                 AML_MAPPER_FLAG_SHALLOW,
@@ -179,7 +204,10 @@ aml_mapper_decl(shallow_C_mapper,
 
 void test_shallow_mapper(struct C *c)
 {
+	struct B host_b[n];
 	struct C host_c;
+	host_c.b = host_b;
+
 	// Linux check
 	assert(aml_mapper_mmap(&shallow_C_mapper, c, &host_c, 1,
 	                       &aml_area_linux, NULL, aml_dma_linux_sequential,
@@ -189,7 +217,10 @@ void test_shallow_mapper(struct C *c)
 	// Cuda check
 #if AML_HAVE_BACKEND_CUDA
 	if (aml_support_backends(AML_BACKEND_CUDA)) {
+		struct B device_b[n];
 		struct C device_c;
+		device_c.b = device_b;
+
 		/* Copy c to cuda device */
 		assert(aml_mapper_mmap(&shallow_C_mapper, c, &device_c, 1,
 		                       &aml_area_cuda, NULL,
@@ -218,27 +249,6 @@ void test_shallow_mapper(struct C *c)
 
 //- Application Data Initialization -------------------------------------------
 
-void init_struct(struct C **_c)
-{
-	size_t n = 8;
-
-	*_c = AML_INNER_MALLOC_EXTRA(n, struct B, n * sizeof(struct A),
-	                             struct C);
-	(*_c)->n = n;
-	(*_c)->b = AML_INNER_MALLOC_GET_ARRAY((*_c), struct B, struct C);
-
-	for (size_t i = 0; i < n; i++) {
-		struct A *a =
-		        (struct A *)((size_t)AML_INNER_MALLOC_GET_EXTRA(
-		                             (*_c), n, struct B, struct C) +
-		                     i * sizeof(struct A));
-		a->val = i;
-		(*_c)->b[i].a = a;
-		(*_c)->b[i].dummy_double = i;
-		(*_c)->b[i].dummy_int = -i;
-	}
-}
-
 int main(int argc, char **argv)
 {
 	struct C *c;
@@ -247,8 +257,8 @@ int main(int argc, char **argv)
 	aml_init(&argc, &argv);
 	init_struct(&c);
 
-	// Test
-	// test_mapper(c);
+	// Tests
+	test_mapper(c);
 	test_shallow_mapper(c);
 	// Cleanup
 	free(c);

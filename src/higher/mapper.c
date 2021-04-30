@@ -209,18 +209,37 @@ static ssize_t mapper_mmap_recursive(struct aml_mapper *mapper,
 			}
 			// Else we recurse on field.
 			else {
-				err = mapper_mmap_recursive(
-				        mapper->fields[j], src_ptr,
-				        PTR_OFF(ptr, +, off), n,
-				        PTR_OFF(ptr, +,
-				                off + n * mapper->fields[j]
-				                                        ->size),
-				        area, area_opts, dma, dma_op,
-				        dma_op_arg);
-				if (err < 0)
-					goto err_mmap;
-				indirections[j * num + i] =
-				        PTR_OFF(ptr, +, off);
+				if (mapper->fields[j]->flags &
+				    AML_MAPPER_FLAG_SHALLOW) {
+					void *dst_ptr = *(void **)PTR_OFF(
+					        dst, +,
+					        mapper->offsets[j] +
+					                i * mapper->size);
+					if (dst_ptr == NULL)
+						continue;
+					err = mapper_mmap_recursive(
+					        mapper->fields[j], src_ptr,
+					        dst_ptr, n,
+					        PTR_OFF(ptr, +, off), area,
+					        area_opts, dma, dma_op,
+					        dma_op_arg);
+					if (err < 0)
+						goto err_mmap;
+					indirections[j * num + i] = dst_ptr;
+				} else {
+					err = mapper_mmap_recursive(
+					        mapper->fields[j], src_ptr,
+					        PTR_OFF(ptr, +, off), n,
+					        PTR_OFF(ptr, +,
+					                off + n * mapper->fields[j]
+					                                        ->size),
+					        area, area_opts, dma, dma_op,
+					        dma_op_arg);
+					if (err < 0)
+						goto err_mmap;
+					indirections[j * num + i] =
+					        PTR_OFF(ptr, +, off);
+				}
 				off += err;
 			}
 		}
@@ -260,7 +279,7 @@ static ssize_t mapper_mmap_recursive(struct aml_mapper *mapper,
 	}
 
 	// Everything went fine! Return advances in pointer.
-	return size + off;
+	return off + (mapper->flags & AML_MAPPER_FLAG_SHALLOW) ? 0 : size;
 
 err_mmap:
 	for (size_t j = 0; j < mapper->n_fields; j++)
@@ -335,42 +354,45 @@ int aml_mapper_copy(struct aml_mapper *mapper,
                     aml_dma_operator dma_op,
                     void *dma_op_arg)
 {
+	if (src == dst)
+		return AML_SUCCESS;
+
 	int err;
 	void **dst_field;
 	void *src_field; // Cannot dereference device pointer
+	size_t size = mapper->size * num;
+	void *local_dst = malloc(size);
 
-	size_t n[mapper->n_fields];
-	for (size_t j = 0; j < mapper->n_fields; j++)
-		n[j] = get_num_elements(mapper, j, dst);
+	if (local_dst == NULL)
+		return -AML_ENOMEM;
 
-	// Save all indirections.
-	void *ptr[mapper->n_fields * num];
-	for (size_t i = 0; i < num; i++)
-		for (size_t j = 0; j < mapper->n_fields; j++)
-			ptr[i * mapper->n_fields + j] = *(void **)PTR_OFF(
-			        dst, +, i * mapper->size + mapper->offsets[j]);
-
-	// Do one big copy.
+	// Copy into local buffer.
 	if (mapper->flags & AML_MAPPER_FLAG_SHALLOW) {
-		memcpy(dst, src, mapper->size * num);
+		memcpy(local_dst, src, size);
 	} else {
-		err = aml_mapper_memcpy(src, dst, mapper->size * num, dma,
-		                        dma_op, dma_op_arg);
+		err = aml_mapper_memcpy(src, local_dst, size, dma, dma_op,
+		                        dma_op_arg);
 		if (err != AML_SUCCESS)
-			return err;
+			goto err_with_local_dst;
 	}
 
-	// Restore indirections
+	// Copy/Save dst original indirections into local buffer
 	for (size_t i = 0; i < num; i++)
-		for (size_t j = 0; j < mapper->n_fields; j++) {
-			dst_field = PTR_OFF(
-			        dst, +, i * mapper->size + mapper->offsets[j]);
-			*dst_field = ptr[i * mapper->n_fields + j];
-		}
+		for (size_t j = 0; j < mapper->n_fields; j++)
+			*(void **)PTR_OFF(local_dst, +,
+			                  i * mapper->size +
+			                          mapper->offsets[j]) =
+			        *(void **)PTR_OFF(dst, +,
+			                          i * mapper->size +
+			                                  mapper->offsets[j]);
+
+	// Copy local buffer into dst
+	memcpy(dst, local_dst, size);
 
 	// Recurse for each pointer
 	for (size_t j = 0; j < mapper->n_fields; j++) {
-		if (n[j] == 0)
+		size_t n = get_num_elements(mapper, j, local_dst);
+		if (n == 0)
 			continue;
 		for (size_t i = 0; i < num; i++) {
 
@@ -387,21 +409,25 @@ int aml_mapper_copy(struct aml_mapper *mapper,
 				                        sizeof(src_field), dma,
 				                        dma_op, dma_op_arg);
 				if (err != AML_SUCCESS)
-					return err;
+					goto err_with_local_dst;
 			}
 
 			if (src_field == NULL)
 				continue;
 
 			err = aml_mapper_copy(mapper->fields[j], src_field,
-			                      *dst_field, n[j], dma, dma_op,
+			                      *dst_field, n, dma, dma_op,
 			                      dma_op_arg);
 			if (err != AML_SUCCESS)
-				return err;
+				goto err_with_local_dst;
 		}
 	}
 
+	free(local_dst);
 	return AML_SUCCESS;
+err_with_local_dst:
+	free(local_dst);
+	return err;
 }
 
 static ssize_t mapper_munmap_recursive(struct aml_mapper *mapper,
