@@ -1,14 +1,14 @@
 Areas: Addressable Physical Memories
 ====================================
 
-AML areas represent places where data can belong.
+AML areas represent places where data can be stored.
 In shared memory systems, locality is a major concern for performance.
 Being able to query memory from specific places is of major interest to achieve
 this goal.
-AML areas provide mmap / munmap low level functions to query memory from
+AML areas provide low-level mmap() / munmap() functions to query memory from
 specific places materialized as areas. 
 Available area implementations dictate the way such places can be arranged and
-with which properties.
+their properties.
  
 .. image:: img/area.png 
    :width=700px
@@ -49,7 +49,7 @@ the AML Linux implementation.
 The data will be only visible by this process and bound to the CPU with the
 default linux allocation policy.
 
-Finally, when the work is done with data, we free it:
+Finally, when the work is done with data, we free it.
 
 
 Area API

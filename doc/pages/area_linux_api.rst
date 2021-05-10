@@ -3,11 +3,14 @@ Area Linux Implementation
 
 This is the Linux implementation of AML areas.
 
-This building block relies on the libnuma implementation and linux mmap / munmap
-to provide mmap/munmap on the NUMA host processor memory. 
+This building block relies on the libnuma implementation and the Linux
+mmap() / munmap() to provide mmap() / munmap() on NUMA host processor memory. 
 New areas may be created to allocate a specific subset of memories.
-This building block also include a static declaration of a default initialized
-area that can be used out of the box with the abstract area API.
+This building block also includes a static declaration of a default initialized
+area that can be used out-of-the-box with the abstract area API.
+
+.. codeblock:: c
+        #include <aml/area/linux.h
 
 Example
 -------

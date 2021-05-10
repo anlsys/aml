@@ -12,6 +12,9 @@ A layout is characterized by:
 * A stride in between elements of a dimension.
 * A pitch indicating the space between contiguous elements of a dimension.
 
+For a definition of row and columns of matrices see:
+https://en.wikipedia.org/wiki/Matrix_(mathematics)
+
 The figure below describes a 2D layout with a sub-layout (obtained with 
 aml_layout_slice()) operation.
 The sub-layout has a stride of 1 element along the second dimension.
@@ -19,6 +22,7 @@ The slice has an offset of 1 element along the same dimension, and its pitch is
 the pitch of the original layout.
 Calling aml_layout_deref() on this sublayout with appropriate coordinates will
 return a pointer to elements noted (coor_x, coord_y).
+@see aml_layout_slice()
 
 .. image:: img/layout.png 
    :width=400px
@@ -26,19 +30,21 @@ return a pointer to elements noted (coor_x, coord_y).
 
 Access to specific elements of a layout can be done with the aml_layout_deref()
 function.
-Access to an element is always done relatively to the dimension order set by at
-creation time.
-However, internally, the library will store dimensions from the last dimension
-to the first dimension such that elements along the first dimension are 
-contiguous in memory. 
-This order is defined with the value AML_LAYOUT_ORDER_FORTRAN. 
-Therefore, AML provides access to elements without the overhead of user order
+Access to an element is always done relatively to the dimensions' order set by
+the user at creation time.
+However, internally, the library will always store dimensions in such a way
+that elements along the first dimension are contiguous in memory. 
+This order is defined with the value AML_LAYOUT_ORDER_COLUMN_MAJOR
+(AML_LAYOUT_ORDER_FORTRAN). See:
+https://en.wikipedia.org/wiki/Row-_and_column-major_order
+
+Additionally, AML provides access to elements without the overhead of user order
 choice through function suffixed with "native".
 
 The layout abstraction also provides a function to reshape data with a different
 set of dimensions.
 A reshaped layout will access the same data but with different coordinates as
-pictured in the figure below.
+depicted in the figure below.
 
 .. image:: img/reshape.png 
    :width=700px
