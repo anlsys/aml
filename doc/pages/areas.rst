@@ -10,7 +10,7 @@ specific places materialized as areas.
 Available area implementations dictate the way such places can be arranged and
 their properties.
  
-.. image:: img/area.png 
+.. image:: ../img/area.png 
    :width=700px
 "Illustration of areas on a complex system."
 
@@ -30,7 +30,7 @@ Example
 
 Let's look how these operations can be done in a C program.
 
-.. codeblock:: c
+.. code-block:: c
   #include <aml.h>
   #include <aml/area/linux.h>
 
@@ -66,7 +66,7 @@ Implementations
 Aware users may create or modify implementation by assembling appropriate
 operations in an aml_area_ops structure.
 
-The linux implementation is go to for using simple areas on NUMA CPUs with
+The linux implementation is the go to for using simple areas on NUMA CPUs with
 linux operating system. 
 
 There is an ongoing work on hwloc, CUDA and OpenCL areas.
@@ -74,7 +74,7 @@ There is an ongoing work on hwloc, CUDA and OpenCL areas.
 Let's look at an example of a dynamic creation of a linux area identical to the
 static default aml_area_linux:
 
-.. codeblock:: c
+.. code-block:: c
   #include <aml.h>
   #include <aml/area/linux.h>
 
