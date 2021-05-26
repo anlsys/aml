@@ -16,13 +16,6 @@
 #include "aml/higher/replicaset.h"
 #include "aml/higher/replicaset/hwloc.h"
 
-#ifndef _GNU_SOURCE
-pid_t gettid(void)
-{
-	return getpid();
-}
-#endif
-
 extern hwloc_topology_t aml_topology;
 
 int aml_replicaset_hwloc_alloc(struct aml_replicaset **out,
