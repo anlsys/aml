@@ -38,7 +38,9 @@ UTILS_SOURCES = \
 		utils/async.c \
 		utils/features.c
 
-REPLICASET_SOURCES = replicaset/replicaset.c
+HIGHER_SOURCES = \
+		replicaset/replicaset.c \
+		higher/mapper.c
 
 LIB_SOURCES = \
 	      $(AREA_SOURCES) \
@@ -46,7 +48,7 @@ LIB_SOURCES = \
 	      $(TILING_SOURCES) \
 	      $(LAYOUT_SOURCES) \
 	      $(UTILS_SOURCES) \
-	      $(REPLICASET_SOURCES) \
+	      $(HIGHER_SOURCES) \
 	      aml.c
 
 lib_LTLIBRARIES = libaml.la

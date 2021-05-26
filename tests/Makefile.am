@@ -56,13 +56,14 @@ LAYOUT_TESTS = \
 	layout/test_reshape \
 	layout/test_pad
 
-TILING_TESTS = tiling/test_tiling
+TILING_TESTS = \
+	tiling/test_tiling
 
 DMA_TESTS = dma/test_dma_linux_seq \
 		  dma/test_dma_linux_par
 
 
-REPLICASET_TESTS =
+HIGHER_TESTS = higher/test_mapper
 
 if HAVE_OPENCL
 AREA_TESTS += area/test_opencl
@@ -75,7 +76,7 @@ endif
 
 if HAVE_HWLOC
 AREA_TESTS += area/test_hwloc
-REPLICASET_TESTS += replicaset/test_hwloc
+HIGHER_TESTS += replicaset/test_hwloc
 endif
 
 # unit tests
@@ -84,7 +85,7 @@ UNIT_TESTS = $(UTILS_TESTS) \
 	     $(LAYOUT_TESTS) \
 	     $(BINDING_TESTS) \
 	     $(AREA_TESTS) \
-	     $(REPLICASET_TESTS) \
+	     $(HIGHER_TESTS) \
 	     $(DMA_TESTS)
 
 # all tests
