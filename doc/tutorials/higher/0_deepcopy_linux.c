@@ -124,7 +124,7 @@ int main(int argc, char **argv)
 	c = init_struct();
 
 	// deepcopy
-	assert(aml_mapper_mmap(&struct_C_mapper, c, &_c, 1, &aml_area_linux,
+	assert(aml_mapper_mmap(&struct_C_mapper, &_c, c, 1, &aml_area_linux,
 	                       NULL, aml_dma_linux_sequential, NULL,
 	                       NULL) == AML_SUCCESS);
 	assert(eq_struct(c, _c));

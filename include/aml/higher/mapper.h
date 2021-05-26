@@ -218,13 +218,13 @@ void aml_mapper_destroy(struct aml_mapper **mapper);
  * undefined.
  *
  * @param mapper[in]: The mapper describing the struct pointed by `src`.
- * @param src[in]: A host pointer on which to perform a deep copy.
  * @param dst[in,out]: A pointer (void**) that will be set to the newly
  * allocated and mapped structure.
  * If `mapper` has flag `AML_MAPPER_FLAG_SHALLOW` set
  * then dst is a pointer to a memory area on host with at least
  * `mapper->size * num` bytes of space available. If `mapper` has child fields
  * to map, and the mappers to these fields have flag.
+ * @param src[in]: A host pointer on which to perform a deep copy.
  * @param area[in]: The area where to allocate copy.
  * `area` must yield a pointer on which pointer arithmetic within bounds gives
  * a valid pointer.
@@ -249,8 +249,8 @@ void aml_mapper_destroy(struct aml_mapper **mapper);
  * pointer will be left untouched.
  */
 int aml_mapper_mmap(struct aml_mapper *mapper,
-                    void *src,
                     void *dst,
+                    void *src,
                     size_t num,
                     struct aml_area *area,
                     struct aml_area_mmap_options *area_opts,
@@ -261,11 +261,11 @@ int aml_mapper_mmap(struct aml_mapper *mapper,
 /**
  * Perform a backward deepcopy from a structure to another host structure.
  * @param[in] mapper: The description of the structures to copy.
+ * @param[in] dst: A host pointer to a structure accurately described by mapper.
  * @param[in] src: A pointer to a structure accurately described by mapper.
  * `src` pointer must be safely offsetsable from host as long as the result
  * pointer is within the bounds of allocation. If the pointer does not support
  * this property, then using this function is undefined.
- * @param[in] dst: A host pointer to a structure accurately described by mapper.
  * @param num[in]: The number of contiguous elements represented by `mapper`
  * stored in `src`. For copying a single struct, `num` is one. If `src` is an
  * array of `num` structs, then this function will also copy an array of `num`
@@ -283,8 +283,8 @@ int aml_mapper_mmap(struct aml_mapper *mapper,
  * same error code.
  */
 int aml_mapper_copy(struct aml_mapper *mapper,
-                    void *src,
                     void *dst,
+                    void *src,
                     size_t num,
                     struct aml_dma *dma,
                     aml_dma_operator dma_op,

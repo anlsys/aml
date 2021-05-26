@@ -152,7 +152,7 @@ void test_mapper(struct C *c)
 {
 	// Linux check
 	struct C *host_c;
-	assert(aml_mapper_mmap(&struct_C_mapper, c, &host_c, 1, &aml_area_linux,
+	assert(aml_mapper_mmap(&struct_C_mapper, &host_c, c, 1, &aml_area_linux,
 	                       NULL, aml_dma_linux_sequential, NULL,
 	                       NULL) == AML_SUCCESS);
 	assert(eq_struct(c, host_c));
@@ -162,7 +162,7 @@ void test_mapper(struct C *c)
 	if (aml_support_backends(AML_BACKEND_CUDA)) {
 		struct C *device_c;
 		/* Copy c to cuda device */
-		assert(aml_mapper_mmap(&struct_C_mapper, c, &device_c, 1,
+		assert(aml_mapper_mmap(&struct_C_mapper, &device_c, c, 1,
 		                       &aml_area_cuda, NULL,
 		                       &aml_dma_cuda_host_to_device,
 		                       aml_dma_cuda_copy_1D,
@@ -172,7 +172,7 @@ void test_mapper(struct C *c)
 		c->b[0].a->val = 4565467567;
 
 		/* Copy back __c into modified _c */
-		assert(aml_mapper_copy(&struct_C_mapper, device_c, c, 1,
+		assert(aml_mapper_copy(&struct_C_mapper, c, device_c, 1,
 		                       &aml_dma_cuda_device_to_host,
 		                       aml_dma_cuda_copy_1D,
 		                       NULL) == AML_SUCCESS);
@@ -209,7 +209,7 @@ void test_shallow_mapper(struct C *c)
 	host_c.b = host_b;
 
 	// Linux check
-	assert(aml_mapper_mmap(&shallow_C_mapper, c, &host_c, 1,
+	assert(aml_mapper_mmap(&shallow_C_mapper, &host_c, c, 1,
 	                       &aml_area_linux, NULL, aml_dma_linux_sequential,
 	                       NULL, NULL) == AML_SUCCESS);
 	assert(eq_struct(c, &host_c));
@@ -222,7 +222,7 @@ void test_shallow_mapper(struct C *c)
 		device_c.b = device_b;
 
 		/* Copy c to cuda device */
-		assert(aml_mapper_mmap(&shallow_C_mapper, c, &device_c, 1,
+		assert(aml_mapper_mmap(&shallow_C_mapper, &device_c, c, 1,
 		                       &aml_area_cuda, NULL,
 		                       &aml_dma_cuda_host_to_device,
 		                       aml_dma_cuda_copy_1D,
@@ -232,7 +232,7 @@ void test_shallow_mapper(struct C *c)
 		c->b[0].a->val = 4565467567;
 
 		/* Copy back __c into modified _c */
-		assert(aml_mapper_copy(&shallow_C_mapper, &device_c, c, 1,
+		assert(aml_mapper_copy(&shallow_C_mapper, c, &device_c, 1,
 		                       &aml_dma_cuda_device_to_host,
 		                       aml_dma_cuda_copy_1D,
 		                       NULL) == AML_SUCCESS);
