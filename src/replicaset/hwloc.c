@@ -8,6 +8,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  ******************************************************************************/
 
+#include "config.h"
+
 #include "aml.h"
 
 #include "aml/area/hwloc.h"
@@ -191,19 +193,41 @@ void *aml_replicaset_hwloc_local_replica(struct aml_replicaset *replicaset)
 
 	data = (struct aml_replicaset_hwloc_data *)replicaset->data;
 
+	// Get object where this function is called.
 	err = aml_hwloc_local_initiator(&initiator);
 	if (err != AML_SUCCESS)
 		return NULL;
+
+	// If initiator is a child of the replica location, then select a
+	// parent, at same depth as replica.
 	while (initiator != NULL &&
 	       hwloc_get_nbobjs_by_depth(aml_topology, initiator->depth) >
 	               data->num_ptr)
 		initiator = initiator->parent;
-
 	if (initiator == NULL)
 		return NULL;
+
+	// If initiator is bound to a parent of several replica, then
+	// chose a child replica with a modulo on thread id.
 	if (hwloc_get_nbobjs_by_depth(aml_topology, initiator->depth) <
-	    data->num_ptr)
-		return NULL;
+	    data->num_ptr) {
+		pid_t tid = gettid();
+		int depth = hwloc_get_type_depth(aml_topology, data->type);
+		unsigned n = hwloc_get_nbobjs_inside_cpuset_by_depth(
+		        aml_topology, initiator->cpuset, depth);
+		if (n == 0)
+			return NULL;
+		n = tid % n;
+		hwloc_obj_t target = hwloc_get_next_obj_inside_cpuset_by_depth(
+		        aml_topology, initiator->cpuset, depth, NULL);
+		while (n--)
+			target = hwloc_get_next_obj_inside_cpuset_by_depth(
+			        aml_topology, initiator->cpuset, depth, target);
+
+		if (target == NULL)
+			return NULL;
+		initiator = target;
+	}
 
 	return data->ptr[initiator->logical_index];
 }
