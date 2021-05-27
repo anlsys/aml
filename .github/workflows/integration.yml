@@ -34,7 +34,7 @@ jobs:
         run: |
           export LD_LIBRARY_PATH=$GITHUB_WORKSPACE/$INSTALL_PATH/lib:$LD_LIBRARY_PATH
           cd xsbench/openmp-threading
-          ./XSBench -s small
+          test -n "$(./XSBench -s small | grep 'Verification checksum' | grep -i valid)"
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
