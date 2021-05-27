@@ -1,0 +1,46 @@
+name: integration
+on: [push, pull_request]
+env:
+  VERBOSE: 1
+  INSTALL_PATH: build
+jobs:
+  xsbench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          path: aml
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y gcc make autoconf automake libtool pkg-config libhwloc-dev
+      - run: mkdir $GITHUB_WORKSPACE/$INSTALL_PATH
+      - name: aml install 
+        run: |
+          cd aml
+          ./autogen.sh
+          ./configure --prefix=$GITHUB_WORKSPACE/$INSTALL_PATH
+          make
+          make install
+      - uses: actions/checkout@v2
+        with: 
+          repository: ANL-CESAR/XSBench
+          path: xsbench
+      - name: xsbench build
+        run: |
+          export PKG_CONFIG_PATH=$GITHUB_WORKSPACE/$INSTALL_PATH/lib/pkgconfig:$PKG_CONFIG_PATH
+          cd xsbench/openmp-threading
+          make AML=yes
+      - name: xsbench check
+        run: |
+          export LD_LIBRARY_PATH=$GITHUB_WORKSPACE/$INSTALL_PATH/lib:$LD_LIBRARY_PATH
+          cd xsbench/openmp-threading
+          test -n "$(./XSBench -s small | grep 'Verification checksum' | grep -i valid)"
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: generic
+          path: |
+            aml/config.log
+            aml/tests/*.log
+            aml/benchmarks/*.log
+            aml/doc/tutorials/*.log
