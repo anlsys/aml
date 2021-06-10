@@ -323,6 +323,85 @@ ssize_t aml_mapper_munmap(struct aml_mapper *mapper,
                           struct aml_dma *dma,
                           aml_dma_operator dma_op,
                           void *dma_op_arg);
+
+//-----------------------------------------------------------------------------
+// Default Mappers
+//-----------------------------------------------------------------------------
+
+/** Default mapper for elements of type char */
+aml_final_mapper_decl(aml_char_mapper, 0, char);
+/** Default mapper for elements of type short */
+aml_final_mapper_decl(aml_short_mapper, 0, short);
+/** Default mapper for elements of type int */
+aml_final_mapper_decl(aml_int_mapper, 0, int);
+/** Default mapper for elements of type long */
+aml_final_mapper_decl(aml_long_mapper, 0, long);
+/** Default mapper for elements of type long long */
+aml_final_mapper_decl(aml_long_long_mapper, 0, long long);
+/** Default mapper for elements of type unsigned char */
+aml_final_mapper_decl(aml_uchar_mapper, 0, unsigned char);
+/** Default mapper for elements of type unsigned int */
+aml_final_mapper_decl(aml_uint_mapper, 0, unsigned int);
+/** Default mapper for elements of type unsigned long */
+aml_final_mapper_decl(aml_ulong_mapper, 0, unsigned long);
+/** Default mapper for elements of type unsigned long long */
+aml_final_mapper_decl(aml_ulong_long_mapper, 0, unsigned long long);
+/** Default mapper for elements of type float */
+aml_final_mapper_decl(aml_float_mapper, 0, float);
+/** Default mapper for elements of type double */
+aml_final_mapper_decl(aml_double_mapper, 0, double);
+/** Default mapper for elements of type long double */
+aml_final_mapper_decl(aml_long_double_mapper, 0, long double);
+/** Default mapper for pointer elements */
+aml_final_mapper_decl(aml_ptr_mapper, 0, void *);
+
+/** Default mapper in a seperate allocation for elements of type char */
+aml_final_mapper_decl(aml_char_split_mapper, AML_MAPPER_FLAG_SPLIT, char);
+/** Default mapper in a seperate allocation for elements of type short */
+aml_final_mapper_decl(aml_short_split_mapper, AML_MAPPER_FLAG_SPLIT, short);
+/** Default mapper in a seperate allocation for elements of type int */
+aml_final_mapper_decl(aml_int_split_mapper, AML_MAPPER_FLAG_SPLIT, int);
+/** Default mapper in a seperate allocation for elements of type long */
+aml_final_mapper_decl(aml_long_split_mapper, AML_MAPPER_FLAG_SPLIT, long);
+/** Default mapper in a seperate allocation for elements of type long long */
+aml_final_mapper_decl(aml_long_long_split_mapper,
+                      AML_MAPPER_FLAG_SPLIT,
+                      long long);
+/** Default mapper in a seperate allocation for elements of type unsigned char
+ */
+aml_final_mapper_decl(aml_uchar_split_mapper,
+                      AML_MAPPER_FLAG_SPLIT,
+                      unsigned char);
+/** Default mapper in a seperate allocation for elements of type unsigned short
+ */
+aml_final_mapper_decl(aml_ushort_split_mapper,
+                      AML_MAPPER_FLAG_SPLIT,
+                      unsigned short);
+/** Default mapper in a seperate allocation for elements of type unsigned int */
+aml_final_mapper_decl(aml_uint_split_mapper,
+                      AML_MAPPER_FLAG_SPLIT,
+                      unsigned int);
+/** Default mapper in a seperate allocation for elements of type unsigned long
+ */
+aml_final_mapper_decl(aml_ulong_split_mapper,
+                      AML_MAPPER_FLAG_SPLIT,
+                      unsigned long);
+/** Default mapper in a seperate allocation for elements of type unsigned long
+ * long */
+aml_final_mapper_decl(aml_ulong_long_split_mapper,
+                      AML_MAPPER_FLAG_SPLIT,
+                      unsigned long long);
+/** Default mapper in a seperate allocation for elements of type float */
+aml_final_mapper_decl(aml_float_split_mapper, AML_MAPPER_FLAG_SPLIT, float);
+/** Default mapper in a seperate allocation for elements of type double */
+aml_final_mapper_decl(aml_double_split_mapper, AML_MAPPER_FLAG_SPLIT, double);
+/** Default mapper in a seperate allocation for elements of type long double */
+aml_final_mapper_decl(aml_long_double_split_mapper,
+                      AML_MAPPER_FLAG_SPLIT,
+                      long double);
+/** Default mapper in a seperate allocation for pointer elements */
+aml_final_mapper_decl(aml_ptr_split_mapper, AML_MAPPER_FLAG_SPLIT, void *);
+
 /**
  * @}
  **/
