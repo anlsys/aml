@@ -17,8 +17,8 @@ mkShell {
     gdb
     valgrind
     # style checks
-    (clang-tools.override (o: { llvmPackages = llvmPackages_7; }))
-    llvmPackages_7.clang-unwrapped.python
+    clang-tools
+    llvmPackages.clang-unwrapped.python
   ];
 
   CFLAGS =
