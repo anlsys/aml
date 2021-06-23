@@ -227,3 +227,45 @@ AC_CONFIG_FILES([Makefile
 		 include/aml/utils/version.h
 		 include/aml/utils/features.h])
 AC_OUTPUT
+
+# Print out what was configured
+cat <<EOF
+
+-------------------------------------------------------------------------------
+AML
+
+Version: $PACKAGE_VERSION
+
+FEATURES:
+---------
+
+HWLOC:
+======
+
+Active:  $HAVE_HWLOC
+CFLAGS:  $HWLOC_CFLAGS
+LDFLAGS: $HWLOC_LIBS
+
+CUDA:
+=====
+
+Active:  $HAVE_CUDA
+CFLAGS:  $CUDA_CFLAGS
+LDFLAGS: $CUDA_LIBS
+
+OpenCL:
+=======
+
+Active:  $HAVE_OPENCL
+CFLAGS:  $OPENCL_CFLAGS
+LDFLAGS: $OPENCL_LIBS
+
+ZE:
+===
+
+Active:  $HAVE_ZE
+CFLAGS:  $ZE_CFLAGS
+LDFLAGS: $ZE_LIBS
+
+-------------------------------------------------------------------------------
+EOF
