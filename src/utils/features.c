@@ -74,7 +74,11 @@ static int aml_support_ze(void)
 	err = zeDriverGetApiVersion(driver, &version);
 	if (err != ZE_RESULT_SUCCESS)
 		return 0;
-	if (version != ZE_API_VERSION_CURRENT)
+	// Level Zero uses semver versionning so we only need the
+	// library major version to be at least as recent the header
+	// version.
+	if (ZE_MAJOR_VERSION(version) <
+	    ZE_MAJOR_VERSION(ZE_API_VERSION_CURRENT))
 		return 0;
 	return 1;
 #endif

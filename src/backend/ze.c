@@ -14,6 +14,12 @@
 #include "aml/dma/ze.h"
 #include "aml/utils/backend/ze.h"
 
+#if HAVE_ZE_OMP_CONTEXT == 1
+#include <omp.h>
+#endif
+
+#define ZE(ze_call) aml_errno_from_ze_result(ze_call)
+
 int aml_ze_data_create(struct aml_ze_data **out, uint32_t driver_num)
 {
 	uint32_t ze_count = 0;
@@ -193,3 +199,38 @@ ze_context_desc_t aml_ze_context_desc = {
         .pNext = NULL,
         .flags = 0,
 };
+
+int aml_ze_device_num(const ze_device_handle_t device)
+{
+	for (uint32_t i = 0; i < aml_ze_default_data->num_device; i++) {
+		if (device == aml_ze_default_data->device[i])
+			return (int)i;
+	}
+	return -AML_EDOM;
+}
+
+int aml_ze_context_create(ze_context_handle_t *context,
+                          const ze_device_handle_t device)
+{
+#if HAVE_ZE_OMP_CONTEXT == 1
+	err = aml_ze_device_num(device);
+	if (err < 0)
+		return err;
+	*context = omp_target_get_context(err);
+	if (*context == NULL)
+		return -AML_FAILURE;
+	return AML_SUCCESS;
+#else
+	(void)device;
+	return ZE(zeContextCreate(aml_ze_default_data->driver,
+	                          &aml_ze_context_desc, context));
+#endif
+}
+
+int aml_ze_context_destroy(ze_context_handle_t context)
+{
+#if HAVE_ZE_OMP_CONTEXT == 0
+	zeContextDestroy(context);
+#endif
+	return AML_SUCCESS;
+}
