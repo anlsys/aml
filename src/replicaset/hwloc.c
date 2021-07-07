@@ -15,8 +15,7 @@
 #include "aml/area/hwloc.h"
 #include "aml/higher/replicaset.h"
 #include "aml/higher/replicaset/hwloc.h"
-
-extern hwloc_topology_t aml_topology;
+#include "aml/utils/hwloc.h"
 
 int aml_replicaset_hwloc_alloc(struct aml_replicaset **out,
                                const hwloc_obj_type_t initiator_type)
@@ -181,9 +180,6 @@ int aml_replicaset_hwloc_sync(struct aml_replicaset *replicaset,
 			       replicaset->size);
 	return AML_SUCCESS;
 }
-
-// See src/area/hwloc.c
-int aml_hwloc_local_initiator(hwloc_obj_t *out);
 
 void *aml_replicaset_hwloc_local_replica(struct aml_replicaset *replicaset)
 {

@@ -36,7 +36,8 @@ UTILS_SOURCES = \
 		utils/vector.c \
 		utils/queue.c \
 		utils/async.c \
-		utils/features.c
+		utils/features.c \
+		utils/linux.c
 
 HIGHER_SOURCES = \
 		replicaset/replicaset.c \
@@ -71,7 +72,9 @@ endif
 if HAVE_HWLOC
 AM_CPPFLAGS += $(HWLOC_CFLAGS)
 AM_LDFLAGS += $(HWLOC_LIBS)
-libaml_la_SOURCES+=area/hwloc.c replicaset/hwloc.c
+libaml_la_SOURCES+=area/hwloc.c
+libaml_la_SOURCES+=replicaset/hwloc.c
+libaml_la_SOURCES+=utils/hwloc.c
 endif
 
 #############################################
@@ -93,4 +96,5 @@ AM_LDFLAGS += $(ZE_LIBS)
 AM_CPPFLAGS += $(ZE_CFLAGS)
 libaml_la_SOURCES+=area/ze.c
 libaml_la_SOURCES+=dma/ze.c
+libaml_la_SOURCES+=utils/ze.c
 endif

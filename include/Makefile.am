@@ -38,11 +38,13 @@ include_amlutils_HEADERS = \
 			   aml/utils/async.h \
 			   aml/utils/version.h \
 			   aml/utils/macros.h \
-			   aml/utils/features.h
+			   aml/utils/features.h \
+			   aml/utils/linux.h
 
 if HAVE_HWLOC
 include_aml_area_HEADERS+= aml/area/hwloc.h
 include_aml_replicaset_HEADERS += aml/higher/replicaset/hwloc.h
+include_amlutils_HEADERS += aml/utils/hwloc.h
 endif
 
 if HAVE_CUDA
@@ -57,4 +59,5 @@ endif
 if HAVE_ZE
 include_aml_area_HEADERS += aml/area/ze.h
 include_aml_dma_HEADERS += aml/dma/ze.h
+include_amlutils_HEADERS += aml/utils/ze.h
 endif
