@@ -30,7 +30,7 @@ extern "C" {
  * `aml_dma_linux_parallel` and `aml_dma_linux_sequential` can only
  * be used after this function has been successfully called.
  * This function should only be called once.
- * This function should not failed unless the system is out of memory.
+ * This function should not fail unless the system is out of memory.
  *
  * @return AML_SUCCESS on success.
  * @return -AML_ENOMEM on error.

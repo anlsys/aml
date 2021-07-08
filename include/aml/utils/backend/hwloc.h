@@ -24,14 +24,14 @@ extern "C" {
  * #include <aml/utils/backend/hwloc.h>
  * @endcode
  *
- * This header can only be included if` AML_HAVE_BACKEND_HWLOC == 1`.
+ * This header can only be included if ` AML_HAVE_BACKEND_HWLOC == 1`.
  * @{
  **/
 
 /**
  * hwloc backend initialization function.
  * This function should only be called once.
- * This function should not failed unless hwloc backend is not supported
+ * This function should not fail unless hwloc backend is not supported
  * at runtime.
  *
  * @return AML_SUCCESS on success.

@@ -24,7 +24,7 @@ extern "C" {
  * #include <aml/utils/backend/ze.h>
  * @endcode
  *
- * This header can only be included if` AML_HAVE_BACKEND_ZE == 1`.
+ * This header can only be included if ` AML_HAVE_BACKEND_ZE == 1`.
  * @{
  **/
 
@@ -82,7 +82,7 @@ int aml_ze_data_destroy(struct aml_ze_data **out);
  * - `aml_area_ze_host`
  * - `aml_dma_ze_default`
  * This function should only be called once.
- * This function should not failed unless
+ * This function should not fail unless
  *
  * @return AML_SUCCESS on success.
  * This function succeed even if ze backend is not supported at runtime.
