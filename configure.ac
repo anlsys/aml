@@ -142,13 +142,13 @@ AC_SUBST([HAVE_OPENCL],[$have_opencl])
 # Level Zero Support
 ####################
 
-dnl PKG CONFIG detection
+# PKG CONFIG detection
 PKG_CHECK_MODULES([ZE], \
                   [libze_loader >= 1.0],   \
                   [have_ze=1], \
                   [have_ze=0])
 
-dnl fallback detection
+# fallback detection
 if test "$have_ze" = "0"; then
 have_libze=0 # library check
 have_ze_header=0 # header check
