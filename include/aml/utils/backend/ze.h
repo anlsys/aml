@@ -8,8 +8,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  ******************************************************************************/
 
-#ifndef AML_UTILS_ZE_H
-#define AML_UTILS_ZE_H
+#ifndef AML_UTILS_BACKEND_ZE_H
+#define AML_UTILS_BACKEND_ZE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -120,4 +120,4 @@ extern ze_context_desc_t aml_ze_context_desc;
 #ifdef __cplusplus
 }
 #endif
-#endif // AML_UTILS_ZE_H
+#endif // AML_UTILS_BACKEND_ZE_H

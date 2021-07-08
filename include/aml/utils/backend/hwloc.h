@@ -8,8 +8,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  ******************************************************************************/
 
-#ifndef AML_UTILS_HWLOC_H
-#define AML_UTILS_HWLOC_H
+#ifndef AML_UTILS_BACKEND_HWLOC_H
+#define AML_UTILS_BACKEND_HWLOC_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -140,4 +140,4 @@ extern hwloc_const_bitmap_t allowed_nodeset;
 #ifdef __cplusplus
 }
 #endif
-#endif // AML_UTILS_HWLOC_H
+#endif // AML_UTILS_BACKEND_HWLOC_H

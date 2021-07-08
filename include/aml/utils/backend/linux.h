@@ -8,8 +8,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  ******************************************************************************/
 
-#ifndef AML_UTILS_LINUX_H
-#define AML_UTILS_LINUX_H
+#ifndef AML_UTILS_BACKEND_LINUX_H
+#define AML_UTILS_BACKEND_LINUX_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,4 +49,4 @@ int aml_backend_linux_finalize(void);
 #ifdef __cplusplus
 }
 #endif
-#endif // AML_UTILS_LINUX_H
+#endif // AML_UTILS_BACKEND_LINUX_H
