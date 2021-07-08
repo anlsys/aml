@@ -11,8 +11,8 @@
 #include "aml.h"
 
 #include "aml/dma/ze.h"
+#include "aml/utils/backend/ze.h"
 
-int aml_errno_from_ze_result(ze_result_t err);
 #define ZE(ze_call) aml_errno_from_ze_result(ze_call)
 
 int aml_dma_ze_create(struct aml_dma **dma,
@@ -20,8 +20,6 @@ int aml_dma_ze_create(struct aml_dma **dma,
                       const uint32_t pool_size)
 {
 	int err = AML_SUCCESS;
-	uint32_t count = 1;
-	ze_driver_handle_t driver;
 	struct aml_dma *out = NULL;
 	struct aml_dma_ze_data *data;
 
@@ -34,20 +32,12 @@ int aml_dma_ze_create(struct aml_dma **dma,
 	out->data = (struct aml_dma_data *)data;
 	out->ops = &aml_dma_ze_ops;
 
-	// Get first driver
-	err = ZE(zeDriverGet(&count, &driver));
-	if (err != AML_SUCCESS)
-		goto err_with_dma;
-
 	// Set device field
 	data->device = device;
 
 	// Set context field
-	ze_context_desc_t context_desc = {
-	        .stype = ZE_STRUCTURE_TYPE_CONTEXT_DESC,
-	        .pNext = NULL,
-	        .flags = 0};
-	err = ZE(zeContextCreate(driver, &context_desc, &data->context));
+	err = ZE(zeContextCreate(aml_ze_default_data->driver,
+	                         &aml_ze_context_desc, &data->context));
 	if (err != AML_SUCCESS)
 		goto err_with_dma;
 

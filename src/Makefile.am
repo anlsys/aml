@@ -38,6 +38,8 @@ UTILS_SOURCES = \
 		utils/async.c \
 		utils/features.c
 
+BACKEND_SOURCES = backend/linux.c
+
 HIGHER_SOURCES = \
 		replicaset/replicaset.c \
 		higher/mapper.c
@@ -48,6 +50,7 @@ LIB_SOURCES = \
 	      $(TILING_SOURCES) \
 	      $(LAYOUT_SOURCES) \
 	      $(UTILS_SOURCES) \
+	      $(BACKEND_SOURCES) \
 	      $(HIGHER_SOURCES) \
 	      aml.c
 
@@ -71,7 +74,9 @@ endif
 if HAVE_HWLOC
 AM_CPPFLAGS += $(HWLOC_CFLAGS)
 AM_LDFLAGS += $(HWLOC_LIBS)
-libaml_la_SOURCES+=area/hwloc.c replicaset/hwloc.c
+libaml_la_SOURCES+=area/hwloc.c
+libaml_la_SOURCES+=replicaset/hwloc.c
+libaml_la_SOURCES+=backend/hwloc.c
 endif
 
 #############################################
@@ -93,4 +98,5 @@ AM_LDFLAGS += $(ZE_LIBS)
 AM_CPPFLAGS += $(ZE_CFLAGS)
 libaml_la_SOURCES+=area/ze.c
 libaml_la_SOURCES+=dma/ze.c
+libaml_la_SOURCES+=backend/ze.c
 endif

@@ -11,19 +11,26 @@
 #include "aml.h"
 
 #include "aml/area/ze.h"
+#include "aml/utils/backend/ze.h"
 
-int aml_errno_from_ze_result(ze_result_t err);
 #define ZE(ze_call) aml_errno_from_ze_result(ze_call)
+
+ze_host_mem_alloc_desc_t aml_ze_host_mem_alloc_desc = {
+        .stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC,
+        .pNext = NULL,
+        .flags = 0,
+};
 
 int aml_area_ze_host_create(struct aml_area **area,
                             ze_host_mem_alloc_flag_t host_flags,
                             size_t alignment)
 {
 	int err;
-	uint32_t count = 1;
-	ze_driver_handle_t driver;
 	struct aml_area *out = NULL;
 	struct aml_area_ze_data *data;
+
+	if (aml_ze_default_data == NULL)
+		return -AML_ENOTSUP;
 
 	// Alloc area and set area fields.
 	out = AML_INNER_MALLOC(struct aml_area, struct aml_area_ze_data);
@@ -33,16 +40,8 @@ int aml_area_ze_host_create(struct aml_area **area,
 	                                  struct aml_area_ze_data);
 	out->data = (struct aml_area_data *)data;
 
-	// Get first driver
-	err = ZE(zeDriverGet(&count, &driver));
-	if (err != AML_SUCCESS)
-		goto err_with_area;
-
-	// Create context
-	ze_context_desc_t desc = {.stype = ZE_STRUCTURE_TYPE_CONTEXT_DESC,
-	                          .pNext = NULL,
-	                          .flags = 0};
-	err = ZE(zeContextCreate(driver, &desc, &data->context));
+	err = ZE(zeContextCreate(aml_ze_default_data->driver,
+	                         &aml_ze_context_desc, &data->context));
 	if (err != AML_SUCCESS)
 		goto err_with_area;
 
@@ -70,10 +69,11 @@ int aml_area_ze_device_create(struct aml_area **area,
                               int flags)
 {
 	int err;
-	uint32_t count = 1;
-	ze_driver_handle_t driver;
 	struct aml_area *out = NULL;
 	struct aml_area_ze_data *data;
+
+	if (aml_ze_default_data == NULL)
+		return -AML_ENOTSUP;
 
 	// Alloc area and set area fields.
 	out = AML_INNER_MALLOC(struct aml_area, struct aml_area_ze_data);
@@ -83,19 +83,12 @@ int aml_area_ze_device_create(struct aml_area **area,
 	                                  struct aml_area_ze_data);
 	out->data = (struct aml_area_data *)data;
 
-	// Get first driver
-	err = ZE(zeDriverGet(&count, &driver));
-	if (err != AML_SUCCESS)
-		goto err_with_area;
-
 	// Initialize device field
 	data->desc.device.device = device;
 
 	// Create context
-	ze_context_desc_t desc = {.stype = ZE_STRUCTURE_TYPE_CONTEXT_DESC,
-	                          .pNext = NULL,
-	                          .flags = 0};
-	err = ZE(zeContextCreate(driver, &desc, &data->context));
+	err = ZE(zeContextCreate(aml_ze_default_data->driver,
+	                         &aml_ze_context_desc, &data->context));
 	if (err != AML_SUCCESS)
 		goto err_with_area;
 

@@ -40,9 +40,13 @@ include_amlutils_HEADERS = \
 			   aml/utils/macros.h \
 			   aml/utils/features.h
 
+include_aml_backenddir=$(includedir)/aml/utils/backend
+include_aml_backend_HEADERS = aml/utils/backend/linux.h
+
 if HAVE_HWLOC
 include_aml_area_HEADERS+= aml/area/hwloc.h
 include_aml_replicaset_HEADERS += aml/higher/replicaset/hwloc.h
+include_aml_backend_HEADERS += aml/utils/backend/hwloc.h
 endif
 
 if HAVE_CUDA
@@ -57,4 +61,5 @@ endif
 if HAVE_ZE
 include_aml_area_HEADERS += aml/area/ze.h
 include_aml_dma_HEADERS += aml/dma/ze.h
+include_aml_backend_HEADERS += aml/utils/backend/ze.h
 endif
