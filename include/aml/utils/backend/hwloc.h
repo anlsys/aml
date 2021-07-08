@@ -50,7 +50,7 @@ int aml_backend_hwloc_finalize(void);
 
 /**
  * Store the smallest topology object matching the cpuset where the thread
- * calling this function is bound. This function succeeded only if the
+ * calling this function is bound. This function succeeds only if the
  * calling thread or process is bound to a cpuset.
  *
  * @param out[out]: A pointer to the topology object where to store
@@ -95,9 +95,9 @@ int aml_hwloc_distance_hop_matrix(const hwloc_obj_type_t ta,
                                   const hwloc_obj_type_t tb,
                                   struct hwloc_distances_s **s);
 /**
- * Get a distance matrix between an initiator type and NUMANODEs
- * This can fail only if the process is out of memory.
- * If no distance matrix exist, one is created with hops as distance.
+ * Get a distance matrix between an initiator type and NUMANODEs.
+ * This function can fail only if the process is out of memory.
+ * If no distance matrix exists, one is created with hops as distance.
  * If no matrix with initiator type or NUMANODE type is found, any
  * available matrix is used. The obtained matrix is reshaped to fit
  * (initiator numa) x (initiator numa) matrix.
