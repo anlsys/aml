@@ -16,7 +16,7 @@
 struct aml_dma *aml_dma_linux_sequential;
 struct aml_dma *aml_dma_linux_parallel;
 
-int aml_linux_init(void)
+int aml_backend_linux_init(void)
 {
 	int err;
 
@@ -34,7 +34,7 @@ int aml_linux_init(void)
 	return AML_SUCCESS;
 }
 
-int aml_linux_finalize(void)
+int aml_backend_linux_finalize(void)
 {
 	aml_dma_linux_seq_destroy(&aml_dma_linux_sequential);
 	aml_dma_linux_par_destroy(&aml_dma_linux_parallel);

@@ -12,14 +12,20 @@
 
 #include "aml.h"
 
-#include "aml/utils/hwloc.h"
+#include "aml/utils/backend/hwloc.h"
 
 hwloc_topology_t aml_topology;
 hwloc_const_bitmap_t allowed_nodeset;
 
+#define OBJ_DIST(dist, i, j, row_stride, col_stride)                           \
+	(dist)->values[((i)->logical_index + row_stride) * (dist)->nbobjs +    \
+	               col_stride + (j)->logical_index]
+
+#define IND_DIST(dist, i, j) (dist)->values[(i) * (dist)->nbobjs + (j)]
+
 typedef const struct hwloc_obj *hwloc_const_obj_t;
 
-int aml_hwloc_init(void)
+int aml_backend_hwloc_init(void)
 {
 	char *topology_input = getenv("AML_TOPOLOGY");
 
@@ -43,7 +49,7 @@ int aml_hwloc_init(void)
 	return AML_SUCCESS;
 }
 
-int aml_hwloc_finalize(void)
+int aml_backend_hwloc_finalize(void)
 {
 	hwloc_topology_destroy(aml_topology);
 	return AML_SUCCESS;

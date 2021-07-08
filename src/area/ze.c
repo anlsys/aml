@@ -11,7 +11,9 @@
 #include "aml.h"
 
 #include "aml/area/ze.h"
-#include "aml/utils/ze.h"
+#include "aml/utils/backend/ze.h"
+
+#define ZE(ze_call) aml_errno_from_ze_result(ze_call)
 
 ze_host_mem_alloc_desc_t aml_ze_host_mem_alloc_desc = {
         .stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC,

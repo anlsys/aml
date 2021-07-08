@@ -14,12 +14,12 @@
 
 #include "aml.h"
 
-#include "aml/utils/linux.h"
+#include "aml/utils/backend/linux.h"
 #if HAVE_HWLOC == 1
-#include "aml/utils/hwloc.h"
+#include "aml/utils/backend/hwloc.h"
 #endif
 #if HAVE_ZE == 1
-#include "aml/utils/ze.h"
+#include "aml/utils/backend/ze.h"
 #endif
 
 const int aml_version_major = AML_VERSION_MAJOR;
@@ -37,18 +37,18 @@ int aml_init(int *argc, char **argv[])
 	(void)argc;
 	(void)argv;
 
-	err = aml_linux_init();
+	err = aml_backend_linux_init();
 	if (err != AML_SUCCESS)
 		return err;
 
 #if HAVE_ZE == 1
-	err = aml_ze_init();
+	err = aml_backend_ze_init();
 	if (err != AML_SUCCESS)
 		goto error;
 #endif
 
 #if HAVE_HWLOC == 1
-	err = aml_hwloc_init();
+	err = aml_backend_hwloc_init();
 	if (err != AML_SUCCESS)
 		goto err_with_ze;
 #endif
@@ -59,22 +59,22 @@ int aml_init(int *argc, char **argv[])
 err_with_ze:;
 #endif
 #if HAVE_ZE == 1
-	aml_ze_finalize();
+	aml_backend_ze_finalize();
 error:
 #endif
-	aml_linux_finalize();
+	aml_backend_linux_finalize();
 	return err;
 }
 
 int aml_finalize(void)
 {
-	aml_linux_finalize();
+	aml_backend_linux_finalize();
 #if HAVE_HWLOC == 1
-	aml_hwloc_finalize();
+	aml_backend_hwloc_finalize();
 #endif
 
 #if HAVE_ZE == 1
-	aml_ze_finalize();
+	aml_backend_ze_finalize();
 #endif
 	return 0;
 }

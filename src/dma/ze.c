@@ -11,7 +11,9 @@
 #include "aml.h"
 
 #include "aml/dma/ze.h"
-#include "aml/utils/ze.h"
+#include "aml/utils/backend/ze.h"
+
+#define ZE(ze_call) aml_errno_from_ze_result(ze_call)
 
 int aml_dma_ze_create(struct aml_dma **dma,
                       ze_device_handle_t device,

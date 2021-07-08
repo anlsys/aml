@@ -15,11 +15,17 @@
 #include "aml.h"
 
 #include "aml/area/hwloc.h"
-#include "aml/utils/hwloc.h"
+#include "aml/utils/backend/hwloc.h"
 
 #define HWLOC_BINDING_FLAGS                                                    \
 	(HWLOC_MEMBIND_PROCESS | HWLOC_MEMBIND_NOCPUBIND |                     \
 	 HWLOC_MEMBIND_BYNODESET | HWLOC_MEMBIND_STRICT)
+
+#define OBJ_DIST(dist, i, j, row_stride, col_stride)                           \
+	(dist)->values[((i)->logical_index + row_stride) * (dist)->nbobjs +    \
+	               col_stride + (j)->logical_index]
+
+#define IND_DIST(dist, i, j) (dist)->values[(i) * (dist)->nbobjs + (j)]
 
 /**************************************************************************/
 /* aml_area_hwloc                                                         */

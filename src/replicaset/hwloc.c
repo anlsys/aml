@@ -15,7 +15,7 @@
 #include "aml/area/hwloc.h"
 #include "aml/higher/replicaset.h"
 #include "aml/higher/replicaset/hwloc.h"
-#include "aml/utils/hwloc.h"
+#include "aml/utils/backend/hwloc.h"
 
 int aml_replicaset_hwloc_alloc(struct aml_replicaset **out,
                                const hwloc_obj_type_t initiator_type)
