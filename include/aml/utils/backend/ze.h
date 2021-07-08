@@ -76,13 +76,12 @@ int aml_ze_data_destroy(struct aml_ze_data **out);
 
 /**
  * Level zero backend initialization function.
- * This function initializes ze driver and some ze specific global variables:
+ * This function initializes ze library and some ze specific global variables:
  * - `aml_ze_default_data`
  * - `aml_area_ze_device`
  * - `aml_area_ze_host`
  * - `aml_dma_ze_default`
  * This function should only be called once.
- * This function should not fail unless
  *
  * @return AML_SUCCESS on success.
  * This function succeed even if ze backend is not supported at runtime.
@@ -108,7 +107,7 @@ int aml_backend_ze_finalize(void);
 int aml_errno_from_ze_result(ze_result_t err);
 
 /**
- *Base context description used across the library for initializing
+ * Base context description used across the library for initializing
  * contexts
  */
 extern ze_context_desc_t aml_ze_context_desc;
