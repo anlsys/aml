@@ -36,8 +36,7 @@ int aml_dma_ze_create(struct aml_dma **dma,
 	data->device = device;
 
 	// Set context field
-	err = ZE(zeContextCreate(aml_ze_default_data->driver,
-	                         &aml_ze_context_desc, &data->context));
+	err = aml_ze_context_create(&data->context, device);
 	if (err != AML_SUCCESS)
 		goto err_with_dma;
 
@@ -74,7 +73,7 @@ int aml_dma_ze_create(struct aml_dma **dma,
 err_with_command_list:
 	zeCommandListDestroy(data->command_list);
 err_with_context:
-	zeContextDestroy(data->context);
+	aml_ze_context_destroy(data->context);
 err_with_dma:
 	free(out);
 	return err;
@@ -87,7 +86,7 @@ int aml_dma_ze_destroy(struct aml_dma **dma)
 		        (struct aml_dma_ze_data *)(*dma)->data;
 		zeEventPoolDestroy(data->events);
 		zeCommandListDestroy(data->command_list);
-		zeContextDestroy(data->context);
+		aml_ze_context_destroy(data->context);
 	}
 	return AML_SUCCESS;
 }

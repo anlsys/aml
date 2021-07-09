@@ -113,6 +113,39 @@ int aml_errno_from_ze_result(ze_result_t err);
 extern ze_context_desc_t aml_ze_context_desc;
 
 /**
+ * Returns the device number of a device listed in
+ * `aml_ze_default_data` structure.
+ *
+ * @param device[in]: The device to look for.
+ * @return -AML_EDOM if device was not found.
+ * @return The device number on success.
+ */
+int aml_ze_device_num(const ze_device_handle_t device);
+
+/**
+ * Create a context attached to a device.
+ * If OpenMP is available and is using level zero backend,
+ * then the context returned is the context provided by OpenMP.
+ * The OpenMP and Level Zero devices are matched by index assuming
+ * OpenMP numbers its devices in the same fashion as level zero does
+ * with devices from the first available driver.
+ * Else a new context is created with level zero method.
+ *
+ * @param context[out]: A pointer where to store new context.
+ * @param device[in]: The device associated with the context.
+ * @return -AML_EDOM if device was not found.
+ * @return -AML_FAILURE if OpenMP had not context matching
+ * device number, or if any unexpected error happened.
+ */
+int aml_ze_context_create(ze_context_handle_t *context,
+                          const ze_device_handle_t device);
+
+/**
+ * Destroy a context obtained with `aml_ze_context_create()`.
+ */
+int aml_ze_context_destroy(ze_context_handle_t context);
+
+/**
  * @}
  **/
 

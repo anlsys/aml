@@ -47,7 +47,6 @@ AX_VALGRIND_DFLT([drd], [off])
 AX_VALGRIND_DFLT([sgcheck], [off])
 AX_VALGRIND_CHECK
 
-AC_OPENMP
 AC_CHECK_HEADERS([math.h],,[AC_MSG_ERROR([AML requires libmath headers.])])
 AC_CHECK_LIB(m, sqrt,,[AC_MSG_ERROR([AML requires libmath.])])
 
@@ -59,6 +58,51 @@ AC_CHECK_LIB(dl, dlopen)
 # doc in m4/ax_pthread.m4. Defines automake PTHREAD_CFLAGS and PTHREAD_LIBS
 AX_PTHREAD([],[AC_MSG_ERROR([Cannot find how to compile with pthreads.])])
 CC="$PTHREAD_CC"
+
+# OpenMP support.
+######################
+
+AC_OPENMP
+
+# Allow the user to pass additional openmp flags such as:
+# [-fiopenmp -fopenmp-targets=spir64] from LLVM compiler. We test that the
+# compiler can actually use user flags before moving forward with the
+# compilation.
+AC_ARG_WITH([openmp-flags],
+	[AS_HELP_STRING([--with-openmp-flags@<:@=CFLAGS@:>@],
+		        [Additional OpenMP flags to pass to the compiler.])],
+	[save_CFLAGS=$CFLAGS
+   	 CFLAGS="$CFLAGS $OPENMP_CFLAGS $withval"
+   	 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([#include<omp.h>], [omp_get_num_threads();])],
+                           [OPENMP_CFLAGS="$OPENMP_CFLAGS $withval"],
+			   [AC_MSG_ERROR([Unsupported OpenMP flags: $withval])])
+         CFLAGS="$save_CFLAGS"])
+
+# Intel implementation of OpenMP requires to use the same contexts as
+# AML in order to work with libze_loader device pointers obtained with AML
+# areas. AML can use the same contexts as OpenMP via the use of
+# `omp_target_get_context()`. This function is specific to intel
+# implementation of OpenMP and linked from libomptarget.so when the
+# application uses the LLVM flag `-fiopenmp -fopenmp-targets=`.
+# We define the compile time macro `HAVE_ZE_OMP_CONTEXT` that tells AML
+# whether the function `omp_target_get_context()` is defined and is going
+# to provide OpenMP contexts or if AML has to create its own contexts.
+save_CFLAGS=$CFLAGS
+CFLAGS="$CFLAGS $OPENMP_CFLAGS $withval"
+AC_RUN_IFELSE([AC_LANG_PROGRAM([#include<omp.h>], [omp_target_get_context(0);])],
+              [have_omptarget=1],
+              [have_omptarget=0])
+CFLAGS="$save_CFLAGS"
+AC_DEFINE_UNQUOTED([HAVE_ZE_OMP_CONTEXT],
+                   [$have_omptarget],
+		   [Whether AML Ze device pointers can be used with Intel OpenMP regions.])
+
+# Report OpenMP support.
+if test "x$OPENMP_CFLAGS" = "x"; then
+   HAVE_OPENMP="0"
+else
+   HAVE_OPENMP="1"
+fi
 
 # NUMA support
 ##############
@@ -98,12 +142,60 @@ AC_SUBST([HAVE_OPENCL],[$have_opencl])
 # Level Zero Support
 ####################
 
+# PKG CONFIG detection
 PKG_CHECK_MODULES([ZE], \
                   [libze_loader >= 1.0],   \
                   [have_ze=1], \
                   [have_ze=0])
+
+# fallback detection
+if test "$have_ze" = "0"; then
+have_libze=0 # library check
+have_ze_header=0 # header check
+have_ze_version="no" # version check
+
+# library check
+AC_SEARCH_LIBS([zeInit], [ze_loader], [have_libze=1], [have_libze=0])
+
+# header check
+if test "$have_libze" = "1"; then
+   AC_CHECK_HEADER([level_zero/ze_api.h], [have_ze_header=1], [have_ze_header=0])
+fi
+
+# header version check
+if test "$have_ze_header" = "1"; then
+   AC_MSG_CHECKING([ze_api version >= 1.0])
+   AC_RUN_IFELSE([AC_LANG_PROGRAM(
+[[#include<level_zero/ze_api.h>]],
+[[return ZE_API_VERSION_CURRENT < ZE_MAKE_VERSION( 1, 0 )]]
+)],
+                 [have_ze_version=yes],
+		 [have_ze_version=no])
+   AC_MSG_RESULT([$have_ze_version])
+fi
+
+# All check passed ->
+if test "$have_ze_version" = "yes"; then
+   ZE_CFLAGS=""
+   ZE_LIBS="$ac_cv_search_zeInit"
+   AC_SUBST(ZE_CFLAGS)
+   AC_SUBST(ZE_LIBS)
+   have_ze=1
+fi
+fi # test "$have_ze" = "0"
+
+# If level zero is present and usable then declare it as such.
 if test "$have_ze" = "1"; then
    AC_DEFINE([HAVE_ZE], [1], "Level Zero library and headers are available")
+   if test "$have_omptarget" = "1"; then
+     INTEL_OMP_ZE_BACKEND_INTEROPERABILITY_MSG="OPENMP INTEROPERABILITY: yes\
+Make sure to enable OpenMP LEVEL0 backend with: export LIBOMPTARGET_PLUGIN=LEVEL0
+"
+   else
+     INTEL_OMP_ZE_BACKEND_INTEROPERABILITY_MSG="OPENMP INTEROPERABILITY: no
+Try using: ./configure CC=icx --with-openmp-flags=\"-fiopenmp -fopenmp-targets=spir64\"
+     "
+   fi
 fi
 AM_CONDITIONAL([HAVE_ZE], [test "$have_ze" = "1"])
 AC_DEFINE_UNQUOTED([HAVE_ZE], [$have_ze], [Whether aml support intel level zero library calls.])
@@ -239,6 +331,12 @@ Version: $PACKAGE_VERSION
 FEATURES:
 ---------
 
+OPENMP:
+======
+
+Active:  $HAVE_OPENMP
+CFLAGS:  $OPENMP_CFLAGS
+
 HWLOC:
 ======
 
@@ -266,6 +364,7 @@ ZE:
 Active:  $HAVE_ZE
 CFLAGS:  $ZE_CFLAGS
 LDFLAGS: $ZE_LIBS
+$INTEL_OMP_ZE_BACKEND_INTEROPERABILITY_MSG
 
 -------------------------------------------------------------------------------
 EOF

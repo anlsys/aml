@@ -87,8 +87,7 @@ int aml_area_ze_device_create(struct aml_area **area,
 	data->desc.device.device = device;
 
 	// Create context
-	err = ZE(zeContextCreate(aml_ze_default_data->driver,
-	                         &aml_ze_context_desc, &data->context));
+	err = aml_ze_context_create(&data->context, device);
 	if (err != AML_SUCCESS)
 		goto err_with_area;
 
@@ -117,8 +116,8 @@ void aml_area_ze_destroy(struct aml_area **area)
 {
 	if (area != NULL && *area != NULL) {
 		struct aml_area_ze_data *data =
-		        (struct aml_area_ze_data *)((*area)->data);
-		zeContextDestroy(data->context);
+		        (struct aml_area_ze_data *)(*area)->data;
+		aml_ze_context_destroy(data->context);
 		free(*area);
 		*area = NULL;
 	}
