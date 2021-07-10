@@ -97,8 +97,6 @@ int aml_dma_cuda_request_create(struct aml_dma_data *data,
 	struct aml_dma_cuda_request *request;
 	struct aml_dma_cuda_data *dma_data;
 
-	(void)op_arg;
-
 	// Check input
 	if (data == NULL || req == NULL || dest == NULL || src == NULL)
 		return -AML_EINVAL;
@@ -111,13 +109,17 @@ int aml_dma_cuda_request_create(struct aml_dma_data *data,
 	request->status = AML_DMA_CUDA_REQUEST_STATUS_PENDING;
 
 	// Submit request to cuda device
-	err = op(dest, src, (void *)(dma_data));
+	struct aml_dma_cuda_op_arg args = {
+	        .data = dma_data,
+	        .op_arg = op_arg,
+	};
+	err = op(dest, src, (void *)(&args));
 	if (err != AML_SUCCESS) {
 		free(request);
 		return err;
 	}
 
-	// Also enqueue the callback to notfiy request is done.
+	// Also enqueue the callback to notify request is done.
 	if (cudaLaunchHostFunc(dma_data->stream, aml_dma_cuda_callback,
 	                       request) != cudaSuccess) {
 		free(request);
@@ -194,28 +196,27 @@ int aml_dma_cuda_copy_1D(struct aml_layout *dst,
 
 	const void *src_ptr = aml_layout_rawptr(src);
 	void *dst_ptr = aml_layout_rawptr(dst);
-	struct aml_dma_cuda_data *dma_data = (struct aml_dma_cuda_data *)arg;
+	struct aml_dma_cuda_op_arg *op_arg = (struct aml_dma_cuda_op_arg *)arg;
 	size_t n = 0;
 	size_t size = 0;
 
-	AML_DMA_CUDA_DEVICE_FROM_PAIR(arg, src_device, dst_device);
 	err = aml_layout_dims(src, &n);
 	if (err != AML_SUCCESS)
 		return err;
 	size = aml_layout_element_size(src) * n;
 
-	if (dma_data->kind == cudaMemcpyHostToDevice ||
-	    dma_data->kind == cudaMemcpyDeviceToHost) {
-		if (cudaMemcpyAsync(dst_ptr, src_ptr, size, dma_data->kind,
-		                    dma_data->stream) != cudaSuccess)
-			return -AML_FAILURE;
-	} else if (dma_data->kind == cudaMemcpyDeviceToDevice) {
+	if (op_arg->data->kind == cudaMemcpyDeviceToDevice) {
+		AML_DMA_CUDA_DEVICE_FROM_PAIR(op_arg->op_arg, src_device,
+		                              dst_device);
 		if (cudaMemcpyPeerAsync(dst_ptr, dst_device, src_ptr,
 		                        src_device, size,
-		                        dma_data->stream) != cudaSuccess)
+		                        op_arg->data->stream) != cudaSuccess)
 			return -AML_FAILURE;
-	} else
-		memcpy(dst_ptr, src_ptr, size);
+	} else {
+		if (cudaMemcpyAsync(dst_ptr, src_ptr, size, op_arg->data->kind,
+		                    op_arg->data->stream) != cudaSuccess)
+			return -AML_FAILURE;
+	}
 	return AML_SUCCESS;
 }
 
@@ -226,32 +227,12 @@ struct aml_dma_ops aml_dma_cuda_ops = {
         .wait_request = aml_dma_cuda_request_wait,
 };
 
-struct aml_dma_cuda_data aml_dma_cuda_data_host_to_device = {
+struct aml_dma_cuda_data aml_dma_cuda_data = {
         .stream = 0,
-        .kind = cudaMemcpyHostToDevice,
+        .kind = cudaMemcpyDefault,
 };
 
-struct aml_dma aml_dma_cuda_host_to_device = {
+struct aml_dma aml_dma_cuda = {
         .ops = &aml_dma_cuda_ops,
-        .data = (struct aml_dma_data *)(&aml_dma_cuda_data_host_to_device),
-};
-
-struct aml_dma_cuda_data aml_dma_cuda_data_device_to_host = {
-        .stream = 0,
-        .kind = cudaMemcpyDeviceToHost,
-};
-
-struct aml_dma aml_dma_cuda_device_to_host = {
-        .ops = &aml_dma_cuda_ops,
-        .data = (struct aml_dma_data *)(&aml_dma_cuda_data_device_to_host),
-};
-
-struct aml_dma_cuda_data aml_dma_cuda_data_device_to_device = {
-        .stream = 0,
-        .kind = cudaMemcpyDeviceToDevice,
-};
-
-struct aml_dma aml_dma_cuda_device_to_device = {
-        .ops = &aml_dma_cuda_ops,
-        .data = (struct aml_dma_data *)(&aml_dma_cuda_data_device_to_device),
+        .data = (struct aml_dma_data *)(&aml_dma_cuda_data),
 };
