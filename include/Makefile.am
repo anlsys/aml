@@ -18,6 +18,7 @@ include_aml_layout_HEADERS = \
 
 include_aml_dmadir=$(includedir)/aml/dma
 include_aml_dma_HEADERS = \
+			      aml/dma/linux.h \
 			      aml/dma/linux-seq.h \
 			      aml/dma/linux-par.h
 

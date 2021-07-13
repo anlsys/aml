@@ -85,12 +85,11 @@ struct aml_dma_cuda_data {
 /** Default dma ops used at dma creation **/
 extern struct aml_dma_ops aml_dma_cuda_ops;
 
-/** Dma on stream 0 to send data from host to device **/
-extern struct aml_dma aml_dma_cuda_host_to_device;
-/** Dma on stream 0 to send data from device to host **/
-extern struct aml_dma aml_dma_cuda_device_to_device;
-/** Dma on stream 0 to send data from device to device **/
-extern struct aml_dma aml_dma_cuda_device_to_host;
+/**
+ * Dma on stream 0 with `cudaMemcpyDefault` copy kind.
+ * Requires that the system supports unified virtual memory.
+ */
+extern struct aml_dma aml_dma_cuda;
 
 /**
  * Creation of a dma engine for cuda backend.
@@ -127,10 +126,27 @@ int aml_dma_cuda_destroy(struct aml_dma **dma);
 	dst = ((intptr_t)pair >> 32);
 
 /**
+ * Structure passed to `aml_dma_operator` `arg` argument by
+ * the request created in `aml_dma_cuda_request_create()`.
+ * All `aml_dma_operator` implementations can expect to obtain
+ * a pointer to this structure as `arg` argument. The pointer is
+ * valid only for the lifetime of the `aml_dma_operator` call.
+ */
+struct aml_dma_cuda_op_arg {
+	// The calling dma data.
+	struct aml_dma_cuda_data *data;
+	// The user extra dma_op arguments passed to
+	// `aml_dma_cuda_request_create()`.
+	void *op_arg;
+};
+
+/**
  * aml_dma_cuda copy operator for 1D to 1D layouts.
  * @param [in] dst: The destination layout of the copy.
  * @param [in] src: The source layout of the copy.
- * @param [in] arg: Either a device id (int). or two device ids
+ * @param [in] arg: A pointer to `struct aml_dma_cuda_op_arg` where
+ * `op_arg` is a pair of device ids obtained with `AML_DMA_CUDA_DEVICE_PAIR`.
+ * `op_arg` is used only if `data->kind` is `cudaMemcpyDeviceToDevice`.
  * @return an AML error code.
  **/
 int aml_dma_cuda_copy_1D(struct aml_layout *dst,

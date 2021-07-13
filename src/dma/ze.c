@@ -22,6 +22,7 @@ int aml_dma_ze_create(struct aml_dma **dma,
 	int err = AML_SUCCESS;
 	struct aml_dma *out = NULL;
 	struct aml_dma_ze_data *data;
+	ze_device_properties_t ppt;
 
 	// Alloc dma
 	out = AML_INNER_MALLOC(struct aml_dma, struct aml_dma_ze_data);
@@ -68,6 +69,13 @@ int aml_dma_ze_create(struct aml_dma **dma,
 	if (err != AML_SUCCESS)
 		goto err_with_command_list;
 
+	data->event_flags = ZE_EVENT_SCOPE_FLAG_HOST;
+	if (ZE(zeDeviceGetProperties(data->device, &ppt)) == AML_SUCCESS &&
+	    (ppt.flags & ZE_DEVICE_PROPERTY_FLAG_SUBDEVICE))
+		data->event_flags |= ZE_EVENT_SCOPE_FLAG_SUBDEVICE;
+	else
+		data->event_flags |= ZE_EVENT_SCOPE_FLAG_DEVICE;
+
 	*dma = out;
 	return AML_SUCCESS;
 err_with_command_list:
@@ -90,11 +98,6 @@ int aml_dma_ze_destroy(struct aml_dma **dma)
 	}
 	return AML_SUCCESS;
 }
-
-struct aml_dma_ze_copy_args {
-	struct aml_dma_ze_data *ze_data;
-	struct aml_dma_ze_request *ze_req;
-};
 
 int aml_dma_ze_copy_1D(struct aml_layout *dst,
                        const struct aml_layout *src,
@@ -125,7 +128,6 @@ int aml_dma_ze_request_create(struct aml_dma_data *data,
 	int err;
 	struct aml_dma_ze_request *ze_req;
 	struct aml_dma_ze_data *ze_data = (struct aml_dma_ze_data *)data;
-	int request_flags = (int)(intptr_t)op_arg;
 
 	if (op == NULL)
 		op = aml_dma_ze_copy_1D;
@@ -135,27 +137,13 @@ int aml_dma_ze_request_create(struct aml_dma_data *data,
 	if (ze_req == NULL)
 		return -AML_ENOMEM;
 
-	// Flags setting behaviour when request is waited for.
-	ze_event_scope_flags_t wait_flag = 0;
-	if (request_flags &
-	    (AML_DMA_ZE_REQUEST_UNKNOWN | AML_DMA_ZE_REQUEST_HOST_DEVICE |
-	     AML_DMA_ZE_REQUEST_DEVICE_DEVICE))
-		wait_flag |= ZE_EVENT_SCOPE_FLAG_SUBDEVICE;
-	if (request_flags &
-	    (AML_DMA_ZE_REQUEST_UNKNOWN | AML_DMA_ZE_REQUEST_DEVICE_HOST))
-		wait_flag |= ZE_EVENT_SCOPE_FLAG_HOST;
-	else if (!request_flags) {
-		wait_flag = ZE_EVENT_SCOPE_FLAG_HOST |
-		            ZE_EVENT_SCOPE_FLAG_DEVICE;
-	}
-
 	// Create event.
 	ze_event_desc_t desc = {
 	        .stype = ZE_STRUCTURE_TYPE_EVENT_DESC,
 	        .pNext = NULL,
 	        .index = 0,
 	        .signal = 0,
-	        .wait = wait_flag,
+	        .wait = ze_data->event_flags,
 	};
 	err = ZE(zeEventCreate(ze_data->events, &desc, &ze_req->event));
 	if (err != AML_SUCCESS)
@@ -165,6 +153,7 @@ int aml_dma_ze_request_create(struct aml_dma_data *data,
 	struct aml_dma_ze_copy_args args = {
 	        .ze_data = ze_data,
 	        .ze_req = ze_req,
+	        .arg = op_arg,
 	};
 	err = op(dest, src, &args);
 	if (err != AML_SUCCESS)
@@ -187,6 +176,13 @@ int aml_dma_ze_request_wait(struct aml_dma_data *data,
 	return ZE(zeEventHostSynchronize(ze_req->event, UINT64_MAX));
 }
 
+int aml_dma_ze_request_wait_all(struct aml_dma_data *data)
+{
+	(void)data;
+	// struct aml_dma_ze_data *dma = (struct aml_dma_ze_data *)data;
+	return AML_SUCCESS;
+}
+
 int aml_dma_ze_request_destroy(struct aml_dma_data *data,
                                struct aml_dma_request **req)
 {
@@ -205,5 +201,6 @@ struct aml_dma_ops aml_dma_ze_ops = {
         .create_request = aml_dma_ze_request_create,
         .destroy_request = aml_dma_ze_request_destroy,
         .wait_request = aml_dma_ze_request_wait,
+        .wait_all = aml_dma_ze_request_wait_all,
         .fprintf = NULL,
 };

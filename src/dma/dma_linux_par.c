@@ -195,10 +195,9 @@ int aml_dma_linux_par_fprintf(const struct aml_dma_data *data,
 }
 
 struct aml_dma_ops aml_dma_linux_par_ops = {
-	aml_dma_linux_par_create_request,
-	aml_dma_linux_par_destroy_request,
-	aml_dma_linux_par_wait_request,
-	aml_dma_linux_par_fprintf,
+        aml_dma_linux_par_create_request, aml_dma_linux_par_destroy_request,
+        aml_dma_linux_par_wait_request,   NULL,
+        aml_dma_linux_par_fprintf,
 };
 
 /*******************************************************************************

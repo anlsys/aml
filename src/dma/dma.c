@@ -155,7 +155,7 @@ int aml_dma_async_copy_custom(struct aml_dma *dma, struct aml_dma_request **req,
 		       struct aml_layout *dest, struct aml_layout *src,
 		       aml_dma_operator op, void *op_arg)
 {
-	if (dma == NULL || req == NULL || dest == NULL || src == NULL)
+	if (dma == NULL || dest == NULL || src == NULL)
 		return -AML_EINVAL;
 
 	return dma->ops->create_request(dma->data, req, dest, src, op, op_arg);
@@ -173,6 +173,13 @@ int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request **req)
 	if (dma == NULL || req == NULL)
 		return -AML_EINVAL;
 	return dma->ops->wait_request(dma->data, req);
+}
+
+int aml_dma_wait_all(struct aml_dma *dma)
+{
+	if (dma == NULL)
+		return -AML_EINVAL;
+	return dma->ops->wait_all(dma->data);
 }
 
 int aml_dma_fprintf(FILE *stream, const char *prefix,
