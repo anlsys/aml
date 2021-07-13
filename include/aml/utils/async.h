@@ -37,7 +37,7 @@ struct aml_task_out;
 /** Task meta data **/
 struct aml_task_data;
 /** Function to be executed in a task**/
-typedef struct aml_task_out *(*aml_task_work) (struct aml_task_in *);
+typedef void (*aml_task_work)(struct aml_task_in *, struct aml_task_out *);
 
 /** Task abstraction **/
 struct aml_task {
@@ -48,7 +48,7 @@ struct aml_task {
 	/** Work to do **/
 	aml_task_work fn;
 	/** Metadata **/
-	struct aml_task_data *data;
+	void *data;
 };
 
 //----------------------------------------------------------------------------//
@@ -92,22 +92,28 @@ int aml_sched_wait_task(struct aml_sched *pool, struct aml_task *task);
 struct aml_task *aml_sched_wait_any(struct aml_sched *pool);
 
 //----------------------------------------------------------------------------//
-// Simple task scheduler with pthread worker.
+// Simple task scheduler with a task queue and a pool of worker pthreads.
 //----------------------------------------------------------------------------//
 
 /**
- * Create an active pool of "nt" threads" to run asynchronously tasks queued
- * in a FIFO queue.
- * If nt == 0 then progress is made
- * from caller thread on aml_sched_wait_task() and aml_sched_wait_any().
+ * Create a pool of threads polling work from a common FIFO queue.
+ *
+ * @param nt[in]: The number of threads in the pool to execute tasks in the
+ * queue. If nt == 0 then progress is made from caller thread on call to
+ * `aml_sched_wait_task()` and `aml_sched_wait_any()`.
+ * @return An initialized task scheduler on success.
+ * Created object must be destroyed with `aml_queue_sched_destroy()`.
+ * @return `NULL` on error, when the system is out of memory.
  **/
-struct aml_sched *aml_active_sched_create(const size_t nt);
+struct aml_sched *aml_queue_sched_create(const size_t nt);
 
-/** Destroy an active thread pool and set it to NULL **/
-void aml_active_sched_destroy(struct aml_sched **sched);
-
-/** Get the number of tasks pushed to the scheduler and not yet pulled out. **/
-int aml_active_sched_num_tasks(struct aml_sched *sched);
+/**
+ * Destroy a task scheduler created with `aml_queue_sched_create()`
+ *
+ * @param sched[in,out]: A pointer to the scheduler to destroy.
+ * The pointer content is set to NULL.
+ */
+void aml_queue_sched_destroy(struct aml_sched **sched);
 
 /**
  * @}
@@ -117,4 +123,4 @@ int aml_active_sched_num_tasks(struct aml_sched *sched);
 }
 #endif
 
-#endif //AML_ASYNC_H
+#endif // AML_ASYNC_H

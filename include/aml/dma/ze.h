@@ -50,6 +50,8 @@ struct aml_dma_ze_data {
 	// The maximum of number of events that can be handled simultaneously in
 	// the event pool.
 	uint32_t event_pool_size;
+	// Synchronization scope for events.
+	ze_event_scope_flags_t event_flags;
 };
 
 /** Default dma ops used at dma creation **/
@@ -87,27 +89,6 @@ int aml_dma_ze_destroy(struct aml_dma **dma);
 
 //--- DMA request ---------------------------------------------------------//
 
-/**
- * Flag to pass to ass dma request create op_arg to optimize dma request
- * when the caller knows it will go from host to device.
- */
-#define AML_DMA_ZE_REQUEST_HOST_DEVICE (1 << 0)
-/**
- * Flag to pass to ass dma request create op_arg to optimize dma request
- * when the caller knows it will go from device to host.
- */
-#define AML_DMA_ZE_REQUEST_DEVICE_HOST (1 << 1)
-/**
- * Flag to pass to ass dma request create op_arg to optimize dma request
- * when the caller knows it will go from device to device.
- */
-#define AML_DMA_ZE_REQUEST_DEVICE_DEVICE (1 << 2)
-/**
- * Flag to pass to ass dma request create op_arg to optimize dma request
- * when the caller does not know the source and destination.
- */
-#define AML_DMA_ZE_REQUEST_UNKNOWN (1 << 3)
-
 /** aml ze request structure */
 struct aml_dma_ze_request {
 	// event handle
@@ -122,8 +103,7 @@ struct aml_dma_ze_request {
  * @param src: The source layout of the request.
  * @param op: This dma implementation performs 1D copies only. Hence,
  * `op` argument is ignored.
- * @param op_arg: a combination of `AML_DMA_ZE_REQUEST_*` flags casted into
- * a `void *`. Default to 0 (NULL).
+ * @param op_arg: unused.
  * @return AML_SUCCESS on success.
  * @return -AML_ENOMEM if allocation failed.
  * @return Another aml error code translated from a `ze_result_t` that can
@@ -155,6 +135,22 @@ int aml_dma_ze_request_wait(struct aml_dma_data *dma,
  **/
 int aml_dma_ze_request_destroy(struct aml_dma_data *dma,
                                struct aml_dma_request **req);
+
+/**
+ * Structure passed to `aml_dma_operator` `arg` argument by
+ * the request created in `aml_dma_ze_request_create()`.
+ * All `aml_dma_operator` implementations can expect to obtain
+ * a pointer to this structure as `arg` argument. The pointer is
+ * valid only for the lifetime of the `aml_dma_operator` call.
+ */
+struct aml_dma_ze_copy_args {
+	// The calling dma data.
+	struct aml_dma_ze_data *ze_data;
+	// The pointer to the created request data.
+	struct aml_dma_ze_request *ze_req;
+	// Extra user args
+	void *arg;
+};
 
 /**
  * AML dma copy operator.

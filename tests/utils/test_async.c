@@ -10,32 +10,32 @@
 
 #define _POSIX_C_SOURCE 199309L // nanosleep
 
-#include <stdlib.h>
 #include <assert.h>
+#include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+
 #include "aml.h"
 
 //----------------------------------------------------------------------------//
 // Task Mockup Implementation for Tests
 //----------------------------------------------------------------------------//
 
-struct aml_task_out *aml_task_mockup_work(struct aml_task_in *in)
+void aml_task_mockup_work(struct aml_task_in *in, struct aml_task_out *out)
 {
 	(void)in;
+	(void)out;
 	long int us = 1000 * (rand() % 10);
 	long int count = 0;
 	for (long int i = 0; i < us; i++)
 		count += i ^ (count + i * 42);
-
-	return NULL;
 }
 
 struct aml_task aml_task_mockup = {
-	.in = NULL,
-	.out = NULL,
-	.data = NULL,
-	.fn = aml_task_mockup_work,
+        .in = NULL,
+        .out = NULL,
+        .data = NULL,
+        .fn = aml_task_mockup_work,
 };
 
 //----------------------------------------------------------------------------//
@@ -78,15 +78,15 @@ int main(void)
 	// set seed for tasks sleep.
 	srand(0);
 
-	struct aml_sched *as = aml_active_sched_create(4);
+	struct aml_sched *as = aml_queue_sched_create(4);
 
 	assert(as != NULL);
 	test_scheduler(as, 256);
-	aml_active_sched_destroy(&as);
+	aml_queue_sched_destroy(&as);
 
-	as = aml_active_sched_create(0);
+	as = aml_queue_sched_create(0);
 	assert(as != NULL);
 	test_scheduler(as, 256);
-	aml_active_sched_destroy(&as);
+	aml_queue_sched_destroy(&as);
 	return 0;
 }

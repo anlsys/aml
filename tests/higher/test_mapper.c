@@ -163,8 +163,7 @@ void test_mapper(struct C *c)
 		struct C *device_c;
 		/* Copy c to cuda device */
 		assert(aml_mapper_mmap(&struct_C_mapper, &device_c, c, 1,
-		                       &aml_area_cuda, NULL,
-		                       &aml_dma_cuda_host_to_device,
+		                       &aml_area_cuda, NULL, &aml_dma_cuda,
 		                       aml_dma_cuda_copy_1D,
 		                       NULL) == AML_SUCCESS);
 
@@ -173,13 +172,12 @@ void test_mapper(struct C *c)
 
 		/* Copy back __c into modified _c */
 		assert(aml_mapper_copy(&struct_C_mapper, c, device_c, 1,
-		                       &aml_dma_cuda_device_to_host,
-		                       aml_dma_cuda_copy_1D,
+		                       &aml_dma_cuda, aml_dma_cuda_copy_1D,
 		                       NULL) == AML_SUCCESS);
 		assert(eq_struct(c, host_c));
 
 		aml_mapper_munmap(&struct_C_mapper, device_c, 1, c,
-		                  &aml_area_cuda, &aml_dma_cuda_device_to_host,
+		                  &aml_area_cuda, &aml_dma_cuda,
 		                  aml_dma_cuda_copy_1D, NULL);
 	}
 #endif
@@ -223,8 +221,7 @@ void test_shallow_mapper(struct C *c)
 
 		/* Copy c to cuda device */
 		assert(aml_mapper_mmap(&shallow_C_mapper, &device_c, c, 1,
-		                       &aml_area_cuda, NULL,
-		                       &aml_dma_cuda_host_to_device,
+		                       &aml_area_cuda, NULL, &aml_dma_cuda,
 		                       aml_dma_cuda_copy_1D,
 		                       NULL) == AML_SUCCESS);
 
@@ -233,13 +230,12 @@ void test_shallow_mapper(struct C *c)
 
 		/* Copy back __c into modified _c */
 		assert(aml_mapper_copy(&shallow_C_mapper, c, &device_c, 1,
-		                       &aml_dma_cuda_device_to_host,
-		                       aml_dma_cuda_copy_1D,
+		                       &aml_dma_cuda, aml_dma_cuda_copy_1D,
 		                       NULL) == AML_SUCCESS);
 		assert(eq_struct(c, &host_c));
 
 		aml_mapper_munmap(&shallow_C_mapper, &device_c, 1, c,
-		                  &aml_area_cuda, &aml_dma_cuda_device_to_host,
+		                  &aml_area_cuda, &aml_dma_cuda,
 		                  aml_dma_cuda_copy_1D, NULL);
 	}
 #endif
