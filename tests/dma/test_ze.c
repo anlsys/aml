@@ -37,5 +37,8 @@ int main(int argc, char **argv)
 	test_dma_memcpy(aml_area_ze_device, NULL, aml_dma_ze_default,
 	                aml_memcpy_ze);
 
+	test_dma_sync(aml_area_ze_device, NULL, aml_dma_ze_default,
+	              aml_memcpy_ze);
+
 	aml_finalize();
 }

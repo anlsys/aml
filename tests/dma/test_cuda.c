@@ -40,5 +40,7 @@ int main(int argc, char **argv)
 
 	test_dma_memcpy(&aml_area_cuda, NULL, &aml_dma_cuda, aml_memcpy_cuda);
 
+	test_dma_sync(&aml_area_cuda, NULL, &aml_dma_cuda, aml_memcpy_cuda);
+
 	aml_finalize();
 }

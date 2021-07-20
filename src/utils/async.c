@@ -72,6 +72,10 @@ struct aml_queue_sched {
 	size_t nt;
 	/** threads **/
 	pthread_t *threads;
+	/** Weather thread is processing work **/
+	char *is_working;
+	/** Counter to set threads id from 0 to (nt-1) **/
+	int tid;
 };
 
 static void *aml_queue_sched_thread_fn(void *arg)
@@ -79,6 +83,12 @@ static void *aml_queue_sched_thread_fn(void *arg)
 	int err;
 	struct aml_task *task;
 	struct aml_queue_sched *sched = (struct aml_queue_sched *)arg;
+	int tid;
+
+	// Set this thread id.
+	pthread_mutex_lock(&(sched->workq_lock));
+	tid = sched->tid++;
+	pthread_mutex_unlock(&(sched->workq_lock));
 
 	// Forever until cancelled by a call to aml_queue_sched_destroy()
 loop:
@@ -99,6 +109,8 @@ loop:
 		goto loop;
 	}
 	task = aml_queue_pop(sched->work_q);
+	if (task != NULL)
+		sched->is_working[tid] = 1;
 	pthread_mutex_unlock(&(sched->workq_lock));
 
 	// Run task
@@ -109,6 +121,7 @@ loop:
 	// Push task to done q
 	pthread_mutex_lock(&(sched->doneq_lock));
 	aml_queue_push(&(sched->done_q), (void *)task);
+	sched->is_working[tid] = 0;
 	pthread_mutex_unlock(&(sched->doneq_lock));
 
 	// loop until cancelation.
@@ -136,7 +149,8 @@ int aml_queue_sched_wait_async(struct aml_sched_data *data,
 	struct aml_queue_sched *sched = (struct aml_queue_sched *)data;
 
 	while (!done) {
-		while (aml_queue_len(sched->done_q) == 0)
+		while (aml_queue_len(sched->done_q) == 0 &&
+		       aml_queue_len(sched->work_q) > 0)
 			sched_yield();
 		pthread_mutex_lock(&(sched->doneq_lock));
 		done = aml_queue_take(sched->done_q, task) != NULL;
@@ -177,14 +191,34 @@ struct aml_task *aml_queue_sched_wait_any_async(struct aml_sched_data *data)
 {
 	struct aml_task *task = NULL;
 	struct aml_queue_sched *sched = (struct aml_queue_sched *)data;
+	int busy;
+	char busy_cmp[sched->nt];
+	memset(busy_cmp, 0, sizeof(busy_cmp));
 
 	// Poll done_q until a task is here.
-	while (task == NULL) {
-		while (aml_queue_len(sched->done_q) == 0)
-			sched_yield();
+	while (1) {
+		// Pull one task.
 		pthread_mutex_lock(&(sched->doneq_lock));
 		task = aml_queue_pop(sched->done_q);
+		if (task != NULL) {
+			pthread_mutex_unlock(&(sched->doneq_lock));
+			return task;
+		}
+
+		// Lock the entire scheduler state to see if there is work
+		// to wait for.
+		pthread_mutex_lock(&(sched->workq_lock));
+		busy = aml_queue_len(sched->work_q) > 0 ||
+		       memcmp(busy_cmp, sched->is_working, sizeof(busy_cmp));
 		pthread_mutex_unlock(&(sched->doneq_lock));
+		pthread_mutex_unlock(&(sched->workq_lock));
+
+		// If there is no more work, then return NULL
+		if (!busy)
+			return NULL;
+
+		// There is work to wait for, yield and loop
+		sched_yield();
 	}
 
 	return task;
@@ -223,7 +257,8 @@ struct aml_sched *aml_queue_sched_create(const size_t num_threads)
 
 	// Alloc struct + pthreads + tasks slots
 	if (num_threads > 0)
-		sched = AML_INNER_MALLOC_ARRAY(num_threads, pthread_t,
+		sched = AML_INNER_MALLOC_EXTRA(num_threads, pthread_t,
+		                               num_threads * sizeof(char),
 		                               struct aml_sched,
 		                               struct aml_queue_sched,
 		                               struct aml_sched_ops);
@@ -259,11 +294,15 @@ struct aml_sched *aml_queue_sched_create(const size_t num_threads)
 	sched->ops = ops;
 
 	// Assign ready, running and threads field in data.
-	if (num_threads)
+	if (num_threads) {
 		data->threads = AML_INNER_MALLOC_GET_ARRAY(
 		        sched, pthread_t, struct aml_sched,
 		        struct aml_queue_sched, struct aml_sched_ops);
-	else
+		data->is_working = AML_INNER_MALLOC_GET_EXTRA(
+		        sched, num_threads, pthread_t, struct aml_sched,
+		        struct aml_queue_sched, struct aml_sched_ops);
+		memset(data->is_working, 0, num_threads * sizeof(char));
+	} else
 		data->threads = NULL;
 
 	// Alloc work queue

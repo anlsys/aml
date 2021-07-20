@@ -112,6 +112,11 @@ void aml_dma_linux_exec_request(struct aml_task_in *input,
  */
 #define AML_DMA_LINUX_REQUEST_FLAGS_OWNED 0x1
 
+/**
+ * Request Flag turned on when request is finished.
+ */
+#define AML_DMA_LINUX_REQUEST_FLAGS_DONE 0x2
+
 /** The dma request implementation */
 struct aml_dma_linux_request {
 	// The scheduler task to executing the request.

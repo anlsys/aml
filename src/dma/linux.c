@@ -19,6 +19,7 @@ void aml_dma_linux_exec_request(struct aml_task_in *input,
 	struct aml_dma_linux_task_in *in =
 	        (struct aml_dma_linux_task_in *)input;
 	err = in->op(in->dst, in->src, in->op_arg);
+	in->req->flags = in->req->flags & AML_DMA_LINUX_REQUEST_FLAGS_DONE;
 	*(int *)output = err;
 }
 
@@ -61,16 +62,18 @@ int aml_dma_linux_request_wait(struct aml_dma_data *dma,
 	struct aml_dma_linux_request *r = *(struct aml_dma_linux_request **)req;
 	int out;
 
-	int err = aml_sched_wait_task(sched, &r->task);
-	if (err != AML_SUCCESS)
-		return err;
+	if (!(r->flags & AML_DMA_LINUX_REQUEST_FLAGS_DONE)) {
+		int err = aml_sched_wait_task(sched, &r->task);
+		if (err != AML_SUCCESS)
+			return err;
+	}
 	out = r->task_out;
 	free(r);
 	*req = NULL;
 	return out;
 }
 
-int aml_dma_linux_request_wait_all(struct aml_dma_data *dma)
+int aml_dma_linux_request_sync(struct aml_dma_data *dma)
 {
 	struct aml_sched *sched = (struct aml_sched *)dma;
 	struct aml_task *t = aml_sched_wait_any(sched);
@@ -157,6 +160,6 @@ struct aml_dma_ops aml_dma_linux_ops = {
         .create_request = aml_dma_linux_request_create,
         .destroy_request = aml_dma_linux_request_destroy,
         .wait_request = aml_dma_linux_request_wait,
-        .wait_all = aml_dma_linux_request_wait_all,
+        .sync = aml_dma_linux_request_sync,
         .fprintf = NULL,
 };

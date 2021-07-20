@@ -968,12 +968,12 @@ struct aml_dma_ops {
 	/**
 	 * Wait for all pending requests. If some of these requests have
 	 * been provided to the user via `create_request()` method, the user
-	 * still have to destroy the request with `aml_dma_cancel()`.
+	 * still have to destroy the request with `aml_dma_wait()`.
 	 *
 	 * @param[in] dma: dma_implementation internal data.
 	 * @return an AML error code.
 	 */
-	int (*wait_all)(struct aml_dma_data *dma);
+	int (*sync)(struct aml_dma_data *dma);
 
 	/**
 	 * Print the implementation-specific information available on a dma.
@@ -1032,7 +1032,7 @@ int aml_dma_copy_custom(struct aml_dma *dma,
  * request will be stored. Created requests via this call must be destroyed
  * with a call to `aml_dma_cancel()`. If `req` is `NULL`, then no request is
  * stored in req and the user can only wait for the request with a call to
- * `aml_dma_wait_all()`.
+ * `aml_dma_sync()`.
  * @param[out] dest: layout describing the destination.
  * @param[in] src: layout describing the source.
  * @param[in] op: optional custom operator for this dma
@@ -1063,15 +1063,15 @@ int aml_dma_async_copy_custom(struct aml_dma *dma,
 int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request **req);
 
 /**
- * Wait for all pending dma requests.
+ * Block until all pending dma requests are finished.
  * Requests obtained via `aml_dma_async_copy_custom()` must still
- * be destroyed with `aml_dma_cancel()`.
+ * be destroyed with `aml_dma_wait()`.
  *
  * @param[in, out] dma: n initialized DMA structure.
  * @param[in, out] req: a DMA request obtained using aml_dma_async_*() calls.
  * @return 0 if successful; an error code otherwise.
  **/
-int aml_dma_wait_all(struct aml_dma *dma);
+int aml_dma_sync(struct aml_dma *dma);
 
 /**
  * Tear down an asynchronous DMA request before it completes.

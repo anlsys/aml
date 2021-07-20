@@ -154,11 +154,12 @@ int aml_dma_cuda_request_wait(struct aml_dma_data *data,
 	if (dma_req->status != AML_DMA_CUDA_REQUEST_STATUS_DONE)
 		return -AML_EINVAL;
 
-	aml_dma_cuda_request_destroy(data, req);
+	free(dma_req);
+	*req = NULL;
 	return AML_SUCCESS;
 }
 
-int aml_dma_cuda_request_wait_all(struct aml_dma_data *data)
+int aml_dma_cuda_request_sync(struct aml_dma_data *data)
 {
 	struct aml_dma_cuda_data *dma_data;
 
@@ -236,7 +237,7 @@ struct aml_dma_ops aml_dma_cuda_ops = {
         .create_request = aml_dma_cuda_request_create,
         .destroy_request = aml_dma_cuda_request_destroy,
         .wait_request = aml_dma_cuda_request_wait,
-        .wait_all = aml_dma_cuda_request_wait_all,
+        .sync = aml_dma_cuda_request_sync,
 };
 
 struct aml_dma_cuda_data aml_dma_cuda_data = {
