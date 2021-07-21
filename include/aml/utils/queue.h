@@ -85,13 +85,13 @@ void *aml_queue_take(struct aml_queue *q, void *element);
  * @return A pointer somewhere in `q->elems` pointing to an element
  * in the queue.
  **/
-void **aml_queue_head(const struct aml_queue *q);
+void **aml_queue_head(struct aml_queue *q);
 
 /**
  * Get next element after `current` in the queue.
  *
- * @param[in] q: The queue where `current` comes from.
- * @param[in] current: A pointer somewhere in `q->elems` or NULL.
+ * @param q[in]: The queue where `current` comes from.
+ * @param current[in]: A pointer somewhere in `q->elems` or NULL.
  * If `current` is NULL, then the queue head is returned.
  * @return NULL if the `q` is NULL, if `q` is empty, if `current` is
  * the last pointer element in `q` or if `current` is not a pointer
@@ -100,7 +100,7 @@ void **aml_queue_head(const struct aml_queue *q);
  * @return A pointer somewhere in `q->elems` pointing to the element
  * following `current`.
  **/
-void **aml_queue_next(const struct aml_queue *q, const void **current);
+void **aml_queue_next(struct aml_queue *q, void **current);
 /**
  * @}
  **/
