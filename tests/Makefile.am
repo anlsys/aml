@@ -44,11 +44,17 @@ liblayout_test_la_SOURCES = \
 	layout/layout.c \
 	layout/reshape.c
 
+libdma_test_la_SOURCES = \
+	dma/test_dma.h \
+	dma/test_dma.c
+
 libreplicaset_test_la_SOURCES = \
 	replicaset/test_replicaset.h \
 	replicaset/common.c
 
-LDADD = liblayout_test.la libreplicaset_test.la
+LDADD = libdma_test.la \
+	liblayout_test.la \
+	libreplicaset_test.la
 
 LAYOUT_TESTS = \
 	layout/test_coords \
@@ -60,8 +66,8 @@ TILING_TESTS = \
 	tiling/test_tiling
 
 DMA_TESTS = dma/test_dma_linux_seq \
-		  dma/test_dma_linux_par
-
+	dma/test_dma_linux_par \
+	dma/test_linux
 
 HIGHER_TESTS = higher/test_mapper
 
@@ -103,7 +109,7 @@ TST_PROGS+=test_dma_cuda test_area_cuda
 endif
 
 check_PROGRAMS = $(TST_PROGS)
-check_LTLIBRARIES = liblayout_test.la libreplicaset_test.la
+check_LTLIBRARIES = libdma_test.la liblayout_test.la libreplicaset_test.la
 TESTS = $(TST_PROGS)
 
 # phony target to allow us to compile the check programs without running the
