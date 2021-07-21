@@ -327,6 +327,7 @@ cat <<EOF
 AML
 
 Version: $PACKAGE_VERSION
+Docs:    $docs
 
 FEATURES:
 ---------
