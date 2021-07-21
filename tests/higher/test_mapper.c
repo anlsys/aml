@@ -15,7 +15,7 @@
 
 // Mapper args (linux)
 #include "aml/area/linux.h"
-#include "aml/dma/linux-seq.h"
+#include "aml/dma/linux.h"
 
 // Mapper args (cuda)
 #if AML_HAVE_BACKEND_CUDA
@@ -153,7 +153,7 @@ void test_mapper(struct C *c)
 	// Linux check
 	struct C *host_c;
 	assert(aml_mapper_mmap(&struct_C_mapper, &host_c, c, 1, &aml_area_linux,
-	                       NULL, aml_dma_linux_sequential, NULL,
+	                       NULL, aml_dma_linux, aml_dma_linux_copy_1D,
 	                       NULL) == AML_SUCCESS);
 	assert(eq_struct(c, host_c));
 
@@ -182,7 +182,7 @@ void test_mapper(struct C *c)
 	}
 #endif
 	aml_mapper_munmap(&struct_C_mapper, host_c, 1, c, &aml_area_linux,
-	                  aml_dma_linux_sequential, NULL, NULL);
+	                  aml_dma_linux, aml_dma_linux_copy_1D, NULL);
 }
 
 //- Shallow mapper test ------------------------------------------------------
@@ -208,8 +208,8 @@ void test_shallow_mapper(struct C *c)
 
 	// Linux check
 	assert(aml_mapper_mmap(&shallow_C_mapper, &host_c, c, 1,
-	                       &aml_area_linux, NULL, aml_dma_linux_sequential,
-	                       NULL, NULL) == AML_SUCCESS);
+	                       &aml_area_linux, NULL, aml_dma_linux,
+	                       aml_dma_linux_copy_1D, NULL) == AML_SUCCESS);
 	assert(eq_struct(c, &host_c));
 
 	// Cuda check
@@ -240,7 +240,7 @@ void test_shallow_mapper(struct C *c)
 	}
 #endif
 	aml_mapper_munmap(&shallow_C_mapper, &host_c, 1, c, &aml_area_linux,
-	                  aml_dma_linux_sequential, NULL, NULL);
+	                  aml_dma_linux, aml_dma_linux_copy_1D, NULL);
 }
 
 //- Application Data Initialization -------------------------------------------

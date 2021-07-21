@@ -183,6 +183,16 @@ int aml_dma_linux_copy_1D(struct aml_layout *dst,
                           void *arg);
 
 /**
+ * Generic helper to copy from one layout to another.
+ * @param[out] dst: destination layout
+ * @param[in] src: source layout
+ * @param[in] arg: unused (should be NULL)
+ */
+int aml_copy_layout_generic(struct aml_layout *dst,
+                            const struct aml_layout *src,
+                            void *arg);
+
+/**
  * @}
  **/
 

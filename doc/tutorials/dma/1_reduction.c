@@ -9,7 +9,8 @@
  ******************************************************************************/
 
 #include <aml.h>
-#include <aml/dma/linux-par.h>
+
+#include <aml/dma/linux.h>
 #include <aml/layout/dense.h>
 
 /** Error checking and printing. Should not be triggered **/
@@ -44,8 +45,8 @@ main(void)
 	//------------------------------
 	struct aml_dma *dma;
 
-	err = aml_dma_linux_par_create(&dma, 128, NULL, NULL);
-	CHK_ABORT(err, "aml_dma_linux_par_create:");
+	err = aml_dma_linux_create(&dma, 0);
+	CHK_ABORT(err, "aml_dma_linux_create:");
 
 	// Defining 'a' vector: {0.534, 65.4543, 0, 913.2} with a stride of 2.
 	double a[8] = {
@@ -159,7 +160,7 @@ main(void)
 	aml_layout_destroy(&b_layout);
 	aml_layout_destroy(&a_continuous_layout);
 	aml_layout_destroy(&b_continuous_layout);
-	aml_dma_linux_par_destroy(&dma);
+	aml_dma_linux_destroy(&dma);
 
 	return 0;
 }

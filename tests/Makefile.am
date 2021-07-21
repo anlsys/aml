@@ -65,9 +65,7 @@ LAYOUT_TESTS = \
 TILING_TESTS = \
 	tiling/test_tiling
 
-DMA_TESTS = dma/test_dma_linux_seq \
-	dma/test_dma_linux_par \
-	dma/test_linux
+DMA_TESTS = dma/test_linux
 
 HIGHER_TESTS = higher/test_mapper
 

@@ -17,10 +17,7 @@ include_aml_layout_HEADERS = \
 			      aml/layout/reshape.h
 
 include_aml_dmadir=$(includedir)/aml/dma
-include_aml_dma_HEADERS = \
-			      aml/dma/linux.h \
-			      aml/dma/linux-seq.h \
-			      aml/dma/linux-par.h
+include_aml_dma_HEADERS = aml/dma/linux.h
 
 include_aml_tilingdir=$(includedir)/aml/tiling
 include_aml_tiling_HEADERS = \

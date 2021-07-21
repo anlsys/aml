@@ -11,6 +11,7 @@
 #include "aml.h"
 
 #include "aml/dma/linux.h"
+#include "aml/layout/native.h"
 
 void aml_dma_linux_exec_request(struct aml_task_in *input,
                                 struct aml_task_out *output)
@@ -41,7 +42,11 @@ int aml_dma_linux_request_create(struct aml_dma_data *data,
 
 	r->task_in.dst = dest;
 	r->task_in.src = src;
-	r->task_in.op = op;
+
+	if (op == NULL)
+		r->task_in.op = aml_copy_layout_generic;
+	else
+		r->task_in.op = op;
 	r->task_in.op_arg = op_arg;
 	r->task_out = 0;
 
@@ -145,6 +150,55 @@ int aml_dma_linux_copy_1D(struct aml_layout *dst,
 
 	memcpy(dst_ptr, src_ptr, size);
 	return AML_SUCCESS;
+}
+
+static inline void aml_copy_layout_generic_helper(size_t d,
+                                                  struct aml_layout *dst,
+                                                  const struct aml_layout *src,
+                                                  const size_t *elem_number,
+                                                  size_t elem_size,
+                                                  size_t *coords)
+{
+	if (d == 1) {
+		for (size_t i = 0; i < elem_number[0]; i += 1) {
+			coords[0] = i;
+			memcpy(aml_layout_deref_native(dst, coords),
+			       aml_layout_deref_native(src, coords), elem_size);
+		}
+	} else {
+		for (size_t i = 0; i < elem_number[d - 1]; i += 1) {
+			coords[d - 1] = i;
+			aml_copy_layout_generic_helper(d - 1, dst, src,
+			                               elem_number, elem_size,
+			                               coords);
+		}
+	}
+}
+
+int aml_copy_layout_generic(struct aml_layout *dst,
+                            const struct aml_layout *src,
+                            void *arg)
+{
+	size_t d;
+	size_t elem_size;
+	(void)arg;
+
+	assert(aml_layout_ndims(dst) == aml_layout_ndims(src));
+	d = aml_layout_ndims(dst);
+	assert(aml_layout_element_size(dst) == aml_layout_element_size(src));
+	elem_size = aml_layout_element_size(dst);
+
+	size_t coords[d];
+	size_t elem_number[d];
+	size_t elem_number2[d];
+
+	aml_layout_dims_native(src, elem_number);
+	aml_layout_dims_native(dst, elem_number2);
+	for (size_t i = 0; i < d; i += 1)
+		assert(elem_number[i] == elem_number2[i]);
+	aml_copy_layout_generic_helper(d, dst, src, elem_number, elem_size,
+	                               coords);
+	return 0;
 }
 
 struct aml_dma_ops aml_dma_linux_ops = {
