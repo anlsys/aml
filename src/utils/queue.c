@@ -37,25 +37,26 @@ void aml_queue_destroy(struct aml_queue *q)
 	free(q);
 }
 
-void **aml_queue_head(struct aml_queue *q)
+void **aml_queue_head(const struct aml_queue *q)
 {
 	if (q->max == 0 || aml_queue_len(q) == 0)
 		return NULL;
 	return &q->elems[q->head];
 }
 
-void **aml_queue_next(struct aml_queue *q, void **current)
+void **aml_queue_next(const struct aml_queue *q, const void **current)
 {
+	const void **elems = (const void **)q->elems;
 	if (q == NULL || q->tail == q->head)
 		return NULL;
 	// Out of bounds return null
-	if (current < q->elems || current >= q->elems + q->max)
+	if (current < elems || current >= elems + q->max)
 		return NULL;
 	// Empty Queue
 	if (q->tail == q->head)
 		return NULL;
 	// End of queue
-	if (current == q->elems + q->tail - 1)
+	if (current == elems + q->tail - 1)
 		return NULL;
 	// special value query head
 	if (current == NULL)
@@ -63,18 +64,17 @@ void **aml_queue_next(struct aml_queue *q, void **current)
 	// All element are contiguous.
 	if (q->tail > q->head) {
 		// Out of bounds
-		if (current < q->elems + q->head ||
-		    current >= q->elems + q->tail)
+		if (current < elems + q->head || current >= elems + q->tail)
 			return NULL;
-		return current++;
+		return (void **)current++;
 	} else {
-		if (current < q->elems + q->tail - 1)
-			return current++;
-		if (current < q->elems + q->head)
+		if (current < elems + q->tail - 1)
+			return (void **)current++;
+		if (current < elems + q->head)
 			return NULL;
-		if (current < q->elems + q->max - 1)
-			return current++;
-		return q->elems;
+		if (current < elems + q->max - 1)
+			return (void **)current++;
+		return (void **)elems;
 	}
 }
 
