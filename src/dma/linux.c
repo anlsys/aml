@@ -15,11 +15,10 @@
 void aml_dma_linux_exec_request(struct aml_task_in *input,
                                 struct aml_task_out *output)
 {
-	int err;
 	struct aml_dma_linux_task_in *in =
 	        (struct aml_dma_linux_task_in *)input;
-	err = in->op(in->dst, in->src, in->op_arg);
-	*(int *)output = err;
+	*(int *)output = in->op(in->dst, in->src, in->op_arg);
+	in->req->flags = in->req->flags | AML_DMA_LINUX_REQUEST_FLAGS_DONE;
 }
 
 int aml_dma_linux_request_create(struct aml_dma_data *data,
@@ -46,7 +45,14 @@ int aml_dma_linux_request_create(struct aml_dma_data *data,
 	r->task_in.op_arg = op_arg;
 	r->task_out = 0;
 
-	*req = (struct aml_dma_request *)r;
+	r->task_in.req = r;
+
+	if (req != NULL) {
+		*req = (struct aml_dma_request *)r;
+		r->flags = 0;
+	} else
+		r->flags = AML_DMA_LINUX_REQUEST_FLAGS_OWNED;
+
 	return aml_sched_submit_task(sched, &r->task);
 }
 
@@ -56,11 +62,34 @@ int aml_dma_linux_request_wait(struct aml_dma_data *dma,
 	struct aml_sched *sched = (struct aml_sched *)dma;
 	struct aml_dma_linux_request *r = *(struct aml_dma_linux_request **)req;
 
-	int err = aml_sched_wait_task(sched, &r->task);
-	if (err != AML_SUCCESS)
-		return err;
-	return r->task_out;
-	;
+	if (!(r->flags & AML_DMA_LINUX_REQUEST_FLAGS_DONE)) {
+		int err = aml_sched_wait_task(sched, &r->task);
+		if (err != AML_SUCCESS)
+			return err;
+	}
+	int out = r->task_out;
+	free(r);
+	*req = NULL;
+	return out;
+}
+
+int aml_dma_linux_request_barrier(struct aml_dma_data *dma)
+{
+	struct aml_sched *sched = (struct aml_sched *)dma;
+	struct aml_task *t = aml_sched_wait_any(sched);
+	struct aml_dma_linux_task_in *input;
+	int out;
+
+	while (t != NULL) {
+		input = (struct aml_dma_linux_task_in *)t->in;
+		out = input->req->task_out;
+		if (input->req->flags & AML_DMA_LINUX_REQUEST_FLAGS_OWNED)
+			free(input->req);
+		if (out != AML_SUCCESS)
+			return out;
+		t = aml_sched_wait_any(sched);
+	}
+	return AML_SUCCESS;
 }
 
 int aml_dma_linux_request_destroy(struct aml_dma_data *dma,
@@ -122,5 +151,6 @@ struct aml_dma_ops aml_dma_linux_ops = {
         .create_request = aml_dma_linux_request_create,
         .destroy_request = aml_dma_linux_request_destroy,
         .wait_request = aml_dma_linux_request_wait,
+        .barrier = aml_dma_linux_request_barrier,
         .fprintf = NULL,
 };

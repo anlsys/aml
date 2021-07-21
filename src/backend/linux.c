@@ -48,5 +48,6 @@ int aml_backend_linux_finalize(void)
 {
 	aml_dma_linux_seq_destroy(&aml_dma_linux_sequential);
 	aml_dma_linux_par_destroy(&aml_dma_linux_parallel);
+	aml_dma_linux_destroy(&aml_dma_linux);
 	return AML_SUCCESS;
 }

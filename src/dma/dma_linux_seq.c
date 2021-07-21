@@ -184,6 +184,7 @@ struct aml_dma_ops aml_dma_linux_seq_ops = {
 	aml_dma_linux_seq_create_request,
 	aml_dma_linux_seq_destroy_request,
 	aml_dma_linux_seq_wait_request,
+	NULL,
 	aml_dma_linux_seq_fprintf,
 };
 

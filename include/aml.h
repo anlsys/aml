@@ -964,6 +964,16 @@ struct aml_dma_ops {
 	                    struct aml_dma_request **req);
 
 	/**
+	 * Wait for all pending requests. If some of these requests have
+	 * been provided to the user via `create_request()` method, the user
+	 * still have to destroy the request with `aml_dma_wait()`.
+	 *
+	 * @param[in] dma: dma_implementation internal data.
+	 * @return an AML error code.
+	 */
+	int (*barrier)(struct aml_dma_data *dma);
+
+	/**
 	 * Print the implementation-specific information available on a dma.
 	 * @param[in] stream: the stream to print to
 	 * @param[in] prefix: a prefix string to use on all lines
@@ -1017,7 +1027,10 @@ int aml_dma_copy_custom(struct aml_dma *dma,
  *
  * @param[in, out] dma: an initialized DMA structure.
  * @param[in, out] req: an address where the pointer to the newly assigned DMA
- *	  request will be stored.
+ * request will be stored. Created requests via this call must be destroyed
+ * with a call to `aml_dma_wait()`. If `req` is `NULL`, then no request is
+ * stored in req and the user can only wait for the request with a call to
+ * `aml_dma_barrier()`.
  * @param[out] dest: layout describing the destination.
  * @param[in] src: layout describing the source.
  * @param[in] op: optional custom operator for this dma
@@ -1042,6 +1055,17 @@ int aml_dma_async_copy_custom(struct aml_dma *dma,
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request **req);
+
+/**
+ * Block until all pending dma requests are finished.
+ * Requests obtained via `aml_dma_async_copy_custom()` must still
+ * be destroyed with `aml_dma_wait()`.
+ *
+ * @param[in, out] dma: n initialized DMA structure.
+ * @param[in, out] req: a DMA request obtained using aml_dma_async_*() calls.
+ * @return 0 if successful; an error code otherwise.
+ **/
+int aml_dma_barrier(struct aml_dma *dma);
 
 /**
  * Tear down an asynchronous DMA request before it completes.
