@@ -95,7 +95,7 @@ int aml_dma_ze_create(struct aml_dma **dma,
  * @return AML_SUCCESS on success.
  * @return AML error code caused by ze backend on error.
  **/
-int aml_dma_ze_request_barrier(struct aml_dma_data *data);
+int aml_dma_ze_barrier(struct aml_dma_data *data);
 
 /** Destroy a created dma and set it to NULL **/
 int aml_dma_ze_destroy(struct aml_dma **dma);

@@ -73,7 +73,7 @@ int aml_dma_linux_request_wait(struct aml_dma_data *dma,
 	return out;
 }
 
-int aml_dma_linux_request_barrier(struct aml_dma_data *dma)
+int aml_dma_linux_barrier(struct aml_dma_data *dma)
 {
 	struct aml_sched *sched = (struct aml_sched *)dma;
 	struct aml_task *t = aml_sched_wait_any(sched);
@@ -151,6 +151,6 @@ struct aml_dma_ops aml_dma_linux_ops = {
         .create_request = aml_dma_linux_request_create,
         .destroy_request = aml_dma_linux_request_destroy,
         .wait_request = aml_dma_linux_request_wait,
-        .barrier = aml_dma_linux_request_barrier,
+        .barrier = aml_dma_linux_barrier,
         .fprintf = NULL,
 };

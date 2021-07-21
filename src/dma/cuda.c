@@ -159,7 +159,7 @@ exit_success:
 	return AML_SUCCESS;
 }
 
-int aml_dma_cuda_request_barrier(struct aml_dma_data *data)
+int aml_dma_cuda_barrier(struct aml_dma_data *data)
 {
 	struct aml_dma_cuda_data *dma_data;
 
@@ -237,7 +237,7 @@ struct aml_dma_ops aml_dma_cuda_ops = {
         .create_request = aml_dma_cuda_request_create,
         .destroy_request = aml_dma_cuda_request_destroy,
         .wait_request = aml_dma_cuda_request_wait,
-        .barrier = aml_dma_cuda_request_barrier,
+        .barrier = aml_dma_cuda_barrier,
 };
 
 struct aml_dma_cuda_data aml_dma_cuda_data = {

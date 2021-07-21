@@ -209,7 +209,7 @@ int aml_dma_ze_request_wait(struct aml_dma_data *data,
 	return AML_SUCCESS;
 }
 
-int aml_dma_ze_request_barrier(struct aml_dma_data *data)
+int aml_dma_ze_barrier(struct aml_dma_data *data)
 {
 	int err;
 	struct aml_dma_ze_data *ze_data = (struct aml_dma_ze_data *)data;
@@ -250,6 +250,6 @@ struct aml_dma_ops aml_dma_ze_ops = {
         .create_request = aml_dma_ze_request_create,
         .destroy_request = aml_dma_ze_request_destroy,
         .wait_request = aml_dma_ze_request_wait,
-        .barrier = aml_dma_ze_request_barrier,
+        .barrier = aml_dma_ze_barrier,
         .fprintf = NULL,
 };

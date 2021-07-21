@@ -153,7 +153,7 @@ int aml_dma_linux_request_wait(struct aml_dma_data *dma,
  * Remaining requests are not waited.
  * @return AML_SUCCESS on success.
  */
-int aml_dma_linux_request_barrier(struct aml_dma_data *dma);
+int aml_dma_linux_barrier(struct aml_dma_data *dma);
 
 /**
  * The linux dma `destroy_request()` operator implementation.
