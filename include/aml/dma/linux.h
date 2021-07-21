@@ -39,8 +39,8 @@ extern "C" {
 /**
  * Create a dma engine with a custom amount of workers.
  *
- * @param dma[out]: A pointer where to allocate the dma engine.
- * @param num_threads[in]: The number of workers running the dma operations.
+ * @param[out] dma: A pointer where to allocate the dma engine.
+ * @param[in] num_threads: The number of workers running the dma operations.
  * @return -AML_ENOMEM on error, exclusively caused when being out of memory.
  * @return AML_SUCCESS on success. On success, the created dma must be destroyed
  * with `aml_dma_linux_destroy()`.
@@ -50,14 +50,14 @@ int aml_dma_linux_create(struct aml_dma **dma, const size_t num_threads);
 /**
  * Delete a linux dma created with `aml_dma_linux_create()`.
  *
- * @param dma[in, out]: A pointer where the dma engine has been allocated.
+ * @param[in, out] dma: A pointer where the dma engine has been allocated.
  * The pointer content is set to NULL after deallocation.
  * @return AML_SUCCESS.
  */
 int aml_dma_linux_destroy(struct aml_dma **dma);
 
 /**
- * Pre instanciated linux dma engine.
+ * Pre instantiated linux dma engine.
  * The user may use this directly after a successful call to `aml_init()`.
  * This pointer is not valid anymore after `aml_finalize()` is called.
  */
@@ -95,8 +95,8 @@ struct aml_dma_linux_task_in {
  * This function calls the operator in `input` with its arguments
  * and stored the result error code in `output`.
  *
- * @param input[in]: A pointer to `struct aml_dma_linux_task_in`.
- * @param output[out]: A pointer to an `int` where to store the result
+ * @param[in] input: A pointer to `struct aml_dma_linux_task_in`.
+ * @param[out] output: A pointer to an `int` where to store the result
  * of the dma operator.
  */
 void aml_dma_linux_exec_request(struct aml_task_in *input,
@@ -126,8 +126,8 @@ int aml_dma_linux_request_create(struct aml_dma_data *data,
 /**
  * The linux dma `wait_request()` operator implementation.
  *
- * @param dma[in]: The dma engine where request has been posted.
- * @param req[in]: A pointer to a `struct aml_dma_linux_request`.
+ * @param[in] dma: The dma engine where request has been posted.
+ * @param[in] req: A pointer to a `struct aml_dma_linux_request`.
  */
 int aml_dma_linux_request_wait(struct aml_dma_data *dma,
                                struct aml_dma_request **req);
@@ -135,8 +135,8 @@ int aml_dma_linux_request_wait(struct aml_dma_data *dma,
 /**
  * The linux dma `destroy_request()` operator implementation.
  *
- * @param dma[in]: unused.
- * @param req[in]: A pointer to a `struct aml_dma_linux_request`.
+ * @param[in] dma: unused.
+ * @param[in] req: A pointer to a `struct aml_dma_linux_request`.
  * The pointer is set to NULL.
  */
 int aml_dma_linux_request_destroy(struct aml_dma_data *dma,
@@ -151,9 +151,9 @@ int aml_dma_linux_request_destroy(struct aml_dma_data *dma,
  * - Dense source and destination layouts.
  *
  * @see aml_layout_dense
- * @param dst[out]: The destination dense layout.
- * @param src[in]: The source dense layout.
- * @param arg[in]: Unused.
+ * @param[out] dst: The destination dense layout.
+ * @param[in] src: The source dense layout.
+ * @param[in] arg: Unused.
  */
 int aml_dma_linux_copy_1D(struct aml_layout *dst,
                           const struct aml_layout *src,

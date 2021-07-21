@@ -98,7 +98,7 @@ struct aml_task *aml_sched_wait_any(struct aml_sched *pool);
 /**
  * Create a pool of threads polling work from a common FIFO queue.
  *
- * @param nt[in]: The number of threads in the pool to execute tasks in the
+ * @param[in] nt: The number of threads in the pool to execute tasks in the
  * queue. If nt == 0 then progress is made from caller thread on call to
  * `aml_sched_wait_task()` and `aml_sched_wait_any()`.
  * @return An initialized task scheduler on success.
@@ -110,7 +110,7 @@ struct aml_sched *aml_queue_sched_create(const size_t nt);
 /**
  * Destroy a task scheduler created with `aml_queue_sched_create()`
  *
- * @param sched[in,out]: A pointer to the scheduler to destroy.
+ * @param[in, out] sched: A pointer to the scheduler to destroy.
  * The pointer content is set to NULL.
  */
 void aml_queue_sched_destroy(struct aml_sched **sched);
