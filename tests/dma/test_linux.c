@@ -15,22 +15,15 @@
 #include "aml/area/linux.h"
 #include "aml/dma/linux.h"
 
-int aml_memcpy_linux(struct aml_layout *dst,
-                     const struct aml_layout *src,
-                     void *arg)
-{
-	memcpy(dst, src, (size_t)arg);
-	return AML_SUCCESS;
-}
-
 int main(int argc, char **argv)
 {
 	assert(aml_init(&argc, &argv) == AML_SUCCESS);
 
-	test_dma_memcpy(&aml_area_linux, NULL, aml_dma_linux, aml_memcpy_linux);
+	test_dma_memcpy(&aml_area_linux, NULL, aml_dma_linux,
+	                aml_dma_linux_memcpy_op);
 
 	test_dma_barrier(&aml_area_linux, NULL, aml_dma_linux,
-	                 aml_memcpy_linux);
+	                 aml_dma_linux_memcpy_op);
 
 	aml_finalize();
 }

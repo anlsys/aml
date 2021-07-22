@@ -166,31 +166,56 @@ int aml_dma_linux_request_destroy(struct aml_dma_data *dma,
                                   struct aml_dma_request **req);
 
 /**
+ * Linux DMA operator implementation:
+ * Use only with `aml_dma_linux_request_create()` or higher level
+ * `aml_dma_async_copy_custom()`.
+ * This copy operator is compatible only with:
+ * - This dma linux implementation,
+ * - Dense source and destination layouts of one dimension.
  * Make a flat copy of contiguous bytes in between two layout raw pointers.
  * The size of the byte stream is computed as the product of dimensions and
  * element size.
- * This copy operator is compatible only with:
- * - This dma linux implementation,
- * - Dense source and destination layouts.
  *
- * @see aml_layout_dense
  * @param[out] dst: The destination dense layout.
  * @param[in] src: The source dense layout.
  * @param[in] arg: Unused.
+ *
+ * @see aml_layout_dense
  */
 int aml_dma_linux_copy_1D(struct aml_layout *dst,
                           const struct aml_layout *src,
                           void *arg);
 
 /**
- * Generic helper to copy from one layout to another.
- * @param[out] dst: destination layout
- * @param[in] src: source layout
- * @param[in] arg: unused (should be NULL)
+ * Linux DMA operator implementation:
+ * Use only with `aml_dma_linux_request_create()` or higher level
+ * `aml_dma_async_copy_custom()`.
+ * Make a flat copy of contiguous bytes between two raw pointers.
+ * This dma operator casts input layout pointers into `void*` and
+ * assumes these are contiguous set of bytes to copy from `src` to `dst`
+ * in the linux `memcpy()` fashion.
+ * @param[out] dst: The destination (`void*`) of the copy casted into a
+ * `struct aml_layout *`.
+ * @param[in] src: The source (`void*`) of the copy casted into a
+ * `struct aml_layout *`.
+ * @param[in] arg: The size (`size_t`) of the copy casted into a `void*`.
+ * @return AML_SUCCESS
  */
-int aml_copy_layout_generic(struct aml_layout *dst,
+int aml_dma_linux_memcpy_op(struct aml_layout *dst,
                             const struct aml_layout *src,
                             void *arg);
+
+/**
+ * Linux DMA operator implementation:
+ * Generic helper to copy from one layout to another.
+ * @param[out] dst: The destination layout.
+ * @param[in] src: The source layout.
+ * @param[in] arg: Ignored.
+ * @return AML_SUCCESS
+ */
+int aml_dma_linux_copy_generic(struct aml_layout *dst,
+                               const struct aml_layout *src,
+                               void *arg);
 
 /**
  * @}

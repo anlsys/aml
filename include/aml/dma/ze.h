@@ -174,31 +174,50 @@ struct aml_dma_ze_copy_args {
 };
 
 /**
- * AML dma copy operator.
- * This copy operator assumes a 1D layout of contiguous elements,
- * and submits a `zeCommandListAppendMemoryCopy()` command to the dma
- * command queue with input layouts raw pointers.
+ * Level Zero DMA operator implementation:
+ * Use only with `aml_dma_ze_request_create()` or higher level
+ * `aml_dma_async_copy_custom()`.
+ * This copy operator assumes 1D layout of contiguous elements and
+ * is compatible only with:
+ * - This dma ze implementation,
+ * - Dense source and destination layouts of one dimension.
+ * Make a flat copy of contiguous bytes in between two layout raw pointers.
+ * The size of the byte stream is computed as the product of dimensions and
+ * element size.
  * @param dst: The layout where to copy data. `dst` must be a 1 dimensional
  * layout of contiguous elements.
  * @param src: The layout from where to copy data. `src` must be a 1 dimensional
  * layout of contiguous elements.
- * @param arg: This argument is set by `aml_dma_ze_request_create()` call.
- * It contains a pointer to the following structure:
- * ```
- * struct aml_dma_ze_copy_args {
- * 	struct aml_dma_ze_data *ze_data;
- * 	struct aml_dma_ze_request *ze_req;
- * };
- * ```
- * where `ze_data` is the handle to the dma performing the operation
- * and `ze_req` is the handle to the resulting request containing the
- * instanciated but not initialized event to poll
- * on `aml_dma_ze_request_wait()`.
+ * @param arg: Ignored.
  * @return AML_SUCCESS on success.
+ *
+ * @see aml_layout_dense
  **/
 int aml_dma_ze_copy_1D(struct aml_layout *dst,
                        const struct aml_layout *src,
                        void *arg);
+
+/**
+ * Level Zero DMA operator implementation:
+ * Use only with `aml_dma_ze_request_create()` or higher level
+ * `aml_dma_async_copy_custom()`.
+ * This copy operator is compatible only with:
+ * - This dma ze implementation,
+ * - Flat source and destination pointers.
+ * Make a flat asychronous copy of contiguous bytes between two raw
+ * pointers. It casts input layout pointers into `void*` and
+ * assumes these are contiguous set of bytes to copy from `src` to `dst`
+ * in the linux `memcpy()` fashion using `zeCommandListAppendMemoryCopy()`.
+ * @param[out] dst: The destination (`void*`) of the copy casted into a
+ * `struct aml_layout *`.
+ * @param[in] src: The source (`void*`) of the copy casted into a
+ * `struct aml_layout *`.
+ * @param[in] arg: The size (`size_t`) of the copy casted into a `void*`.
+ * @return AML_SUCCESS
+ */
+int aml_dma_ze_memcpy_op(struct aml_layout *dst,
+                         const struct aml_layout *src,
+                         void *arg);
 /**
  * @}
  **/
