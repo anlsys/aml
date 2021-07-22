@@ -207,19 +207,13 @@ void *aml_replicaset_hwloc_local_replica(struct aml_replicaset *replicaset)
 	// chose a child replica with a modulo on thread id.
 	if (hwloc_get_nbobjs_by_depth(aml_topology, initiator->depth) <
 	    data->num_ptr) {
-		pid_t tid = gettid();
 		int depth = hwloc_get_type_depth(aml_topology, data->type);
 		unsigned n = hwloc_get_nbobjs_inside_cpuset_by_depth(
 		        aml_topology, initiator->cpuset, depth);
 		if (n == 0)
 			return NULL;
-		n = tid % n;
 		hwloc_obj_t target = hwloc_get_next_obj_inside_cpuset_by_depth(
 		        aml_topology, initiator->cpuset, depth, NULL);
-		while (n--)
-			target = hwloc_get_next_obj_inside_cpuset_by_depth(
-			        aml_topology, initiator->cpuset, depth, target);
-
 		if (target == NULL)
 			return NULL;
 		initiator = target;
