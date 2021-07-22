@@ -44,7 +44,7 @@ int aml_dma_linux_request_create(struct aml_dma_data *data,
 	r->task_in.src = src;
 
 	if (op == NULL)
-		r->task_in.op = aml_copy_layout_generic;
+		r->task_in.op = aml_dma_linux_copy_generic;
 	else
 		r->task_in.op = op;
 	r->task_in.op_arg = op_arg;
@@ -152,9 +152,9 @@ int aml_dma_linux_copy_1D(struct aml_layout *dst,
 	return AML_SUCCESS;
 }
 
-int aml_memcpy_linux(struct aml_layout *dst,
-                     const struct aml_layout *src,
-                     void *arg)
+int aml_dma_linux_memcpy_op(struct aml_layout *dst,
+                            const struct aml_layout *src,
+                            void *arg)
 {
 	memcpy(dst, src, (size_t)arg);
 	return AML_SUCCESS;
@@ -183,9 +183,9 @@ static inline void aml_copy_layout_generic_helper(size_t d,
 	}
 }
 
-int aml_copy_layout_generic(struct aml_layout *dst,
-                            const struct aml_layout *src,
-                            void *arg)
+int aml_dma_linux_copy_generic(struct aml_layout *dst,
+                               const struct aml_layout *src,
+                               void *arg)
 {
 	size_t d;
 	size_t elem_size;

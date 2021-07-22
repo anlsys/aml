@@ -138,9 +138,9 @@ int aml_dma_ze_copy_1D(struct aml_layout *dst,
 	        aml_layout_rawptr(src), size, args->ze_req->event, 0, NULL));
 }
 
-int aml_memcpy_ze(struct aml_layout *dst,
-                  const struct aml_layout *src,
-                  void *arg)
+int aml_dma_ze_memcpy_op(struct aml_layout *dst,
+                         const struct aml_layout *src,
+                         void *arg)
 {
 	struct aml_dma_ze_copy_args *args = (struct aml_dma_ze_copy_args *)arg;
 	size_t size = (size_t)args->arg;

@@ -24,10 +24,10 @@ int main(int argc, char **argv)
 		return 77;
 
 	test_dma_memcpy(aml_area_ze_device, NULL, aml_dma_ze_default,
-	                aml_memcpy_ze);
+	                aml_dma_ze_memcpy_op);
 
 	test_dma_barrier(aml_area_ze_device, NULL, aml_dma_ze_default,
-	                 aml_memcpy_ze);
+	                 aml_dma_ze_memcpy_op);
 
 	aml_finalize();
 }

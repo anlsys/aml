@@ -21,9 +21,11 @@ int main(int argc, char **argv)
 	if (!aml_support_backends(AML_BACKEND_CUDA))
 		return 77;
 
-	test_dma_memcpy(&aml_area_cuda, NULL, &aml_dma_cuda, aml_memcpy_cuda);
+	test_dma_memcpy(&aml_area_cuda, NULL, &aml_dma_cuda,
+	                aml_dma_cuda_memcpy_op);
 
-	test_dma_barrier(&aml_area_cuda, NULL, &aml_dma_cuda, aml_memcpy_cuda);
+	test_dma_barrier(&aml_area_cuda, NULL, &aml_dma_cuda,
+	                 aml_dma_cuda_memcpy_op);
 
 	aml_finalize();
 }

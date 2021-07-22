@@ -187,9 +187,9 @@ int aml_dma_cuda_copy_1D(struct aml_layout *dst,
  * @param[in] arg: The size (`size_t`) of the copy casted into a `void*`.
  * @return AML_SUCCESS
  */
-int aml_memcpy_cuda(struct aml_layout *dst,
-                    const struct aml_layout *src,
-                    void *arg);
+int aml_dma_cuda_memcpy_op(struct aml_layout *dst,
+                           const struct aml_layout *src,
+                           void *arg);
 
 /**
  * @}

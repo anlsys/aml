@@ -201,9 +201,9 @@ int aml_dma_linux_copy_1D(struct aml_layout *dst,
  * @param[in] arg: The size (`size_t`) of the copy casted into a `void*`.
  * @return AML_SUCCESS
  */
-int aml_memcpy_linux(struct aml_layout *dst,
-                     const struct aml_layout *src,
-                     void *arg);
+int aml_dma_linux_memcpy_op(struct aml_layout *dst,
+                            const struct aml_layout *src,
+                            void *arg);
 
 /**
  * Linux DMA operator implementation:
@@ -213,9 +213,9 @@ int aml_memcpy_linux(struct aml_layout *dst,
  * @param[in] arg: Ignored.
  * @return AML_SUCCESS
  */
-int aml_copy_layout_generic(struct aml_layout *dst,
-                            const struct aml_layout *src,
-                            void *arg);
+int aml_dma_linux_copy_generic(struct aml_layout *dst,
+                               const struct aml_layout *src,
+                               void *arg);
 
 /**
  * @}
