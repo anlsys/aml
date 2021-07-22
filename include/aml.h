@@ -1062,7 +1062,6 @@ int aml_dma_wait(struct aml_dma *dma, struct aml_dma_request **req);
  * be destroyed with `aml_dma_wait()`.
  *
  * @param[in, out] dma: n initialized DMA structure.
- * @param[in, out] req: a DMA request obtained using aml_dma_async_*() calls.
  * @return 0 if successful; an error code otherwise.
  **/
 int aml_dma_barrier(struct aml_dma *dma);
