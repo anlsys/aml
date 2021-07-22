@@ -12,6 +12,7 @@
 
 #include "aml/dma/ze.h"
 #include "aml/utils/backend/ze.h"
+#include "aml/utils/queue.h"
 
 #define ZE(ze_call) aml_errno_from_ze_result(ze_call)
 
@@ -36,10 +37,17 @@ int aml_dma_ze_create(struct aml_dma **dma,
 	// Set device field
 	data->device = device;
 
+	// Alloc request queue.
+	data->requests = aml_queue_create(pool_size);
+	if (data->requests == NULL) {
+		err = AML_ENOMEM;
+		goto err_with_dma;
+	}
+
 	// Set context field
 	err = aml_ze_context_create(&data->context, device);
 	if (err != AML_SUCCESS)
-		goto err_with_dma;
+		goto err_with_queue;
 
 	// Prepare Command Queue
 	ze_command_queue_desc_t queue_desc = {
@@ -50,10 +58,16 @@ int aml_dma_ze_create(struct aml_dma **dma,
 	        .flags = ZE_COMMAND_QUEUE_FLAG_EXPLICIT_ONLY,
 	        .mode = ZE_COMMAND_QUEUE_MODE_ASYNCHRONOUS,
 	        .priority = ZE_COMMAND_QUEUE_PRIORITY_NORMAL};
+
+	err = ZE(zeCommandQueueCreate(data->context, device, &queue_desc,
+	                              &data->command_queue));
+	if (err != AML_SUCCESS)
+		goto err_with_context;
+
 	err = ZE(zeCommandListCreateImmediate(
 	        data->context, device, &queue_desc, &data->command_list));
 	if (err != AML_SUCCESS)
-		goto err_with_context;
+		goto err_with_command_queue;
 
 	// Create event pool
 	data->event_pool_size = pool_size;
@@ -80,8 +94,12 @@ int aml_dma_ze_create(struct aml_dma **dma,
 	return AML_SUCCESS;
 err_with_command_list:
 	zeCommandListDestroy(data->command_list);
+err_with_command_queue:
+	zeCommandQueueDestroy(data->command_queue);
 err_with_context:
 	aml_ze_context_destroy(data->context);
+err_with_queue:
+	aml_queue_destroy(data->requests);
 err_with_dma:
 	free(out);
 	return err;
@@ -93,8 +111,10 @@ int aml_dma_ze_destroy(struct aml_dma **dma)
 		struct aml_dma_ze_data *data =
 		        (struct aml_dma_ze_data *)(*dma)->data;
 		zeEventPoolDestroy(data->events);
+		zeCommandQueueDestroy(data->command_queue);
 		zeCommandListDestroy(data->command_list);
 		aml_ze_context_destroy(data->context);
+		aml_queue_destroy(data->requests);
 	}
 	return AML_SUCCESS;
 }
@@ -136,6 +156,7 @@ int aml_dma_ze_request_create(struct aml_dma_data *data,
 	ze_req = AML_INNER_MALLOC(struct aml_dma_ze_request);
 	if (ze_req == NULL)
 		return -AML_ENOMEM;
+	ze_req->flags = 0;
 
 	// Create event.
 	ze_event_desc_t desc = {
@@ -172,8 +193,43 @@ int aml_dma_ze_request_wait(struct aml_dma_data *data,
                             struct aml_dma_request **req)
 {
 	(void)data;
+	int err;
 	struct aml_dma_ze_request *ze_req = (struct aml_dma_ze_request *)(*req);
-	return ZE(zeEventHostSynchronize(ze_req->event, UINT64_MAX));
+
+	if (!(ze_req->flags & AML_DMA_ZE_REQUEST_FLAGS_DONE)) {
+		err = ZE(zeEventHostSynchronize(ze_req->event, UINT64_MAX));
+		if (err != AML_SUCCESS)
+			return err;
+	}
+	err = ZE(zeEventDestroy(ze_req->event));
+	if (err != AML_SUCCESS)
+		return err;
+	free(*req);
+	*req = NULL;
+	return AML_SUCCESS;
+}
+
+int aml_dma_ze_barrier(struct aml_dma_data *data)
+{
+	int err;
+	struct aml_dma_ze_data *ze_data = (struct aml_dma_ze_data *)data;
+	err = ZE(zeCommandQueueSynchronize(ze_data->command_queue, 0));
+	if (err != AML_SUCCESS)
+		return err;
+
+	for (void **req_ptr = aml_queue_head(ze_data->requests);
+	     req_ptr != NULL;
+	     req_ptr = aml_queue_next(ze_data->requests,
+	                              (const void **)req_ptr)) {
+		struct aml_dma_ze_request *ze_req =
+		        *(struct aml_dma_ze_request **)req_ptr;
+		ze_req->flags = ze_req->flags & AML_DMA_ZE_REQUEST_FLAGS_DONE;
+	}
+
+	err = ZE(zeCommandListReset(ze_data->command_list));
+	if (err != AML_SUCCESS)
+		return err;
+	return AML_SUCCESS;
 }
 
 int aml_dma_ze_request_destroy(struct aml_dma_data *data,
@@ -194,5 +250,6 @@ struct aml_dma_ops aml_dma_ze_ops = {
         .create_request = aml_dma_ze_request_create,
         .destroy_request = aml_dma_ze_request_destroy,
         .wait_request = aml_dma_ze_request_wait,
+        .barrier = aml_dma_ze_barrier,
         .fprintf = NULL,
 };

@@ -94,19 +94,16 @@ int aml_dma_cuda_request_create(struct aml_dma_data *data,
                                 void *op_arg)
 {
 	int err;
-	struct aml_dma_cuda_request *request;
-	struct aml_dma_cuda_data *dma_data;
-
-	// Check input
-	if (data == NULL || req == NULL || dest == NULL || src == NULL)
-		return -AML_EINVAL;
-	dma_data = (struct aml_dma_cuda_data *)data;
+	struct aml_dma_cuda_request *request = NULL;
+	struct aml_dma_cuda_data *dma_data = (struct aml_dma_cuda_data *)data;
 
 	// Set request
-	request = AML_INNER_MALLOC(struct aml_dma_cuda_request);
-	if (request == NULL)
-		return -AML_ENOMEM;
-	request->status = AML_DMA_CUDA_REQUEST_STATUS_PENDING;
+	if (req != NULL) {
+		request = AML_INNER_MALLOC(struct aml_dma_cuda_request);
+		if (request == NULL)
+			return -AML_ENOMEM;
+		request->status = AML_DMA_CUDA_REQUEST_STATUS_PENDING;
+	}
 
 	// Submit request to cuda device
 	struct aml_dma_cuda_op_arg args = {
@@ -120,13 +117,15 @@ int aml_dma_cuda_request_create(struct aml_dma_data *data,
 	}
 
 	// Also enqueue the callback to notify request is done.
-	if (cudaLaunchHostFunc(dma_data->stream, aml_dma_cuda_callback,
-	                       request) != cudaSuccess) {
-		free(request);
-		return -AML_FAILURE;
+	if (req != NULL) {
+		if (cudaLaunchHostFunc(dma_data->stream, aml_dma_cuda_callback,
+		                       request) != cudaSuccess) {
+			free(request);
+			return -AML_FAILURE;
+		}
+		*req = (struct aml_dma_request *)request;
 	}
 
-	*req = (struct aml_dma_request *)request;
 	return AML_SUCCESS;
 }
 
@@ -144,7 +143,7 @@ int aml_dma_cuda_request_wait(struct aml_dma_data *data,
 
 	// If already done, do nothing
 	if (dma_req->status == AML_DMA_CUDA_REQUEST_STATUS_DONE)
-		return AML_SUCCESS;
+		goto exit_success;
 
 	// Wait for the stream to finish and call its callback.
 	cudaStreamSynchronize(dma_data->stream);
@@ -154,7 +153,20 @@ int aml_dma_cuda_request_wait(struct aml_dma_data *data,
 	if (dma_req->status != AML_DMA_CUDA_REQUEST_STATUS_DONE)
 		return -AML_EINVAL;
 
-	aml_dma_cuda_request_destroy(data, req);
+exit_success:
+	free(dma_req);
+	*req = NULL;
+	return AML_SUCCESS;
+}
+
+int aml_dma_cuda_barrier(struct aml_dma_data *data)
+{
+	struct aml_dma_cuda_data *dma_data;
+
+	dma_data = (struct aml_dma_cuda_data *)(data);
+
+	// Wait for the stream to finish and call its callback.
+	cudaStreamSynchronize(dma_data->stream);
 	return AML_SUCCESS;
 }
 
@@ -225,6 +237,7 @@ struct aml_dma_ops aml_dma_cuda_ops = {
         .create_request = aml_dma_cuda_request_create,
         .destroy_request = aml_dma_cuda_request_destroy,
         .wait_request = aml_dma_cuda_request_wait,
+        .barrier = aml_dma_cuda_barrier,
 };
 
 struct aml_dma_cuda_data aml_dma_cuda_data = {

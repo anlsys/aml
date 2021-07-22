@@ -37,6 +37,8 @@ extern "C" {
 
 //--- DMA -----------------------------------------------------------------//
 
+struct aml_queue;
+
 /** Data structure of aml ze dma data. */
 struct aml_dma_ze_data {
 	// Logical context of this dma
@@ -45,6 +47,10 @@ struct aml_dma_ze_data {
 	ze_device_handle_t device;
 	// Command list of this dma
 	ze_command_list_handle_t command_list;
+	// Command queue associated with device and command list.
+	ze_command_queue_handle_t command_queue;
+	// List of existing requests.
+	struct aml_queue *requests;
 	// handle to events associated with this dma
 	ze_event_pool_handle_t events;
 	// The maximum of number of events that can be handled simultaneously in
@@ -84,15 +90,30 @@ int aml_dma_ze_create(struct aml_dma **dma,
                       ze_device_handle_t device,
                       const uint32_t pool_size);
 
+/**
+ * AML dma ze barrier operator.
+ * @return AML_SUCCESS on success.
+ * @return AML error code caused by ze backend on error.
+ **/
+int aml_dma_ze_barrier(struct aml_dma_data *data);
+
 /** Destroy a created dma and set it to NULL **/
 int aml_dma_ze_destroy(struct aml_dma **dma);
 
 //--- DMA request ---------------------------------------------------------//
 
+// Request is not executed yet.
+#define AML_DMA_ZE_REQUEST_FLAGS_PENDING 0x0
+// Request is executed.
+#define AML_DMA_ZE_REQUEST_FLAGS_DONE 0x1
+
 /** aml ze request structure */
 struct aml_dma_ze_request {
 	// event handle
 	ze_event_handle_t event;
+	// AML Request flags.
+	// These are updated by AML on synchronization calls.
+	int flags;
 };
 
 /**

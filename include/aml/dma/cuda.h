@@ -65,6 +65,12 @@ int aml_dma_cuda_request_create(struct aml_dma_data *data,
 int aml_dma_cuda_request_wait(struct aml_dma_data *dma,
                               struct aml_dma_request **req);
 
+/**
+ * AML dma cuda barrier operator.
+ * @return AML_SUCCESS on success.
+ **/
+int aml_dma_cuda_barrier(struct aml_dma_data *data);
+
 /** AML dma cuda request deletion operator **/
 int aml_dma_cuda_request_destroy(struct aml_dma_data *dma,
                                  struct aml_dma_request **req);

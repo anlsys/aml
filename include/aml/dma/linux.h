@@ -88,6 +88,8 @@ struct aml_dma_linux_task_in {
 	struct aml_layout *src;
 	// The dma operator extra arguments.
 	void *op_arg;
+	// The dma request associated
+	struct aml_dma_linux_request *req;
 };
 
 /**
@@ -102,6 +104,17 @@ struct aml_dma_linux_task_in {
 void aml_dma_linux_exec_request(struct aml_task_in *input,
                                 struct aml_task_out *output);
 
+/**
+ * Request Flag of requests created but not returned to user that need
+ * to be destroyed.
+ */
+#define AML_DMA_LINUX_REQUEST_FLAGS_OWNED 0x1
+
+/**
+ * Request Flag turned on when request is finished.
+ */
+#define AML_DMA_LINUX_REQUEST_FLAGS_DONE 0x2
+
 /** The dma request implementation */
 struct aml_dma_linux_request {
 	// The scheduler task to executing the request.
@@ -110,6 +123,8 @@ struct aml_dma_linux_request {
 	struct aml_dma_linux_task_in task_in;
 	// The scheduler task output.
 	int task_out;
+	// Request flags
+	int flags;
 };
 
 /**
@@ -131,6 +146,14 @@ int aml_dma_linux_request_create(struct aml_dma_data *data,
  */
 int aml_dma_linux_request_wait(struct aml_dma_data *dma,
                                struct aml_dma_request **req);
+
+/**
+ * The linux dma `barrier()` operator implementation.
+ * @return The first failing request error code on error.
+ * Remaining requests are not waited.
+ * @return AML_SUCCESS on success.
+ */
+int aml_dma_linux_barrier(struct aml_dma_data *dma);
 
 /**
  * The linux dma `destroy_request()` operator implementation.

@@ -29,5 +29,8 @@ int main(int argc, char **argv)
 
 	test_dma_memcpy(&aml_area_linux, NULL, aml_dma_linux, aml_memcpy_linux);
 
+	test_dma_barrier(&aml_area_linux, NULL, aml_dma_linux,
+	                 aml_memcpy_linux);
+
 	aml_finalize();
 }
