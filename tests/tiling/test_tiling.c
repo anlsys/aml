@@ -8,12 +8,15 @@
  * SPDX-License-Identifier: BSD-3-Clause
  ******************************************************************************/
 
+#include <assert.h>
+
 #include "aml.h"
+
+#include "aml/dma/linux.h"
 #include "aml/layout/dense.h"
 #include "aml/layout/native.h"
-#include "aml/tiling/resize.h"
 #include "aml/tiling/pad.h"
-#include <assert.h>
+#include "aml/tiling/resize.h"
 
 void test_tiling_even_mixed(void)
 {

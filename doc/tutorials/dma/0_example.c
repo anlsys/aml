@@ -9,7 +9,8 @@
  ******************************************************************************/
 
 #include <aml.h>
-#include <aml/dma/linux-par.h>
+
+#include <aml/dma/linux.h>
 #include <aml/layout/dense.h>
 
 static inline void
@@ -29,8 +30,8 @@ main(void)
 	// The DMA
 	struct aml_dma *dma;
 
-	err = aml_dma_linux_par_create(&dma, 128, NULL, NULL);
-	CHK_ABORT(err, "aml_dma_linux_par_create:");
+	err = aml_dma_linux_create(&dma, 0);
+	CHK_ABORT(err, "aml_dma_linux_create:");
 
 	// The source data for the move.
 	double src[8]      = {1, 2, 3, 4, 5, 6, 7, 8};
@@ -79,7 +80,7 @@ main(void)
 	// cleanup
 	aml_layout_destroy(&src_layout);
 	aml_layout_destroy(&dst_layout);
-	aml_dma_linux_par_destroy(&dma);
+	aml_dma_linux_destroy(&dma);
 
 	return 0;
 }

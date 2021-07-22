@@ -19,7 +19,7 @@
 #include "aml/area/linux.h"
 
 // Copy (linux)
-#include "aml/dma/linux-seq.h"
+#include "aml/dma/linux.h"
 
 //- Mapper for standard type --------------------------------------------------
 
@@ -125,13 +125,13 @@ int main(int argc, char **argv)
 
 	// deepcopy
 	assert(aml_mapper_mmap(&struct_C_mapper, &_c, c, 1, &aml_area_linux,
-	                       NULL, aml_dma_linux_sequential, NULL,
+	                       NULL, aml_dma_linux, aml_dma_linux_copy_1D,
 	                       NULL) == AML_SUCCESS);
 	assert(eq_struct(c, _c));
 
 	// Cleanup
 	aml_mapper_munmap(&struct_C_mapper, _c, 1, c, &aml_area_linux,
-	                  aml_dma_linux_sequential, NULL, NULL);
+	                  aml_dma_linux, aml_dma_linux_copy_1D, NULL);
 	free(c);
 	aml_finalize();
 	return 0;
