@@ -15,14 +15,6 @@
 #include "aml/area/linux.h"
 #include "aml/dma/linux.h"
 
-int aml_memcpy_linux(struct aml_layout *dst,
-                     const struct aml_layout *src,
-                     void *arg)
-{
-	memcpy(dst, src, (size_t)arg);
-	return AML_SUCCESS;
-}
-
 int main(int argc, char **argv)
 {
 	assert(aml_init(&argc, &argv) == AML_SUCCESS);

@@ -17,17 +17,6 @@
 
 #include "test_dma.h"
 
-int aml_memcpy_ze(struct aml_layout *dst,
-                  const struct aml_layout *src,
-                  void *arg)
-{
-	struct aml_dma_ze_copy_args *args = (struct aml_dma_ze_copy_args *)arg;
-	size_t size = (size_t)args->arg;
-	return ZE(zeCommandListAppendMemoryCopy(args->ze_data->command_list,
-	                                        dst, src, size,
-	                                        args->ze_req->event, 0, NULL));
-}
-
 int main(int argc, char **argv)
 {
 	assert(aml_init(&argc, &argv) == AML_SUCCESS);

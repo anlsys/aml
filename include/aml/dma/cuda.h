@@ -147,17 +147,50 @@ struct aml_dma_cuda_op_arg {
 };
 
 /**
- * aml_dma_cuda copy operator for 1D to 1D layouts.
+ * Cuda DMA operator implementation:
+ * Use only with `aml_dma_cuda_request_create()` or higher level
+ * `aml_dma_async_copy_custom()`.
+ * This copy operator is compatible only with:
+ * - This dma cuda implementation,
+ * - Dense source and destination layouts of one dimension.
+ * Make a flat copy of contiguous bytes in between two layout raw pointers.
+ * The size of the byte stream is computed as the product of dimensions and
+ * element size.
  * @param [in] dst: The destination layout of the copy.
  * @param [in] src: The source layout of the copy.
- * @param [in] arg: A pointer to `struct aml_dma_cuda_op_arg` where
- * `op_arg` is a pair of device ids obtained with `AML_DMA_CUDA_DEVICE_PAIR`.
- * `op_arg` is used only if `data->kind` is `cudaMemcpyDeviceToDevice`.
+ * @param [in] arg: A pair of device ids obtained with
+ * `AML_DMA_CUDA_DEVICE_PAIR`.`op_arg` is used only if the dma used with
+ * this operator is `cudaMemcpyDeviceToDevice` kind of dma.
  * @return an AML error code.
+ *
+ * @see aml_layout_dense
  **/
 int aml_dma_cuda_copy_1D(struct aml_layout *dst,
                          const struct aml_layout *src,
                          void *arg);
+
+/**
+ * Cuda DMA operator implementation:
+ * Use only with `aml_dma_cuda_request_create()` or higher level
+ * `aml_dma_async_copy_custom()`.
+ * This copy operator is compatible only with:
+ * - This dma cuda implementation (device to device is not supported),
+ * - Flat source and destination pointers.
+ * Make a flat asychronous copy of contiguous bytes between two raw
+ * pointers. This dma operator casts input layout pointers into `void*` and
+ * assumes these are contiguous set of bytes to copy from `src` to `dst`
+ * in the linux `memcpy()` fashion with `cudaMemcpyAsync()`.
+ * @param[out] dst: The destination (`void*`) of the copy casted into a
+ * `struct aml_layout *`.
+ * @param[in] src: The source (`void*`) of the copy casted into a
+ * `struct aml_layout *`.
+ * @param[in] arg: The size (`size_t`) of the copy casted into a `void*`.
+ * @return AML_SUCCESS
+ */
+int aml_memcpy_cuda(struct aml_layout *dst,
+                    const struct aml_layout *src,
+                    void *arg);
+
 /**
  * @}
  **/

@@ -152,6 +152,14 @@ int aml_dma_linux_copy_1D(struct aml_layout *dst,
 	return AML_SUCCESS;
 }
 
+int aml_memcpy_linux(struct aml_layout *dst,
+                     const struct aml_layout *src,
+                     void *arg)
+{
+	memcpy(dst, src, (size_t)arg);
+	return AML_SUCCESS;
+}
+
 static inline void aml_copy_layout_generic_helper(size_t d,
                                                   struct aml_layout *dst,
                                                   const struct aml_layout *src,

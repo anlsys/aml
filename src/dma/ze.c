@@ -138,6 +138,17 @@ int aml_dma_ze_copy_1D(struct aml_layout *dst,
 	        aml_layout_rawptr(src), size, args->ze_req->event, 0, NULL));
 }
 
+int aml_memcpy_ze(struct aml_layout *dst,
+                  const struct aml_layout *src,
+                  void *arg)
+{
+	struct aml_dma_ze_copy_args *args = (struct aml_dma_ze_copy_args *)arg;
+	size_t size = (size_t)args->arg;
+	return ZE(zeCommandListAppendMemoryCopy(args->ze_data->command_list,
+	                                        dst, src, size,
+	                                        args->ze_req->event, 0, NULL));
+}
+
 int aml_dma_ze_request_create(struct aml_dma_data *data,
                               struct aml_dma_request **req,
                               struct aml_layout *dest,

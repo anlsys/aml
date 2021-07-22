@@ -15,23 +15,6 @@
 #include "aml/area/cuda.h"
 #include "aml/dma/cuda.h"
 
-int aml_memcpy_cuda(struct aml_layout *dst,
-                    const struct aml_layout *src,
-                    void *arg)
-{
-	struct aml_dma_cuda_op_arg *op_arg = (struct aml_dma_cuda_op_arg *)arg;
-	size_t size = (size_t)op_arg->op_arg;
-
-	if (op_arg->data->kind == cudaMemcpyDeviceToDevice)
-		return -AML_ENOTSUP;
-	else {
-		if (cudaMemcpyAsync(dst, src, size, op_arg->data->kind,
-		                    op_arg->data->stream) != cudaSuccess)
-			return -AML_FAILURE;
-	}
-	return AML_SUCCESS;
-}
-
 int main(int argc, char **argv)
 {
 	assert(aml_init(&argc, &argv) == AML_SUCCESS);
