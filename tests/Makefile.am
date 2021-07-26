@@ -49,8 +49,8 @@ libdma_test_la_SOURCES = \
 	dma/test_dma.c
 
 libreplicaset_test_la_SOURCES = \
-	replicaset/test_replicaset.h \
-	replicaset/common.c
+	higher/replicaset/test_replicaset.h \
+	higher/replicaset/common.c
 
 LDADD = libdma_test.la \
 	liblayout_test.la \
@@ -67,7 +67,7 @@ TILING_TESTS = \
 
 DMA_TESTS = dma/test_linux
 
-HIGHER_TESTS = higher/test_mapper
+HIGHER_TESTS = higher/mapper/test_mapper
 
 if HAVE_OPENCL
 AREA_TESTS += area/test_opencl
@@ -80,7 +80,7 @@ endif
 
 if HAVE_HWLOC
 AREA_TESTS += area/test_hwloc
-HIGHER_TESTS += replicaset/test_hwloc
+HIGHER_TESTS += higher/replicaset/test_hwloc
 endif
 
 # unit tests
