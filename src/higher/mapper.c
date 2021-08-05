@@ -91,38 +91,17 @@ static int aml_mapper_memcpy(void *dst,
                              void *src,
                              size_t size,
                              struct aml_dma *dma,
-                             aml_dma_operator dma_op,
-                             void *dma_op_arg)
+                             aml_dma_operator memcpy_op)
 {
-	int err;
-	struct aml_layout *_src, *_dst;
-	size_t dims = 1, stride = 0, pitch = size;
-
-	// Create layouts
-	err = aml_layout_dense_create(&_src, src, AML_LAYOUT_ORDER_FORTRAN,
-	                              size, 1, &dims, &stride, &pitch);
-	if (err != AML_SUCCESS)
-		return err;
-	err = aml_layout_dense_create(&_dst, dst, AML_LAYOUT_ORDER_FORTRAN,
-	                              size, 1, &dims, &stride, &pitch);
-	if (err != AML_SUCCESS)
-		goto out_with_src;
-
 	// Submit request
-	err = aml_dma_copy_custom(dma, _dst, _src, dma_op, dma_op_arg);
-
-	aml_layout_destroy(&_dst);
-out_with_src:
-	aml_layout_destroy(&_src);
-	return err;
+	return aml_dma_copy_custom(dma, dst, src, memcpy_op, (void *)size);
 }
 
 ssize_t aml_mapper_mapped_size(struct aml_mapper *mapper,
                                void *ptr,
                                size_t num,
                                struct aml_dma *dma,
-                               aml_dma_operator dma_op,
-                               void *dma_op_arg)
+                               aml_dma_operator memcpy_op)
 {
 	int err;
 	size_t tot = 0;
@@ -133,8 +112,8 @@ ssize_t aml_mapper_mapped_size(struct aml_mapper *mapper,
 	if (mapper->flags & AML_MAPPER_FLAG_SHALLOW || dma == NULL) {
 		p = ptr;
 	} else {
-		err = aml_mapper_memcpy(_ptr, ptr, sizeof(_ptr), dma, dma_op,
-		                        dma_op_arg);
+		err = aml_mapper_memcpy(_ptr, ptr, sizeof(_ptr), dma,
+		                        memcpy_op);
 		if (err != AML_SUCCESS)
 			return (ssize_t)err;
 		p = _ptr;
@@ -158,8 +137,7 @@ ssize_t aml_mapper_mapped_size(struct aml_mapper *mapper,
 			if (*src == NULL)
 				continue;
 			tot += aml_mapper_mapped_size(mapper->fields[i], *src,
-			                              n, dma, dma_op,
-			                              dma_op_arg);
+			                              n, dma, memcpy_op);
 		}
 	}
 	return tot;
@@ -173,8 +151,7 @@ static ssize_t mapper_mmap_recursive(struct aml_mapper *mapper,
                                      struct aml_area *area,
                                      struct aml_area_mmap_options *area_opts,
                                      struct aml_dma *dma,
-                                     aml_dma_operator dma_op,
-                                     void *dma_op_arg)
+                                     aml_dma_operator memcpy_op)
 {
 	ssize_t err, off = 0;
 	const size_t size = mapper->size * num;
@@ -203,8 +180,7 @@ static ssize_t mapper_mmap_recursive(struct aml_mapper *mapper,
 				err = aml_mapper_mmap(
 				        mapper->fields[j],
 				        &indirections[j * num + i], src_ptr, n,
-				        area, area_opts, dma, dma_op,
-				        dma_op_arg);
+				        area, area_opts, dma, memcpy_op);
 				if (err < 0)
 					goto err_mmap;
 			}
@@ -219,7 +195,7 @@ static ssize_t mapper_mmap_recursive(struct aml_mapper *mapper,
 				err = mapper_mmap_recursive(
 				        mapper->fields[j], dst_ptr, src_ptr, n,
 				        PTR_OFF(ptr, +, off), area, area_opts,
-				        dma, dma_op, dma_op_arg);
+				        dma, memcpy_op);
 				if (err < 0)
 					goto err_mmap;
 				indirections[j * num + i] = dst_ptr;
@@ -231,8 +207,7 @@ static ssize_t mapper_mmap_recursive(struct aml_mapper *mapper,
 				        PTR_OFF(ptr, +,
 				                off + n * mapper->fields[j]
 				                                        ->size),
-				        area, area_opts, dma, dma_op,
-				        dma_op_arg);
+				        area, area_opts, dma, memcpy_op);
 				if (err < 0)
 					goto err_mmap;
 				indirections[j * num + i] =
@@ -268,8 +243,7 @@ static ssize_t mapper_mmap_recursive(struct aml_mapper *mapper,
 				                          mapper->offsets[j]) =
 				        indirections[j * num + i];
 		// Move buffer to device.
-		err = aml_mapper_memcpy(dst, local_copy, size, dma, dma_op,
-		                        dma_op_arg);
+		err = aml_mapper_memcpy(dst, local_copy, size, dma, memcpy_op);
 		free(local_copy);
 		if (err != AML_SUCCESS)
 			goto err_mmap;
@@ -291,8 +265,7 @@ err_mmap:
 					aml_mapper_munmap(
 					        mapper->fields[j],
 					        indirections[j * num + i], n,
-					        src_ptr, area, dma, dma_op,
-					        dma_op_arg);
+					        src_ptr, area, dma, memcpy_op);
 				}
 		}
 	return err;
@@ -305,8 +278,7 @@ int aml_mapper_mmap(struct aml_mapper *mapper,
                     struct aml_area *area,
                     struct aml_area_mmap_options *area_opts,
                     struct aml_dma *dma,
-                    aml_dma_operator dma_op,
-                    void *dma_op_arg)
+                    aml_dma_operator memcpy_op)
 {
 	if (src == NULL || dst == NULL || mapper == NULL || area == NULL ||
 	    dma == NULL)
@@ -316,8 +288,7 @@ int aml_mapper_mmap(struct aml_mapper *mapper,
 	void *out;
 
 	// Alloc pointer
-	ssize_t size =
-	        aml_mapper_mapped_size(mapper, src, num, NULL, NULL, NULL);
+	ssize_t size = aml_mapper_mapped_size(mapper, src, num, NULL, NULL);
 	if (size < 0)
 		return size;
 	out = aml_area_mmap(area, size, area_opts);
@@ -327,12 +298,11 @@ int aml_mapper_mmap(struct aml_mapper *mapper,
 	// Map recursively in allocated space.
 	if (mapper->flags & AML_MAPPER_FLAG_SHALLOW)
 		err = mapper_mmap_recursive(mapper, dst, src, num, out, area,
-		                            area_opts, dma, dma_op, dma_op_arg);
+		                            area_opts, dma, memcpy_op);
 	else
 		err = mapper_mmap_recursive(mapper, out, src, num,
 		                            PTR_OFF(out, +, mapper->size * num),
-		                            area, area_opts, dma, dma_op,
-		                            dma_op_arg);
+		                            area, area_opts, dma, memcpy_op);
 	if (err < 0) {
 		aml_area_munmap(area, &out, size);
 		return (int)err;
@@ -348,8 +318,7 @@ int aml_mapper_copy(struct aml_mapper *mapper,
                     void *src,
                     size_t num,
                     struct aml_dma *dma,
-                    aml_dma_operator dma_op,
-                    void *dma_op_arg)
+                    aml_dma_operator memcpy_op)
 {
 	if (src == dst)
 		return AML_SUCCESS;
@@ -367,8 +336,7 @@ int aml_mapper_copy(struct aml_mapper *mapper,
 	if (mapper->flags & AML_MAPPER_FLAG_SHALLOW) {
 		memcpy(local_dst, src, size);
 	} else {
-		err = aml_mapper_memcpy(local_dst, src, size, dma, dma_op,
-		                        dma_op_arg);
+		err = aml_mapper_memcpy(local_dst, src, size, dma, memcpy_op);
 		if (err != AML_SUCCESS)
 			goto err_with_local_dst;
 	}
@@ -404,7 +372,7 @@ int aml_mapper_copy(struct aml_mapper *mapper,
 			else {
 				err = aml_mapper_memcpy(&src_field, src_field,
 				                        sizeof(src_field), dma,
-				                        dma_op, dma_op_arg);
+				                        memcpy_op);
 				if (err != AML_SUCCESS)
 					goto err_with_local_dst;
 			}
@@ -413,8 +381,7 @@ int aml_mapper_copy(struct aml_mapper *mapper,
 				continue;
 
 			err = aml_mapper_copy(mapper->fields[j], *dst_field,
-			                      src_field, n, dma, dma_op,
-			                      dma_op_arg);
+			                      src_field, n, dma, memcpy_op);
 			if (err != AML_SUCCESS)
 				goto err_with_local_dst;
 		}
@@ -433,8 +400,7 @@ static ssize_t mapper_munmap_recursive(struct aml_mapper *mapper,
                                        void *src,
                                        struct aml_area *area,
                                        struct aml_dma *dma,
-                                       aml_dma_operator dma_op,
-                                       void *dma_op_arg)
+                                       aml_dma_operator memcpy_op)
 {
 	size_t s = 0;
 	void *field_ptr, *src_ptr;
@@ -451,7 +417,7 @@ static ssize_t mapper_munmap_recursive(struct aml_mapper *mapper,
 			        &field_ptr,
 			        PTR_OFF(ptr, +,
 			                mapper->size * j + mapper->offsets[i]),
-			        sizeof(field_ptr), dma, dma_op, dma_op_arg);
+			        sizeof(field_ptr), dma, memcpy_op);
 			if (err < 0)
 				return err;
 			if (field_ptr == NULL)
@@ -460,12 +426,12 @@ static ssize_t mapper_munmap_recursive(struct aml_mapper *mapper,
 			if (mapper->fields[0]->flags & AML_MAPPER_FLAG_SPLIT) {
 				err = aml_mapper_munmap(mapper->fields[i],
 				                        field_ptr, n, src_ptr,
-				                        area, dma, dma_op,
-				                        dma_op_arg);
+				                        area, dma, memcpy_op);
 			} else {
-				err = mapper_munmap_recursive(
-				        mapper->fields[i], field_ptr, n,
-				        src_ptr, area, dma, dma_op, dma_op_arg);
+				err = mapper_munmap_recursive(mapper->fields[i],
+				                              field_ptr, n,
+				                              src_ptr, area,
+				                              dma, memcpy_op);
 			}
 
 			if (err < 0)
@@ -485,11 +451,10 @@ ssize_t aml_mapper_munmap(struct aml_mapper *mapper,
                           void *src,
                           struct aml_area *area,
                           struct aml_dma *dma,
-                          aml_dma_operator dma_op,
-                          void *dma_op_arg)
+                          aml_dma_operator memcpy_op)
 {
 	ssize_t s = mapper_munmap_recursive(mapper, ptr, num, src, area, dma,
-	                                    dma_op, dma_op_arg);
+	                                    memcpy_op);
 	if (s <= 0)
 		return s;
 

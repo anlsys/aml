@@ -159,8 +159,8 @@ void test_mapper(struct C *c)
 	// Linux check
 	struct C *host_c;
 	assert(aml_mapper_mmap(&struct_C_mapper, &host_c, c, 1, &aml_area_linux,
-	                       NULL, aml_dma_linux, aml_dma_linux_copy_1D,
-	                       NULL) == AML_SUCCESS);
+	                       NULL, aml_dma_linux,
+	                       aml_dma_linux_memcpy_op) == AML_SUCCESS);
 	assert(eq_struct(c, host_c));
 
 	// Cuda check
@@ -170,21 +170,20 @@ void test_mapper(struct C *c)
 		/* Copy c to cuda device */
 		assert(aml_mapper_mmap(&struct_C_mapper, &device_c, c, 1,
 		                       &aml_area_cuda, NULL, &aml_dma_cuda,
-		                       aml_dma_cuda_copy_1D,
-		                       NULL) == AML_SUCCESS);
+		                       aml_dma_cuda_memcpy_op) == AML_SUCCESS);
 
 		// Change _c to be different from c.
 		c->b[0].a->val = 4565467567;
 
 		/* Copy back __c into modified _c */
 		assert(aml_mapper_copy(&struct_C_mapper, c, device_c, 1,
-		                       &aml_dma_cuda, aml_dma_cuda_copy_1D,
-		                       NULL) == AML_SUCCESS);
+		                       &aml_dma_cuda,
+		                       aml_dma_cuda_memcpy_op) == AML_SUCCESS);
 		assert(eq_struct(c, host_c));
 
 		aml_mapper_munmap(&struct_C_mapper, device_c, 1, c,
 		                  &aml_area_cuda, &aml_dma_cuda,
-		                  aml_dma_cuda_copy_1D, NULL);
+		                  aml_dma_cuda_memcpy_op);
 	}
 #endif
 #if AML_HAVE_BACKEND_HIP
@@ -211,7 +210,7 @@ void test_mapper(struct C *c)
 	}
 #endif
 	aml_mapper_munmap(&struct_C_mapper, host_c, 1, c, &aml_area_linux,
-	                  aml_dma_linux, aml_dma_linux_copy_1D, NULL);
+	                  aml_dma_linux, aml_dma_linux_memcpy_op);
 }
 
 //- Shallow mapper test ------------------------------------------------------
@@ -238,7 +237,7 @@ void test_shallow_mapper(struct C *c)
 	// Linux check
 	assert(aml_mapper_mmap(&shallow_C_mapper, &host_c, c, 1,
 	                       &aml_area_linux, NULL, aml_dma_linux,
-	                       aml_dma_linux_copy_1D, NULL) == AML_SUCCESS);
+	                       aml_dma_linux_memcpy_op) == AML_SUCCESS);
 	assert(eq_struct(c, &host_c));
 
 	// Cuda check
@@ -251,21 +250,20 @@ void test_shallow_mapper(struct C *c)
 		/* Copy c to cuda device */
 		assert(aml_mapper_mmap(&shallow_C_mapper, &device_c, c, 1,
 		                       &aml_area_cuda, NULL, &aml_dma_cuda,
-		                       aml_dma_cuda_copy_1D,
-		                       NULL) == AML_SUCCESS);
+		                       aml_dma_cuda_memcpy_op) == AML_SUCCESS);
 
 		// Change _c to be different from c.
 		c->b[0].a->val = 4565467567;
 
 		/* Copy back __c into modified _c */
 		assert(aml_mapper_copy(&shallow_C_mapper, c, &device_c, 1,
-		                       &aml_dma_cuda, aml_dma_cuda_copy_1D,
-		                       NULL) == AML_SUCCESS);
+		                       &aml_dma_cuda,
+		                       aml_dma_cuda_memcpy_op) == AML_SUCCESS);
 		assert(eq_struct(c, &host_c));
 
 		aml_mapper_munmap(&shallow_C_mapper, &device_c, 1, c,
 		                  &aml_area_cuda, &aml_dma_cuda,
-		                  aml_dma_cuda_copy_1D, NULL);
+		                  aml_dma_cuda_memcpy_op);
 	}
 #endif
 	// Hip check
@@ -296,7 +294,7 @@ void test_shallow_mapper(struct C *c)
 	}
 #endif
 	aml_mapper_munmap(&shallow_C_mapper, &host_c, 1, c, &aml_area_linux,
-	                  aml_dma_linux, aml_dma_linux_copy_1D, NULL);
+	                  aml_dma_linux, aml_dma_linux_memcpy_op);
 }
 
 //- Application Data Initialization -------------------------------------------

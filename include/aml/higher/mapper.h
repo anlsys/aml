@@ -255,8 +255,7 @@ int aml_mapper_mmap(struct aml_mapper *mapper,
                     struct aml_area *area,
                     struct aml_area_mmap_options *area_opts,
                     struct aml_dma *dma,
-                    aml_dma_operator dma_op,
-                    void *dma_op_arg);
+                    aml_dma_operator dma_op);
 
 /**
  * Perform a backward deepcopy from a structure to another host structure.
@@ -287,8 +286,7 @@ int aml_mapper_copy(struct aml_mapper *mapper,
                     void *src,
                     size_t num,
                     struct aml_dma *dma,
-                    aml_dma_operator dma_op,
-                    void *dma_op_arg);
+                    aml_dma_operator dma_op);
 
 /**
  * Unmap the structure pointed by `ptr`.
@@ -321,8 +319,7 @@ ssize_t aml_mapper_munmap(struct aml_mapper *mapper,
                           void *src,
                           struct aml_area *area,
                           struct aml_dma *dma,
-                          aml_dma_operator dma_op,
-                          void *dma_op_arg);
+                          aml_dma_operator dma_op);
 
 //-----------------------------------------------------------------------------
 // Default Mappers
