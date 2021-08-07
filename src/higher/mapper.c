@@ -143,6 +143,219 @@ ssize_t aml_mapper_mapped_size(struct aml_mapper *mapper,
 	return tot;
 }
 
+// Descend current iterator field and push new iterator of this field
+// in the stack.
+static int aml_mapper_iterator_push(struct aml_mapper_iterator **out)
+{
+	int err;
+	struct aml_mapper_iterator *it = *out;
+	struct aml_mapper_iterator *next = NULL;
+
+	void *base_ptr =
+	        PTR_OFF(it->base_ptr, +, it->array_num * it->mapper->size);
+	const void *field_ptr =
+	        PTR_OFF(base_ptr, +, it->mapper->offsets[it->field_num]);
+	size_t stack_size = it->stack_size;
+	size_t pos = it->stack_pos;
+
+	// Extend stack.
+	if ((pos + 1) >= stack_size) {
+		stack_size *= 2;
+		it = realloc(it - pos, stack_size * sizeof(*it));
+		if (it == NULL)
+			return -AML_ENOMEM;
+		it = it + pos;
+		*out = it;
+	}
+
+	// Update easy attributes
+	next = it + 1;
+	next->mapper = it->mapper->fields[it->field_num];
+	next->field_num = 0;
+	next->array_num = 0;
+	next->array_size = 0;
+	next->dma = it->dma;
+	next->memcpy_op = it->memcpy_op;
+	next->stack_pos = pos + 1;
+	next->stack_size = stack_size;
+
+	// Update base pointer (deref current pointer).
+	if (it->dma != NULL) {
+		err = aml_dma_copy_custom(
+		        it->dma, (struct aml_layout *)&(next->base_ptr),
+		        (struct aml_layout *)field_ptr, it->memcpy_op,
+		        (void *)sizeof(void *));
+		if (err != AML_SUCCESS)
+			return err;
+	} else
+		next->base_ptr = *(void **)field_ptr;
+
+	// Update num_elements of child structure with a local copy of
+	// the current (parent) structure.
+	if (it->mapper->num_elements != NULL &&
+	    it->mapper->num_elements[it->field_num] != NULL) {
+		if (it->dma != NULL) {
+			const size_t size = it->mapper->size;
+			char buf[size];
+			err = aml_dma_copy_custom(it->dma,
+			                          (struct aml_layout *)buf,
+			                          (struct aml_layout *)base_ptr,
+			                          it->memcpy_op, (void *)size);
+			if (err != AML_SUCCESS)
+				return err;
+			next->array_size =
+			        it->mapper->num_elements[it->field_num](
+			                (void *)buf);
+		} else
+			next->array_size =
+			        it->mapper->num_elements[it->field_num](
+			                base_ptr);
+	}
+
+	next->tot_size = it->tot_size;
+	next->tot_size += next->mapper->size *
+	                  (next->array_size > 0 ? next->array_size : 1);
+
+	// Push in stack.
+	*out = next;
+	return AML_SUCCESS;
+}
+
+// Create a new instance of iterator over ptr described by mapper where
+// dma and its memcpy operator copy from area where ptr is allocated to host.
+int aml_mapper_iterator_create(struct aml_mapper_iterator **out,
+                               void *ptr,
+                               struct aml_mapper *mapper,
+                               struct aml_dma *dma,
+                               aml_dma_operator memcpy_op)
+{
+	if (out == NULL)
+		return -AML_EINVAL;
+
+	struct aml_mapper_iterator *it = malloc(sizeof(*it));
+	if (it == NULL)
+		return -AML_ENOMEM;
+
+	it->mapper = mapper;
+	it->base_ptr = ptr;
+	it->tot_size = mapper->size;
+	it->field_num = 0;
+	it->array_num = 0;
+	it->array_size = 0;
+	it->dma = dma;
+	it->memcpy_op = memcpy_op;
+	it->stack_pos = 0;
+	it->stack_size = 1;
+	*out = it;
+	return AML_SUCCESS;
+}
+
+// Forward iterator to descend next child field of current struct.
+int aml_mapper_iter_next_field(struct aml_mapper_iterator **it, void **out)
+{
+	if (it == NULL || out == NULL || *it == NULL)
+		return -AML_EINVAL;
+
+	struct aml_mapper_iterator *current = *it;
+
+	// If we reached last field return AML_EDOM.
+	if (current->field_num >= current->mapper->n_fields)
+		return AML_EDOM;
+
+	// Descend current field.
+	int err = aml_mapper_iterator_push(it);
+	if (err != AML_SUCCESS)
+		return err;
+
+	// Forward field.
+	current = (*it) - 1;
+	current->field_num++;
+
+	// Return new base pointer.
+	*out = (*it)->base_ptr;
+	return AML_SUCCESS;
+}
+
+// Forward iterator to next element in array of struct.
+int aml_mapper_iter_next_element(struct aml_mapper_iterator **it, void **out)
+{
+	if (it == NULL || out == NULL || *it == NULL)
+		return -AML_EINVAL;
+
+	struct aml_mapper_iterator *current = *it;
+
+	// If we reached last array element return AML_EDOM.
+	if (current->array_num + 1 >= current->array_size)
+		return AML_EDOM;
+
+	// If this array maps final structs (structs with no child)
+	// Then we don't go over every elements and skip the array.
+	if (current->mapper->n_fields == 0)
+		return AML_EDOM;
+
+	// Forward iterator to next field.
+	current->array_num++;
+	// Reset field_num
+	current->field_num = 0;
+	// Set pointer to current array position.
+	*out = PTR_OFF(current->base_ptr, +,
+	               current->array_num * current->mapper->size);
+	return AML_SUCCESS;
+}
+
+int aml_mapper_iter_parent_struct(struct aml_mapper_iterator **it, void **out)
+{
+	if (it == NULL || out == NULL || *it == NULL)
+		return -AML_EINVAL;
+
+	struct aml_mapper_iterator *current = *it;
+	if (current->stack_pos == 0) {
+		free(current);
+		*it = NULL;
+		return AML_EDOM;
+	}
+
+	struct aml_mapper_iterator *prev = current - 1;
+	prev->stack_size = current->stack_size;
+	prev->tot_size = current->tot_size;
+
+	*it = prev;
+	*out = prev->base_ptr;
+	return AML_SUCCESS;
+}
+
+// Forward iterator and return next pointer.
+// Iteration stops if returned pointer is NULL and AML_EDOM is returned.
+int aml_mapper_iter_next(struct aml_mapper_iterator **it, void **out)
+{
+	int err;
+	if (it == NULL || out == NULL || *it == NULL)
+		return -AML_EINVAL;
+
+	// Loop until we meet unvisited field.
+	while (1) {
+		err = aml_mapper_iter_next_field(it, out);
+		if (err < 0)
+			return err;
+		if (err != AML_EDOM)
+			return AML_SUCCESS;
+
+		err = aml_mapper_iter_next_element(it, out);
+		if (err < 0)
+			return err;
+		if (err != AML_EDOM)
+			return AML_SUCCESS;
+
+		err = aml_mapper_iter_parent_struct(it, out);
+		if (err < 0)
+			return err;
+		if (err == AML_EDOM) {
+			*out = NULL;
+			return AML_EDOM;
+		}
+	}
+}
+
 static ssize_t mapper_mmap_recursive(struct aml_mapper *mapper,
                                      void *dst,
                                      void *src,

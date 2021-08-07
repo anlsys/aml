@@ -154,6 +154,34 @@ int eq_struct(struct C *a, struct C *b)
 	return 1;
 }
 
+void test_mapper_iterator(struct C *c)
+{
+	struct aml_mapper_iterator *it;
+
+	assert(aml_mapper_iterator_create(
+	               &it, (void *)c, &struct_C_mapper, aml_dma_linux,
+	               aml_dma_linux_memcpy_op) == AML_SUCCESS);
+
+	struct B *b = c->b;
+	struct A *a;
+	void *it_ptr;
+
+	for (size_t i = 0; i < c->n; i++) {
+		b = c->b + i;
+		assert(aml_mapper_iter_next(&it, &it_ptr) == AML_SUCCESS);
+		assert(it_ptr == b);
+		a = b->a;
+		assert(aml_mapper_iter_next(&it, &it_ptr) == AML_SUCCESS);
+		assert(it_ptr == a);
+	}
+
+	const size_t size =
+	        sizeof(struct C) + c->n * (sizeof(struct A) + sizeof(struct B));
+	assert(it->tot_size == size);
+	assert(aml_mapper_iter_next(&it, &it_ptr) == AML_EDOM);
+	assert(it == NULL);
+}
+
 void test_mapper(struct C *c)
 {
 	// Linux check
@@ -308,6 +336,7 @@ int main(int argc, char **argv)
 	init_struct(&c);
 
 	// Tests
+	test_mapper_iterator(c);
 	test_mapper(c);
 	test_shallow_mapper(c);
 	// Cleanup

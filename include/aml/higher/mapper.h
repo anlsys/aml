@@ -399,6 +399,168 @@ aml_final_mapper_decl(aml_long_double_split_mapper,
 /** Default mapper in a seperate allocation for pointer elements */
 aml_final_mapper_decl(aml_ptr_split_mapper, AML_MAPPER_FLAG_SPLIT, void *);
 
+//------------------------------------------------------------------------------
+// Mapper iterator.
+//------------------------------------------------------------------------------
+
+struct aml_mapper_iterator {
+	// Base pointer iterated with this iterator.
+	void *base_ptr;
+	// Mapper of this base pointer
+	struct aml_mapper *mapper;
+	// The memory size iterated so far.
+	size_t tot_size;
+	// The current mapper field iterated.
+	size_t field_num;
+	// If base_ptr is an array, this is the iteration index in array.
+	size_t array_num;
+	// If base_ptr is an array, this is the number of array elements.
+	size_t array_size;
+	// dma engine from base_ptr area to host to dereference pointers.
+	struct aml_dma *dma;
+	// Memcpy operator of dma engine.
+	aml_dma_operator memcpy_op;
+	// Position of this iterator pointer in the stack.
+	size_t stack_pos;
+	// Number of iterator pointers in the stack.
+	size_t stack_size;
+};
+
+/**
+ * Create an iterator over the struct pointed by `ptr` and described
+ * by `mapper`. On each iteration, this iterator will return pointer
+ * to a child field in the structure hierarchy. If a child field is
+ * an array of structs, then iteration will also iterate over elements
+ * of the array. Iterations will also update `tot_size` field of iterator
+ * computing the size of the iterated struct. At the last valid iteration
+ * step, `tot_size` contains the complete structure size.
+ *
+ * @see mapper_iter_next()
+ *
+ * @param[out] out: Where to store pointer to allocated iterator.
+ * @param[in] ptr: The pointer to the structure to iterate.
+ * @param[in] mapper: The mapper describing the structure.
+ * @param[in, out] dma: The dma engine from `ptr` area to host used to
+ * dereference `ptr` and child fields. if `dma` is NULL, `ptr` is assumed
+ * to be a host pointer.
+ * @param[in] memcpy_op: A memcpy operator taking raw pointers and their
+ * size as input.
+ *
+ * @return -AML_EINVAL if out, ptr or mapper are NULL.
+ * @return -AML_ENOMEM if there was not enough memory to allocate iterator.
+ * @return AML_SUCCESS on success.
+ */
+int aml_mapper_iterator_create(struct aml_mapper_iterator **out,
+                               void *ptr,
+                               struct aml_mapper *mapper,
+                               struct aml_dma *dma,
+                               aml_dma_operator memcpy_op);
+
+/**
+ * Store struct pointer reflected by current iterator position and
+ * forward iterator.
+ * Iterator forwarding works as follow:
+ * 1. If the current structure field can be forwarded, then it is forwarded
+ * and next field is descended by dereferencing it and updating iterator
+ * pointer to the iterator representing iteration at current structure
+ * depth.
+ * @see mapper_iter_next_field()
+ * 2. Else, if current iterator represents an array of structs, and
+ * the structs have children, then, the iterator is forwarded to next array
+ * element and field cursor is reset to point to first struct field of
+ * current element.
+ * @see mapper_iter_next_element()
+ * 3. If none of 1. and 2. can be forwarded, then this structure has been
+ * completely visited and we move on to parent. We resume step 1. from
+ * parent. If the result of step 3. is pointing to the root structure, then
+ * the entire structure has been visited and the iterator is freed and
+ * stops.
+ * @see mapper_iter_parent_struct()
+ *
+ * @param[in, out] it: The current iteration step. This pointer might be
+ * reallocated and updated if the next step is to descend a child field.
+ * @param[out] out: Where to store the resulting struct pointer of next
+ * iteration.
+ *
+ * @return AML_EDOM with `*out` set to `NULL` if last iteration step has
+ * been reached.
+ * @return AML_SUCCESS with `*out` pointing to the next substructure on
+ * success.
+ * @return -AML_EINVAL if `it` or `out` are `NULL`.
+ * @return -AML_ENOMEM if iteration required to allocate more memory
+ * and allocation failed.
+ * @return A dma error code if a dma operation was required and failed.
+ **/
+int aml_mapper_iter_next(struct aml_mapper_iterator **it, void **out);
+
+/**
+ * Forward iterator to next field if possible.
+ * If current struct pointed by iterator has fields and the iterator
+ * field cursor is not pointing after last field, then the pointed field
+ * is descended. The corresponding pointer is dereferenced to obtain
+ * pointer to child struct using embedded dma engine if needed.
+ * The resulting pointer is stored in `out`.
+ * The input iterator field cursor is forwarded in the process.
+ * When descending iterator is updated to an iterator respresenting
+ * child structure in the stack of parent structures iterators.
+ * The stack of iterators might be reallocated and if reallocation fails,
+ * nothing is done and -AML_ENOMEM is returned.
+ * If current structure has no child or iterator field cursor is pointing
+ * after last child, then nothing is done and AML_EDOM is returned.
+ *
+ * @param [in,out] it: A pointer to iterator representing the state
+ * of current iteration. This pointer might be updated and even reallocated
+ * when this function is called.
+ * @param[out] out: Where to store pointer to next child field.
+ *
+ * @return AML_EDOM if last field iteration of current structure has been
+ * reached.
+ * @return AML_SUCCESS with `*out` pointing to the next child field on
+ * success.
+ * @return -AML_EINVAL if `it` or `out` are `NULL`.
+ * @return -AML_ENOMEM if iteration required to allocate more memory
+ * and allocation failed.
+ * @return A dma error code if a dma operation was required and failed.
+ */
+int aml_mapper_iter_next_field(struct aml_mapper_iterator **it, void **out);
+
+/**
+ * Forward iterator over an array of structs.
+ * If iterator array cursor points at last array element, then nothing is
+ * done and `AML_EDOM` is returned.
+ * If structs of the array of struct pointed by iterator are final structs
+ * (they have no child fields) then nothing is done and `AML_EDOM` is
+ * returned.
+ * Else, iterator array cursor is forwarded, iterator field cursor is reset
+ * and pointer to the next array element is returned in `out`.
+ *
+ * @param [in,out] it: A pointer to iterator representing the state
+ * of current iteration.
+ * @param[out] out: Where to store pointer to next array element.
+ *
+ * @return AML_EDOM if last array element iteration of current structure
+ * has been reached.
+ * @return AML_SUCCESS with `*out` pointing to the next array element on
+ * success.
+ * @return -AML_EINVAL if `it` or `out` are `NULL`.
+ */
+int aml_mapper_iter_next_element(struct aml_mapper_iterator **it, void **out);
+
+/**
+ * Stop iterating current structure and move iterator cursosr to parent
+ * structure.
+ *
+ * @param [in,out] it: A pointer to iterator representing the state
+ * of current iteration. `it` is updated after this function call.
+ * @param[out] out: Where to store pointer to parent struct.
+ *
+ * @return AML_EDOM if current iteration struct is the root struct.
+ * @return AML_SUCCESS with `*out` pointing to the parent struct on
+ * success.
+ * @return -AML_EINVAL if `it` or `out` are `NULL`.
+ */
+int aml_mapper_iter_parent_struct(struct aml_mapper_iterator **it, void **out);
+
 /**
  * @}
  **/
