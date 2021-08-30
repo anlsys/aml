@@ -8,6 +8,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  ******************************************************************************/
 
+#include "config.h"
+
 #include "aml.h"
 
 #include "aml/area/ze.h"
@@ -52,43 +54,62 @@ int aml_ze_data_create(struct aml_ze_data **out, uint32_t driver_num)
 	// Get the number of subdevice for each device.
 	uint32_t num_subdevice[num_device];
 	uint32_t tot_subdevice = 0;
-	memset(num_subdevice, 0, sizeof(num_subdevice));
+	memset(num_subdevice, 0, sizeof(uint32_t) * num_device);
 	for (uint32_t i = 0; i < num_device; i++) {
 		if (zeDeviceGetSubDevices(device[i], num_subdevice + i, NULL) !=
 		    ZE_RESULT_SUCCESS)
 			return -AML_FAILURE;
-		tot_subdevice += num_subdevice[i];
+		if (num_subdevice[i] == 0)
+			tot_subdevice++;
+		else
+			tot_subdevice += num_subdevice[i];
 	}
 
 	// Allocate the returned structure.
 	struct aml_ze_data *data;
-	data = AML_INNER_MALLOC_EXTRA(tot_subdevice + num_device, uint32_t,
-	                              (num_device + tot_subdevice) *
-	                                      sizeof(ze_device_handle_t),
-	                              struct aml_ze_data);
-
+	data = malloc(sizeof(struct aml_ze_data) +
+	              sizeof(ze_device_handle_t) * num_device +
+	              sizeof(uint32_t) * num_device +
+	              sizeof(ze_device_handle_t *) * num_device +
+	              sizeof(ze_device_handle_t) * tot_subdevice +
+	              sizeof(uint32_t *) * num_device +
+	              sizeof(uint32_t) * tot_subdevice);
 	if (data == NULL)
 		return -AML_ENOMEM;
 
+	data->num_device = num_device;
+	data->device = (ze_device_handle_t *)((char *)data +
+	                                      sizeof(struct aml_ze_data));
+	memcpy(data->device, device, sizeof(device));
+
+	data->num_subdevice =
+	        (uint32_t *)((char *)data->device +
+	                     sizeof(ze_device_handle_t) * num_device);
+	memcpy(data->num_subdevice, num_subdevice, sizeof(num_subdevice));
+
+	data->subdevice =
+	        (ze_device_handle_t **)((char *)data->num_subdevice +
+	                                sizeof(uint32_t) * num_device);
+
+	data->num_memories =
+	        (uint32_t **)((char *)data->subdevice +
+	                      sizeof(ze_device_handle_t *) * num_device +
+	                      sizeof(ze_device_handle_t) * tot_subdevice);
+
 	// Get alloc space for device handles
-	ze_device_handle_t *device_handles = AML_INNER_MALLOC_GET_EXTRA(
-	        data, tot_subdevice + num_device, uint32_t, struct aml_ze_data);
+	ze_device_handle_t *device_handles =
+	        (ze_device_handle_t *)((char *)data->subdevice +
+	                               sizeof(ze_device_handle_t *) *
+	                                       num_device);
 
 	// Get alloc space for subdevice numbers and memories number.
-	uint32_t *nums =
-	        AML_INNER_MALLOC_GET_ARRAY(data, uint32_t, struct aml_ze_data);
+	uint32_t *nums = (uint32_t *)((char *)data->num_memories +
+	                              sizeof(uint32_t *) * num_device);
 
 	// Set returned structure fields.
 	data->driver = driver[driver_num];
-	data->num_device = num_device;
-	data->device = device_handles;
-	memcpy(data->device, device, sizeof(device));
-	data->num_subdevice = nums;
-	memcpy(data->num_subdevice, num_subdevice, sizeof(num_subdevice));
 
 	// Set subdevice handles and memories number.
-	device_handles += num_device;
-	nums += num_device;
 	for (uint32_t i = 0; i < num_device; i++) {
 		data->subdevice[i] = device_handles;
 		if (zeDeviceGetSubDevices(device[i], num_subdevice + i,
@@ -213,7 +234,7 @@ int aml_ze_context_create(ze_context_handle_t *context,
                           const ze_device_handle_t device)
 {
 #if HAVE_ZE_OMP_CONTEXT == 1
-	err = aml_ze_device_num(device);
+	int err = aml_ze_device_num(device);
 	if (err < 0)
 		return err;
 	*context = omp_target_get_context(err);

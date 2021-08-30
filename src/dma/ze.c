@@ -37,19 +37,14 @@ int aml_dma_ze_create(struct aml_dma **dma,
 	// Set device field
 	data->device = device;
 
-	// Alloc request queue.
-	data->requests = aml_queue_create(pool_size);
-	if (data->requests == NULL) {
-		err = AML_ENOMEM;
-		goto err_with_dma;
-	}
-
 	// Set context field
 	err = aml_ze_context_create(&data->context, device);
 	if (err != AML_SUCCESS)
-		goto err_with_queue;
+		goto err_with_dma;
 
-	// Prepare Command Queue
+	/* Describe the command queue we want underneath the immediate command
+	 * list
+	 */
 	ze_command_queue_desc_t queue_desc = {
 	        .stype = ZE_STRUCTURE_TYPE_COMMAND_QUEUE_DESC,
 	        .pNext = NULL,
@@ -59,29 +54,10 @@ int aml_dma_ze_create(struct aml_dma **dma,
 	        .mode = ZE_COMMAND_QUEUE_MODE_ASYNCHRONOUS,
 	        .priority = ZE_COMMAND_QUEUE_PRIORITY_NORMAL};
 
-	err = ZE(zeCommandQueueCreate(data->context, device, &queue_desc,
-	                              &data->command_queue));
-	if (err != AML_SUCCESS)
-		goto err_with_context;
-
 	err = ZE(zeCommandListCreateImmediate(
 	        data->context, device, &queue_desc, &data->command_list));
 	if (err != AML_SUCCESS)
-		goto err_with_command_queue;
-
-	// Create event pool
-	data->event_pool_size = pool_size;
-	ze_event_pool_desc_t pool_desc = {
-	        .stype = ZE_STRUCTURE_TYPE_EVENT_POOL_DESC,
-	        .pNext = NULL,
-	        .flags = ZE_EVENT_POOL_FLAG_HOST_VISIBLE,
-	        .count = pool_size,
-
-	};
-	err = ZE(zeEventPoolCreate(data->context, &pool_desc, 1, &device,
-	                           &data->events));
-	if (err != AML_SUCCESS)
-		goto err_with_command_list;
+		goto err_with_context;
 
 	data->event_flags = ZE_EVENT_SCOPE_FLAG_HOST;
 	if (ZE(zeDeviceGetProperties(data->device, &ppt)) == AML_SUCCESS &&
@@ -94,12 +70,8 @@ int aml_dma_ze_create(struct aml_dma **dma,
 	return AML_SUCCESS;
 err_with_command_list:
 	zeCommandListDestroy(data->command_list);
-err_with_command_queue:
-	zeCommandQueueDestroy(data->command_queue);
 err_with_context:
 	aml_ze_context_destroy(data->context);
-err_with_queue:
-	aml_queue_destroy(data->requests);
 err_with_dma:
 	free(out);
 	return err;
@@ -107,15 +79,20 @@ err_with_dma:
 
 int aml_dma_ze_destroy(struct aml_dma **dma)
 {
-	if (dma != NULL && *dma != NULL) {
-		struct aml_dma_ze_data *data =
-		        (struct aml_dma_ze_data *)(*dma)->data;
-		zeEventPoolDestroy(data->events);
-		zeCommandQueueDestroy(data->command_queue);
-		zeCommandListDestroy(data->command_list);
-		aml_ze_context_destroy(data->context);
-		aml_queue_destroy(data->requests);
-	}
+	if (dma == NULL)
+		return -AML_EINVAL;
+	if (*dma == NULL)
+		return AML_SUCCESS;
+
+	struct aml_dma_ze_data *data = (struct aml_dma_ze_data *)(*dma)->data;
+
+	aml_dma_ze_barrier((*dma)->data);
+
+	zeCommandListDestroy(data->command_list);
+	aml_ze_context_destroy(data->context);
+	pthread_mutex_destroy(&data->lock);
+	free(*dma);
+	*dma = NULL;
 	return AML_SUCCESS;
 }
 
@@ -144,9 +121,9 @@ int aml_dma_ze_memcpy_op(struct aml_layout *dst,
 {
 	struct aml_dma_ze_copy_args *args = (struct aml_dma_ze_copy_args *)arg;
 	size_t size = (size_t)args->arg;
-	return ZE(zeCommandListAppendMemoryCopy(args->ze_data->command_list,
-	                                        dst, src, size,
-	                                        args->ze_req->event, 0, NULL));
+	return ZE(zeCommandListAppendMemoryCopy(
+	        args->ze_data->command_list, dst, src, size,
+	        args->ze_req ? args->ze_req->event : NULL, 0, NULL));
 }
 
 int aml_dma_ze_request_create(struct aml_dma_data *data,
@@ -157,44 +134,65 @@ int aml_dma_ze_request_create(struct aml_dma_data *data,
                               void *op_arg)
 {
 	int err;
-	struct aml_dma_ze_request *ze_req;
+	struct aml_dma_ze_request *ze_req = NULL;
 	struct aml_dma_ze_data *ze_data = (struct aml_dma_ze_data *)data;
 
 	if (op == NULL)
 		op = aml_dma_ze_copy_1D;
 
-	// Allocate space for the request.
-	ze_req = AML_INNER_MALLOC(struct aml_dma_ze_request);
-	if (ze_req == NULL)
-		return -AML_ENOMEM;
-	ze_req->flags = 0;
+	if (req) {
+		// Allocate space for the request.
+		ze_req = AML_INNER_MALLOC(struct aml_dma_ze_request);
+		if (ze_req == NULL)
+			return -AML_ENOMEM;
+		ze_req->flags = 0;
 
-	// Create event.
-	ze_event_desc_t desc = {
-	        .stype = ZE_STRUCTURE_TYPE_EVENT_DESC,
-	        .pNext = NULL,
-	        .index = 0,
-	        .signal = 0,
-	        .wait = ze_data->event_flags,
-	};
-	err = ZE(zeEventCreate(ze_data->events, &desc, &ze_req->event));
-	if (err != AML_SUCCESS)
-		goto err_with_req;
+		ze_event_pool_desc_t pool_desc = {
+		        .stype = ZE_STRUCTURE_TYPE_EVENT_POOL_DESC,
+		        .pNext = NULL,
+		        .flags = ZE_EVENT_POOL_FLAG_HOST_VISIBLE,
+		        .count = 1,
+		};
+		err = ZE(zeEventPoolCreate(ze_data->context, &pool_desc, 1,
+		                           &ze_data->device, &ze_req->pool));
+		if (err != AML_SUCCESS)
+			goto err_with_req;
 
+		// Create event.
+		ze_event_desc_t desc = {
+		        .stype = ZE_STRUCTURE_TYPE_EVENT_DESC,
+		        .pNext = NULL,
+		        .index = 0,
+		        .signal = 0,
+		        .wait = ze_data->event_flags,
+		};
+		err = ZE(zeEventCreate(ze_req->pool, &desc, &ze_req->event));
+		if (err != AML_SUCCESS)
+			goto err_with_event_pool;
+	}
 	// Queue copy.
 	struct aml_dma_ze_copy_args args = {
 	        .ze_data = ze_data,
 	        .ze_req = ze_req,
 	        .arg = op_arg,
 	};
+	pthread_mutex_lock(&ze_data->lock);
 	err = op(dest, src, &args);
-	if (err != AML_SUCCESS)
-		goto err_with_event;
+	pthread_mutex_unlock(&ze_data->lock);
+	if (err != AML_SUCCESS) {
+		if (req)
+			goto err_with_event;
+		else
+			return err;
+	}
+	if (req)
+		*req = (struct aml_dma_request *)ze_req;
 
-	*req = (struct aml_dma_request *)ze_req;
 	return AML_SUCCESS;
 err_with_event:
 	zeEventDestroy(ze_req->event);
+err_with_event_pool:
+	zeEventPoolDestroy(ze_req->pool);
 err_with_req:
 	free(ze_req);
 	return err;
@@ -203,44 +201,64 @@ err_with_req:
 int aml_dma_ze_request_wait(struct aml_dma_data *data,
                             struct aml_dma_request **req)
 {
-	(void)data;
 	int err;
 	struct aml_dma_ze_request *ze_req = (struct aml_dma_ze_request *)(*req);
+	struct aml_dma_ze_data *ze_data = (struct aml_dma_ze_data *)data;
 
-	if (!(ze_req->flags & AML_DMA_ZE_REQUEST_FLAGS_DONE)) {
-		err = ZE(zeEventHostSynchronize(ze_req->event, UINT64_MAX));
-		if (err != AML_SUCCESS)
-			return err;
-	}
-	err = ZE(zeEventDestroy(ze_req->event));
-	if (err != AML_SUCCESS)
-		return err;
+	err = ZE(zeEventHostSynchronize(ze_req->event, UINT64_MAX));
+	zeEventDestroy(ze_req->event);
+	zeEventPoolDestroy(ze_req->pool);
 	free(*req);
 	*req = NULL;
-	return AML_SUCCESS;
+	return err;
 }
 
 int aml_dma_ze_barrier(struct aml_dma_data *data)
 {
 	int err;
 	struct aml_dma_ze_data *ze_data = (struct aml_dma_ze_data *)data;
-	err = ZE(zeCommandQueueSynchronize(ze_data->command_queue, 0));
-	if (err != AML_SUCCESS)
-		return err;
 
-	for (void **req_ptr = aml_queue_head(ze_data->requests);
-	     req_ptr != NULL;
-	     req_ptr = aml_queue_next(ze_data->requests,
-	                              (const void **)req_ptr)) {
-		struct aml_dma_ze_request *ze_req =
-		        *(struct aml_dma_ze_request **)req_ptr;
-		ze_req->flags = ze_req->flags & AML_DMA_ZE_REQUEST_FLAGS_DONE;
-	}
+	ze_event_pool_handle_t pool;
+	ze_event_handle_t event;
 
-	err = ZE(zeCommandListReset(ze_data->command_list));
+	/* create the event pool for synchronization */
+	ze_event_pool_desc_t pool_desc = {
+	        .stype = ZE_STRUCTURE_TYPE_EVENT_POOL_DESC,
+	        .pNext = NULL,
+	        .flags = ZE_EVENT_POOL_FLAG_HOST_VISIBLE,
+	        .count = 1,
+	};
+	err = ZE(zeEventPoolCreate(ze_data->context, &pool_desc, 1,
+	                           &ze_data->device, &pool));
 	if (err != AML_SUCCESS)
-		return err;
-	return AML_SUCCESS;
+		goto err;
+
+	ze_event_desc_t event_desc = {
+	        .stype = ZE_STRUCTURE_TYPE_EVENT_DESC,
+	        .pNext = NULL,
+	        .index = 0,
+	        .signal = 0,
+	        .wait = ZE_EVENT_SCOPE_FLAG_HOST,
+	};
+	err = ZE(zeEventCreate(pool, &event_desc, &event));
+	if (err != AML_SUCCESS)
+		goto err_with_event_pool;
+
+	pthread_mutex_lock(&ze_data->lock);
+	err = ZE(zeCommandListAppendBarrier(ze_data->command_list, event, 0,
+	                                    NULL));
+	pthread_mutex_unlock(&ze_data->lock);
+	if (err != AML_SUCCESS)
+		goto err_with_event;
+
+	err = ZE(zeEventHostSynchronize(event, UINT64_MAX));
+
+err_with_event:
+	zeEventDestroy(event);
+err_with_event_pool:
+	zeEventPoolDestroy(pool);
+err:
+	return err;
 }
 
 int aml_dma_ze_request_destroy(struct aml_dma_data *data,
