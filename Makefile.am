@@ -9,5 +9,5 @@ EXTRA_DIST = autogen.sh aml.pc README.markdown .version
 BUILT_SOURCES = $(top_srcdir)/.version
 $(top_srcdir)/.version:
 	echo $(VERSION) > $@-t && mv $@-t $@
- dist-hook:
+dist-hook:
 	echo $(VERSION) > $(distdir)/.tarball-version
