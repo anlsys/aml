@@ -1,7 +1,7 @@
 # See semver.org for version info
 #################################
 
-m4_define([VERSION_STRING], m4_esyscmd([build-aux/git-version-gen --fallback v0.1.0.0 .tarball-version]))
+m4_define([VERSION_STRING], m4_esyscmd([build-aux/git-version-gen .tarball-version]))
 m4_define([VERSION_FIELDS], m4_split(VERSION_STRING, [\.]))
 m4_define([VERSION_MAJOR], m4_argn(1, VERSION_FIELDS))
 m4_define([VERSION_MINOR], m4_argn(2, VERSION_FIELDS))
