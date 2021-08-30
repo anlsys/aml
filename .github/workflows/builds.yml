@@ -10,7 +10,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - run: git fetch --tags
+          fetch-depth: 0
       - run: sudo apt-get update
       - run: sudo apt-get install -y gcc make autoconf automake libtool pkg-config libhwloc-dev
       - name: configure
@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - run: git fetch --tags
+          fetch-depth: 0
       - run: sudo apt-get update
       - run: sudo apt-get install -y gcc make autoconf automake libtool pkg-config libhwloc-dev
       - name: configure
@@ -65,7 +65,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - run: git fetch --tags
+          fetch-depth: 0
       - run: sudo apt-get update
       - run: sudo apt-get install -y gcc make autoconf automake libtool pkg-config hwloc libhwloc-dev valgrind
       - run: hwloc-gather-cpuid
@@ -95,6 +95,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
+          fetch-depth: 0
       - run: git fetch --tags
       - uses: cachix/install-nix-action@v13
         with:
@@ -106,6 +107,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
+          fetch-depth: 0
       - run: git fetch --tags
       - run: sudo apt-get update
       - run: sudo apt-get install -y gcc make autoconf automake libtool pkg-config libhwloc-dev
