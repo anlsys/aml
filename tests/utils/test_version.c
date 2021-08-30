@@ -16,6 +16,7 @@ int main(void)
 	assert(aml_version_major == AML_VERSION_MAJOR);
 	assert(aml_version_minor == AML_VERSION_MINOR);
 	assert(aml_version_patch == AML_VERSION_PATCH);
+	assert(!strcmp(aml_version_revision, AML_VERSION_REVISION));
 	assert(!strcmp(aml_version_string, AML_VERSION_STRING));
 	return 0;
 }

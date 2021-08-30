@@ -42,6 +42,13 @@
 #define	AML_VERSION_PATCH @PACKAGE_VERSION_PATCH@
 
 /**
+ * AML revision version (compilation time value)
+ * AML revision (git drift since last tag), used
+ * for identifying major drift since release.
+ **/
+#define AML_VERSION_REVISION "@PACKAGE_VERSION_REVISION@"
+
+/**
  * AML version as string.
  * "major.minor.patch"
  **/
@@ -73,6 +80,15 @@ extern const int aml_version_minor;
  * @see AML_VERSION_PATCH
  **/
 extern const int aml_version_patch;
+
+/**
+ * AML revision as string (runtime value).
+ * If runtime value and compilation value do not
+ * match, either the wrong library is linked or
+ * the program has been compiled with the wrong header.
+ * @see AML_VERSION_REVISION
+ **/
+extern const char *aml_version_revision;
 
 /**
  * AML version as string (runtime value).
