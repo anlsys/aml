@@ -37,8 +37,6 @@ extern "C" {
 
 //--- DMA -----------------------------------------------------------------//
 
-struct aml_queue;
-
 /** Data structure of aml ze dma data. */
 struct aml_dma_ze_data {
 	// Logical context of this dma
@@ -47,17 +45,10 @@ struct aml_dma_ze_data {
 	ze_device_handle_t device;
 	// Command list of this dma
 	ze_command_list_handle_t command_list;
-	// Command queue associated with device and command list.
-	ze_command_queue_handle_t command_queue;
-	// List of existing requests.
-	struct aml_queue *requests;
-	// handle to events associated with this dma
-	ze_event_pool_handle_t events;
-	// The maximum of number of events that can be handled simultaneously in
-	// the event pool.
-	uint32_t event_pool_size;
 	// Synchronization scope for events.
 	ze_event_scope_flags_t event_flags;
+	// mutex for thread safety
+	pthread_mutex_t lock;
 };
 
 /** Default dma ops used at dma creation **/
@@ -111,6 +102,8 @@ int aml_dma_ze_destroy(struct aml_dma **dma);
 struct aml_dma_ze_request {
 	// event handle
 	ze_event_handle_t event;
+	// event pool for this request
+	ze_event_pool_handle_t pool;
 	// AML Request flags.
 	// These are updated by AML on synchronization calls.
 	int flags;
