@@ -7,11 +7,11 @@ let
       (_: pkgs: {
 
         aml = let
-          f = { stdenv, src, autoreconfHook, pkgconfig, numactl, hwloc }:
+          f = { stdenv, src, autoreconfHook, git,  pkgconfig, numactl, hwloc }:
             stdenv.mkDerivation {
               src = ./.;
               name = "aml";
-              nativeBuildInputs = [ autoreconfHook pkgconfig ];
+              nativeBuildInputs = [ autoreconfHook pkgconfig git ];
               buildInputs = [ hwloc numactl ];
             };
         in pkgs.lib.callPackageWith pkgs f { };
