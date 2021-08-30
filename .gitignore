@@ -75,3 +75,6 @@ features.h
 
 # package config
 aml.pc
+
+# version file
+.version

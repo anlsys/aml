@@ -25,6 +25,7 @@
 const int aml_version_major = AML_VERSION_MAJOR;
 const int aml_version_minor = AML_VERSION_MINOR;
 const int aml_version_patch = AML_VERSION_PATCH;
+const char *aml_version_revision = AML_VERSION_REVISION;
 const char *aml_version_string = AML_VERSION_STRING;
 
 int aml_errno;
