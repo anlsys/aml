@@ -33,6 +33,7 @@ UTILS_SOURCES = \
 		utils/bitmap.c \
 		utils/error.c \
 		utils/vector.c \
+		utils/array.c \
 		utils/queue.c \
 		utils/async.c \
 		utils/features.c

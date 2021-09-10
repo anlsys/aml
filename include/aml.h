@@ -38,6 +38,7 @@ extern "C" {
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include "aml/utils/array.h"
 #include "aml/utils/async.h"
 #include "aml/utils/bitmap.h"
 #include "aml/utils/error.h"
