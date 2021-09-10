@@ -16,9 +16,7 @@
 
 #define ZE(ze_call) aml_errno_from_ze_result(ze_call)
 
-int aml_dma_ze_create(struct aml_dma **dma,
-                      ze_device_handle_t device,
-                      const uint32_t pool_size)
+int aml_dma_ze_create(struct aml_dma **dma, ze_device_handle_t device)
 {
 	int err = AML_SUCCESS;
 	struct aml_dma *out = NULL;
@@ -68,8 +66,6 @@ int aml_dma_ze_create(struct aml_dma **dma,
 
 	*dma = out;
 	return AML_SUCCESS;
-err_with_command_list:
-	zeCommandListDestroy(data->command_list);
 err_with_context:
 	aml_ze_context_destroy(data->context);
 err_with_dma:
@@ -201,9 +197,9 @@ err_with_req:
 int aml_dma_ze_request_wait(struct aml_dma_data *data,
                             struct aml_dma_request **req)
 {
+	(void)data;
 	int err;
 	struct aml_dma_ze_request *ze_req = (struct aml_dma_ze_request *)(*req);
-	struct aml_dma_ze_data *ze_data = (struct aml_dma_ze_data *)data;
 
 	err = ZE(zeEventHostSynchronize(ze_req->event, UINT64_MAX));
 	zeEventDestroy(ze_req->event);
