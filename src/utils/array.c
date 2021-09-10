@@ -50,9 +50,12 @@ int aml_array_resize(struct aml_array *array, size_t newsize)
 
 	// Shrink or Extend
 	if (newsize < array->len || (newsize * element_size > array->size)) {
-		void *ptr = reallocarray(array->buf, newsize, element_size);
+		void *ptr = calloc(newsize, element_size);
 		if (ptr == NULL)
 			return -AML_ENOMEM;
+		const size_t len = array->len < newsize ? array->len : newsize;
+		memcpy(ptr, array->buf, len * element_size);
+		free(array->buf);
 		array->buf = ptr;
 		array->size = element_size * newsize;
 	}
