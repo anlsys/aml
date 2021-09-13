@@ -32,7 +32,6 @@ include_amlutils_HEADERS = \
 			   aml/utils/error.h \
 			   aml/utils/inner-malloc.h \
 			   aml/utils/vector.h \
-			   aml/utils/array.h \
 			   aml/utils/queue.h \
 			   aml/utils/async.h \
 			   aml/utils/version.h \

@@ -9,44 +9,141 @@
  ******************************************************************************/
 
 #include "aml.h"
-#include <assert.h>
+
+int comp_int(const void *a, const void *b)
+{
+	int x = *(int *)a;
+	int y = *(int *)b;
+
+	if (x < y)
+		return -1;
+	if (x == y)
+		return 0;
+	return 1;
+}
+
+void test_err_conditions()
+{
+	struct aml_vector *vector;
+
+	int test[6] = {0, 1, 2, -1, -2, -3};
+	const int key = 5;
+	const size_t len = sizeof(test) / sizeof(*test);
+
+	// Test create
+	assert(aml_vector_create(NULL, sizeof(int), len) == -AML_EINVAL);
+	assert(aml_vector_create(&vector, 0, len) == -AML_EINVAL);
+	assert(aml_vector_create(&vector, sizeof(int), len) == AML_SUCCESS);
+
+	// Test resize
+	assert(aml_vector_resize(NULL, 0) == -AML_EINVAL);
+
+	// Test get
+	assert(aml_vector_get(NULL, 0, NULL) == -AML_EINVAL);
+	assert(aml_vector_get(vector, len, NULL) == -AML_EDOM);
+
+	// Test find
+	assert(aml_vector_find(vector, (void *)&key, comp_int, NULL) ==
+	       -AML_FAILURE);
+	assert(aml_vector_find(NULL, (void *)&key, comp_int, NULL) ==
+	       -AML_EINVAL);
+	assert(aml_vector_find(vector, NULL, comp_int, NULL) == -AML_EINVAL);
+
+	// Test sort
+	assert(aml_vector_sort(NULL, comp_int) == -AML_EINVAL);
+	assert(aml_vector_sort(vector, NULL) == -AML_EINVAL);
+
+	// Test bsearch
+	assert(aml_vector_sort(vector, comp_int) == AML_SUCCESS);
+	assert(aml_vector_bsearch(vector, (void *)&key, comp_int, NULL) ==
+	       -AML_FAILURE);
+	assert(aml_vector_bsearch(NULL, (void *)&key, comp_int, NULL) ==
+	       -AML_EINVAL);
+	assert(aml_vector_bsearch(vector, NULL, comp_int, NULL) == -AML_EINVAL);
+
+	// Test take
+	assert(aml_vector_take(NULL, 0, NULL) == -AML_EINVAL);
+	assert(aml_vector_take(vector, len, NULL) == -AML_EDOM);
+
+	// Test push
+	assert(aml_vector_push(NULL, (void *)&key) == -AML_EINVAL);
+	assert(aml_vector_push(vector, NULL) == -AML_EINVAL);
+
+	// Test pop
+	assert(aml_vector_pop(NULL, NULL) == -AML_EINVAL);
+	assert(aml_vector_pop(vector, NULL) == -AML_EDOM);
+
+	aml_vector_destroy(&vector);
+}
+
+void test_functional()
+{
+	struct aml_vector *vector;
+	int test[6] = {0, 1, 2, -1, -2, -3};
+	void *out;
+	int val;
+	size_t pos;
+
+	assert(aml_vector_create(&vector, sizeof(int), 2) == AML_SUCCESS);
+
+	// [0, 1, 2]
+	for (int i = 0; i < 3; i++)
+		assert(aml_vector_push(vector, &(test[i])) == AML_SUCCESS);
+
+	// Make sure vector contains the right elements.
+	for (int i = 0; i < 3; i++) {
+		assert(aml_vector_get(vector, i, &out) == AML_SUCCESS);
+		assert(*(int *)out == test[i]);
+	}
+
+	// Make sure resizing does not alter vector
+	assert(aml_vector_resize(vector, 32) == AML_SUCCESS);
+	for (int i = 0; i < 3; i++) {
+		assert(aml_vector_get(vector, i, &out) == AML_SUCCESS);
+		assert(*(int *)out == test[i]);
+	}
+
+	// [0, 1, 2, -1, -2, -3]
+	for (int i = 3; i < 6; i++)
+		assert(aml_vector_push(vector, (void *)&test[i]) ==
+		       AML_SUCCESS);
+	// Make sure vector contains the right elements.
+	for (int i = 0; i < 6; i++) {
+		assert(aml_vector_get(vector, i, &out) == AML_SUCCESS);
+		assert(*(int *)out == test[i]);
+	}
+
+	// [0, 1, 2, -1, -2, -3]
+	val = -3;
+	assert(aml_vector_find(vector, (void *)&val, comp_int, &pos) ==
+	       AML_SUCCESS);
+	assert(pos == 5);
+
+	// [-3, -2, -1, 0, 1, 2]
+	assert(aml_vector_sort(vector, comp_int) == AML_SUCCESS);
+	// val = -3
+	assert(aml_vector_bsearch(vector, (void *)&val, comp_int, &pos) ==
+	       AML_SUCCESS);
+	assert(pos == 0);
+
+	// [-3, -2, -1, 0, 1]
+	assert(aml_vector_pop(vector, (void *)&val) == AML_SUCCESS);
+	assert(val == 2);
+
+	// [-3, -1, 0, 1]
+	assert(aml_vector_take(vector, 1, (void *)&val) == AML_SUCCESS);
+	assert(val == -2);
+	assert(aml_vector_get(vector, 1, &out) == AML_SUCCESS);
+	assert(*(int *)out == -1);
+	assert(aml_vector_get(vector, 3, &out) == AML_SUCCESS);
+	assert(*(int *)out == 1);
+
+	aml_vector_destroy(&vector);
+}
 
 int main(void)
 {
-	struct aml_vector *v;
-
-	/* no need for library initialization */
-	;
-
-	/* struct to test the offsets */
-	struct test {
-		unsigned long unused;
-		int key;
-	};
-
-	assert(!aml_vector_create(&v, 1, sizeof(struct test),
-				offsetof(struct test, key), -1));
-
-	/* assert the size */
-	assert(aml_vector_size(v) == 1);
-
-	/* add an element and look for some */
-	struct test *e = aml_vector_get(v, 0);
-
-	assert(e != NULL);
-	e->unused = 42;
-	e->key = 24;
-	assert(aml_vector_find(v, 24) == 0);
-	assert(aml_vector_find(v, 42) == -1);
-
-	/* add a second element, trigger a resize, and check it */
-	struct test *f = aml_vector_add(v);
-
-	assert(f != NULL && f->key == -1);
-	assert(aml_vector_find(v, 42) == -1);
-	assert(aml_vector_find(v, -1) == 1);
-	assert(aml_vector_size(v) == 2);
-
-	aml_vector_destroy(&v);
+	test_functional();
+	test_err_conditions();
 	return 0;
 }
