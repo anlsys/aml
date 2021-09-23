@@ -9,22 +9,22 @@
  ******************************************************************************/
 
 /* error checking logic */
-#define utarray_oom() do { \
-	aml_errno = AML_ENOMEM; \
-	goto utarray_error; \
-	} while(0)
-
-#include "internal/utarray.h"
+#define utarray_oom()                                                          \
+	do {                                                                   \
+		aml_errno = AML_ENOMEM;                                        \
+		goto utarray_error;                                            \
+	} while (0)
 
 #include "aml.h"
+
+#include "internal/utarray.h"
 
 struct aml_vector {
 	UT_array *array;
 	UT_icd icd;
 };
 
-int aml_vector_create(struct aml_vector **vector,
-                      const size_t element_size)
+int aml_vector_create(struct aml_vector **vector, const size_t element_size)
 {
 	struct aml_vector *a;
 
@@ -97,8 +97,8 @@ int aml_vector_find(const struct aml_vector *vector,
 		return -AML_EINVAL;
 
 	void *elt;
-	for (elt = utarray_front(vector->array);
-	     elt != NULL; elt = utarray_next(vector->array, elt)) {
+	for (elt = utarray_front(vector->array); elt != NULL;
+	     elt = utarray_next(vector->array, elt)) {
 		if (!comp(key, elt))
 			break;
 	}

@@ -44,10 +44,8 @@ void test_err_conditions()
 	assert(aml_vector_get(vector, len, &ret) == -AML_EDOM);
 
 	// Test find
-	assert(aml_vector_find(vector, &key, comp_int, NULL) ==
-	       -AML_FAILURE);
-	assert(aml_vector_find(NULL, &key, comp_int, NULL) ==
-	       -AML_EINVAL);
+	assert(aml_vector_find(vector, &key, comp_int, NULL) == -AML_FAILURE);
+	assert(aml_vector_find(NULL, &key, comp_int, NULL) == -AML_EINVAL);
 	assert(aml_vector_find(vector, NULL, comp_int, NULL) == -AML_EINVAL);
 
 	// Test sort
@@ -58,8 +56,7 @@ void test_err_conditions()
 	assert(aml_vector_sort(vector, comp_int) == AML_SUCCESS);
 	assert(aml_vector_bsearch(vector, &key, comp_int, NULL) ==
 	       -AML_FAILURE);
-	assert(aml_vector_bsearch(NULL, &key, comp_int, NULL) ==
-	       -AML_EINVAL);
+	assert(aml_vector_bsearch(NULL, &key, comp_int, NULL) == -AML_EINVAL);
 	assert(aml_vector_bsearch(vector, NULL, comp_int, NULL) == -AML_EINVAL);
 
 	// Test take

@@ -108,7 +108,7 @@ int aml_vector_bsearch(const struct aml_vector *vector,
  * The pointer might be updated to point to a new allocation.
  * @param newlen: a new vector length. If newlen is less than current length
  * the vector is truncated to newlen. If newlen is more than current
- * allocated length, then the vector is extended. 
+ * allocated length, then the vector is extended.
  * @return AML_SUCCESS if successful; -AML_ENOMEM otherwise.
  **/
 int aml_vector_resize(struct aml_vector *vector, size_t newlen);
@@ -163,8 +163,7 @@ int aml_vector_take(struct aml_vector *vector,
  * @return -AML_ENOMEM if allocation failed.
  * @return -AML_EINVAL if `element_size` is 0 or `vector` is NULL.
  **/
-int aml_vector_create(struct aml_vector **vector,
-                      const size_t element_size);
+int aml_vector_create(struct aml_vector **vector, const size_t element_size);
 
 /**
  * Release memory occupied by an vector.
