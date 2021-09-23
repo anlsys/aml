@@ -25,10 +25,12 @@ void aml_task_mockup_work(struct aml_task_in *in, struct aml_task_out *out)
 {
 	(void)in;
 	(void)out;
-	long int us = 1000 * (rand() % 10);
+	long int us = (rand() % 100000);
 	long int count = 0;
 	for (long int i = 0; i < us; i++)
 		count += i ^ (count + i * 42);
+	if (out != NULL)
+		*(long int *)out = count;
 }
 
 struct aml_task aml_task_mockup = {
@@ -55,7 +57,7 @@ void test_scheduler(struct aml_sched *sched, const unsigned int nt)
 	t = aml_sched_wait_any(sched);
 	assert(t == tasks);
 
-	// Submit all tasks.x
+	// Submit all tasks.
 	for (unsigned int i = 0; i < nt; i++)
 		assert(aml_sched_submit_task(sched, tasks + i) == AML_SUCCESS);
 
