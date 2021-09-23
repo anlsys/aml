@@ -32,6 +32,8 @@ struct aml_queue {
 	size_t head;
 	/** Index of tail **/
 	size_t tail;
+	/** Number of elements in queue */
+	size_t len;
 	/** Elements in the queue **/
 	void **elems;
 };
@@ -64,7 +66,7 @@ size_t aml_queue_len(const struct aml_queue *q);
  * Add an element at the queue tail.
  * @return -AML_ENOMEM if queue needed to be extended and allocation failed.
  **/
-int aml_queue_push(struct aml_queue **q, void *element);
+int aml_queue_push(struct aml_queue *q, void *element);
 
 /**
  * Get an element out of the queue.
@@ -73,10 +75,47 @@ int aml_queue_push(struct aml_queue **q, void *element);
 void *aml_queue_pop(struct aml_queue *q);
 
 /**
- * Take an element out of the queue.
- * @return NULL if queue does not contain the element.
+ * Find a matching element in a queue.
+ * @param[in] q: An initialized queue where to find matching element.
+ * @param[in] key: The key to search for in the queue.
+ * @param[in] comp: A comparison function returning 0 when elements dont
+ * match.
+ * @param[out] out: A pointer where to store the pointer to element in
+ * queue.
+ * @return -AML_EINVAL if q is NULL or comp is NULL.
+ * @return -AML_EDOM if key was not found.
+ * @return -AML_SUCCESS if key was found. If `out` is not NULL, then
+ * the pointer to matching element is stored in `out`.
+ */
+int aml_queue_find(struct aml_queue *q,
+                   const void *key,
+                   int comp(const void *, const void *),
+                   void ***out);
+
+/**
+ * Get element at some index (from head to tail) in the queue.
+ * @param[in] q: An initialized queue.
+ * @param[in] index: An index between 0 and queue length.
+ * @param[out] out: A pointer where to store the pointer to element in
+ * queue.
+ * @return -AML_EINVAL if q is NULL.
+ * @return -AML_EDOM if index is out of bounds.
+ * @return -AML_SUCCESS otherwise. If `out` is not NULL, then the pointer
+ * to the matching element is stored in `out`.
+ */
+int aml_queue_get(const struct aml_queue *q, size_t index, void ***out);
+
+/**
+ * Take an element out of the queue. The element to remove must
+ * point to a valid spot in the queue. If not, `-AML_EDOM` is returned.
+ * @param[in, out] q: An initialized queue containing `element`.
+ * @param[in] element: The pointer of to the element to remove inside the
+ * queue. The pointer must point somewhere in the queue.
+ * @return -AML_EINVAL if q is NULL.
+ * @return -AML_EDOM if element is not a valid pointer of the queue.
+ * @return AML_SUCCESS if the element has been successfully removed.
  **/
-void *aml_queue_take(struct aml_queue *q, void *element);
+int aml_queue_take(struct aml_queue *q, void **element);
 
 /**
  * Get a pointer to first pointer element in the queue.
