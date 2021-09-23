@@ -19,109 +19,157 @@ extern "C" {
  * @defgroup aml_vector "AML Vector API"
  * @brief AML Vector API
  *
- * Generic vector type:
- * Vector of nbelems, each of size sz, with a comparison key at offset off.
- * Elements are not stored directly in the vector, but are allocated one by one.
+ * Generic vector type storing contiguous elements in a flat buffer.
+ * This vector is optimized to align element on elements size boundary.
+ * Elements stored in the vector are supposed to be trivially copyable,
+ * that is, they are not deep copied.
+ *
  * @{
  **/
 
-/** Pointer to the key within element "e" of a vector "v".  **/
-#define AML_VECTOR_ELTKEY_P(v, e) ((int *)(((intptr_t) e) + v->off))
-/** Pointer to the key within element index "i" of a vector "v".  **/
-#define AML_VECTOR_KEY_P(v, i) ((int *)(((intptr_t) v->ptr[i]) + v->off))
-/** Pointer to the element index "i" of a vector "v".  **/
-#define AML_VECTOR_ELT_P(v, i) (v->ptr[i])
-
-/** AML vector structure **/
-struct aml_vector {
-	/** Flag telling that no value is yet assigned **/
-	int na;
-	/** Number of elements stored in vector **/
-	size_t nbelems;
-	/** Size of elements in vector **/
-	size_t sz;
-	/**
-	 * The offset within each element where the
-	 * key (of type int) is stored.
-	 **/
-	size_t off;
-	/** array of element pointers in the vector **/
-	void **ptr;
-};
+/** AML vector structure: some utils are kept opaque on purpose to avoid
+ * publicly exporting underlying support code. **/
+struct aml_vector;
 
 /**
- * Provides the total number of elements in the vector, including currently
- * unused ones.
- * @param vector: an initialized vector structure.
- * @return the number of elements in the vector.
- **/
-size_t aml_vector_size(const struct aml_vector *vector);
-/**
- * Provides a pointer of element with index "index" within the vector.
- * @param vector: an initialized vector structure.
- * @param index: a valid index within "vector".  The index must not equal
- *        "na" and must be lower than the size of the vector.
- * @return a pointer to the requested element.
- **/
-void *aml_vector_get(struct aml_vector *vector, int index);
-/**
- * Provides the index of element "elem" within the vector.
- * @param vector: an initialized vector structure.
- * @param elem: a valid element within "vector".
- * @return the index to the element or "na" if not found.
- **/
-int aml_vector_getid(struct aml_vector *vector, void *elem);
-/**
- * Find the first element with a particular key.
- * @param vector: an initialized vector structure.
- * @param key: the key to look for.
- * @return the index of the found element or "na" if not found.
- **/
-int aml_vector_find(const struct aml_vector *vector, int key);
-/**
- * Resizes the vector.  The keys of the newly allocated elements are set to the
- * na value.
- * @param vector: an initialized vector structure.
- * @param newsize: a new vector size.  Only sizes greater than the current one
- *        will be honored; smaller sizes will result in a no-op.
- * @return 0 if successful; an error code otherwise.
- **/
-int aml_vector_resize(struct aml_vector *vector, size_t newsize);
-/**
- * Provides the pointer to the first unused element.  If the vector is full,
- * it automatically gets enlarged.
- * @param vector: an initialized vector structure.
- * @return the pointer to the first unused element.
- **/
-void *aml_vector_add(struct aml_vector *vector);
-/**
- * Removes an element from the vector.  The key of the element is set to the
- * "na" value.
- * @param vector: an initialized vector structure.
- * @param elem: an element within the vector.
- **/
-void aml_vector_remove(struct aml_vector *vector, void *elem);
-
-/**
- * Allocate and Initialize a vector. Allocates elements and sets their keys to
- * the "na" value.
+ * Provides the number of elements in the vector.
  *
- * @param vector: the address of a pointer to a struct aml_vector used as a
- * return value.
- * @param num: the number of elements to allocate.
- * @param size: the size of each individual element.
- * @param key: the offset within each element where the key (of type int)
- * is stored.
- * @param na: a "null" key value used to indicate an unused element.
- * @return 0 if successful; an error code otherwise.
+ * @param[in] vector: an initialized vector structure.
+ * @param[out] length: pointer to returned length of vector
+ * @return AML_SUCCESS on success.
+ * @return -AML_EINVAL if `vector` or `length` are NULL.
  **/
-int aml_vector_create(struct aml_vector **vector, size_t num, size_t size,
-		      size_t key, int na);
+int aml_vector_length(const struct aml_vector *vector, size_t *length);
 
 /**
- * Finalize and free a struct aml_vector.
+ * Get a pointer to element at position `index`.
  *
- * @param vector: a vector created by aml_vector_create. NULL after return.
+ * @param[in] vector: an initialized vector structure.
+ * @param[in] index: an integer in [[ 0, vector->len [[.
+ * @param[in] out: A pointer where to store the pointer to vector element.
+ * If `out` is NULL, nothing is stored.
+ * @return AML_SUCCESS on success.
+ * @return -AML_EINVAL if `vector` or `out` are NULL.
+ * @return -AML_EDOM if `index` is out of bounds..
+ **/
+int aml_vector_get(const struct aml_vector *vector, size_t index, void **out);
+
+/**
+ * Find the first element matching key.
+ *
+ * @param[in] vector: an initialized vector structure.
+ * @param[in] key: the key to look for.
+ * @param[in] comp: A comparison function returning 0 when input elements match.
+ * @param[out] pos: A pointer where to store the position of the found
+ * element. If pos is NULL, nothing is stored.
+ * @return -AML_EINVAL if `vector`, `key`, `pos`, or `comp` are NULL.
+ * @return -AML_FAILURE if key was not found.
+ * @return AML_SUCCESS if key was found.
+ **/
+int aml_vector_find(const struct aml_vector *vector,
+                    const void *key,
+                    int (*comp)(const void *, const void *),
+                    size_t *pos);
+
+/**
+ * Sort vector elements.
+ *
+ * @param[in] vector: an initialized vector structure.
+ * @param[in] comp: A comparison function like linux `qsort` comparison
+ *function.
+ * @return -AML_EINVAL if `vector` or `comp` is NULL.
+ * @return AML_SUCCESS.
+ **/
+int aml_vector_sort(struct aml_vector *vector,
+                    int (*comp)(const void *, const void *));
+
+/**
+ * Find the first element matching key in a sorted vector.
+ *
+ * @param[in] vector: an initialized vector structure.
+ * @param[in] key: the key to look for.
+ * @param[in] comp: A comparison function like linux `qsort` comparison
+ * function.
+ * @param[out] pos: A pointer where to store the position of the found
+ * element. If pos is NULL, nothing is stored.
+ * @return -AML_EINVAL if `vector`, `key`, `pos`, or `comp` are NULL.
+ * @return -AML_FAILURE if key was not found.
+ * @return AML_SUCCESS if key was found.
+ **/
+int aml_vector_bsearch(const struct aml_vector *vector,
+                       const void *key,
+                       int (*comp)(const void *, const void *),
+                       size_t *pos);
+
+/**
+ * Resizes the vector.
+ *
+ * @param[in, out] vector: A pointer to an initialized vector structure.
+ * The pointer might be updated to point to a new allocation.
+ * @param newlen: a new vector length. If newlen is less than current length
+ * the vector is truncated to newlen. If newlen is more than current
+ * allocated length, then the vector is extended.
+ * @return AML_SUCCESS if successful; -AML_ENOMEM otherwise.
+ **/
+int aml_vector_resize(struct aml_vector *vector, size_t newlen);
+
+/**
+ * Append an element at the end of the vector.
+ * Vector is automatically enlarged if needed.
+ *
+ * @param[in, out] vector: A pointer to an initialized vector structure.
+ * The pointer might be updated to point to a new allocation if `vector`
+ * needs to be extended.
+ * @param[in] element: The element to append to vector.
+ * @return AML_SUCCESS on success, or -AML_ENOMEM if a reallocation failed.
+ **/
+int aml_vector_push_back(struct aml_vector *vector, const void *element);
+
+/**
+ * Remove element at the end of the vector.
+ *
+ * @param[in] vector: A pointer to an initialized vector structure.
+ * @param[out] out: A memory area with size of at
+ * least `vector->element_size` to copy end element.
+ * If `out` is NULL or `vector` is empty, nothing is copied.
+ * @return AML_SUCCESS on success
+ * @return -AML_EDOM if `vector` is empty.
+ * @return -AML_EINVAL if `vector` is NULL.
+ **/
+int aml_vector_pop_back(struct aml_vector *vector, void *out);
+
+/**
+ * Remove and retrieve element at a specific position.
+ * This method may require a large `memmove()` call.
+ *
+ * @param[in] vector: A pointer to an initialized vector structure.
+ * @param[in] position: An index position in vector.
+ * @param[out] out: A memory area with size of at least `vector->element_size`
+ *to copy vector element. If `out` is NULL, nothing is copied.
+ * @return -AML_EINVAL if `vector` or `out` are NULL.
+ * @return -AML_EDOM if `position` is out of bounds.
+ * @return AML_SUCCESS on success.
+ **/
+int aml_vector_take(struct aml_vector *vector,
+                    const size_t position,
+                    void *out);
+
+/**
+ * Allocate and initialize an empty vector.
+ *
+ * @param[out] vector: A pointer to an uninitialized vector structure.
+ * @param[in] element_size: The size of elements in vector.
+ * @return AML_SUCCESS on success.
+ * @return -AML_ENOMEM if allocation failed.
+ * @return -AML_EINVAL if `element_size` is 0 or `vector` is NULL.
+ **/
+int aml_vector_create(struct aml_vector **vector, const size_t element_size);
+
+/**
+ * Release memory occupied by an vector.
+ *
+ * @param[in, out] vector: a vector created by `aml_vector_create()`.
+ * `NULL` after return.
  **/
 void aml_vector_destroy(struct aml_vector **vector);
 
@@ -133,5 +181,4 @@ void aml_vector_destroy(struct aml_vector **vector);
 }
 #endif
 
-#endif //AML_VECTOR_H
-
+#endif // AML_VECTOR_H

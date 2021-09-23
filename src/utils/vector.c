@@ -8,171 +8,169 @@
  * SPDX-License-Identifier: BSD-3-Clause
  ******************************************************************************/
 
+/* error checking logic */
+#define utarray_oom()                                                          \
+	do {                                                                   \
+		aml_errno = AML_ENOMEM;                                        \
+		goto utarray_error;                                            \
+	} while (0)
+
 #include "aml.h"
-#include <assert.h>
-#include <errno.h>
 
-/*******************************************************************************
- * Vector type:
- * generic vector of elements, with contiguous allocation: elements are part of
- * the vector.
- * This type supports one unusual feature: elements must contain an int key, at
- * a static offset, and this key as configurable "null" value.
- ******************************************************************************/
+#include "internal/utarray.h"
 
-int aml_vector_resize(struct aml_vector *vec, size_t newsize)
+struct aml_vector {
+	UT_array *array;
+	UT_icd icd;
+};
+
+int aml_vector_create(struct aml_vector **vector, const size_t element_size)
 {
-	assert(vec != NULL);
-	/* we don't shrink */
-	if (vec->nbelems > newsize)
-		return 0;
+	struct aml_vector *a;
 
-	vec->ptr = realloc(vec->ptr, newsize * vec->sz);
-	assert(vec->ptr != NULL);
-	for (size_t i = vec->nbelems; i < newsize; i++) {
-		vec->ptr[i] = calloc(1, vec->sz);
-		assert(vec->ptr[i] != NULL);
-		int *k = AML_VECTOR_KEY_P(vec, i);
-		*k = vec->na;
-	}
-	vec->nbelems = newsize;
-	return 0;
-}
-
-size_t aml_vector_size(const struct aml_vector *vec)
-{
-	assert(vec != NULL);
-	return vec->nbelems;
-}
-
-/* returns pointer to elements at index id */
-void *aml_vector_get(struct aml_vector *vec, int id)
-{
-	assert(vec != NULL);
-	if (id == vec->na || id < 0)
-		return NULL;
-
-	size_t idx = (size_t)id;
-
-	if (idx < vec->nbelems)
-		return AML_VECTOR_ELT_P(vec, idx);
-	else
-		return NULL;
-}
-
-int aml_vector_getid(struct aml_vector *vec, void *elem)
-{
-	assert(vec != NULL);
-	assert(elem != NULL);
-
-	for (size_t i = 0; i < vec->nbelems; i++)
-		if (vec->ptr[i] == elem)
-			return i;
-	return vec->na;
-}
-
-/* return index of first element with key */
-int aml_vector_find(const struct aml_vector *vec, int key)
-{
-	assert(vec != NULL);
-	for (size_t i = 0; i < vec->nbelems; i++) {
-		int *k = AML_VECTOR_KEY_P(vec, i);
-
-		if (*k == key)
-			return i;
-	}
-	return vec->na;
-}
-
-void *aml_vector_add(struct aml_vector *vec)
-{
-	assert(vec != NULL);
-	int idx = aml_vector_find(vec, vec->na);
-
-	if (idx == vec->na) {
-		/* exponential growth, good to amortize cost */
-		idx = vec->nbelems;
-		aml_vector_resize(vec, vec->nbelems * 2);
-	}
-	return AML_VECTOR_ELT_P(vec, idx);
-}
-
-void aml_vector_remove(struct aml_vector *vec, void *elem)
-{
-	assert(vec != NULL);
-	assert(elem != NULL);
-
-	int *k = AML_VECTOR_ELTKEY_P(vec, elem);
-	*k = vec->na;
-}
-
-/*******************************************************************************
- * Create/Destroy:
- ******************************************************************************/
-
-int aml_vector_create(struct aml_vector **vec, size_t reserve, size_t size,
-		      size_t key, int na)
-{
-	struct aml_vector *ret = NULL;
-	void **ptr;
-
-	if (vec == NULL)
+	if (vector == NULL || element_size == 0)
 		return -AML_EINVAL;
 
-	ret = malloc(sizeof(struct aml_vector));
-	if (ret == NULL) {
-		*vec = NULL;
+	a = malloc(sizeof(*a));
+	if (a == NULL)
 		return -AML_ENOMEM;
-	}
 
-	ptr = calloc(reserve, sizeof(void *));
-	if (ptr == NULL) {
-		free(ret);
-		*vec = NULL;
-		return -AML_ENOMEM;
-	}
+	a->icd.sz = element_size;
+	a->icd.init = NULL;
+	a->icd.copy = NULL;
+	a->icd.dtor = NULL;
 
-	for (size_t i = 0; i < reserve; i++) {
-		ptr[i] = calloc(1, size);
-		if (ptr[i] == NULL) {
-			/* avoid issues with size_t and negative values */
-			for (size_t j = 0; j + 1 <= i; j++)
-				free(ptr[i]);
-			free(ret);
-			*vec = NULL;
-			return -AML_ENOMEM;
-		}
-	}
-
-	ret->sz = size;
-	ret->off = key;
-	ret->na = na;
-	ret->nbelems = reserve;
-	ret->ptr = ptr;
-	for (size_t i = 0; i < ret->nbelems; i++) {
-		int *k = AML_VECTOR_KEY_P(ret, i);
-		*k = na;
-	}
-
-	*vec = ret;
-	return 0;
+	utarray_new(a->array, &a->icd);
+	*vector = a;
+	return AML_SUCCESS;
+utarray_error:
+	return -AML_ENOMEM;
 }
 
-void aml_vector_destroy(struct aml_vector **vec)
+void aml_vector_destroy(struct aml_vector **vector)
 {
-	struct aml_vector *v;
-
-	if (vec == NULL)
+	if (vector == NULL)
 		return;
 
-	v = *vec;
-	if (v == NULL)
-		return;
+	utarray_free((*vector)->array);
+	free(*vector);
+	*vector = NULL;
+}
 
-	for (size_t i = 0; i < v->nbelems; i++)
-		free(v->ptr[i]);
+int aml_vector_resize(struct aml_vector *vector, size_t newlen)
+{
+	if (vector == NULL)
+		return -AML_EINVAL;
 
-	free(v->ptr);
-	free(v);
-	*vec = NULL;
+	utarray_resize(vector->array, newlen);
+	return AML_SUCCESS;
+utarray_error:
+	return -AML_ENOMEM;
+}
+
+int aml_vector_length(const struct aml_vector *vector, size_t *length)
+{
+	if (vector == NULL || length == NULL)
+		return -AML_EINVAL;
+
+	*length = utarray_len(vector->array);
+	return AML_SUCCESS;
+}
+
+int aml_vector_get(const struct aml_vector *vector, size_t index, void **out)
+{
+	if (vector == NULL || out == NULL)
+		return -AML_EINVAL;
+
+	*out = utarray_eltptr(vector->array, index);
+	if (*out == NULL)
+		return -AML_EDOM;
+	return AML_SUCCESS;
+}
+
+int aml_vector_find(const struct aml_vector *vector,
+                    const void *key,
+                    int (*comp)(const void *, const void *),
+                    size_t *pos)
+{
+	if (vector == NULL || comp == NULL || key == NULL)
+		return -AML_EINVAL;
+
+	void *elt;
+	for (elt = utarray_front(vector->array); elt != NULL;
+	     elt = utarray_next(vector->array, elt)) {
+		if (!comp(key, elt))
+			break;
+	}
+	if (elt == NULL)
+		return -AML_FAILURE;
+
+	*pos = utarray_eltidx(vector->array, elt);
+	return AML_SUCCESS;
+}
+
+int aml_vector_sort(struct aml_vector *vector,
+                    int (*comp)(const void *, const void *))
+{
+	if (vector == NULL || comp == NULL)
+		return -AML_EINVAL;
+
+	utarray_sort(vector->array, comp);
+	return AML_SUCCESS;
+}
+
+int aml_vector_bsearch(const struct aml_vector *vector,
+                       const void *key,
+                       int (*comp)(const void *, const void *),
+                       size_t *pos)
+{
+	if (vector == NULL || comp == NULL || key == NULL)
+		return -AML_EINVAL;
+
+	void *elt = utarray_find(vector->array, key, comp);
+	if (elt == NULL)
+		return -AML_FAILURE;
+
+	*pos = utarray_eltidx(vector->array, elt);
+	return AML_SUCCESS;
+}
+
+int aml_vector_push_back(struct aml_vector *vector, const void *element)
+{
+	if (vector == NULL || element == NULL)
+		return -AML_EINVAL;
+
+	utarray_push_back(vector->array, element);
+	return AML_SUCCESS;
+utarray_error:
+	return -AML_ENOMEM;
+}
+
+int aml_vector_pop_back(struct aml_vector *vector, void *out)
+{
+	if (vector == NULL || out == NULL)
+		return -AML_EINVAL;
+
+	void *back = utarray_back(vector->array);
+	if (back == NULL)
+		return -AML_EDOM;
+
+	memcpy(out, back, vector->icd.sz);
+	utarray_pop_back(vector->array);
+	return AML_SUCCESS;
+}
+
+int aml_vector_take(struct aml_vector *vector, const size_t position, void *out)
+{
+	if (vector == NULL || out == NULL)
+		return -AML_EINVAL;
+
+	void *elt = utarray_eltptr(vector->array, position);
+	if (elt == NULL)
+		return -AML_EDOM;
+
+	memcpy(out, elt, vector->icd.sz);
+
+	utarray_erase(vector->array, position, 1);
+	return AML_SUCCESS;
 }

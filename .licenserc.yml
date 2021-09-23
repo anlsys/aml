@@ -15,4 +15,6 @@ header:
     - '**/*.c'
     - '**/*.h'
     - '**/*.h.in'
+  paths-ignore:
+    - 'include/internal/ut*.h'
   comment: never
