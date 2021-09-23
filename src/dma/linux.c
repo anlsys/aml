@@ -67,11 +67,11 @@ int aml_dma_linux_request_wait(struct aml_dma_data *dma,
 	struct aml_sched *sched = (struct aml_sched *)dma;
 	struct aml_dma_linux_request *r = *(struct aml_dma_linux_request **)req;
 
-	if (!(r->flags & AML_DMA_LINUX_REQUEST_FLAGS_DONE)) {
-		int err = aml_sched_wait_task(sched, &r->task);
-		if (err != AML_SUCCESS)
-			return err;
-	}
+	int err = aml_sched_wait_task(sched, &r->task);
+	if (err != AML_SUCCESS)
+		return err;
+	assert(r->flags & AML_DMA_LINUX_REQUEST_FLAGS_DONE);
+
 	int out = r->task_out;
 	free(r);
 	*req = NULL;
