@@ -10,7 +10,7 @@
 
 #include <float.h>
 
-#include "verify_blas_l1.h"
+#include "blas/verify_l1.h"
 
 #define MAX(a, b) (((a) < (b)) ? (a) : (b))
 #define ABS(a) (((a) < 0) ? -(a) : (a))

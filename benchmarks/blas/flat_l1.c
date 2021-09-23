@@ -19,9 +19,9 @@
 
 #include "aml/area/linux.h"
 
-#include "blas_l1_kernel.h"
+#include "blas/l1_kernel.h"
+#include "blas/verify_l1.h"
 #include "utils.h"
-#include "verify_blas_l1.h"
 
 /* Look into another way to define these parameters */
 

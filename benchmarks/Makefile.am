@@ -27,13 +27,28 @@ endif
 @VALGRIND_CHECK_RULES@
 
 noinst_LIBRARIES = libkernel.a
-libkernel_a_SOURCES = utils.c utils.h blas_l1_kernel.c blas_l1_kernel.h verify_blas_l1.c verify_blas_l1.h
+
+UTILS=utils.c
+
+BLAS_UTILS=\
+	       blas/l1_kernel.h \
+	       blas/l1_kernel.c \
+	       blas/verify_l1.h \
+	       blas/verify_l1.c
+
+
+BLAS_BENCHMARKS=\
+	       blas/flat_l1\
+	       blas/tiled_l1
+
+
+libkernel_a_SOURCES=$(UTILS) \
+	       $(BLAS_UTILS) \
+
 LDADD = libkernel.a
 
-NOPREFETCH = noprefetch/flat_blas_l1 \
-	     noprefetch/tiled_blas_l1
-
-BENCHMARKS = $(NOPREFETCH)
+BENCHMARKS = \
+	       $(BLAS_BENCHMARKS) \
 
 # all tests
 check_PROGRAMS = $(BENCHMARKS)

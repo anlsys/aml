@@ -11,7 +11,7 @@
  * This is a benchmark for the BLAS Level 1 operations for AML.
  */
 
-#include "blas_l1_kernel.h"
+#include "blas/l1_kernel.h"
 
 /* Look into another way to define these */
 #define sign(a) ((a > 0) ? 1 : ((a < 0) ? -1 : 0))
