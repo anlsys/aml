@@ -32,4 +32,31 @@ static inline void aml_gettime(aml_time_t *now)
 
 long long int aml_timediff(aml_time_t start, aml_time_t end);
 
+// Structure holding statistics of a set of time samples.
+struct aml_time_stats {
+	// The updated mean value.
+	long long sum;
+	// The maximum time value.
+	long long max;
+	// The minimum time value.
+	long long min;
+	// The number of samples in the statistics.
+	unsigned long long n;
+};
+
+/**
+ * Initialize a `struct aml_time_stats` before collecting
+ * samples.
+ */
+int aml_stats_init(struct aml_time_stats *out);
+
+/**
+ * Update statistics (online) with an additional sample.
+ *
+ * @param[in, out] out: The ongoing statistic record on which
+ * to compute statistics incrementally with a new sample.
+ * @param[in] val: A time value to add to the statistic record.
+ */
+int aml_time_stats_add(struct aml_time_stats *out, const long long val);
+
 #endif // AML_BENCHS_UTILS_H
