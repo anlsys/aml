@@ -28,7 +28,6 @@ endif
 UTILS_TESTS = \
 	      utils/test_bitmap \
 	      utils/test_inner_malloc \
-	      utils/test_vector \
 	      utils/test_async \
 	      utils/test_queue \
 	      utils/test_version

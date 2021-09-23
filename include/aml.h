@@ -45,7 +45,6 @@ extern "C" {
 #include "aml/utils/inner-malloc.h"
 #include "aml/utils/macros.h"
 #include "aml/utils/queue.h"
-#include "aml/utils/vector.h"
 #include "aml/utils/version.h"
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -32,7 +32,6 @@ TILING_SOURCES = \
 UTILS_SOURCES = \
 		utils/bitmap.c \
 		utils/error.c \
-		utils/vector.c \
 		utils/queue.c \
 		utils/async.c \
 		utils/features.c
