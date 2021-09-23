@@ -26,26 +26,27 @@ void test_err_conditions()
 {
 	struct aml_vector *vector;
 
-	int test[6] = {0, 1, 2, -1, -2, -3};
+	void *ret;
 	const int key = 5;
-	const size_t len = sizeof(test) / sizeof(*test);
+	const size_t len = 1;
 
 	// Test create
-	assert(aml_vector_create(NULL, sizeof(int), len) == -AML_EINVAL);
-	assert(aml_vector_create(&vector, 0, len) == -AML_EINVAL);
-	assert(aml_vector_create(&vector, sizeof(int), len) == AML_SUCCESS);
+	assert(aml_vector_create(NULL, sizeof(int)) == -AML_EINVAL);
+	assert(aml_vector_create(&vector, 0) == -AML_EINVAL);
+	assert(aml_vector_create(&vector, sizeof(int)) == AML_SUCCESS);
 
 	// Test resize
 	assert(aml_vector_resize(NULL, 0) == -AML_EINVAL);
 
 	// Test get
 	assert(aml_vector_get(NULL, 0, NULL) == -AML_EINVAL);
-	assert(aml_vector_get(vector, len, NULL) == -AML_EDOM);
+	assert(aml_vector_get(vector, len, NULL) == -AML_EINVAL);
+	assert(aml_vector_get(vector, len, &ret) == -AML_EDOM);
 
 	// Test find
-	assert(aml_vector_find(vector, (void *)&key, comp_int, NULL) ==
+	assert(aml_vector_find(vector, &key, comp_int, NULL) ==
 	       -AML_FAILURE);
-	assert(aml_vector_find(NULL, (void *)&key, comp_int, NULL) ==
+	assert(aml_vector_find(NULL, &key, comp_int, NULL) ==
 	       -AML_EINVAL);
 	assert(aml_vector_find(vector, NULL, comp_int, NULL) == -AML_EINVAL);
 
@@ -55,23 +56,25 @@ void test_err_conditions()
 
 	// Test bsearch
 	assert(aml_vector_sort(vector, comp_int) == AML_SUCCESS);
-	assert(aml_vector_bsearch(vector, (void *)&key, comp_int, NULL) ==
+	assert(aml_vector_bsearch(vector, &key, comp_int, NULL) ==
 	       -AML_FAILURE);
-	assert(aml_vector_bsearch(NULL, (void *)&key, comp_int, NULL) ==
+	assert(aml_vector_bsearch(NULL, &key, comp_int, NULL) ==
 	       -AML_EINVAL);
 	assert(aml_vector_bsearch(vector, NULL, comp_int, NULL) == -AML_EINVAL);
 
 	// Test take
 	assert(aml_vector_take(NULL, 0, NULL) == -AML_EINVAL);
-	assert(aml_vector_take(vector, len, NULL) == -AML_EDOM);
+	assert(aml_vector_take(vector, len, NULL) == -AML_EINVAL);
+	assert(aml_vector_take(vector, len, &ret) == -AML_EDOM);
 
 	// Test push
-	assert(aml_vector_push(NULL, (void *)&key) == -AML_EINVAL);
-	assert(aml_vector_push(vector, NULL) == -AML_EINVAL);
+	assert(aml_vector_push_back(NULL, (void *)&key) == -AML_EINVAL);
+	assert(aml_vector_push_back(vector, NULL) == -AML_EINVAL);
 
 	// Test pop
-	assert(aml_vector_pop(NULL, NULL) == -AML_EINVAL);
-	assert(aml_vector_pop(vector, NULL) == -AML_EDOM);
+	assert(aml_vector_pop_back(NULL, NULL) == -AML_EINVAL);
+	assert(aml_vector_pop_back(vector, NULL) == -AML_EINVAL);
+	assert(aml_vector_pop_back(vector, &ret) == -AML_EDOM);
 
 	aml_vector_destroy(&vector);
 }
@@ -84,11 +87,11 @@ void test_functional()
 	int val;
 	size_t pos;
 
-	assert(aml_vector_create(&vector, sizeof(int), 2) == AML_SUCCESS);
+	assert(aml_vector_create(&vector, sizeof(int)) == AML_SUCCESS);
 
 	// [0, 1, 2]
 	for (int i = 0; i < 3; i++)
-		assert(aml_vector_push(vector, &(test[i])) == AML_SUCCESS);
+		assert(aml_vector_push_back(vector, &(test[i])) == AML_SUCCESS);
 
 	// Make sure vector contains the right elements.
 	for (int i = 0; i < 3; i++) {
@@ -102,10 +105,11 @@ void test_functional()
 		assert(aml_vector_get(vector, i, &out) == AML_SUCCESS);
 		assert(*(int *)out == test[i]);
 	}
+	assert(aml_vector_resize(vector, 3) == AML_SUCCESS);
 
 	// [0, 1, 2, -1, -2, -3]
 	for (int i = 3; i < 6; i++)
-		assert(aml_vector_push(vector, (void *)&test[i]) ==
+		assert(aml_vector_push_back(vector, (void *)&test[i]) ==
 		       AML_SUCCESS);
 	// Make sure vector contains the right elements.
 	for (int i = 0; i < 6; i++) {
@@ -127,7 +131,7 @@ void test_functional()
 	assert(pos == 0);
 
 	// [-3, -2, -1, 0, 1]
-	assert(aml_vector_pop(vector, (void *)&val) == AML_SUCCESS);
+	assert(aml_vector_pop_back(vector, (void *)&val) == AML_SUCCESS);
 	assert(val == 2);
 
 	// [-3, -1, 0, 1]

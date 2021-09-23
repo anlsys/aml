@@ -8,35 +8,43 @@
  * SPDX-License-Identifier: BSD-3-Clause
  ******************************************************************************/
 
+/* error checking logic */
+#define utarray_oom() do { \
+	aml_errno = AML_ENOMEM; \
+	goto utarray_error; \
+	} while(0)
+
+#include "internal/utarray.h"
+
 #include "aml.h"
 
+struct aml_vector {
+	UT_array *array;
+	UT_icd icd;
+};
+
 int aml_vector_create(struct aml_vector **vector,
-                      const size_t element_size,
-                      size_t initial_len)
+                      const size_t element_size)
 {
 	struct aml_vector *a;
 
 	if (vector == NULL || element_size == 0)
 		return -AML_EINVAL;
-	if (initial_len == 0)
-		initial_len = 256;
 
 	a = malloc(sizeof(*a));
 	if (a == NULL)
 		return -AML_ENOMEM;
 
-	// Alloc one big buffer aligned on element size.
-	a->buf = calloc(initial_len, element_size);
-	if (a->buf == NULL) {
-		free(a);
-		return -AML_ENOMEM;
-	}
+	a->icd.sz = element_size;
+	a->icd.init = NULL;
+	a->icd.copy = NULL;
+	a->icd.dtor = NULL;
 
-	a->element_size = element_size;
-	a->len = 0;
-	a->alloc_len = initial_len;
+	utarray_new(a->array, &a->icd);
 	*vector = a;
 	return AML_SUCCESS;
+utarray_error:
+	return -AML_ENOMEM;
 }
 
 void aml_vector_destroy(struct aml_vector **vector)
@@ -44,7 +52,7 @@ void aml_vector_destroy(struct aml_vector **vector)
 	if (vector == NULL)
 		return;
 
-	free((*vector)->buf);
+	utarray_free((*vector)->array);
 	free(*vector);
 	*vector = NULL;
 }
@@ -54,40 +62,29 @@ int aml_vector_resize(struct aml_vector *vector, size_t newlen)
 	if (vector == NULL)
 		return -AML_EINVAL;
 
-	const size_t element_size = vector->element_size;
+	utarray_resize(vector->array, newlen);
+	return AML_SUCCESS;
+utarray_error:
+	return -AML_ENOMEM;
+}
 
-	if (newlen == 0)
-		newlen = (2 * vector->alloc_len);
+int aml_vector_length(const struct aml_vector *vector, size_t *length)
+{
+	if (vector == NULL || length == NULL)
+		return -AML_EINVAL;
 
-	// Shrink or Extend
-	if (newlen < vector->len || (newlen > vector->alloc_len)) {
-		void *ptr = realloc(vector->buf, newlen * element_size);
-		if (ptr == NULL)
-			return -AML_ENOMEM;
-		vector->buf = ptr;
-		vector->alloc_len = newlen;
-	}
+	*length = utarray_len(vector->array);
 	return AML_SUCCESS;
 }
 
-size_t aml_vector_size(const struct aml_vector *vector)
+int aml_vector_get(const struct aml_vector *vector, size_t index, void **out)
 {
-	return vector->len;
-}
-
-#define AML_VECTOR_GET(vector, index)                                          \
-	(void *)((char *)(vector)->buf + (vector)->element_size * (index))
-
-int aml_vector_get(struct aml_vector *vector, const size_t index, void **out)
-{
-	if (vector == NULL)
+	if (vector == NULL || out == NULL)
 		return -AML_EINVAL;
 
-	if (index >= vector->len)
+	*out = utarray_eltptr(vector->array, index);
+	if (*out == NULL)
 		return -AML_EDOM;
-
-	if (out != NULL)
-		*out = AML_VECTOR_GET(vector, index);
 	return AML_SUCCESS;
 }
 
@@ -99,15 +96,17 @@ int aml_vector_find(const struct aml_vector *vector,
 	if (vector == NULL || comp == NULL || key == NULL)
 		return -AML_EINVAL;
 
-	for (size_t i = 0; i < vector->len; i++) {
-		if (!comp(AML_VECTOR_GET(vector, i), key)) {
-			if (pos != NULL)
-				*pos = i;
-			return AML_SUCCESS;
-		}
+	void *elt;
+	for (elt = utarray_front(vector->array);
+	     elt != NULL; elt = utarray_next(vector->array, elt)) {
+		if (!comp(key, elt))
+			break;
 	}
+	if (elt == NULL)
+		return -AML_FAILURE;
 
-	return -AML_FAILURE;
+	*pos = utarray_eltidx(vector->array, elt);
+	return AML_SUCCESS;
 }
 
 int aml_vector_sort(struct aml_vector *vector,
@@ -116,7 +115,7 @@ int aml_vector_sort(struct aml_vector *vector,
 	if (vector == NULL || comp == NULL)
 		return -AML_EINVAL;
 
-	qsort(vector->buf, vector->len, vector->element_size, comp);
+	utarray_sort(vector->array, comp);
 	return AML_SUCCESS;
 }
 
@@ -128,68 +127,50 @@ int aml_vector_bsearch(const struct aml_vector *vector,
 	if (vector == NULL || comp == NULL || key == NULL)
 		return -AML_EINVAL;
 
-	void *result = bsearch(key, vector->buf, vector->len,
-	                       vector->element_size, comp);
-
-	if (result == NULL)
+	void *elt = utarray_find(vector->array, key, comp);
+	if (elt == NULL)
 		return -AML_FAILURE;
 
-	if (pos != NULL)
-		*pos = ((char *)result - (char *)vector->buf) /
-		       vector->element_size;
-
+	*pos = utarray_eltidx(vector->array, elt);
 	return AML_SUCCESS;
 }
 
-int aml_vector_push(struct aml_vector *vector, const void *element)
+int aml_vector_push_back(struct aml_vector *vector, const void *element)
 {
 	if (vector == NULL || element == NULL)
 		return -AML_EINVAL;
 
-	int err = AML_SUCCESS;
-
-	if ((vector->len + 1) > vector->alloc_len)
-		err = aml_vector_resize(vector, 0);
-	if (err != AML_SUCCESS)
-		return err;
-
-	memcpy(AML_VECTOR_GET(vector, vector->len), element,
-	       vector->element_size);
-	vector->len++;
+	utarray_push_back(vector->array, element);
 	return AML_SUCCESS;
+utarray_error:
+	return -AML_ENOMEM;
 }
 
-int aml_vector_pop(struct aml_vector *vector, void *out)
+int aml_vector_pop_back(struct aml_vector *vector, void *out)
 {
-	if (vector == NULL)
+	if (vector == NULL || out == NULL)
 		return -AML_EINVAL;
 
-	if (vector->len == 0)
+	void *back = utarray_back(vector->array);
+	if (back == NULL)
 		return -AML_EDOM;
 
-	if (out != NULL)
-		memcpy(out, AML_VECTOR_GET(vector, vector->len - 1),
-		       vector->element_size);
-
-	vector->len--;
+	memcpy(out, back, vector->icd.sz);
+	utarray_pop_back(vector->array);
 	return AML_SUCCESS;
 }
 
 int aml_vector_take(struct aml_vector *vector, const size_t position, void *out)
 {
-	if (vector == NULL)
+	if (vector == NULL || out == NULL)
 		return -AML_EINVAL;
-	if (position >= vector->len)
+
+	void *elt = utarray_eltptr(vector->array, position);
+	if (elt == NULL)
 		return -AML_EDOM;
 
-	if (out != NULL)
-		memcpy(out, AML_VECTOR_GET(vector, position),
-		       vector->element_size);
+	memcpy(out, elt, vector->icd.sz);
 
-	vector->len--;
-	memmove(AML_VECTOR_GET(vector, position),
-	        AML_VECTOR_GET(vector, position + 1),
-	        (vector->len - position) * vector->element_size);
-
+	utarray_erase(vector->array, position, 1);
 	return AML_SUCCESS;
 }

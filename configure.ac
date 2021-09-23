@@ -305,7 +305,7 @@ AM_EXTRA_RECURSIVE_TARGETS([check-programs])
 
 AC_CONFIG_SUBDIRS([excit])
 
-AC_CONFIG_HEADERS([include/config.h])
+AC_CONFIG_HEADERS([include/internal/config.h])
 
 AC_CONFIG_FILES([Makefile
 		 src/Makefile

@@ -23,32 +23,23 @@ extern "C" {
  * This vector is optimized to align element on elements size boundary.
  * Elements stored in the vector are supposed to be trivially copyable,
  * that is, they are not deep copied.
- * If vector elements are pointers or contain pointers, and the latter
- * become invalid, the vector will hold invalid elements.
  *
  * @{
  **/
 
-/** AML vector structure **/
-struct aml_vector {
-	/** Vector storage: buf_size **/
-	void *buf;
-	/** Number of elements in vector **/
-	size_t len;
-	/** Allocated space for buf in number of elements **/
-	size_t alloc_len;
-	/** Size of vector elements **/
-	size_t element_size;
-};
+/** AML vector structure: some utils are kept opaque on purpose to avoid
+ * publicly exporting underlying support code. **/
+struct aml_vector;
 
 /**
- * Provides the total number of elements in the vector.
- * This is equivalent to read `vector->len`.
+ * Provides the number of elements in the vector.
  *
  * @param[in] vector: an initialized vector structure.
- * @return The number of elements in the vector.
+ * @param[out] length: pointer to returned length of vector
+ * @return AML_SUCCESS on success.
+ * @return -AML_EINVAL if `vector` or `length` are NULL.
  **/
-size_t aml_vector_size(const struct aml_vector *vector);
+int aml_vector_length(const struct aml_vector *vector, size_t *length);
 
 /**
  * Get a pointer to element at position `index`.
@@ -58,10 +49,10 @@ size_t aml_vector_size(const struct aml_vector *vector);
  * @param[in] out: A pointer where to store the pointer to vector element.
  * If `out` is NULL, nothing is stored.
  * @return AML_SUCCESS on success.
- * @return -AML_EINVAL if `vector` is NULL.
+ * @return -AML_EINVAL if `vector` or `out` are NULL.
  * @return -AML_EDOM if `index` is out of bounds..
  **/
-int aml_vector_get(struct aml_vector *vector, const size_t index, void **out);
+int aml_vector_get(const struct aml_vector *vector, size_t index, void **out);
 
 /**
  * Find the first element matching key.
@@ -71,7 +62,7 @@ int aml_vector_get(struct aml_vector *vector, const size_t index, void **out);
  * @param[in] comp: A comparison function returning 0 when input elements match.
  * @param[out] pos: A pointer where to store the position of the found
  * element. If pos is NULL, nothing is stored.
- * @return -AML_EINVAL if `vector`, `key` or `comp` is NULL.
+ * @return -AML_EINVAL if `vector`, `key`, `pos`, or `comp` are NULL.
  * @return -AML_FAILURE if key was not found.
  * @return AML_SUCCESS if key was found.
  **/
@@ -101,7 +92,7 @@ int aml_vector_sort(struct aml_vector *vector,
  * function.
  * @param[out] pos: A pointer where to store the position of the found
  * element. If pos is NULL, nothing is stored.
- * @return -AML_EINVAL if `vector`, `key` or `comp` is NULL.
+ * @return -AML_EINVAL if `vector`, `key`, `pos`, or `comp` are NULL.
  * @return -AML_FAILURE if key was not found.
  * @return AML_SUCCESS if key was found.
  **/
@@ -117,8 +108,7 @@ int aml_vector_bsearch(const struct aml_vector *vector,
  * The pointer might be updated to point to a new allocation.
  * @param newlen: a new vector length. If newlen is less than current length
  * the vector is truncated to newlen. If newlen is more than current
- * allocated length, then the vector is extended. If newlen is 0, then
- * the vector is resized to double its current allocated size.
+ * allocated length, then the vector is extended. 
  * @return AML_SUCCESS if successful; -AML_ENOMEM otherwise.
  **/
 int aml_vector_resize(struct aml_vector *vector, size_t newlen);
@@ -130,11 +120,10 @@ int aml_vector_resize(struct aml_vector *vector, size_t newlen);
  * @param[in, out] vector: A pointer to an initialized vector structure.
  * The pointer might be updated to point to a new allocation if `vector`
  * needs to be extended.
- * @param[in] element: The element to append to vector. `element` must have a
- * size of at least `vector->element_size`.
+ * @param[in] element: The element to append to vector.
  * @return AML_SUCCESS on success, or -AML_ENOMEM if a reallocation failed.
  **/
-int aml_vector_push(struct aml_vector *vector, const void *element);
+int aml_vector_push_back(struct aml_vector *vector, const void *element);
 
 /**
  * Remove element at the end of the vector.
@@ -147,7 +136,7 @@ int aml_vector_push(struct aml_vector *vector, const void *element);
  * @return -AML_EDOM if `vector` is empty.
  * @return -AML_EINVAL if `vector` is NULL.
  **/
-int aml_vector_pop(struct aml_vector *vector, void *out);
+int aml_vector_pop_back(struct aml_vector *vector, void *out);
 
 /**
  * Remove and retrieve element at a specific position.
@@ -157,7 +146,7 @@ int aml_vector_pop(struct aml_vector *vector, void *out);
  * @param[in] position: An index position in vector.
  * @param[out] out: A memory area with size of at least `vector->element_size`
  *to copy vector element. If `out` is NULL, nothing is copied.
- * @return -AML_EINVAL if `vector` is NULL.
+ * @return -AML_EINVAL if `vector` or `out` are NULL.
  * @return -AML_EDOM if `position` is out of bounds.
  * @return AML_SUCCESS on success.
  **/
@@ -170,15 +159,12 @@ int aml_vector_take(struct aml_vector *vector,
  *
  * @param[out] vector: A pointer to an uninitialized vector structure.
  * @param[in] element_size: The size of elements in vector.
- * @param[in] initial_len: The initial vector allocation space in number of
- * elements. If `initial_len` is 0, `initial_len` is set to 256.
  * @return AML_SUCCESS on success.
  * @return -AML_ENOMEM if allocation failed.
  * @return -AML_EINVAL if `element_size` is 0 or `vector` is NULL.
  **/
 int aml_vector_create(struct aml_vector **vector,
-                      const size_t element_size,
-                      size_t initial_len);
+                      const size_t element_size);
 
 /**
  * Release memory occupied by an vector.
