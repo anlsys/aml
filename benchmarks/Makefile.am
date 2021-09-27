@@ -36,19 +36,30 @@ BLAS_UTILS=\
 	       blas/verify_l1.h \
 	       blas/verify_l1.c
 
+ALLOCATOR_UTILS=\
+	       ../tests/allocator/dummy_area.h \
+	       ../tests/allocator/dummy_area.c \
+	       ../tests/allocator/test_allocator.h \
+	       ../tests/allocator/test_allocator.c \
+	       allocator/allocator.h \
+	       allocator/allocator.c
 
 BLAS_BENCHMARKS=\
 	       blas/flat_l1\
 	       blas/tiled_l1
 
+ALLOCATOR_BENCHMARKS=\
+	       allocator/benchmark_area \
 
 libkernel_a_SOURCES=$(UTILS) \
 	       $(BLAS_UTILS) \
+	       $(ALLOCATOR_UTILS)
 
 LDADD = libkernel.a
 
 BENCHMARKS = \
 	       $(BLAS_BENCHMARKS) \
+	       $(ALLOCATOR_BENCHMARKS)
 
 # all tests
 check_PROGRAMS = $(BENCHMARKS)

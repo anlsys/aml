@@ -42,6 +42,7 @@ BACKEND_SOURCES = backend/linux.c
 HIGHER_SOURCES = \
 		replicaset/replicaset.c \
 		allocator/allocator.c \
+		allocator/area.c \
 		higher/mapper.c
 
 LIB_SOURCES = \
