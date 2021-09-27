@@ -28,16 +28,11 @@
 		err = -AML_ENOMEM;                                             \
 	} while (0)
 
-#include "internal/utarray.h"
-#include "internal/uthash.h"
-#include "internal/utlist.h"
+#include "aml/utils/utarray.h"
+#include "aml/utils/uthash.h"
+#include "aml/utils/utlist.h"
 
-static int is_power_of_two(size_t size)
-{
-	if (size == 0)
-		return 0;
-	return (size & (size - 1)) == 0;
-}
+int is_power_of_two(size_t size);
 
 // Get the rank associated with a size.
 // The greatest size gets rank 0.
@@ -657,5 +652,6 @@ int aml_allocator_buddy_free(struct aml_allocator_data *data, void *ptr)
 
 struct aml_allocator_ops aml_allocator_buddy_ops = {
         .alloc = aml_allocator_buddy_alloc,
+        .aligned_alloc = NULL,
         .free = aml_allocator_buddy_free,
 };
