@@ -50,6 +50,8 @@ BLAS_BENCHMARKS=\
 
 ALLOCATOR_BENCHMARKS=\
 	       allocator/benchmark_area \
+	       allocator/benchmark_buddy
+
 
 libkernel_a_SOURCES=$(UTILS) \
 	       $(BLAS_UTILS) \

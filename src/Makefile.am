@@ -43,6 +43,7 @@ HIGHER_SOURCES = \
 		replicaset/replicaset.c \
 		allocator/allocator.c \
 		allocator/area.c \
+		allocator/buddy.c \
 		higher/mapper.c
 
 LIB_SOURCES = \
