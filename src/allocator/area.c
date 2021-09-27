@@ -12,11 +12,11 @@
 
 #include "aml/higher/allocator.h"
 #include "aml/higher/allocator/area.h"
-
-#include "internal/uthash.h"
+#include "aml/utils/uthash.h"
 
 struct aml_allocator_ops aml_allocator_area_ops = {
         .alloc = aml_allocator_area_alloc,
+        .aligned_alloc = NULL,
         .free = aml_allocator_area_free,
 };
 
