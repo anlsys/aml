@@ -4,7 +4,10 @@ include_aml_areadir=$(includedir)/aml/area
 include_aml_area_HEADERS = aml/area/linux.h
 
 include_aml_higherdir=$(includedir)/aml/higher
-include_aml_higher_HEADERS = aml/higher/mapper.h aml/higher/replicaset.h
+include_aml_higher_HEADERS = \
+			      aml/higher/mapper.h \
+			      aml/higher/replicaset.h \
+			      aml/higher/allocator.h \
 
 include_aml_replicasetdir=$(includedir)/aml/higher/replicaset
 include_aml_replicaset_HEADERS = 
