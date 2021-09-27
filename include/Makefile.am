@@ -8,9 +8,6 @@ include_aml_higher_HEADERS = \
 			      aml/higher/mapper.h \
 			      aml/higher/replicaset.h \
 			      aml/higher/allocator.h \
-			      aml/higher/allocator/area.h \
-			      aml/higher/allocator/buddy.h \
-			      aml/higher/allocator/sized.h
 
 include_aml_replicasetdir=$(includedir)/aml/higher/replicaset
 include_aml_replicaset_HEADERS = 
@@ -66,9 +63,3 @@ include_aml_area_HEADERS += aml/area/ze.h
 include_aml_dma_HEADERS += aml/dma/ze.h
 include_aml_backend_HEADERS += aml/utils/backend/ze.h
 endif
-
-noinst_include_internaldir = $(includedir)/internal
-noinst_include_internal_HEADERS = \
-				  internal/utarray.h \
-				  internal/uthash.h \
-				  internal/utlist.h

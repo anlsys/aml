@@ -1,5 +1,5 @@
 SUFFIXES=.c .cu
-AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS) $(OPENMP_CFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS) $(OPENMP_CFLAGS)
 AM_LDFLAGS = $(PTHREAD_LIBS) $(OPENMP_CFLAGS)
 noinst_LTLIBRARIES=
 
@@ -41,9 +41,6 @@ BACKEND_SOURCES = backend/linux.c
 HIGHER_SOURCES = \
 		replicaset/replicaset.c \
 		allocator/allocator.c \
-		allocator/area.c \
-		allocator/buddy.c \
-		allocator/sized.c \
 		higher/mapper.c
 
 LIB_SOURCES = \
