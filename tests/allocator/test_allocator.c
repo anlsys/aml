@@ -266,8 +266,8 @@ int aml_alloc_workflow_run(const size_t max_size,
 		total_size += size;
 		allocated_size += size;
 		max_allocated_size = allocated_size > max_allocated_size ?
-		                             allocated_size :
-		                             max_allocated_size;
+		                              allocated_size :
+		                              max_allocated_size;
 		num_alloc += 1;
 
 		// Do free. If output of aml_alloc_record_next_free was
