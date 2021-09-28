@@ -92,23 +92,6 @@ struct aml_allocator_ops {
 	 * @return A pointer to the beginning of the allocation on success.
 	 */
 	void *(*alloc)(struct aml_allocator_data *data, size_t size);
-	/**
-	 * Optional method.
-	 * Allocation routine with a pointer aligned on a specific boundary.
-	 * If this method is not provided, allocation will fallback to `alloc()`
-	 * method.
-	 *
-	 * @param[in, out] data: The allocator metadata.
-	 * @param[in] size: The minimum allocation size. Size is greater than 0.
-	 * @param[in] alignement: The allocation alignement in bytes.
-	 * Alignement is checked to be a power of two.
-	 * @return NULL on error with aml_errno set to the appropriate error
-	 * code.
-	 * @return A pointer to the beginning of the allocation on success.
-	 */
-	void *(*aligned_alloc)(struct aml_allocator_data *data,
-	                       size_t size,
-	                       size_t alignement);
 
 	/**
 	 * Required method.
@@ -133,24 +116,6 @@ struct aml_allocator_ops {
  * @return A pointer to the beginning of the allocation on success.
  */
 void *aml_alloc(struct aml_allocator *allocator, size_t size);
-
-/**
- * Allocation routine with a pointer aligned on a specific boundary.
- * Allocation may not be aligned if the allocator does not support aligned
- * allocations.
- *
- * @param[in, out] allocator: The allocator to use.
- * @param[in] size: The minimum allocation size. Must be greater than 0.
- * @param[in] alignement: The allocation alignement in bytes.
- * `alignement` must be a power of two, otherwise allocation fails
- * and aml_errno is set to AML_EINVAL.
- * @return NULL on error with aml_errno set to the appropriate error
- * code.
- * @return A pointer to the beginning of the allocation on success.
- */
-void *aml_aligned_alloc(struct aml_allocator *allocator,
-                        size_t size,
-                        size_t alignement);
 
 /**
  * Release memory associated with a pointer obtained with an

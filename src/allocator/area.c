@@ -16,7 +16,6 @@
 
 struct aml_allocator_ops aml_allocator_area_ops = {
         .alloc = aml_allocator_area_alloc,
-        .aligned_alloc = NULL,
         .free = aml_allocator_area_free,
 };
 

@@ -32,7 +32,12 @@
 #include "internal/uthash.h"
 #include "internal/utlist.h"
 
-int is_power_of_two(size_t size);
+static int is_power_of_two(size_t size)
+{
+	if (size == 0)
+		return 0;
+	return (size & (size - 1)) == 0;
+}
 
 // Get the rank associated with a size.
 // The greatest size gets rank 0.
@@ -652,6 +657,5 @@ int aml_allocator_buddy_free(struct aml_allocator_data *data, void *ptr)
 
 struct aml_allocator_ops aml_allocator_buddy_ops = {
         .alloc = aml_allocator_buddy_alloc,
-        .aligned_alloc = NULL,
         .free = aml_allocator_buddy_free,
 };

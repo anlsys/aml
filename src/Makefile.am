@@ -42,7 +42,6 @@ BACKEND_SOURCES = backend/linux.c
 HIGHER_SOURCES = \
 		replicaset/replicaset.c \
 		allocator/allocator.c \
-		allocator/utils.c \
 		allocator/area.c \
 		allocator/buddy.c \
 		allocator/sized.c \

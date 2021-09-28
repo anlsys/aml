@@ -23,41 +23,6 @@ void *aml_alloc(struct aml_allocator *allocator, size_t size)
 	return allocator->ops->alloc(allocator->data, size);
 }
 
-int is_power_of_two(size_t size)
-{
-	char i = 1;
-	const char nbits = sizeof(size_t) * 8;
-
-	if (size == 0)
-		return 0;
-
-	// Shift right until we meet a bit that is not 0.
-	while (((size >> i) << i) == size)
-		i++;
-	// Shift left by (nbits-i) bits. If size is the same,
-	// then only one bit is set and size is a power of two.
-	i = nbits - i;
-	return ((size << i) >> i) == size;
-}
-
-void *aml_aligned_alloc(struct aml_allocator *allocator,
-                        size_t size,
-                        size_t alignement)
-{
-	if (allocator == NULL || allocator->data == NULL ||
-	    allocator->ops == NULL || allocator->ops->alloc == NULL ||
-	    !is_power_of_two(alignement) || size == 0) {
-		aml_errno = AML_EINVAL;
-		return NULL;
-	}
-
-	if (allocator->ops->aligned_alloc != NULL)
-		return allocator->ops->aligned_alloc(allocator->data, size,
-		                                     alignement);
-	else
-		return allocator->ops->alloc(allocator->data, size);
-}
-
 int aml_free(struct aml_allocator *allocator, void *ptr)
 {
 	if (allocator == NULL || allocator->data == NULL ||
