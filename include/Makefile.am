@@ -4,7 +4,13 @@ include_aml_areadir=$(includedir)/aml/area
 include_aml_area_HEADERS = aml/area/linux.h
 
 include_aml_higherdir=$(includedir)/aml/higher
-include_aml_higher_HEADERS = aml/higher/mapper.h aml/higher/replicaset.h
+include_aml_higher_HEADERS = \
+			      aml/higher/mapper.h \
+			      aml/higher/replicaset.h \
+			      aml/higher/allocator.h \
+			      aml/higher/allocator/area.h \
+			      aml/higher/allocator/buddy.h \
+			      aml/higher/allocator/sized.h
 
 include_aml_replicasetdir=$(includedir)/aml/higher/replicaset
 include_aml_replicaset_HEADERS = 
@@ -64,4 +70,6 @@ endif
 
 noinst_include_internaldir = $(includedir)/internal
 noinst_include_internal_HEADERS = \
-				  internal/utarray.h
+				  internal/utarray.h \
+				  internal/uthash.h \
+				  internal/utlist.h

@@ -19,9 +19,9 @@
 #include "aml/layout/dense.h"
 #include "aml/tiling/resize.h"
 
-#include "blas_l1_kernel.h"
+#include "blas/l1_kernel.h"
+#include "blas/verify_l1.h"
 #include "utils.h"
-#include "verify_blas_l1.h"
 
 #define DEFAULT_ARRAY_SIZE (1UL << 20)
 #define DEFAULT_TILE_SIZE (1UL << 8)

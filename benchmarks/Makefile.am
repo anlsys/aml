@@ -27,13 +27,42 @@ endif
 @VALGRIND_CHECK_RULES@
 
 noinst_LIBRARIES = libkernel.a
-libkernel_a_SOURCES = utils.c utils.h blas_l1_kernel.c blas_l1_kernel.h verify_blas_l1.c verify_blas_l1.h
+
+UTILS=utils.c
+
+BLAS_UTILS=\
+	       blas/l1_kernel.h \
+	       blas/l1_kernel.c \
+	       blas/verify_l1.h \
+	       blas/verify_l1.c
+
+ALLOCATOR_UTILS=\
+	       ../tests/allocator/dummy_area.h \
+	       ../tests/allocator/dummy_area.c \
+	       ../tests/allocator/test_allocator.h \
+	       ../tests/allocator/test_allocator.c \
+	       allocator/allocator.h \
+	       allocator/allocator.c
+
+BLAS_BENCHMARKS=\
+	       blas/flat_l1\
+	       blas/tiled_l1
+
+ALLOCATOR_BENCHMARKS=\
+	       allocator/benchmark_area \
+	       allocator/benchmark_buddy \
+	       allocator/benchmark_sized
+
+
+libkernel_a_SOURCES=$(UTILS) \
+	       $(BLAS_UTILS) \
+	       $(ALLOCATOR_UTILS)
+
 LDADD = libkernel.a
 
-NOPREFETCH = noprefetch/flat_blas_l1 \
-	     noprefetch/tiled_blas_l1
-
-BENCHMARKS = $(NOPREFETCH)
+BENCHMARKS = \
+	       $(BLAS_BENCHMARKS) \
+	       $(ALLOCATOR_BENCHMARKS)
 
 # all tests
 check_PROGRAMS = $(BENCHMARKS)
