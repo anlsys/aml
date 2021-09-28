@@ -8,8 +8,10 @@ include_aml_higher_HEADERS = \
 			      aml/higher/mapper.h \
 			      aml/higher/replicaset.h \
 			      aml/higher/allocator.h \
+			      aml/higher/allocator/utils.h \
 			      aml/higher/allocator/area.h \
-			      aml/higher/allocator/buddy.h
+			      aml/higher/allocator/buddy.h \
+			      aml/higher/allocator/sized.h
 
 include_aml_replicasetdir=$(includedir)/aml/higher/replicaset
 include_aml_replicaset_HEADERS = 
@@ -38,7 +40,6 @@ include_amlutils_HEADERS = \
 			   aml/utils/inner-malloc.h \
 			   aml/utils/vector.h \
 			   aml/utils/utarray.h \
-			   aml/utils/utlist.h \
 			   aml/utils/uthash.h \
 			   aml/utils/queue.h \
 			   aml/utils/async.h \
