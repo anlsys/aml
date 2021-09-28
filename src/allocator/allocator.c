@@ -29,5 +29,8 @@ int aml_free(struct aml_allocator *allocator, void *ptr)
 	    allocator->ops == NULL || allocator->ops->free == NULL)
 		return -AML_EINVAL;
 
+	if (ptr == NULL)
+		return AML_SUCCESS;
+
 	return allocator->ops->free(allocator->data, ptr);
 }
