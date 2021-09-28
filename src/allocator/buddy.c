@@ -28,9 +28,9 @@
 		err = -AML_ENOMEM;                                             \
 	} while (0)
 
-#include "aml/utils/utarray.h"
-#include "aml/utils/uthash.h"
-#include "aml/utils/utlist.h"
+#include "internal/utarray.h"
+#include "internal/uthash.h"
+#include "internal/utlist.h"
 
 int is_power_of_two(size_t size);
 

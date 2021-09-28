@@ -39,8 +39,6 @@ include_amlutils_HEADERS = \
 			   aml/utils/error.h \
 			   aml/utils/inner-malloc.h \
 			   aml/utils/vector.h \
-			   aml/utils/utarray.h \
-			   aml/utils/uthash.h \
 			   aml/utils/queue.h \
 			   aml/utils/async.h \
 			   aml/utils/version.h \
@@ -73,4 +71,6 @@ endif
 
 noinst_include_internaldir = $(includedir)/internal
 noinst_include_internal_HEADERS = \
-				  internal/utarray.h
+				  internal/utarray.h \
+				  internal/uthash.h \
+				  internal/utlist.h
