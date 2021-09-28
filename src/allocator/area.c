@@ -12,6 +12,7 @@
 
 #include "aml/higher/allocator.h"
 #include "aml/higher/allocator/area.h"
+
 #include "internal/uthash.h"
 
 struct aml_allocator_ops aml_allocator_area_ops = {

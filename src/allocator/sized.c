@@ -12,6 +12,7 @@
 
 #include "aml/higher/allocator.h"
 #include "aml/higher/allocator/sized.h"
+
 #include "internal/uthash.h"
 #include "internal/utlist.h"
 
@@ -37,7 +38,8 @@ static int aml_allocator_sized_extend(struct aml_allocator_sized *data,
                                       size_t size)
 {
 	void *ptr;
-	struct aml_allocator_sized_typed *alloc = (struct aml_allocator_sized_typed *) data;
+	struct aml_allocator_sized_typed *alloc =
+	        (struct aml_allocator_sized_typed *)data;
 	struct aml_sized_chunk *chunk = NULL;
 
 	ptr = aml_area_mmap(data->area, size, data->opts);
@@ -61,7 +63,6 @@ int aml_allocator_sized_create(struct aml_allocator **allocator,
 	int err = -AML_ENOMEM;
 	struct aml_allocator *alloc;
 	struct aml_allocator_sized *data;
-	
 
 	// Allocate high level structure and metadata.
 	alloc = AML_INNER_MALLOC(struct aml_allocator,
@@ -96,21 +97,24 @@ int aml_allocator_sized_destroy(struct aml_allocator **allocator)
 	    (*allocator)->data == NULL)
 		return -AML_EINVAL;
 
-	struct aml_allocator_sized_typed *alloc = (struct aml_allocator_sized_typed *)(*allocator)->data;
+	struct aml_allocator_sized_typed *alloc =
+	        (struct aml_allocator_sized_typed *)(*allocator)->data;
 	struct aml_sized_chunk *cur, *tmp;
 
-	HASH_ITER(hh, alloc->occupied_pools, cur, tmp) {
+	HASH_ITER(hh, alloc->occupied_pools, cur, tmp)
+	{
 		aml_area_munmap(alloc->area, cur->ptr, alloc->chunk_size);
 		HASH_DEL(alloc->occupied_pools, cur);
 		free(cur);
 	}
-	
-	DL_FOREACH_SAFE(alloc->free_pools, cur, tmp) {
+
+	DL_FOREACH_SAFE(alloc->free_pools, cur, tmp)
+	{
 		aml_area_munmap(alloc->area, cur->ptr, alloc->chunk_size);
 		DL_DELETE(alloc->free_pools, cur);
 		free(cur);
 	}
-		
+
 	free(*allocator);
 	*allocator = NULL;
 	return AML_SUCCESS;
@@ -119,7 +123,8 @@ int aml_allocator_sized_destroy(struct aml_allocator **allocator)
 void *aml_allocator_sized_alloc(struct aml_allocator_data *data, size_t size)
 {
 	int err;
-	struct aml_allocator_sized_typed *alloc = (struct aml_allocator_sized_typed *)data;
+	struct aml_allocator_sized_typed *alloc =
+	        (struct aml_allocator_sized_typed *)data;
 	struct aml_sized_chunk *ret = NULL;
 
 	// Check input
@@ -129,7 +134,8 @@ void *aml_allocator_sized_alloc(struct aml_allocator_data *data, size_t size)
 	}
 
 	if (alloc->free_pools == NULL) {
-		err = aml_allocator_sized_extend((struct aml_allocator_sized *)alloc, size);
+		err = aml_allocator_sized_extend(
+		        (struct aml_allocator_sized *)alloc, size);
 		if (err != AML_SUCCESS) {
 			aml_errno = err;
 			return NULL;
@@ -142,13 +148,14 @@ void *aml_allocator_sized_alloc(struct aml_allocator_data *data, size_t size)
 
 	/* put it in the occupied hash */
 	HASH_ADD_PTR(alloc->occupied_pools, ptr, ret);
-	
+
 	return ret->ptr;
 }
 
 int aml_allocator_sized_free(struct aml_allocator_data *data, void *ptr)
 {
-	struct aml_allocator_sized_typed *alloc = (struct aml_allocator_sized_typed *)data;
+	struct aml_allocator_sized_typed *alloc =
+	        (struct aml_allocator_sized_typed *)data;
 	struct aml_sized_chunk *elt = NULL;
 
 	HASH_FIND_PTR(alloc->occupied_pools, &ptr, elt);

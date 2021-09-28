@@ -13,9 +13,9 @@
 #include "aml.h"
 
 #include "aml/higher/allocator.h"
-#include "internal/utarray.h"
 
 #include "../benchmarks/utils.h"
+#include "internal/utarray.h"
 
 int aml_alloc_record_next_size(struct aml_alloc_record *record, size_t *size)
 {
