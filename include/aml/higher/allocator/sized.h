@@ -30,8 +30,10 @@ extern "C" {
 struct aml_allocator_sized {
 	/** The size of user allocations. */
 	size_t chunk_size;
-	/** The mapped memory regions (aml_memory_pool) stored in a utarray. */
-	void *pools;
+	/** The free mapped memory regions (internally a utlist) */
+	void *free_pools;
+	/** The free mapped memory regions (internally a uthash) */
+	void *occupied_pools;
 	/** The area to map new regions */
 	struct aml_area *area;
 	/** The area options */

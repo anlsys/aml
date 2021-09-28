@@ -8,7 +8,6 @@ include_aml_higher_HEADERS = \
 			      aml/higher/mapper.h \
 			      aml/higher/replicaset.h \
 			      aml/higher/allocator.h \
-			      aml/higher/allocator/utils.h \
 			      aml/higher/allocator/area.h \
 			      aml/higher/allocator/buddy.h \
 			      aml/higher/allocator/sized.h

@@ -12,65 +12,45 @@
 
 #include "aml/higher/allocator.h"
 #include "aml/higher/allocator/sized.h"
-#include "aml/higher/allocator/utils.h"
-#include "aml/utils/inner-malloc.h"
-#include "aml/utils/utarray.h"
+#include "internal/uthash.h"
+#include "internal/utlist.h"
 
 #define PTR_OFF(ptr, sign, off) (void *)((intptr_t)(ptr)sign(intptr_t)(off))
 #define ALIGNED_PTR(ptr, s) PTR_OFF(ptr, +, s - ((intptr_t)ptr % s))
 
-UT_icd aml_memory_pool_icd = {
-        .sz = sizeof(struct aml_memory_pool *),
-        .init = NULL,
-        .copy = NULL,
-        .dtor = NULL,
+struct aml_sized_chunk {
+	void *ptr;
+	struct aml_sized_chunk *prev, *next;
+	UT_hash_handle hh;
 };
 
-/** Add a new memory pool to allocator. */
+struct aml_allocator_sized_typed {
+	size_t chunk_size;
+	struct aml_sized_chunk *free_pools;
+	struct aml_sized_chunk *occupied_pools;
+	struct aml_area *area;
+	struct aml_area_mmap_options *opts;
+};
+
+/** Add a new memory chunk to allocator. */
 static int aml_allocator_sized_extend(struct aml_allocator_sized *data,
-                                      size_t size,
-                                      struct aml_memory_pool **out)
+                                      size_t size)
 {
-	int err;
 	void *ptr;
-	struct aml_memory_pool *pool;
-	UT_array *array = (UT_array *)data->pools;
-	const size_t len = utarray_len(array);
-	struct aml_memory_pool **pools =
-	        (struct aml_memory_pool **)utarray_eltptr(array, 0);
-	size_t total_size = 0;
+	struct aml_allocator_sized_typed *alloc = (struct aml_allocator_sized_typed *) data;
+	struct aml_sized_chunk *chunk = NULL;
 
-	// Get total allocated size.
-	for (size_t i = 0; i < len; i++)
-		total_size += pools[i]->memory.size;
-	if (total_size <= size)
-		total_size = size;
-
-	// Try to allocate double of total size to avoid calling this function
-	// too frequently.
-	size_t alloc_size = total_size;
-	while (alloc_size >= size &&
-	       (ptr = aml_area_mmap(data->area, alloc_size, data->opts)) ==
-	               NULL)
-		alloc_size /= 2;
+	ptr = aml_area_mmap(data->area, size, data->opts);
 	if (ptr == NULL)
 		return aml_errno;
 
-	// Create memory pool.
-	err = aml_memory_pool_create(&pool, ptr, alloc_size);
-	if (err != AML_SUCCESS)
-		goto err_with_ptr;
+	chunk = malloc(sizeof(*chunk));
+	if (chunk == NULL)
+		return -AML_ENOMEM;
 
-	// Push new pool into the vector of pools.
-	utarray_push_back(array, &pool);
-
-	if (out != NULL)
-		*out = pool;
+	chunk->ptr = ptr;
+	DL_APPEND(alloc->free_pools, chunk);
 	return AML_SUCCESS;
-
-err_with_ptr:
-	aml_area_munmap(data->area, ptr, alloc_size);
-	return err;
 }
 
 int aml_allocator_sized_create(struct aml_allocator **allocator,
@@ -81,7 +61,7 @@ int aml_allocator_sized_create(struct aml_allocator **allocator,
 	int err = -AML_ENOMEM;
 	struct aml_allocator *alloc;
 	struct aml_allocator_sized *data;
-	UT_array *pools;
+	
 
 	// Allocate high level structure and metadata.
 	alloc = AML_INNER_MALLOC(struct aml_allocator,
@@ -98,23 +78,16 @@ int aml_allocator_sized_create(struct aml_allocator **allocator,
 	data->area = area;
 	data->opts = opts;
 
-	// Allocate space for pools.
-	utarray_new(pools, &aml_memory_pool_icd);
-	data->pools = (void *)pools;
+	data->free_pools = NULL;
+	data->occupied_pools = NULL;
 
 	// Create first pool.
-	const size_t pool_size = 1UL << 20; // 1MiB
-	err = aml_allocator_sized_extend(data, pool_size, NULL);
+	err = aml_allocator_sized_extend(data, size);
 	if (err != AML_SUCCESS)
-		goto err_with_vec;
+		return err;
 
 	*allocator = alloc;
 	return AML_SUCCESS;
-
-err_with_vec:
-	utarray_free(pools);
-	free(alloc);
-	return err;
 }
 
 int aml_allocator_sized_destroy(struct aml_allocator **allocator)
@@ -123,93 +96,68 @@ int aml_allocator_sized_destroy(struct aml_allocator **allocator)
 	    (*allocator)->data == NULL)
 		return -AML_EINVAL;
 
-	int err;
-	struct aml_allocator_sized *data =
-	        (struct aml_allocator_sized *)(*allocator)->data;
-	UT_array *pools = (UT_array *)data->pools;
-	unsigned n = utarray_len(pools);
+	struct aml_allocator_sized_typed *alloc = (struct aml_allocator_sized_typed *)(*allocator)->data;
+	struct aml_sized_chunk *cur, *tmp;
 
-	for (ssize_t i = n - 1; i >= 0; i--) {
-		struct aml_memory_pool *pool =
-		        *(struct aml_memory_pool **)utarray_eltptr(pools, i);
-		aml_area_munmap(data->area, pool->memory.ptr,
-		                pool->memory.size);
-		err = aml_memory_pool_destroy(&pool);
-		if (err != AML_SUCCESS)
-			return err;
-		utarray_pop_back(pools);
+	HASH_ITER(hh, alloc->occupied_pools, cur, tmp) {
+		aml_area_munmap(alloc->area, cur->ptr, alloc->chunk_size);
+		HASH_DEL(alloc->occupied_pools, cur);
+		free(cur);
 	}
-
-	utarray_free(pools);
+	
+	DL_FOREACH_SAFE(alloc->free_pools, cur, tmp) {
+		aml_area_munmap(alloc->area, cur->ptr, alloc->chunk_size);
+		DL_DELETE(alloc->free_pools, cur);
+		free(cur);
+	}
+		
 	free(*allocator);
 	*allocator = NULL;
-
 	return AML_SUCCESS;
 }
 
 void *aml_allocator_sized_alloc(struct aml_allocator_data *data, size_t size)
 {
 	int err;
-	void *ptr;
-	struct aml_allocator_sized *alloc = (struct aml_allocator_sized *)data;
-	struct aml_memory_pool *pool;
-	UT_array *pools = (UT_array *)alloc->pools;
+	struct aml_allocator_sized_typed *alloc = (struct aml_allocator_sized_typed *)data;
+	struct aml_sized_chunk *ret = NULL;
 
 	// Check input
-	if (size > alloc->chunk_size) {
+	if (size != alloc->chunk_size) {
 		aml_errno = -AML_EINVAL;
 		return NULL;
 	}
-	size = alloc->chunk_size;
 
-	// Try to pop a chunk from a pool.
-	for (size_t i = 0; i < utarray_len(pools); i++) {
-		pool = *(struct aml_memory_pool **)utarray_eltptr(pools, i);
-		err = aml_memory_pool_pop(pool, &ptr, size);
-		if (err == AML_SUCCESS)
-			return ptr;
-		if (err != -AML_ENOMEM) {
+	if (alloc->free_pools == NULL) {
+		err = aml_allocator_sized_extend((struct aml_allocator_sized *)alloc, size);
+		if (err != AML_SUCCESS) {
 			aml_errno = err;
 			return NULL;
 		}
 	}
 
-	// All pools are empty. Let's extend pool list with a new pool.
-	err = aml_allocator_sized_extend(alloc, size, &pool);
-	if (err != AML_SUCCESS) {
-		aml_errno = err;
-		return NULL;
-	}
+	/* pop element */
+	ret = alloc->free_pools;
+	DL_DELETE(alloc->free_pools, ret);
 
-	// Get a chunk from the new pool.
-	err = aml_memory_pool_pop(pool, &ptr, size);
-	if (err == AML_SUCCESS)
-		return ptr;
-	if (err != -AML_ENOMEM) {
-		aml_errno = err;
-		return NULL;
-	}
-
-	return ptr;
+	/* put it in the occupied hash */
+	HASH_ADD_PTR(alloc->occupied_pools, ptr, ret);
+	
+	return ret->ptr;
 }
 
 int aml_allocator_sized_free(struct aml_allocator_data *data, void *ptr)
 {
-	struct aml_allocator_sized *alloc = (struct aml_allocator_sized *)data;
-	struct aml_memory_chunk chunk = {.ptr = ptr, .size = alloc->chunk_size};
-	struct aml_memory_pool *pool;
-	UT_array *pools = (UT_array *)alloc->pools;
+	struct aml_allocator_sized_typed *alloc = (struct aml_allocator_sized_typed *)data;
+	struct aml_sized_chunk *elt = NULL;
 
-	for (size_t i = 0; i < utarray_len(pools); i++) {
-		pool = *(struct aml_memory_pool **)utarray_eltptr(pools, i);
-		if (aml_memory_chunk_contains(pool->memory, chunk)) {
-			return aml_memory_pool_push(pool, ptr,
-			                            alloc->chunk_size);
-		}
-	}
+	HASH_FIND_PTR(alloc->occupied_pools, &ptr, elt);
+	if (elt == NULL)
+		return -AML_EINVAL;
 
-	// This pointer is not from this allocator.
-	return -AML_EINVAL;
+	HASH_DEL(alloc->occupied_pools, elt);
+	DL_APPEND(alloc->free_pools, elt);
+	return AML_SUCCESS;
 }
 
 struct aml_allocator_ops aml_allocator_sized = {

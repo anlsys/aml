@@ -21,11 +21,11 @@ int main(int argc, char **argv)
 	int err;
 	const size_t base_s = 1UL << 6; // 64B
 	const size_t max_s = 1UL << 12; // 4096B
-	const size_t total_s = 1UL << 20; // 1MiB
+	//const size_t total_s = 1UL << 20; // 1MiB
 	struct aml_allocator *allocator;
 	size_t num_iterations;
 
-	assert(aml_allocator_sized_create(&allocator, total_s, &aml_area_dummy,
+	assert(aml_allocator_sized_create(&allocator, base_s, &aml_area_dummy,
 	                                  NULL) == AML_SUCCESS);
 
 	// Alloc consecutive base size and free previous alloc.
@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 
 	// Alloc random sizes and free random alloc.
 	num_iterations = 1000;
-	err = aml_alloc_workflow_run(max_s, base_s, 0, rand_size, pick_rand,
+	err = aml_alloc_workflow_run(max_s, base_s, 0, base_size, pick_rand,
 	                             num_iterations, allocator, NULL, NULL,
 	                             NULL);
 	assert(err == AML_SUCCESS);
@@ -49,7 +49,7 @@ int main(int argc, char **argv)
 	// We make sure not to exhaust all the memory pool, therefore,
 	// this test should not fail.
 	num_iterations = 1000;
-	err = aml_alloc_workflow_run(max_s, base_s, 0, increasing_size,
+	err = aml_alloc_workflow_run(max_s, base_s, 0, base_size,
 	                             pick_rand, num_iterations, allocator, NULL,
 	                             NULL, NULL);
 	assert(err == AML_SUCCESS);
@@ -59,7 +59,7 @@ int main(int argc, char **argv)
 	// We make sure not to exhaust all the memory pool, therefore,
 	// this test should not fail.
 	num_iterations = 1000;
-	err = aml_alloc_workflow_run(max_s, base_s, 100, increasing_size,
+	err = aml_alloc_workflow_run(max_s, base_s, 100, base_size,
 	                             pick_rand, num_iterations, allocator, NULL,
 	                             NULL, NULL);
 	assert(err == AML_SUCCESS);

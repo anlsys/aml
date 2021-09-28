@@ -13,7 +13,7 @@
 #include "aml.h"
 
 #include "aml/higher/allocator.h"
-#include "aml/utils/utarray.h"
+#include "internal/utarray.h"
 
 #include "../benchmarks/utils.h"
 
