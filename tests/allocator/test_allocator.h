@@ -13,6 +13,7 @@
 #include "aml/higher/allocator.h"
 
 #include "../benchmarks/utils.h"
+#include "memset.h"
 
 // Struct definition below
 struct aml_alloc_record;
@@ -167,6 +168,7 @@ int aml_alloc_workflow_run(const size_t max_size,
                            aml_alloc_record_next_free_fn next_free,
                            const size_t num_iterations,
                            struct aml_allocator *allocator,
+                           aml_memset_fn memset_fn,
                            struct aml_time_stats *alloc_stats,
                            struct aml_time_stats *free_stats,
                            struct aml_alloc_workflow_output *out);

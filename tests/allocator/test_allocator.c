@@ -177,11 +177,13 @@ static void aml_alloc_record_destroy(struct aml_alloc_record *record,
 
 static void *record_alloc(struct aml_allocator *allocator,
                           const size_t size,
+                          aml_memset_fn memset_fn,
                           struct aml_time_stats *stats)
 {
 	aml_time_t ts, te;
 	aml_gettime(&ts);
 	void *ptr = aml_alloc(allocator, size);
+	memset_fn(ptr, 2345245, size);
 	aml_gettime(&te);
 
 	if (ptr != NULL && stats != NULL)
@@ -225,6 +227,7 @@ int aml_alloc_workflow_run(const size_t max_size,
                            aml_alloc_record_next_free_fn next_free,
                            const size_t num_iterations,
                            struct aml_allocator *allocator,
+                           aml_memset_fn memset_fn,
                            struct aml_time_stats *alloc_stats,
                            struct aml_time_stats *free_stats,
                            struct aml_alloc_workflow_output *out)
@@ -254,7 +257,8 @@ int aml_alloc_workflow_run(const size_t max_size,
 		assert(err == AML_SUCCESS || err == -AML_EDOM);
 
 		// Do allocation.
-		void *ptr = record_alloc(allocator, size, alloc_stats);
+		void *ptr =
+		        record_alloc(allocator, size, memset_fn, alloc_stats);
 		if (ptr == NULL) {
 			assert(aml_errno != AML_SUCCESS);
 			err = -aml_errno;

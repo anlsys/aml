@@ -45,6 +45,7 @@ liblayout_test_la_SOURCES = \
 
 liballocator_test_la_SOURCES = \
 	allocator/dummy_area.c \
+	allocator/memset.c \
 	allocator/test_allocator.c \
 	../benchmarks/utils.c \
 	../benchmarks/utils.h
@@ -76,8 +77,7 @@ DMA_TESTS = dma/test_linux
 HIGHER_TESTS = \
 	higher/test_mapper \
 	allocator/test_area \
-	allocator/test_buddy \
-	allocator/test_sized
+	allocator/test_buddy
 
 if HAVE_OPENCL
 AREA_TESTS += area/test_opencl

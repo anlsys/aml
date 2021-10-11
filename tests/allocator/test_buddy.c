@@ -13,6 +13,7 @@
 #include "aml/higher/allocator/buddy.h"
 
 #include "dummy_area.h"
+#include "memset.h"
 
 int main(int argc, char **argv)
 {
@@ -33,15 +34,15 @@ int main(int argc, char **argv)
 	// This test should not fail.
 	num_iterations = 1000;
 	err = aml_alloc_workflow_run(max_s, base_s, 0, base_size, pick_prev,
-	                             num_iterations, allocator, NULL, NULL,
-	                             NULL);
+	                             num_iterations, allocator,
+	                             aml_dummy_memset, NULL, NULL, NULL);
 	assert(err == AML_SUCCESS);
 
 	// Alloc random sizes and free random alloc.
 	num_iterations = 1000;
 	err = aml_alloc_workflow_run(max_s, base_s, 0, rand_size, pick_rand,
-	                             num_iterations, allocator, NULL, NULL,
-	                             NULL);
+	                             num_iterations, allocator,
+	                             aml_dummy_memset, NULL, NULL, NULL);
 	assert(err == AML_SUCCESS);
 
 	// Alloc increasing sizes and free random alloc.
@@ -49,8 +50,8 @@ int main(int argc, char **argv)
 	// this test should not fail.
 	num_iterations = 1000;
 	err = aml_alloc_workflow_run(max_s, base_s, 0, increasing_size,
-	                             pick_rand, num_iterations, allocator, NULL,
-	                             NULL, NULL);
+	                             pick_rand, num_iterations, allocator,
+	                             aml_dummy_memset, NULL, NULL, NULL);
 	assert(err == AML_SUCCESS);
 
 	// Alloc increasing sizes and free random alloc after 100 consecutive
@@ -59,8 +60,8 @@ int main(int argc, char **argv)
 	// this test should not fail.
 	num_iterations = 1000;
 	err = aml_alloc_workflow_run(max_s, base_s, 100, increasing_size,
-	                             pick_rand, num_iterations, allocator, NULL,
-	                             NULL, NULL);
+	                             pick_rand, num_iterations, allocator,
+	                             aml_dummy_memset, NULL, NULL, NULL);
 	assert(err == AML_SUCCESS);
 
 	aml_allocator_buddy_destroy(&allocator);

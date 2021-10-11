@@ -17,6 +17,7 @@
 #if AML_HAVE_BACKEND_ZE == 1
 #include "aml/area/ze.h"
 #endif
+#include "../../tests/allocator/memset.h"
 #include "../tests/allocator/dummy_area.h"
 
 #include "aml/higher/allocator.h"
@@ -26,7 +27,8 @@
 
 void benchmark_buddy_allocator(FILE *out,
                                struct aml_area *area,
-                               const char *area_name)
+                               const char *area_name,
+                               aml_memset_fn memset_fn)
 {
 	const size_t num_samples = 20;
 	struct aml_allocator *allocator;
@@ -42,7 +44,7 @@ void benchmark_buddy_allocator(FILE *out,
 	       AML_SUCCESS);
 	for (size_t i = 0; i < num_samples; i++)
 		benchmark_consecutive_allocations(out, allocator_name,
-		                                  allocator);
+		                                  allocator, memset_fn);
 	aml_allocator_buddy_destroy(&allocator);
 
 	// 2.
@@ -50,7 +52,7 @@ void benchmark_buddy_allocator(FILE *out,
 	       AML_SUCCESS);
 	for (size_t i = 0; i < num_samples; i++)
 		benchmark_consecutive_allocations_free(out, allocator_name,
-		                                       allocator);
+		                                       allocator, memset_fn);
 	aml_allocator_buddy_destroy(&allocator);
 
 	// 3.
@@ -58,7 +60,7 @@ void benchmark_buddy_allocator(FILE *out,
 	       AML_SUCCESS);
 	for (size_t i = 0; i < num_samples; i++)
 		benchmark_random_allocations_free(out, allocator_name,
-		                                  allocator);
+		                                  allocator, memset_fn);
 	aml_allocator_buddy_destroy(&allocator);
 }
 
@@ -67,21 +69,25 @@ int main(int argc, char **argv)
 	assert(aml_init(&argc, &argv) == AML_SUCCESS);
 
 	// Benchmark dummy area to measure library overhead.
-	benchmark_buddy_allocator(stderr, &aml_area_dummy, "dummy");
+	benchmark_buddy_allocator(stderr, &aml_area_dummy, "dummy",
+	                          aml_dummy_memset);
 
 	// Benchmark linux area
-	benchmark_buddy_allocator(stderr, &aml_area_linux, "linux");
+	benchmark_buddy_allocator(stderr, &aml_area_linux, "linux",
+	                          aml_linux_memset);
 
 	// Benchmark cuda area
 #if AML_HAVE_BACKEND_CUDA == 1
 	if (aml_support_backends(AML_BACKEND_CUDA))
-		benchmark_buddy_allocator(stderr, &aml_area_cuda, "cuda");
+		benchmark_buddy_allocator(stderr, &aml_area_cuda, "cuda",
+		                          aml_cuda_memset);
 #endif
 
 		// Benchmark ze area
 #if AML_HAVE_BACKEND_ZE == 1
 	if (aml_support_backends(AML_BACKEND_ZE))
-		benchmark_buddy_allocator(stderr, aml_area_ze_device, "ze");
+		benchmark_buddy_allocator(stderr, aml_area_ze_device, "ze",
+		                          aml_ze_memset);
 #endif
 
 	aml_finalize();

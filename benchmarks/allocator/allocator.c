@@ -58,7 +58,8 @@ void fprint_benchmark_sample(FILE *out, struct benchmark_sample *sample)
 // Alloc consecutively pages of 4KiB until 4GiB of memory is allocated.
 void benchmark_consecutive_allocations(FILE *out,
                                        const char *allocator_name,
-                                       struct aml_allocator *allocator)
+                                       struct aml_allocator *allocator,
+                                       aml_memset_fn memset_fn)
 {
 	const size_t base_s = 1UL << 12; // 4KiB
 	const size_t max_s = base_s;
@@ -72,8 +73,9 @@ void benchmark_consecutive_allocations(FILE *out,
 	aml_stats_init(&free_stats);
 
 	assert(aml_alloc_workflow_run(max_s, base_s, delay, size_fn, next_fn,
-	                              num_iterations, allocator, &alloc_stats,
-	                              &free_stats, NULL) == AML_SUCCESS);
+	                              num_iterations, allocator, memset_fn,
+	                              &alloc_stats, &free_stats,
+	                              NULL) == AML_SUCCESS);
 
 	struct benchmark_sample sample = {
 	        .alloc_stats = alloc_stats,
@@ -88,7 +90,8 @@ void benchmark_consecutive_allocations(FILE *out,
 // Alloc consecutively pages of 4KiB and free them after each allocation.
 void benchmark_consecutive_allocations_free(FILE *out,
                                             const char *allocator_name,
-                                            struct aml_allocator *allocator)
+                                            struct aml_allocator *allocator,
+                                            aml_memset_fn memset_fn)
 {
 	const size_t base_s = 1UL << 12; // 4KiB
 	const size_t max_s = base_s;
@@ -102,8 +105,9 @@ void benchmark_consecutive_allocations_free(FILE *out,
 	aml_stats_init(&free_stats);
 
 	assert(aml_alloc_workflow_run(max_s, base_s, delay, size_fn, next_fn,
-	                              num_iterations, allocator, &alloc_stats,
-	                              &free_stats, NULL) == AML_SUCCESS);
+	                              num_iterations, allocator, memset_fn,
+	                              &alloc_stats, &free_stats,
+	                              NULL) == AML_SUCCESS);
 
 	struct benchmark_sample sample = {
 	        .alloc_stats = alloc_stats,
@@ -119,7 +123,8 @@ void benchmark_consecutive_allocations_free(FILE *out,
 // previous random allocation is freed.
 void benchmark_random_allocations_free(FILE *out,
                                        const char *allocator_name,
-                                       struct aml_allocator *allocator)
+                                       struct aml_allocator *allocator,
+                                       aml_memset_fn memset_fn)
 {
 	// Make this function deterministic and identical on each call.
 	srand(0);
@@ -135,8 +140,9 @@ void benchmark_random_allocations_free(FILE *out,
 	aml_stats_init(&free_stats);
 
 	assert(aml_alloc_workflow_run(max_s, base_s, delay, size_fn, next_fn,
-	                              num_iterations, allocator, &alloc_stats,
-	                              &free_stats, NULL) == AML_SUCCESS);
+	                              num_iterations, allocator, memset_fn,
+	                              &alloc_stats, &free_stats,
+	                              NULL) == AML_SUCCESS);
 
 	struct benchmark_sample sample = {
 	        .alloc_stats = alloc_stats,

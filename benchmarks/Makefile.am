@@ -39,6 +39,8 @@ BLAS_UTILS=\
 ALLOCATOR_UTILS=\
 	       ../tests/allocator/dummy_area.h \
 	       ../tests/allocator/dummy_area.c \
+	       ../tests/allocator/memset.h \
+	       ../tests/allocator/memset.c \
 	       ../tests/allocator/test_allocator.h \
 	       ../tests/allocator/test_allocator.c \
 	       allocator/allocator.h \
