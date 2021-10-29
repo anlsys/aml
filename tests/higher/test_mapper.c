@@ -23,6 +23,12 @@
 #include "aml/dma/cuda.h"
 #endif
 
+// Mapper args (cuda)
+#if AML_HAVE_BACKEND_HIP
+#include "aml/area/hip.h"
+#include "aml/dma/hip.h"
+#endif
+
 const size_t n = 8;
 
 //- Struct C Declaration ------------------------------------------------------
@@ -181,6 +187,29 @@ void test_mapper(struct C *c)
 		                  aml_dma_cuda_copy_1D, NULL);
 	}
 #endif
+#if AML_HAVE_BACKEND_HIP
+	if (aml_support_backends(AML_BACKEND_HIP)) {
+		struct C *device_c;
+		/* Copy c to hip device */
+		assert(aml_mapper_mmap(&struct_C_mapper, &device_c, c, 1,
+		                       &aml_area_hip, NULL, &aml_dma_hip,
+		                       aml_dma_hip_copy_1D,
+		                       NULL) == AML_SUCCESS);
+
+		// Change _c to be different from c.
+		c->b[0].a->val = 4565467567;
+
+		/* Copy back __c into modified _c */
+		assert(aml_mapper_copy(&struct_C_mapper, c, device_c, 1,
+		                       &aml_dma_hip, aml_dma_hip_copy_1D,
+		                       NULL) == AML_SUCCESS);
+		assert(eq_struct(c, host_c));
+
+		aml_mapper_munmap(&struct_C_mapper, device_c, 1, c,
+		                  &aml_area_hip, &aml_dma_hip,
+		                  aml_dma_hip_copy_1D, NULL);
+	}
+#endif
 	aml_mapper_munmap(&struct_C_mapper, host_c, 1, c, &aml_area_linux,
 	                  aml_dma_linux, aml_dma_linux_copy_1D, NULL);
 }
@@ -237,6 +266,33 @@ void test_shallow_mapper(struct C *c)
 		aml_mapper_munmap(&shallow_C_mapper, &device_c, 1, c,
 		                  &aml_area_cuda, &aml_dma_cuda,
 		                  aml_dma_cuda_copy_1D, NULL);
+	}
+#endif
+	// Hip check
+#if AML_HAVE_BACKEND_HIP
+	if (aml_support_backends(AML_BACKEND_HIP)) {
+		struct B device_b[n];
+		struct C device_c;
+		device_c.b = device_b;
+
+		/* Copy c to hip device */
+		assert(aml_mapper_mmap(&shallow_C_mapper, &device_c, c, 1,
+		                       &aml_area_hip, NULL, &aml_dma_hip,
+		                       aml_dma_hip_copy_1D,
+		                       NULL) == AML_SUCCESS);
+
+		// Change _c to be different from c.
+		c->b[0].a->val = 4565467567;
+
+		/* Copy back __c into modified _c */
+		assert(aml_mapper_copy(&shallow_C_mapper, c, &device_c, 1,
+		                       &aml_dma_hip, aml_dma_hip_copy_1D,
+		                       NULL) == AML_SUCCESS);
+		assert(eq_struct(c, &host_c));
+
+		aml_mapper_munmap(&shallow_C_mapper, &device_c, 1, c,
+		                  &aml_area_hip, &aml_dma_hip,
+		                  aml_dma_hip_copy_1D, NULL);
 	}
 #endif
 	aml_mapper_munmap(&shallow_C_mapper, &host_c, 1, c, &aml_area_linux,

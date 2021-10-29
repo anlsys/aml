@@ -4,6 +4,12 @@ AM_COLOR_TESTS = yes
 AM_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS) $(OPENMP_CFLAGS)
 AM_LDFLAGS = ../src/libaml.la $(top_builddir)/excit/src/libexcit.la $(PTHREAD_LIBS) $(OPENMP_CFLAGS)
 
+if HAVE_CUDA
+LIBS += $(CUDA_LIBS)
+AM_LDFLAGS += $(CUDA_LIBS)
+AM_CFLAGS += $(CUDA_CFLAGS)
+endif
+
 if HAVE_OPENCL
 LIBS += $(OPENCL_LIBS)
 AM_CFLAGS += $(OPENCL_CFLAGS)
@@ -20,6 +26,12 @@ if HAVE_ZE
 LIBS += $(ZE_LIBS)
 AM_LDFLAGS += $(ZE_LIBS)
 AM_CFLAGS += $(ZE_CFLAGS)
+endif
+
+if HAVE_HIP
+LIBS += $(HIP_LIBS)
+AM_LDFLAGS += $(HIP_LIBS)
+AM_CFLAGS += $(HIP_CFLAGS)
 endif
 
 # valgrind support
@@ -80,6 +92,11 @@ HIGHER_TESTS = \
 	allocator/test_buddy \
 	allocator/test_sized
 
+if HAVE_CUDA
+AREA_TESTS+=area/test_cuda
+AREA_TESTS+=dma/test_cuda
+endif
+
 if HAVE_OPENCL
 AREA_TESTS += area/test_opencl
 endif
@@ -92,6 +109,11 @@ endif
 if HAVE_HWLOC
 AREA_TESTS += area/test_hwloc
 HIGHER_TESTS += replicaset/test_hwloc
+endif
+
+if HAVE_HIP
+AREA_TESTS+=area/test_hip
+AREA_TESTS+=dma/test_hip
 endif
 
 # unit tests

@@ -25,6 +25,9 @@ extern hwloc_topology_t aml_topology;
 #if HAVE_ZE == 1
 #include <level_zero/ze_api.h>
 #endif
+#if HAVE_HIP == 1
+#include <hip/hip_runtime_api.h>
+#endif
 
 static int aml_support_cuda(void)
 {
@@ -34,6 +37,20 @@ static int aml_support_cuda(void)
 	int x;
 
 	if (cudaGetDeviceCount(&x) != cudaSuccess || x <= 0)
+		return 0;
+
+	return 1;
+#endif
+}
+
+static int aml_support_hip(void)
+{
+#if HAVE_HIP == 0
+	return 0;
+#else
+	int x;
+
+	if (hipGetDeviceCount(&x) != hipSuccess || x <= 0)
 		return 0;
 
 	return 1;
@@ -104,6 +121,11 @@ int aml_support_backends(const unsigned long backends)
 	// Cuda check: compilation support and runtime support must be present.
 	if ((backends & AML_BACKEND_CUDA) &&
 	    !(AML_HAVE_BACKEND_CUDA && aml_support_cuda()))
+		return 0;
+
+	// hip check: compilation support and runtime support must be present.
+	if ((backends & AML_BACKEND_HIP) &&
+	    !(AML_HAVE_BACKEND_HIP && aml_support_hip()))
 		return 0;
 
 	// OpenCL check: compilation support and runtime support must be

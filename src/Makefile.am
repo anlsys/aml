@@ -94,6 +94,15 @@ libaml_la_LIBADD=libcuda.la
 endif
 
 #############################################
+# hip sources
+
+if HAVE_HIP
+AM_CPPFLAGS += $(HIP_CFLAGS)
+AM_LDFLAGS += $(HIP_LIBS)
+libaml_la_SOURCES+=area/hip.c dma/hip.c
+endif
+
+#############################################
 # Level Zero sources
 
 if HAVE_ZE
