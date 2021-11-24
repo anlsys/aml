@@ -164,7 +164,7 @@ if test "$want_hwloc" != "no" &&
    AC_SUBST(HWLOC_CFLAGS)
    AC_SUBST(HWLOC_LIBS)
 fi
-if test "$want_hwloc" != "no" &&
+if test "$want_hwloc" == "yes" &&
    test "$have_hwloc" == "0"; then
    AC_MSG_ERROR([hwloc required but not found.])
 fi
@@ -227,7 +227,7 @@ if test "$want_opencl" != "no" &&
    AC_SUBST(OPENCL_CFLAGS)
    AC_SUBST(OPENCL_LIBS)
 fi
-if test "$want_opencl" != "no" &&
+if test "$want_opencl" == "yes" &&
    test "$have_opencl" == "0"; then
    AC_MSG_ERROR([opencl required but not found.])
 fi
@@ -308,7 +308,7 @@ if test "$want_ze" != "no" &&
    	 AC_SUBST(ZE_LIBS)
    fi
 fi
-if test "$want_ze" != "no" &&
+if test "$want_ze" == "yes" &&
    test "$have_ze" == "0"; then
    AC_MSG_ERROR([ze required but not found.])
 fi
