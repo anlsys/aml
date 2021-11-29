@@ -27,7 +27,7 @@ else
    AS_TR_SH([have_]m4_tolower([$1]))=0
 fi
 AC_DEFINE_UNQUOTED([HAVE_][$1], [$[have_]m4_tolower([$1])], [Supports ]m4_tolower([$1]))
-AC_SUBST([HAVE_][$1],[$have_[$1]])
+AC_SUBST([HAVE_][$1],[$[have_]m4_tolower([$1])])
 ])dnl PKG_HAVE_DEFINE_WITH_MODULES
 
 # Init build tools
