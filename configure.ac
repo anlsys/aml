@@ -22,11 +22,11 @@ AC_DEFUN([AML_HAVE_DEFINE_WITH_MODULES],
 [
 PKG_HAVE_WITH_MODULES([$1],[$2],[$3],[$4])
 if test "$AS_TR_SH([with_]m4_tolower([$1]))" = "yes"; then
-   have_[$1]=1
+   AS_TR_SH([have_]m4_tolower([$1]))=1
 else
-   have_[$1]=0
+   AS_TR_SH([have_]m4_tolower([$1]))=0
 fi
-AC_DEFINE([HAVE_][$1], $aml_have_pkg, [Supports ]m4_tolower([$1]))
+AC_DEFINE_UNQUOTED([HAVE_][$1], [$[have_]m4_tolower([$1])], [Supports ]m4_tolower([$1]))
 AC_SUBST([HAVE_][$1],[$have_[$1]])
 ])dnl PKG_HAVE_DEFINE_WITH_MODULES
 
