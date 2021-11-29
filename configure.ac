@@ -8,6 +8,28 @@ m4_define([VERSION_MINOR], m4_argn(2, VERSION_FIELDS))
 m4_define([VERSION_PATCH], m4_argn(3, VERSION_FIELDS))
 m4_define([VERSION_REVISION], m4_argn(4, VERSION_FIELDS))
 
+# Utils functions
+##################
+
+dnl AML_HAVE_DEFINE_WITH_MODULES(VARIABLE-PREFIX, MODULES,
+dnl   [DESCRIPTION], [DEFAULT])
+dnl ------------------------------------------------------
+dnl
+dnl Convenience macro to run AM_CONDITIONAL and AC_DEFINE after
+dnl PKG_WITH_MODULES check. HAVE_[VARIABLE-PREFIX] is exported as make
+dnl and preprocessor variable.
+AC_DEFUN([AML_HAVE_DEFINE_WITH_MODULES],
+[
+PKG_HAVE_WITH_MODULES([$1],[$2],[$3],[$4])
+if test "$AS_TR_SH([with_]m4_tolower([$1]))" = "yes"; then
+   AS_TR_SH([have_]m4_tolower([$1]))=1
+else
+   AS_TR_SH([have_]m4_tolower([$1]))=0
+fi
+AC_DEFINE_UNQUOTED([HAVE_][$1], [$[have_]m4_tolower([$1])], [Supports ]m4_tolower([$1]))
+AC_SUBST([HAVE_][$1],[$[have_]m4_tolower([$1])])
+])dnl PKG_HAVE_DEFINE_WITH_MODULES
+
 # Init build tools
 ##################
 
@@ -117,79 +139,65 @@ AC_CHECK_LIB(numa, mbind,,[AC_MSG_ERROR([AML requires libnuma.])])
 # Hwloc support
 ###############
 
-PKG_CHECK_MODULES([HWLOC], \
-                  [hwloc >= 2.1],   \
-                  [have_hwloc=1], \
-                  [have_hwloc=0])
-if test "$have_hwloc" = "1"; then
-   AC_DEFINE([HAVE_HWLOC], [1], "hwloc library with ABI > 2.0 is installed.")
-fi
-AM_CONDITIONAL([HAVE_HWLOC], [test "$have_hwloc" = "1"])
-AC_DEFINE_UNQUOTED([HAVE_HWLOC], [$have_hwloc], [Whether aml support hwloc library calls.])
-AC_SUBST([HAVE_HWLOC],[$have_hwloc])
+AML_HAVE_DEFINE_WITH_MODULES(HWLOC, [hwloc >= 2.1],,)
 
 # OpenCL support
 ###############
 
-PKG_CHECK_MODULES([OPENCL], \
-                  [OpenCL >= 2.1],   \
-                  [have_opencl=1], \
-                  [have_opencl=0])
-if test "$have_opencl" = "1"; then
-   AC_DEFINE([HAVE_OPENCL], [1], "OpenCL library with ABI >= 2.1 is installed.")
-fi
-AM_CONDITIONAL([HAVE_OPENCL], [test "$have_opencl" = "1"])
-AC_DEFINE_UNQUOTED([HAVE_OPENCL], [$have_opencl], [Whether aml support opencl library calls.])
-AC_SUBST([HAVE_OPENCL],[$have_opencl])
+AML_HAVE_DEFINE_WITH_MODULES([OPENCL], [OpenCL >= 2.1],,)
 
 # Level Zero Support
 ####################
 
-# PKG CONFIG detection
-PKG_CHECK_MODULES([ZE], \
-                  [libze_loader >= 1.0],   \
-                  [have_ze=1], \
-                  [have_ze=0])
+# Define --with-ze option and detect with pkg-config
+# De do not export variables yet because we want to try a fallback method if
+# this one fails.
+PKG_WITH_MODULES([ZE], [libze_loader >= 1.0], have_ze=1, have_ze=0,,)
 
-# fallback detection
-if test "$have_ze" = "0"; then
-have_libze=0 # library check
-have_ze_header=0 # header check
-have_ze_version="no" # version check
-
-# library check
-AC_SEARCH_LIBS([zeInit], [ze_loader], [have_libze=1], [have_libze=0])
-
-# header check
-if test "$have_libze" = "1"; then
+# This is the fallback method. It used only if the user requests ze support.
+if test "x$with_ze" = "xyes" &&
+   test "$have_ze" = "0"; then
+   # Setup user flags for configure detection.
+   saved_LIBS=$LIBS
+   saved_CFLAGS=$CFLAGS
+   LIBS="$ZE_LDFLAGS $LIBS"
+   CFLAGS="$ZE_CFLAGS $CFLAGS"
+   # Check header and libs
    AC_CHECK_HEADER([level_zero/ze_api.h], [have_ze_header=1], [have_ze_header=0])
-fi
-
-# header version check
-if test "$have_ze_header" = "1"; then
+   AC_SEARCH_LIBS([zeInit], [ze_loader], [have_libze=1], [have_libze=0])
+   # Check version
    AC_MSG_CHECKING([ze_api version >= 1.0])
    AC_RUN_IFELSE([AC_LANG_PROGRAM(
-[[#include<level_zero/ze_api.h>]],
-[[return ZE_API_VERSION_CURRENT < ZE_MAKE_VERSION( 1, 0 )]]
-)],
-                 [have_ze_version=yes],
-		 [have_ze_version=no])
+     [[#include<level_zero/ze_api.h>]],
+     [[return ZE_API_VERSION_CURRENT < ZE_MAKE_VERSION( 1, 0 )]]
+     )],
+     [have_ze_version=yes],
+     [have_ze_version=no])
    AC_MSG_RESULT([$have_ze_version])
+   # Restore libs and cflags.
+   LIBS="$saved_LIBS"
+   CFLAGS="$saved_CFLAGS"
+
+   # If all detection steps succeeded
+   if test "$have_ze_header" = "1" &&
+      test "$have_libze" = "1" &&
+      test "$have_ze_version" = "yes"; then
+         ZE_LDFLAGS="$ZE_LDFLAGS $ac_cv_search_zeInit"
+      	 have_ze=1
+   fi
 fi
 
-# All check passed ->
-if test "$have_ze_version" = "yes"; then
-   ZE_CFLAGS=""
-   ZE_LIBS="$ac_cv_search_zeInit"
-   AC_SUBST(ZE_CFLAGS)
-   AC_SUBST(ZE_LIBS)
-   have_ze=1
-fi
-fi # test "$have_ze" = "0"
+# We export flags with what has been detected or not.
+AC_SUBST(ZE_CFLAGS)
+AC_SUBST(ZE_LDFLAGS)
+AC_DEFINE_UNQUOTED([HAVE_ZE], [$have_ze], "ze library with ABI > 2.0 is installed.")
+AM_CONDITIONAL([HAVE_ZE], [test "$have_ze" = "1"])
+AC_SUBST([HAVE_ZE],[$have_ze])
 
-# If level zero is present and usable then declare it as such.
+# If ze backend is used, we checked earlier whether ze pointers can be used
+# as openmp target pointers. Here we print a message to the user on whether
+# The support has been detected or not, and a hint of what to do if not.
 if test "$have_ze" = "1"; then
-   AC_DEFINE([HAVE_ZE], [1], "Level Zero library and headers are available")
    if test "$have_omptarget" = "1"; then
      INTEL_OMP_ZE_BACKEND_INTEROPERABILITY_MSG="OPENMP INTEROPERABILITY: yes\
 Make sure to enable OpenMP LEVEL0 backend with: export LIBOMPTARGET_PLUGIN=LEVEL0
@@ -200,9 +208,6 @@ Try using: ./configure CC=icx --with-openmp-flags=\"-fiopenmp -fopenmp-targets=s
      "
    fi
 fi
-AM_CONDITIONAL([HAVE_ZE], [test "$have_ze" = "1"])
-AC_DEFINE_UNQUOTED([HAVE_ZE], [$have_ze], [Whether aml support intel level zero library calls.])
-AC_SUBST([HAVE_ZE],[$have_ze])
 
 # check doxygen + sphinx for documentation build
 ################################################
