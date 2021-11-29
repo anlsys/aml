@@ -8,6 +8,28 @@ m4_define([VERSION_MINOR], m4_argn(2, VERSION_FIELDS))
 m4_define([VERSION_PATCH], m4_argn(3, VERSION_FIELDS))
 m4_define([VERSION_REVISION], m4_argn(4, VERSION_FIELDS))
 
+# Utils functions
+##################
+
+dnl AML_HAVE_DEFINE_WITH_MODULES(VARIABLE-PREFIX, MODULES,
+dnl   [DESCRIPTION], [DEFAULT])
+dnl ------------------------------------------------------
+dnl
+dnl Convenience macro to run AM_CONDITIONAL and AC_DEFINE after
+dnl PKG_WITH_MODULES check. HAVE_[VARIABLE-PREFIX] is exported as make
+dnl and preprocessor variable.
+AC_DEFUN([AML_HAVE_DEFINE_WITH_MODULES],
+[
+PKG_HAVE_WITH_MODULES([$1],[$2],[$3],[$4])
+if test "$AS_TR_SH([with_]m4_tolower([$1]))" = "yes"; then
+   have_[$1]=1
+else
+   have_[$1]=0
+fi
+AC_DEFINE([HAVE_][$1], $aml_have_pkg, [Supports ]m4_tolower([$1]))
+AC_SUBST([HAVE_][$1],[$have_[$1]])
+])dnl PKG_HAVE_DEFINE_WITH_MODULES
+
 # Init build tools
 ##################
 
@@ -117,205 +139,65 @@ AC_CHECK_LIB(numa, mbind,,[AC_MSG_ERROR([AML requires libnuma.])])
 # Hwloc support
 ###############
 
-# The directory where to look for hwloc. If no, we try to detect it automatically.
-hwloc_dir=no
-# Whether hwloc was successfully detected (0|1). 
-have_hwloc=0
-# Whether the user wants hwloc: (yes|no|check)
-# yes: the package is required
-# no: the package should not be checked.
-# check: autodetect the package and enable it if it was found.
-want_hwloc=check
-
-AC_ARG_WITH([hwloc],
-	[AS_HELP_STRING([--with-hwloc@<:@=yes|no|DIR@:>@],
-		[Support hwloc backend and features in the library  (default is check)])],
-	[if test "x$withval" = "xno"; then
-		want_hwloc=no
-	elif test "x$withval" = "xyes"; then
-	     	want_hwloc=yes
-	else
-		want_hwloc=yes
-		hwloc_dir=$withval
-	fi],[want_hwloc="check"])
-
-# The default check is to rely on pkg-config for detection.
-AS_IF([test "$want_hwloc" = "check" ||
-       test "$want_hwloc" = "yes" &&
-       test "$hwloc_dir" = "no"], [
-   PKG_CHECK_MODULES([HWLOC], [hwloc >= 2.1], [have_hwloc=1], [have_hwloc=0])
-])
-if test "$want_hwloc" != "no" &&
-   test "$hwloc_dir" != "no"; then
-   # The user requires a specific location for where to find hwloc.
-   # We use the classic headers and library detection and fail if detection fails.
-   HWLOC_CFLAGS=-I$hwloc_dir/include
-   HWLOC_LIBS="-L$hwloc_dir/lib"
-   saved_LIBS=$LIBS
-   saved_CFLAGS=$CFLAGS
-   LIBS="$HWLOC_LIBS $LIBS"
-   CFLAGS="$HWLOC_CFLAGS $CFLAGS"
-   HWLOC_LIBS="$HWLOC_LIBS -lhwloc"
-   AC_CHECK_HEADER([hwloc.h],,[AC_MSG_ERROR([hwloc.h header not found.])])
-   AC_CHECK_LIB(hwloc, hwloc_topology_init,, AC_MSG_ERROR([could not find hwloc library]))
-   LIBS="$saved_LIBS"
-   CFLAGS="$saved_CFLAGS"
-   have_hwloc=1
-   AC_SUBST(HWLOC_CFLAGS)
-   AC_SUBST(HWLOC_LIBS)
-fi
-if test "$want_hwloc" == "yes" &&
-   test "$have_hwloc" == "0"; then
-   AC_MSG_ERROR([hwloc required but not found.])
-fi
-
-# We export substitutions and defines if needed.
-if test "$have_hwloc" = "1"; then
-   AC_DEFINE([HAVE_HWLOC], [1], "hwloc library with ABI > 2.0 is installed.")
-fi
-AM_CONDITIONAL([HAVE_HWLOC], [test "$have_hwloc" = "1"])
-AC_DEFINE_UNQUOTED([HAVE_HWLOC], [$have_hwloc], [Whether aml support hwloc library calls.])
-AC_SUBST([HAVE_HWLOC],[$have_hwloc])
+AML_HAVE_DEFINE_WITH_MODULES(HWLOC, [hwloc >= 2.1],,)
 
 # OpenCL support
 ###############
 
-# The directory where to look for opencl. If no, we try to detect it automatically.
-opencl_dir=no
-# Whether opencl was successfully detected (0|1). 
-have_opencl=0
-# Whether the user wants opencl: (yes|no|check)
-# yes: the package is required
-# no: the package should not be checked.
-# check: autodetect the package and enable it if it was found.
-want_opencl=check
-
-AC_ARG_WITH([opencl],
-	[AS_HELP_STRING([--with-opencl@<:@=yes|no|DIR@:>@],
-		[Support opencl backend and features in the library  (default is check)])],
-	[if test "x$withval" = "xno"; then
-		want_opencl=no
-	elif test "x$withval" = "xyes"; then
-	     	want_opencl=yes
-	else
-		want_opencl=yes
-		opencl_dir=$withval
-	fi],[want_opencl="check"])
-
-AS_IF([test "$want_opencl" = "check" ||
-       test "$want_opencl" = "yes" &&
-       test "$opencl_dir" = "no" ], [
-   # The default check is to rely on pkg-config for detection.
-   PKG_CHECK_MODULES([OPENCL], [OpenCL >= 2.1], [have_opencl=1], [have_opencl=0])
-])
-if test "$want_opencl" != "no" &&
-     test "$opencl_dir" != "no"; then
-   # The user requires a specific location for where to find opencl.
-   # We use the classic headers and library detection and fail if detection fails.
-   OPENCL_CFLAGS=-I$opencl_dir/include
-   OPENCL_LIBS="-L$opencl_dir/lib"
-   saved_LIBS=$LIBS
-   saved_CFLAGS=$CFLAGS
-   LIBS="$OPENCL_LIBS $LIBS"
-   CFLAGS="$OPENCL_CFLAGS $CFLAGS"
-   OPENCL_LIBS="$OPENCL_LIBS -lOpenCL"
-   AC_CHECK_HEADER([CL/opencl.h],,[AC_MSG_ERROR([opencl.h header not found.])])
-   AC_CHECK_LIB(OpenCL, clGetPlatformIDs,, AC_MSG_ERROR([could not find opencl library]))
-   LIBS="$saved_LIBS"
-   CFLAGS="$saved_CFLAGS"
-   have_opencl=1
-   AC_SUBST(OPENCL_CFLAGS)
-   AC_SUBST(OPENCL_LIBS)
-fi
-if test "$want_opencl" == "yes" &&
-   test "$have_opencl" == "0"; then
-   AC_MSG_ERROR([opencl required but not found.])
-fi
-
-# We export substitutions and defines if needed.
-if test "$have_opencl" = "1"; then
-   AC_DEFINE([HAVE_OPENCL], [1], "opencl library with ABI > 2.0 is installed.")
-fi
-AM_CONDITIONAL([HAVE_OPENCL], [test "$have_opencl" = "1"])
-AC_DEFINE_UNQUOTED([HAVE_OPENCL], [$have_opencl], [Whether aml support opencl library calls.])
-AC_SUBST([HAVE_OPENCL],[$have_opencl])
+AML_HAVE_DEFINE_WITH_MODULES([OPENCL], [OpenCL >= 2.1],,)
 
 # Level Zero Support
 ####################
 
-# The directory where to look for ze. If no, we try to detect it automatically.
-ze_dir=no
-# Whether ze was successfully detected (0|1). 
-have_ze=0
-# Whether the user wants ze: (yes|no|check)
-# yes: the package is required
-# no: the package should not be checked.
-# check: autodetect the package and enable it if it was found.
-want_ze=check
+# Define --with-ze option and detect with pkg-config
+# De do not export variables yet because we want to try a fallback method if
+# this one fails.
+PKG_WITH_MODULES([ZE], [libze_loader >= 1.0], have_ze=1, have_ze=0,,)
 
-AC_ARG_WITH([ze],
-	[AS_HELP_STRING([--with-ze@<:@=yes|no|DIR@:>@],
-		[Support ze backend and features in the library  (default is check)])],
-	[if test "x$withval" = "xno"; then
-		want_ze=no
-	elif test "x$withval" = "xyes"; then
-	     	want_ze=yes
-	else
-		want_ze=yes
-		ze_dir=$withval
-	fi],[want_ze="check"])
-
-AS_IF([test "$want_ze" != "no" &&
-       test "$ze_dir" == "no"], [
-   # The default check is to rely on pkg-config for detection.
-   PKG_CHECK_MODULES([ZE], [libze_loader >= 1.0], [have_ze=1], [have_ze=0])
-])
-if test "$want_ze" != "no" &&
+# This is the fallback method. It used only if the user requests ze support.
+if test "x$with_ze" = "xyes" &&
    test "$have_ze" = "0"; then
-   ZE_CFLAGS=""
-   ZE_LIBS=""
-   if test "$ze_dir" != "no"; then
-      # The user requires a specific location for where to find ze.
-      ZE_CFLAGS=-I$ze_dir/include
-      ZE_LIBS=-L$ze_dir/lib
-   fi
+   # Setup user flags for configure detection.
    saved_LIBS=$LIBS
    saved_CFLAGS=$CFLAGS
-   LIBS="$ZE_LIBS $LIBS"
+   LIBS="$ZE_LDFLAGS $LIBS"
    CFLAGS="$ZE_CFLAGS $CFLAGS"
+   # Check header and libs
    AC_CHECK_HEADER([level_zero/ze_api.h], [have_ze_header=1], [have_ze_header=0])
    AC_SEARCH_LIBS([zeInit], [ze_loader], [have_libze=1], [have_libze=0])
-   if test "$have_ze_header" = "1" &&
-      test "$have_libze" = "1"; then
-     AC_MSG_CHECKING([ze_api version >= 1.0])
-     AC_RUN_IFELSE([AC_LANG_PROGRAM(
+   # Check version
+   AC_MSG_CHECKING([ze_api version >= 1.0])
+   AC_RUN_IFELSE([AC_LANG_PROGRAM(
      [[#include<level_zero/ze_api.h>]],
      [[return ZE_API_VERSION_CURRENT < ZE_MAKE_VERSION( 1, 0 )]]
      )],
      [have_ze_version=yes],
      [have_ze_version=no])
-     AC_MSG_RESULT([$have_ze_version])
-   fi
+   AC_MSG_RESULT([$have_ze_version])
+   # Restore libs and cflags.
    LIBS="$saved_LIBS"
    CFLAGS="$saved_CFLAGS"
-   
+
+   # If all detection steps succeeded
    if test "$have_ze_header" = "1" &&
       test "$have_libze" = "1" &&
-      test "x$have_ze_version" = "xyes"; then
-         ZE_LIBS="$ZE_LIBS $ac_cv_search_zeInit"
+      test "$have_ze_version" = "yes"; then
+         ZE_LDFLAGS="$ZE_LDFLAGS $ac_cv_search_zeInit"
       	 have_ze=1
-   	 AC_SUBST(ZE_CFLAGS)
-   	 AC_SUBST(ZE_LIBS)
    fi
 fi
-if test "$want_ze" == "yes" &&
-   test "$have_ze" == "0"; then
-   AC_MSG_ERROR([ze required but not found.])
-fi
 
-# We export substitutions and defines if needed.
+# We export flags with what has been detected or not.
+AC_SUBST(ZE_CFLAGS)
+AC_SUBST(ZE_LDFLAGS)
+AC_DEFINE_UNQUOTED([HAVE_ZE], [$have_ze], "ze library with ABI > 2.0 is installed.")
+AM_CONDITIONAL([HAVE_ZE], [test "$have_ze" = "1"])
+AC_SUBST([HAVE_ZE],[$have_ze])
+
+# If ze backend is used, we checked earlier whether ze pointers can be used
+# as openmp target pointers. Here we print a message to the user on whether
+# The support has been detected or not, and a hint of what to do if not.
 if test "$have_ze" = "1"; then
-   AC_DEFINE([HAVE_ZE], [1], "ze library with ABI > 2.0 is installed.")
    if test "$have_omptarget" = "1"; then
      INTEL_OMP_ZE_BACKEND_INTEROPERABILITY_MSG="OPENMP INTEROPERABILITY: yes\
 Make sure to enable OpenMP LEVEL0 backend with: export LIBOMPTARGET_PLUGIN=LEVEL0
@@ -326,9 +208,6 @@ Try using: ./configure CC=icx --with-openmp-flags=\"-fiopenmp -fopenmp-targets=s
      "
    fi
 fi
-AM_CONDITIONAL([HAVE_ZE], [test "$have_ze" = "1"])
-AC_DEFINE_UNQUOTED([HAVE_ZE], [$have_ze], [Whether aml support ze library calls.])
-AC_SUBST([HAVE_ZE],[$have_ze])
 
 # check doxygen + sphinx for documentation build
 ################################################

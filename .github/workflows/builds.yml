@@ -12,7 +12,7 @@ jobs:
           submodules: true
           fetch-depth: 0
       - run: sudo apt-get update
-      - run: sudo apt-get install -y gcc make autoconf automake libtool pkg-config libhwloc-dev
+      - run: sudo apt-get install -y gcc make autoconf automake libtool pkgconf libhwloc-dev
       - name: configure
         run: |
           ./autogen.sh
@@ -38,7 +38,7 @@ jobs:
           submodules: true
           fetch-depth: 0
       - run: sudo apt-get update
-      - run: sudo apt-get install -y gcc make autoconf automake libtool pkg-config libhwloc-dev
+      - run: sudo apt-get install -y gcc make autoconf automake libtool pkgconf libhwloc-dev
       - name: configure
         run: |
           ./autogen.sh
@@ -67,7 +67,7 @@ jobs:
           submodules: true
           fetch-depth: 0
       - run: sudo apt-get update
-      - run: sudo apt-get install -y gcc make autoconf automake libtool pkg-config hwloc libhwloc-dev valgrind
+      - run: sudo apt-get install -y gcc make autoconf automake libtool pkgconf hwloc libhwloc-dev valgrind
       - run: hwloc-gather-cpuid
       - name: configure
         run: |
@@ -108,7 +108,7 @@ jobs:
           submodules: true
           fetch-depth: 0
       - run: sudo apt-get update
-      - run: sudo apt-get install -y gcc make autoconf automake libtool pkg-config libhwloc-dev
+      - run: sudo apt-get install -y gcc make autoconf automake libtool pkgconf libhwloc-dev
       - name: configure
         run: |
           ./autogen.sh

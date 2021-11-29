@@ -13,7 +13,7 @@ jobs:
           path: aml
           fetch-depth: 0
       - run: sudo apt-get update
-      - run: sudo apt-get install -y gcc make autoconf automake libtool pkg-config libhwloc-dev
+      - run: sudo apt-get install -y gcc make autoconf automake libtool pkgconf libhwloc-dev
       - run: mkdir $GITHUB_WORKSPACE/$INSTALL_PATH
       - name: aml install 
         run: |
