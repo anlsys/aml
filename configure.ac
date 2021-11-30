@@ -336,10 +336,10 @@ if test "$HIP_PLATFORM" = "__HIP_PLATFORM_NVIDIA__" && test "$have_cuda" == "0";
 fi
 
 # Read custom user configuration of hip directory.
-AC_ARG_VAR(ROCM_PATH, Path where rocm is installed. hip headers and library are searched in ROCM_PATH/hip.)
+AC_ARG_VAR(HIP_PATH, Path where rocm is installed. hip headers and library are searched in HIP_PATH.)
 
 AC_ARG_WITH([hip],
-   AS_HELP_STRING([--with-hip, Enable support for hip backend. Default is check in ROCM_PATH/hip"]),
+   AS_HELP_STRING([--with-hip, Enable support for hip backend. Default is check in HIP_PATH"]),
    [if test "x$withval" = "xno"; then
       with_hip="no"
    elif test "x$withval" = "xyes"; then
@@ -351,9 +351,9 @@ if test "$with_hip" = "no"; then
    AC_MSG_NOTICE([Will not check for hip.])
 else
    # Set new flags and save old flags
-   test -z "$ROCM_PATH" && ROCM_PATH=/opt/rocm # set a default value.
-   HIP_LIBS="-L$ROCM_PATH/hip/lib"
-   HIP_CFLAGS="-D$HIP_PLATFORM -I$ROCM_PATH/hip/include"
+   test -z "$HIP_PATH" && HIP_PATH=/opt/rocm/hip # set a default value.
+   HIP_LIBS="-L$ROCM_PATH/lib"
+   HIP_CFLAGS="-D$HIP_PLATFORM -I$ROCM_PATH/include"
    saved_LIBS=$LIBS
    saved_CFLAGS=$CFLAGS
    LIBS="$LIBS $HIP_LIBS"
