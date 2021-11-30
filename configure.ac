@@ -336,10 +336,10 @@ if test "$HIP_PLATFORM" = "__HIP_PLATFORM_NVIDIA__" && test "$have_cuda" == "0";
 fi
 
 # Read custom user configuration of hip directory.
-AC_ARG_VAR(ROCM_PATH, Path where hip headers and library are searched.)
+AC_ARG_VAR(ROCM_PATH, Path where rocm is installed. hip headers and library are searched in ROCM_PATH/hip.)
 
 AC_ARG_WITH([hip],
-   AS_HELP_STRING([--with-hip, Enable support for hip backend. Default is check with hip directory: "/opt/rocm/hip"]),
+   AS_HELP_STRING([--with-hip, Enable support for hip backend. Default is check in ROCM_PATH/hip"]),
    [if test "x$withval" = "xno"; then
       with_hip="no"
    elif test "x$withval" = "xyes"; then
