@@ -307,6 +307,10 @@ AC_SUBST(NVCC)
 # check HIP compiler and libraries
 #####################################
 
+have_hip=0
+HIP_LIBS=""
+HIP_CFLAGS=""
+
 # Hip header requires that one of these is defined or else compiler will fail.
 # If cuda is available on the platform, we use it as a backend for hip, else
 # we use AMD backend.
@@ -316,38 +320,48 @@ else
 HIP_PLATFORM="__HIP_PLATFORM_AMD__"
 fi
 
-# Let user customize HIP_PLATFORM.
+# Let user customize backend.
 AC_ARG_WITH([hip-platform],
-   [AS_HELP_STRING([--with-hip-platform=@<:@=amd|nvidia@:>@],
-   [Set HIP backend.])],
-   [if test "x$withval" = "xamd"; then
-      HIP_PLATFORM="__HIP_PLATFORM_AMD__"
-   elif test "x$withval" = "xnvidia"; then
-      HIP_PLATFORM="__HIP_PLATFORM_NVIDIA__"
-   else
-      AC_MSG_ERROR([Invalid HIP platform (amd|nvidia).])
-   fi])
+	[AS_HELP_STRING([--with-hip-platform=@<:@=amd|nvidia@:>@],
+	[Set HIP backend.])],
+	[if test "x$withval" = "xamd"; then
+	    HIP_PLATFORM="__HIP_PLATFORM_AMD__"
+	elif test "x$withval" = "xnvidia"; then
+	    HIP_PLATFORM="__HIP_PLATFORM_NVIDIA__"
+	else
+	    AC_MSG_ERROR([Invalid HIP backend (amd|nvidia).])
+	fi])
 if test "$HIP_PLATFORM" = "__HIP_PLATFORM_NVIDIA__" && test "$have_cuda" == "0"; then
    AC_MSG_ERROR([HIP backend nvidia is not supported without cuda support enabled.])
 fi
 
-have_hip=0
-PKG_WITH_MODULES([HIP], [amdhip64], have_hip=1, have_hip=0,,)
+# Read custom user configuration of hip directory.
+AC_ARG_VAR(ROCM_PATH, Path where hip headers and library are searched.)
 
-# This is the fallback method. It used only if the user requests hip support.
-# If PKG_WITH_MODULES failed, we look into the default hip directory.
-if test "x$with_hip" == "xyes" &&
-   test "x$have_hip" = "x0"; then
-   HIP_LIBS="-L$/opt/hip/hip/lib -lamdhip64"
-   HIP_CFLAGS="-D$HIP_PLATFORM -I$/opt/hip/hip/include"
-   HIP_LDFLAGS=$HIP_LIBS
+AC_ARG_WITH([hip],
+   AS_HELP_STRING([--with-hip, Enable support for hip backend. Default is check with hip directory: "/opt/rocm/hip"]),
+   [if test "x$withval" = "xno"; then
+      with_hip="no"
+   elif test "x$withval" = "xyes"; then
+      with_hip="yes"
+   fi],
+   with_hip="check")
+
+if test "$with_hip" = "no"; then
+   AC_MSG_NOTICE([Will not check for hip.])
+else
+   # Set new flags and save old flags
+   test -z "$ROCM_PATH" && ROCM_PATH=/opt/rocm # set a default value.
+   HIP_LIBS="-L$ROCM_PATH/hip/lib"
+   HIP_CFLAGS="-D$HIP_PLATFORM -I$ROCM_PATH/hip/include"
    saved_LIBS=$LIBS
    saved_CFLAGS=$CFLAGS
    LIBS="$LIBS $HIP_LIBS"
    CFLAGS="$CFLAGS $HIP_CFLAGS"
 
    # Check libs and headers.
-   AC_CHECK_LIB([amdhip64], hipDeviceGet,[have_hip_lib="yes"],[have_hip_lib="no"])
+   AC_SEARCH_LIBS([hipDeviceGet], [amdhip64], [have_hip_lib="yes"],[have_hip_lib="no"])
+   test "$have_hip_lib" = "yes" && HIP_LIBS="$HIP_LIBS $ac_cv_search_hipDeviceGet"
 
    # The preprocessor fails but not the compiler because the preprocessor does not
    # have the required define "__HIP_PLATFORM_*" passed through CFLAGS.
@@ -357,13 +371,18 @@ if test "x$with_hip" == "xyes" &&
    CFLAGS=$saved_CFLAGS
    LIBS=$saved_LIBS
 
-   if test "x$have_hip_header" = "xno" ||
-      test "x$have_hip_lib" = "xno"; then
-      AC_MSG_ERROR([Missing hip library.])
+   # Match user requirements with what was found.
+   if test "$have_hip_header" = "no" ||
+      test "$have_hip_lib" = "no"; then
+      HIP_CFLAGS=""
+      HIP_LIBS=""
+      if test "$with_hip" = "yes"; then
+         AC_MSG_ERROR([Missing hip library.])
+      fi
+   else
+      have_hip=1
    fi
-
-   have_hip=1
-fi # "x$want_hip" = "xyes"
+fi # "$with_hip" = "no"
 
 # If we are going to use hip, we export defines and automake flags.
 # Else we restore autoconf LIBS and CFLAGS.
@@ -372,7 +391,7 @@ AM_CONDITIONAL([HAVE_HIP], [ test "$have_hip" = "1" ])
 AC_DEFINE_UNQUOTED([HAVE_HIP], [$have_hip], [Whether aml support hip library calls.])
 AC_SUBST([HAVE_HIP],[$have_hip])
 AC_SUBST(HIP_CFLAGS)
-AC_SUBST(HIP_LDFLAGS)
+AC_SUBST(HIP_LIBS)
 
 # Support for cross-compiling check programs
 AM_EXTRA_RECURSIVE_TARGETS([check-programs])
