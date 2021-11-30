@@ -137,14 +137,14 @@ jobs:
         run: |
           ./autogen.sh
           mkdir build
-          ./configure CFLAGS=-std=c99 --prefix=`pwd`/build 
+          ./configure --prefix=`pwd`/build 
       - run: make CFLAGS=-std=c99
       - run: make check
       - run: make install
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: generic
+          name: rocm
           path: |
             config.log
             tests/*.log
