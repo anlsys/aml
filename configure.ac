@@ -20,13 +20,12 @@ dnl PKG_WITH_MODULES check. HAVE_[VARIABLE-PREFIX] is exported as make
 dnl and preprocessor variable.
 AC_DEFUN([AML_HAVE_DEFINE_WITH_MODULES],
 [
+AS_TR_SH([have_]m4_tolower([$1]))=0
 PKG_HAVE_WITH_MODULES([$1],[$2],[$3],[$4])
 if test "$AS_TR_SH([with_]m4_tolower([$1]))" = "yes"; then
    AS_TR_SH([have_]m4_tolower([$1]))=1
-else
-   AS_TR_SH([have_]m4_tolower([$1]))=0
 fi
-AC_DEFINE_UNQUOTED([HAVE_][$1], [$[have_]m4_tolower([$1])], [Supports ]m4_tolower([$1]))
+AC_DEFINE_UNQUOTED([HAVE_][$1], $AS_TR_SH([have_]m4_tolower([$1])), [Supports ]m4_tolower([$1]))
 AC_SUBST([HAVE_][$1],[$[have_]m4_tolower([$1])])
 ])dnl PKG_HAVE_DEFINE_WITH_MODULES
 
@@ -152,11 +151,12 @@ AML_HAVE_DEFINE_WITH_MODULES([OPENCL], [OpenCL >= 2.1],,)
 # Define --with-ze option and detect with pkg-config
 # De do not export variables yet because we want to try a fallback method if
 # this one fails.
+have_ze=0
 PKG_WITH_MODULES([ZE], [libze_loader >= 1.0], have_ze=1, have_ze=0,,)
 
 # This is the fallback method. It used only if the user requests ze support.
 if test "x$with_ze" = "xyes" &&
-   test "$have_ze" = "0"; then
+   test "x$have_ze" = "x0"; then
    # Setup user flags for configure detection.
    saved_LIBS=$LIBS
    saved_CFLAGS=$CFLAGS
@@ -185,14 +185,15 @@ if test "x$with_ze" = "xyes" &&
          ZE_LDFLAGS="$ZE_LDFLAGS $ac_cv_search_zeInit"
       	 have_ze=1
    fi
+   HAVE_ZE=$have_ze
 fi
 
 # We export flags with what has been detected or not.
 AC_SUBST(ZE_CFLAGS)
 AC_SUBST(ZE_LDFLAGS)
+AC_SUBST([HAVE_ZE],[$have_ze])
 AC_DEFINE_UNQUOTED([HAVE_ZE], [$have_ze], "ze library with ABI > 2.0 is installed.")
 AM_CONDITIONAL([HAVE_ZE], [test "$have_ze" = "1"])
-AC_SUBST([HAVE_ZE],[$have_ze])
 
 # If ze backend is used, we checked earlier whether ze pointers can be used
 # as openmp target pointers. Here we print a message to the user on whether
