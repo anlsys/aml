@@ -237,29 +237,25 @@ AM_CONDITIONAL([BUILD_DOCS],[ test "x$docs" = "xtrue" ])
 have_cuda=0
 
 AC_ARG_WITH([cuda],
-	[AS_HELP_STRING([--with-cuda@<:@=yes|no|DIR@:>@],
+	[AS_HELP_STRING([--with-cuda],
 		[support cuda inside the library (default is check)])],
 	[
 	if test "x$withval" = "xno"; then
 		want_cuda="no"
-	elif test "x$withval" = "xyes"; then
-		want_cuda="yes"
-		cuda_home_path="$CUDA_HOME"
 	else
 		want_cuda="yes"
-		cuda_home_path=$withval
 	fi
 	],
 	[
 		want_cuda="check"
-		cuda_home_path="$CUDA_HOME"
 	])
+AC_ARG_VAR(CUDA_HOME, Path where cuda is installed.)
 
 if test "x$want_cuda" != "xno"; then
 
 	AC_MSG_NOTICE([starting checks for CUDA])
-	if test -n "$cuda_home_path"; then
-		nvcc_search_dirs="$PATH$PATH_SEPARATOR$cuda_home_path/bin"
+	if test -n "$CUDA_HOME"; then
+		nvcc_search_dirs="$PATH$PATH_SEPARATOR$CUDA_HOME/bin"
 	else
 		nvcc_search_dirs="$PATH"
 	fi
@@ -274,9 +270,9 @@ fi
 
 if test "x$have_nvcc" = "xyes"; then
 
-	if test -n "$cuda_home_path"; then
-		CUDA_CFLAGS="-I$cuda_home_path/include"
-		CUDA_LIBS="-L$cuda_home_path/lib64 -lcudart"
+	if test -n "$CUDA_HOME"; then
+		CUDA_CFLAGS="-I$CUDA_HOME/include"
+		CUDA_LIBS="-L$CUDA_HOME/lib64 -lcudart"
 	else
 		CUDA_CFLAGS="-I/usr/local/cuda/include"
 		CUDA_LIBS="-L/usr/local/cuda/lib64 -lcudart"
