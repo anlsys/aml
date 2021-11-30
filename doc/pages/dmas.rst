@@ -11,3 +11,4 @@ Implementations
    dma_linux_api
    dma_cuda_api
    dma_ze_api
+   dma_hip_api

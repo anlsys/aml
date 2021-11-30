@@ -33,6 +33,8 @@
 #define AML_HAVE_BACKEND_HWLOC @HAVE_HWLOC@
 /** Whether aml had lever zero capabilities at compile time **/
 #define AML_HAVE_BACKEND_ZE @HAVE_ZE@
+/** Whether aml had hip capabilities at compile time **/
+#define AML_HAVE_BACKEND_HIP @HAVE_HIP@
 
 /** Flag for checking runtime suport for libnuma **/
 #define AML_BACKEND_LIBNUMA (1UL<<1)
@@ -44,6 +46,8 @@
 #define AML_BACKEND_OPENCL (1UL<<4)
 /** Flag for checking runtime suport for level zero **/
 #define AML_BACKEND_ZE (1UL<<5)
+/** Flag for checking runtime suport for hip **/
+#define AML_BACKEND_HIP (1UL<<6)
 
 /**
  * Check if a set of backends can be used at runtime.

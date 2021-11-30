@@ -58,6 +58,11 @@ include_aml_area_HEADERS += aml/area/cuda.h
 include_aml_dma_HEADERS += aml/dma/cuda.h
 endif
 
+if HAVE_HIP
+include_aml_area_HEADERS += aml/area/hip.h
+include_aml_dma_HEADERS += aml/dma/hip.h
+endif
+
 if HAVE_OPENCL
 include_aml_area_HEADERS += aml/area/opencl.h
 endif

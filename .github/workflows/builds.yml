@@ -17,7 +17,7 @@ jobs:
         run: |
           ./autogen.sh
           mkdir build
-          ./configure --prefix=`pwd`/build
+          ./configure --prefix=`pwd`/build --without-rocm
       - run: make
       - run: make check
       - run: make install
@@ -45,7 +45,7 @@ jobs:
           mkdir out
           cd out
           mkdir build
-          ../configure --prefix=`pwd`/build
+          ../configure --prefix=`pwd`/build --without-rocm
       - run: make
         working-directory: out
       - run: make check
@@ -73,7 +73,7 @@ jobs:
         run: |
           ./autogen.sh
           mkdir build
-          ./configure --prefix=`pwd`/build --enable-valgrind
+          ./configure --prefix=`pwd`/build --without-rocm --enable-valgrind
       - run: make
       - run: make check-valgrind
         env:
@@ -113,12 +113,38 @@ jobs:
         run: |
           ./autogen.sh
           mkdir build
-          ./configure --prefix=`pwd`/build
+          ./configure --prefix=`pwd`/build --without-rocm
       - run: make distcheck
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
           name: distcheck
+          path: |
+            config.log
+            tests/*.log
+            benchmarks/*.log
+            doc/tutorials/*.log
+  rocm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          fetch-depth: 0
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y gcc make autoconf automake libtool pkgconf libhwloc-dev
+      - name: configure
+        run: |
+          ./autogen.sh
+          mkdir build
+          ./configure --prefix=`pwd`/build 
+      - run: make CFLAGS=-std=c99
+      - run: make check
+      - run: make install
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: rocm
           path: |
             config.log
             tests/*.log

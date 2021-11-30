@@ -26,6 +26,7 @@ if test "$AS_TR_SH([with_]m4_tolower([$1]))" = "yes"; then
    AS_TR_SH([have_]m4_tolower([$1]))=1
 fi
 AC_DEFINE_UNQUOTED([HAVE_][$1], $AS_TR_SH([have_]m4_tolower([$1])), [Supports ]m4_tolower([$1]))
+AM_CONDITIONAL([HAVE_][$1],[ test $AS_TR_SH([have_]m4_tolower([$1])) = 1])
 AC_SUBST([HAVE_][$1],[$[have_]m4_tolower([$1])])
 ])dnl PKG_HAVE_DEFINE_WITH_MODULES
 
@@ -303,6 +304,95 @@ AC_SUBST(CUDA_CFLAGS)
 AC_SUBST(CUDA_LIBS)
 AC_SUBST(NVCC)
 
+# check HIP compiler and libraries
+#####################################
+
+have_hip=0
+HIP_LIBS=""
+HIP_CFLAGS=""
+
+# Hip header requires that one of these is defined or else compiler will fail.
+# If cuda is available on the platform, we use it as a backend for hip, else
+# we use AMD backend.
+if test "$have_cuda" == "1"; then
+HIP_PLATFORM="__HIP_PLATFORM_NVIDIA__"
+else
+HIP_PLATFORM="__HIP_PLATFORM_AMD__"
+fi
+
+# Let user customize backend.
+AC_ARG_WITH([hip-platform],
+	[AS_HELP_STRING([--with-hip-platform=@<:@=amd|nvidia@:>@],
+	[Set HIP backend.])],
+	[if test "x$withval" = "xamd"; then
+	    HIP_PLATFORM="__HIP_PLATFORM_AMD__"
+	elif test "x$withval" = "xnvidia"; then
+	    HIP_PLATFORM="__HIP_PLATFORM_NVIDIA__"
+	else
+	    AC_MSG_ERROR([Invalid HIP backend (amd|nvidia).])
+	fi])
+if test "$HIP_PLATFORM" = "__HIP_PLATFORM_NVIDIA__" && test "$have_cuda" == "0"; then
+   AC_MSG_ERROR([HIP backend nvidia is not supported without cuda support enabled.])
+fi
+
+# Read custom user configuration of hip directory.
+AC_ARG_VAR(HIP_PATH, Path where rocm is installed. hip headers and library are searched in HIP_PATH.)
+
+AC_ARG_WITH([hip],
+   AS_HELP_STRING([--with-hip, Enable support for hip backend. Default is check in HIP_PATH"]),
+   [if test "x$withval" = "xno"; then
+      with_hip="no"
+   elif test "x$withval" = "xyes"; then
+      with_hip="yes"
+   fi],
+   with_hip="check")
+
+if test "$with_hip" = "no"; then
+   AC_MSG_NOTICE([Will not check for hip.])
+else
+   # Set new flags and save old flags
+   test -z "$HIP_PATH" && HIP_PATH=/opt/rocm/hip # set a default value.
+   HIP_LIBS="-L$ROCM_PATH/lib"
+   HIP_CFLAGS="-D$HIP_PLATFORM -I$ROCM_PATH/include"
+   saved_LIBS=$LIBS
+   saved_CFLAGS=$CFLAGS
+   LIBS="$LIBS $HIP_LIBS"
+   CFLAGS="$CFLAGS $HIP_CFLAGS"
+
+   # Check libs and headers.
+   AC_SEARCH_LIBS([hipDeviceGet], [amdhip64], [have_hip_lib="yes"],[have_hip_lib="no"])
+   test "$have_hip_lib" = "yes" && HIP_LIBS="$HIP_LIBS $ac_cv_search_hipDeviceGet"
+
+   # The preprocessor fails but not the compiler because the preprocessor does not
+   # have the required define "__HIP_PLATFORM_*" passed through CFLAGS.
+   # As a result, the header is found but a warning is displayed.
+   AC_CHECK_HEADERS([hip/hip_runtime_api.h],[have_hip_header="yes"],[have_hip_header="no"])
+
+   CFLAGS=$saved_CFLAGS
+   LIBS=$saved_LIBS
+
+   # Match user requirements with what was found.
+   if test "$have_hip_header" = "no" ||
+      test "$have_hip_lib" = "no"; then
+      HIP_CFLAGS=""
+      HIP_LIBS=""
+      if test "$with_hip" = "yes"; then
+         AC_MSG_ERROR([Missing hip library.])
+      fi
+   else
+      have_hip=1
+   fi
+fi # "$with_hip" = "no"
+
+# If we are going to use hip, we export defines and automake flags.
+# Else we restore autoconf LIBS and CFLAGS.
+HAVE_HIP=$have_hip
+AM_CONDITIONAL([HAVE_HIP], [ test "$have_hip" = "1" ])
+AC_DEFINE_UNQUOTED([HAVE_HIP], [$have_hip], [Whether aml support hip library calls.])
+AC_SUBST([HAVE_HIP],[$have_hip])
+AC_SUBST(HIP_CFLAGS)
+AC_SUBST(HIP_LIBS)
+
 # Support for cross-compiling check programs
 AM_EXTRA_RECURSIVE_TARGETS([check-programs])
 
@@ -375,6 +465,13 @@ Active:  $HAVE_ZE
 CFLAGS:  $ZE_CFLAGS
 LDFLAGS: $ZE_LIBS
 $INTEL_OMP_ZE_BACKEND_INTEROPERABILITY_MSG
+
+HIP:
+===
+
+Active:  $HAVE_HIP
+CFLAGS:  $HIP_CFLAGS
+LDFLAGS: $HIP_LIBS
 
 -------------------------------------------------------------------------------
 EOF
