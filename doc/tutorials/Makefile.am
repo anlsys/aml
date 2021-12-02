@@ -25,6 +25,12 @@ AM_LDFLAGS += $(ZE_LIBS)
 AM_CFLAGS += $(ZE_CFLAGS)
 endif
 
+if HAVE_HIP
+LIBS += $(HIP_LIBS)
+AM_LDFLAGS += $(HIP_LIBS)
+AM_CFLAGS += $(HIP_CFLAGS)
+endif
+
 # valgrind support
 @VALGRIND_CHECK_RULES@
 
