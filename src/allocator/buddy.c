@@ -599,6 +599,7 @@ int aml_allocator_buddy_destroy(struct aml_allocator **allocator)
 	utarray_free(pools);
 
 	// Cleanup top level structure.
+	pthread_mutex_unlock(&data->lock); // Necessary to avoid UB on destroy.
 	pthread_mutex_destroy(&data->lock);
 	free(*allocator);
 	*allocator = NULL;
