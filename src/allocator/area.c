@@ -89,7 +89,7 @@ int aml_allocator_area_destroy(struct aml_allocator **allocator)
 	}
 
 	// Destroy mutex.
-	pthread_mutex_lock(&data->lock);
+	pthread_mutex_unlock(&data->lock);
 	if (pthread_mutex_destroy(&data->lock) != 0)
 		return -AML_FAILURE;
 
