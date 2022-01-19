@@ -167,6 +167,7 @@ void *aml_area_hip_mmap(const struct aml_area_data *area_data,
 	struct aml_area_hip_mmap_options *opts;
 
 	data = (struct aml_area_hip_data *)area_data;
+	opts = (struct aml_area_hip_mmap_options *)options;
 
 	if (opts != NULL && opts->device > 0)
 		device = opts->device;

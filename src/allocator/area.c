@@ -82,12 +82,14 @@ int aml_allocator_area_destroy(struct aml_allocator **allocator)
 		if (err != AML_SUCCESS) {
 			HASH_ADD_PTR(chunks, ptr, current);
 			data->chunks = (void *)chunks;
+			pthread_mutex_unlock(&data->lock);
 			return err;
 		}
 		free(current);
 	}
 
 	// Destroy mutex.
+	pthread_mutex_lock(&data->lock);
 	if (pthread_mutex_destroy(&data->lock) != 0)
 		return -AML_FAILURE;
 
