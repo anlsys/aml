@@ -11,6 +11,7 @@
 #include "aml.h"
 
 // Mapper includes
+#define AML_MAPPER_DECL_DEFAULTS
 #include "aml/higher/mapper.h"
 
 // Mapper args (linux)
@@ -154,34 +155,6 @@ int eq_struct(struct C *a, struct C *b)
 	return 1;
 }
 
-void test_mapper_iterator(struct C *c)
-{
-	struct aml_mapper_iterator *it;
-
-	assert(aml_mapper_iterator_create(
-	               &it, (void *)c, &struct_C_mapper, aml_dma_linux,
-	               aml_dma_linux_memcpy_op) == AML_SUCCESS);
-
-	struct B *b = c->b;
-	struct A *a;
-	void *it_ptr;
-
-	for (size_t i = 0; i < c->n; i++) {
-		b = c->b + i;
-		assert(aml_mapper_iter_next(&it, &it_ptr) == AML_SUCCESS);
-		assert(it_ptr == b);
-		a = b->a;
-		assert(aml_mapper_iter_next(&it, &it_ptr) == AML_SUCCESS);
-		assert(it_ptr == a);
-	}
-
-	const size_t size =
-	        sizeof(struct C) + c->n * (sizeof(struct A) + sizeof(struct B));
-	assert(it->tot_size == size);
-	assert(aml_mapper_iter_next(&it, &it_ptr) == AML_EDOM);
-	assert(it == NULL);
-}
-
 void test_mapper(struct C *c)
 {
 	// Linux check
@@ -220,21 +193,20 @@ void test_mapper(struct C *c)
 		/* Copy c to hip device */
 		assert(aml_mapper_mmap(&struct_C_mapper, &device_c, c, 1,
 		                       &aml_area_hip, NULL, &aml_dma_hip,
-		                       aml_dma_hip_copy_1D,
-		                       NULL) == AML_SUCCESS);
+		                       aml_dma_hip_copy_1D) == AML_SUCCESS);
 
 		// Change _c to be different from c.
 		c->b[0].a->val = 4565467567;
 
 		/* Copy back __c into modified _c */
 		assert(aml_mapper_copy(&struct_C_mapper, c, device_c, 1,
-		                       &aml_dma_hip, aml_dma_hip_copy_1D,
-		                       NULL) == AML_SUCCESS);
+		                       &aml_dma_hip,
+		                       aml_dma_hip_copy_1D) == AML_SUCCESS);
 		assert(eq_struct(c, host_c));
 
 		aml_mapper_munmap(&struct_C_mapper, device_c, 1, c,
 		                  &aml_area_hip, &aml_dma_hip,
-		                  aml_dma_hip_copy_1D, NULL);
+		                  aml_dma_hip_copy_1D);
 	}
 #endif
 	aml_mapper_munmap(&struct_C_mapper, host_c, 1, c, &aml_area_linux,
@@ -304,21 +276,20 @@ void test_shallow_mapper(struct C *c)
 		/* Copy c to hip device */
 		assert(aml_mapper_mmap(&shallow_C_mapper, &device_c, c, 1,
 		                       &aml_area_hip, NULL, &aml_dma_hip,
-		                       aml_dma_hip_copy_1D,
-		                       NULL) == AML_SUCCESS);
+		                       aml_dma_hip_copy_1D) == AML_SUCCESS);
 
 		// Change _c to be different from c.
 		c->b[0].a->val = 4565467567;
 
 		/* Copy back __c into modified _c */
 		assert(aml_mapper_copy(&shallow_C_mapper, c, &device_c, 1,
-		                       &aml_dma_hip, aml_dma_hip_copy_1D,
-		                       NULL) == AML_SUCCESS);
+		                       &aml_dma_hip,
+		                       aml_dma_hip_copy_1D) == AML_SUCCESS);
 		assert(eq_struct(c, &host_c));
 
 		aml_mapper_munmap(&shallow_C_mapper, &device_c, 1, c,
 		                  &aml_area_hip, &aml_dma_hip,
-		                  aml_dma_hip_copy_1D, NULL);
+		                  aml_dma_hip_copy_1D);
 	}
 #endif
 	aml_mapper_munmap(&shallow_C_mapper, &host_c, 1, c, &aml_area_linux,
@@ -336,7 +307,6 @@ int main(int argc, char **argv)
 	init_struct(&c);
 
 	// Tests
-	test_mapper_iterator(c);
 	test_mapper(c);
 	test_shallow_mapper(c);
 	// Cleanup

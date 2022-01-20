@@ -6,6 +6,7 @@ include_aml_area_HEADERS = aml/area/linux.h
 include_aml_higherdir=$(includedir)/aml/higher
 include_aml_higher_HEADERS = \
 			      aml/higher/mapper.h \
+			      aml/higher/mapper-visitor.h \
 			      aml/higher/replicaset.h \
 			      aml/higher/allocator.h \
 			      aml/higher/allocator/area.h \
@@ -77,4 +78,5 @@ noinst_include_internaldir = $(includedir)/internal
 noinst_include_internal_HEADERS = \
 				  internal/utarray.h \
 				  internal/uthash.h \
-				  internal/utlist.h
+				  internal/utlist.h \
+				  internal/utstack.h

@@ -88,6 +88,7 @@ DMA_TESTS = dma/test_linux
 
 HIGHER_TESTS = \
 	higher/test_mapper \
+	higher/test_mapper-visitor \
 	allocator/test_area \
 	allocator/test_buddy \
 	allocator/test_sized
