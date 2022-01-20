@@ -191,6 +191,11 @@ int aml_mapper_visitor_prev_field(struct aml_mapper_visitor *it);
 /**
  * Go to first field of the current structure.
  *
+ * This function might be expensive if the data being visited requires a dma
+ * engine to be read. Indeed, the currently visited element will need to be
+ * copied on the host to be able to read fields pointers and compute the number
+ * of elements of the fields if they are arrays.
+ *
  * @param[in, out] it: The visitor of the structure being visited.
  * @return AML_SUCCESS on success.
  * @return -AML_EDOM if the current structure has no field to be descended.
