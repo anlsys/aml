@@ -218,6 +218,8 @@ int aml_mapper_visitor_first_field(struct aml_mapper_visitor *it)
 	next->next = NULL;
 	// Mapper of new visited field.
 	next->mapper = head->mapper->fields[0];
+	// The new field is the first field.
+	next->field_num = 0;
 	// Start at first element.
 	next->array_num = 0;
 	// Default to not an array.
