@@ -142,7 +142,7 @@ int aml_mapper_creator_branch(struct aml_mapper_creator **out,
 		                                c->memcpy_src_host);
 		if (err != AML_SUCCESS)
 			return err;
-		err = aml_mapper_size(visitor, &size);
+		err = aml_mapper_visitor_size(visitor, &size);
 		aml_mapper_visitor_destroy(visitor);
 		if (err != AML_SUCCESS)
 			return err;
@@ -249,7 +249,7 @@ int aml_mapper_creator_create(struct aml_mapper_creator **out,
 		                                dma_src_host, memcpy_src_host);
 		if (err != AML_SUCCESS)
 			return err;
-		err = aml_mapper_size(visitor, &size);
+		err = aml_mapper_visitor_size(visitor, &size);
 		aml_mapper_visitor_destroy(visitor);
 		if (err != AML_SUCCESS)
 			return err;

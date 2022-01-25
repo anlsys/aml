@@ -168,6 +168,32 @@ int aml_mapper_visitor_prev_field(struct aml_mapper_visitor *it)
 	return aml_mapper_visitor_field(it, head->field_num - 1);
 }
 
+static int aml_mapper_visitor_byte_copy(struct aml_mapper_visitor *it)
+{
+	struct aml_mapper_visitor_state *state = STACK_TOP(it->stack);
+
+	if (it->dma != NULL) {
+		const size_t size = state->mapper->size;
+		void *element = malloc(size);
+		if (element == NULL)
+			return -AML_ENOMEM;
+
+		int err = aml_dma_copy_custom(
+		        it->dma, (struct aml_layout *)element,
+		        (struct aml_layout *)state->device_ptr, it->memcpy_op,
+		        (void *)size);
+		if (err != AML_SUCCESS) {
+			free(element);
+			return err;
+		}
+		if (state->host_copy != NULL)
+			free(state->host_copy);
+		state->host_copy = element;
+	} else
+		state->host_copy = state->device_ptr;
+	return AML_SUCCESS;
+}
+
 // Attempt to visit first child of the element of currently visited.
 // If there no child to visit, -AML_EDOM is returned, else a new state
 // representing first child element is pushed on top of the state stack.
@@ -183,25 +209,9 @@ int aml_mapper_visitor_first_field(struct aml_mapper_visitor *it)
 
 	// Byte copy current field structure to easily have access to number
 	// of fields and fields value later.
-	if (it->dma != NULL) {
-		const size_t size = head->mapper->size;
-		void *element = malloc(size);
-		if (element == NULL)
-			return -AML_ENOMEM;
-
-		int err = aml_dma_copy_custom(
-		        it->dma, (struct aml_layout *)element,
-		        (struct aml_layout *)head->device_ptr, it->memcpy_op,
-		        (void *)size);
-		if (err != AML_SUCCESS) {
-			free(element);
-			return err;
-		}
-		if (head->host_copy != NULL)
-			free(head->host_copy);
-		head->host_copy = element;
-	} else
-		head->host_copy = head->device_ptr;
+	int err = aml_mapper_visitor_byte_copy(it);
+	if (err != AML_SUCCESS)
+		return err;
 
 	// Create the child state.
 	struct aml_mapper_visitor_state *next = malloc(sizeof *next);
@@ -253,7 +263,7 @@ void *aml_mapper_visitor_ptr(struct aml_mapper_visitor *it)
 	return it->stack->device_ptr;
 }
 
-size_t aml_mapper_visitor_size(struct aml_mapper_visitor *it)
+static size_t aml_mapper_size(struct aml_mapper_visitor *it)
 {
 	return it->stack->mapper->size * it->stack->array_size;
 }
@@ -268,7 +278,8 @@ size_t aml_mapper_visitor_array_len(struct aml_mapper_visitor *it)
 	return it->stack->array_size;
 }
 
-int aml_mapper_size(const struct aml_mapper_visitor *visitor, size_t *size)
+int aml_mapper_visitor_size(const struct aml_mapper_visitor *visitor,
+                            size_t *size)
 {
 	struct aml_mapper_visitor *v;
 	size_t tot = 0;
@@ -279,7 +290,7 @@ int aml_mapper_size(const struct aml_mapper_visitor *visitor, size_t *size)
 		return err;
 
 add_size:
-	tot += aml_mapper_visitor_size(v);
+	tot += aml_mapper_size(v);
 first_field:
 	err = aml_mapper_visitor_first_field(v);
 	if (err == AML_SUCCESS)
@@ -319,4 +330,140 @@ success:
 error:
 	aml_mapper_visitor_destroy(v);
 	return err;
+}
+
+static int
+aml_mapper_visitor_state_match(const struct aml_mapper_visitor *visitor1,
+                               const struct aml_mapper_visitor *visitor2)
+{
+	const void *b1 = visitor1->stack->host_copy;
+	const void *b2 = visitor2->stack->host_copy;
+	const struct aml_mapper *m1 = visitor1->stack->mapper;
+	const struct aml_mapper *m2 = visitor2->stack->mapper;
+
+	// Check mappers match.
+	if (m1->size != m2->size)
+		return 0;
+	if (m1->n_fields != m2->n_fields)
+		return 0;
+	// If there is no field pointer, we just have to check if bytes match.
+	// This assumes that the visit will skip array elements after the
+	// first element if they have no descendants.
+	if (m1->n_fields == 0) {
+		const size_t size = m1->size * visitor1->stack->array_size;
+		return memcmp(b1, b2, size) == 0;
+	}
+	// Check fields are all at the same offsets.
+	if (memcmp(m1->offsets, m2->offsets,
+	           m1->n_fields * sizeof(*m1->offsets)))
+		return 0;
+	// Check bytes in between field pointers match.
+	// - First interval.
+	if (m1->offsets[0] != 0 && memcmp(b1, b2, m1->offsets[0]) != 0)
+		return 0;
+	// - First intervals between pointers.
+	for (size_t i = 1; i < m1->n_fields; i++) {
+		const size_t offset = m1->offsets[i - 1] + sizeof(void *);
+		const size_t size = m1->offsets[i] - offset;
+		if (size == 0)
+			continue;
+		if (memcmp(PTR_OFF(b1, +, offset), PTR_OFF(b2, +, offset),
+		           size) != 0)
+			return 0;
+	}
+	// - Last interval.
+	do {
+		const size_t offset =
+		        m1->offsets[m1->n_fields - 1] + sizeof(void *);
+		const size_t size = m1->size - offset;
+		if (size == 0)
+			break;
+		if (memcmp(PTR_OFF(b1, +, offset), PTR_OFF(b2, +, offset),
+		           size) != 0)
+			return 0;
+	} while (0);
+
+	// Everything matches.
+	return 1;
+}
+
+int aml_mapper_visitor_match(const struct aml_mapper_visitor *visitor1,
+                             const struct aml_mapper_visitor *visitor2)
+{
+	struct aml_mapper_visitor *v1, *v2;
+	int err1, err2;
+
+	err1 = aml_mapper_visitor_subtree(visitor1, &v1);
+	if (err1 != AML_SUCCESS)
+		return err1;
+	err1 = aml_mapper_visitor_subtree(visitor2, &v2);
+	if (err1 != AML_SUCCESS)
+		goto error_with_v1;
+
+first_field:
+	err1 = aml_mapper_visitor_first_field(v1);
+	err2 = aml_mapper_visitor_first_field(v2);
+	if (err1 != err2)
+		goto no_match;
+	if (err1 == AML_SUCCESS)
+		goto first_field;
+	if (err1 != -AML_EDOM)
+		goto error;
+next_array_element:
+	if (v1->stack->mapper->n_fields != v2->stack->mapper->n_fields)
+		goto no_match;
+	if (v1->stack->mapper->n_fields == 0) {
+		err1 = aml_mapper_visitor_byte_copy(v1);
+		if (err1 != AML_SUCCESS)
+			goto error;
+		err1 = aml_mapper_visitor_byte_copy(v2);
+		if (err1 != AML_SUCCESS)
+			goto error;
+		if (aml_mapper_visitor_state_match(v1, v2) == 0)
+			goto no_match;
+		goto next_field;
+	}
+	err1 = aml_mapper_visitor_next_array_element(v1);
+	err2 = aml_mapper_visitor_next_array_element(v2);
+	if (err1 != err2)
+		goto no_match;
+	if (err1 == AML_SUCCESS)
+		goto first_field;
+	if (err1 != -AML_EDOM)
+		goto error;
+next_field:
+	err1 = aml_mapper_visitor_next_field(v1);
+	err2 = aml_mapper_visitor_next_field(v2);
+	if (err1 != err2)
+		goto no_match;
+	if (err1 == AML_SUCCESS)
+		goto first_field;
+	if (err1 != -AML_EDOM)
+		goto error;
+	err1 = aml_mapper_visitor_parent(v1);
+	err2 = aml_mapper_visitor_parent(v2);
+	if (err1 != err2)
+		goto no_match;
+	if (err1 == -AML_EDOM)
+		goto success;
+	if (err1 != AML_SUCCESS)
+		goto error;
+	// If match fail, we stop the comparison and return 0.
+	if (aml_mapper_visitor_state_match(v1, v2) == 0)
+		goto no_match;
+	goto next_array_element;
+
+success:
+	aml_mapper_visitor_destroy(v2);
+	aml_mapper_visitor_destroy(v1);
+	return 1;
+error:
+	aml_mapper_visitor_destroy(v2);
+error_with_v1:
+	aml_mapper_visitor_destroy(v1);
+	return err1;
+no_match:
+	aml_mapper_visitor_destroy(v2);
+	aml_mapper_visitor_destroy(v1);
+	return 0;
 }

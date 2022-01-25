@@ -114,6 +114,23 @@ void test_mapper_visitor()
 	aml_mapper_visitor_destroy(it);
 }
 
+void test_mapper_visitor_match()
+{
+	struct aml_mapper_visitor *lhs, *rhs;
+
+	aml_mapper_visitor_create(&lhs, (void *)c, &struct_C_mapper,
+	                          aml_dma_linux, aml_dma_linux_memcpy_op);
+	aml_mapper_visitor_create(&rhs, (void *)c, &struct_C_mapper,
+	                          aml_dma_linux, aml_dma_linux_memcpy_op);
+
+	// Test equality.
+	assert(aml_mapper_visitor_match(lhs, rhs) == 1);
+
+	// Cleanup
+	aml_mapper_visitor_destroy(lhs);
+	aml_mapper_visitor_destroy(rhs);
+}
+
 void test_mapper_visitor_size()
 {
 	size_t size;
@@ -124,7 +141,7 @@ void test_mapper_visitor_size()
 
 	aml_mapper_visitor_create(&it, (void *)c, &struct_C_mapper,
 	                          aml_dma_linux, aml_dma_linux_memcpy_op);
-	assert(aml_mapper_size(it, &size) == AML_SUCCESS);
+	assert(aml_mapper_visitor_size(it, &size) == AML_SUCCESS);
 	assert(size == real_size);
 	aml_mapper_visitor_destroy(it);
 }
@@ -138,6 +155,7 @@ int main(int argc, char **argv)
 	// Tests
 	test_mapper_visitor();
 	test_mapper_visitor_size();
+	test_mapper_visitor_match();
 
 	// Cleanup
 	teardown();

@@ -245,16 +245,6 @@ int aml_mapper_visitor_next(struct aml_mapper_visitor *it);
 void *aml_mapper_visitor_ptr(struct aml_mapper_visitor *it);
 
 /**
- * Get the size in bytes of the currently visited element.
- * If element is a structure, it is the size of the top-level structure.
- * Size of descendant fields is not counted.
- * If element is an array, it is the size of the whole array.
- *
- * @param[in] it: The visitor of the structure being visited.
- */
-size_t aml_mapper_visitor_size(struct aml_mapper_visitor *it);
-
-/**
  * Return whether the currently visited element is an array.
  * This is equivalent to `it->stack->array_size > 1`.
  *
@@ -282,8 +272,25 @@ size_t aml_mapper_visitor_array_len(struct aml_mapper_visitor *it);
  * @return -AML_EINVAL if NULL pointer node was found during the visit.
  * @return Any error from the `visitor` dma engine.
  */
-int aml_mapper_size(const struct aml_mapper_visitor *visitor, size_t *size);
-	
+int aml_mapper_visitor_size(const struct aml_mapper_visitor *visitor,
+                            size_t *size);
+
+/**
+ * Check that the structure visited by to different visitor or equal
+ * bytewise except for indirections to child fields.
+ *
+ * @param[in] lhs: The visitor of the left hand side structure being
+ * compared.
+ * @param[in] rhs: The visitor of the right hand side structure being
+ * compared.
+ * @return 1 If structures match.
+ * @return 0 If structures don't match.
+ * @return -AML_ENOMEM if allocation during the visit failed.
+ * @return -AML_EINVAL if NULL pointer node was found during the visit.
+ * @return Any error from the visitors dma engine.
+ */
+int aml_mapper_visitor_match(const struct aml_mapper_visitor *lhs,
+                             const struct aml_mapper_visitor *rhs);
 /**
  * @}
  **/

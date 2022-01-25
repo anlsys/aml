@@ -95,6 +95,7 @@ void test_mapper_creator()
 	struct aml_mapper_creator *creator, *branch;
 	void *root, *split;
 	size_t sizeof_root, sizeof_split;
+	struct aml_mapper_visitor *lhs, *rhs;
 
 	// Initialize creator
 	assert(aml_mapper_creator_create(
@@ -137,8 +138,24 @@ void test_mapper_creator()
 
 	// Check the copied structure and original structure are identical.
 	assert(is_equal(root));
+	aml_mapper_visitor_create(&lhs, (void *)c, &struct_C_mapper,
+	                          aml_dma_linux, aml_dma_linux_memcpy_op);
+	aml_mapper_visitor_create(&rhs, (void *)root, &struct_C_mapper,
+	                          aml_dma_linux, aml_dma_linux_memcpy_op);
+	assert(aml_mapper_visitor_match(lhs, rhs) == 1);
+	// Try to change original structure to break the match.
+	c->first[0].first->dummy = 32456;
+	assert(aml_mapper_visitor_match(lhs, rhs) == 0);
+	c->first[0].first->dummy = 0;
+	c->n = 1;
+	assert(aml_mapper_visitor_match(lhs, rhs) == 0);
+	// Restore to the same structure.
+	c->n = 2;
+	assert(aml_mapper_visitor_match(lhs, rhs) == 1);
 
 	// Cleanup
+	aml_mapper_visitor_destroy(lhs);
+	aml_mapper_visitor_destroy(rhs);
 	aml_area_munmap(&aml_area_linux, root, sizeof_root);
 	aml_area_munmap(&aml_area_linux, split, sizeof_split);
 }
