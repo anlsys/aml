@@ -21,7 +21,8 @@
 #define PTR_OFF(ptr, sign, off) (void *)((intptr_t)(ptr)sign(intptr_t)(off))
 
 // Create a new instance of visitor over ptr described by mapper where
-// dma and its memcpy operator copy from area where ptr is allocated to host.
+// dma and its memcpy operator copy from area where ptr is allocated to
+// host.
 int aml_mapper_visitor_create(struct aml_mapper_visitor **out,
                               void *ptr,
                               struct aml_mapper *mapper,
@@ -252,7 +253,7 @@ int aml_mapper_visitor_parent(struct aml_mapper_visitor *it)
 	if (head == NULL)
 		return -AML_EDOM;
 	STACK_POP(it->stack, head);
-	if (head->host_copy != NULL && head->host_copy != head->device_ptr)
+	if (it->dma != NULL && head->host_copy != NULL)
 		free(head->host_copy);
 	free(head);
 	return it->stack == NULL ? -AML_EDOM : AML_SUCCESS;
