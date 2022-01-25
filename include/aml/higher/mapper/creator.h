@@ -135,6 +135,7 @@ struct aml_mapper_creator {
  */
 int aml_mapper_creator_create(struct aml_mapper_creator **out,
                               void *src_ptr,
+															size_t size,
                               struct aml_mapper *mapper,
                               struct aml_area *area,
                               struct aml_area_mmap_options *area_opts,

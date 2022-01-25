@@ -10,8 +10,8 @@
 
 #include "aml.h"
 
-#include "aml/higher/mapper-visitor.h"
 #include "aml/higher/mapper.h"
+#include "aml/higher/mapper/visitor.h"
 #include "aml/layout/dense.h"
 #include "aml/utils/inner-malloc.h"
 #include "aml/utils/queue.h"
@@ -238,14 +238,14 @@ int aml_mapper_visitor_first_field(struct aml_mapper_visitor *it)
 
 int aml_mapper_visitor_parent(struct aml_mapper_visitor *it)
 {
-	struct aml_mapper_visitor_state *head;
-	STACK_POP(it->stack, head);
+	struct aml_mapper_visitor_state *head = it->stack;
 	if (head == NULL)
 		return -AML_EDOM;
+	STACK_POP(it->stack, head);
 	if (head->host_copy != NULL && head->host_copy != head->device_ptr)
 		free(head->host_copy);
 	free(head);
-	return AML_SUCCESS;
+	return it->stack == NULL ? -AML_EDOM : AML_SUCCESS;
 }
 
 void *aml_mapper_visitor_ptr(struct aml_mapper_visitor *it)

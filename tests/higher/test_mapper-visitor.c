@@ -11,11 +11,10 @@
 #include "aml.h"
 
 // Mapper includes
-#include "aml/higher/mapper-visitor.h"
 #include "aml/higher/mapper.h"
+#include "aml/higher/mapper/visitor.h"
 
 // Mapper args (linux)
-#include "aml/area/linux.h"
 #include "aml/dma/linux.h"
 
 struct A {
@@ -28,7 +27,7 @@ struct B {
 	struct A *second;
 };
 aml_mapper_decl(struct_B_mapper,
-                AML_MAPPER_FLAG_SPLIT,
+                0,
                 struct B,
                 first,
                 &struct_A_mapper,
@@ -39,6 +38,7 @@ struct C {
 	size_t n;
 	struct B *first;
 };
+
 aml_mapper_decl(struct_C_mapper, 0, struct C, first, n, &struct_B_mapper);
 
 struct C *c;
@@ -78,7 +78,6 @@ void test_mapper_visitor()
 	assert(aml_mapper_visitor_prev_field(it) == -AML_EDOM);
 	assert(aml_mapper_visitor_next_array_element(it) == -AML_EDOM);
 	assert(aml_mapper_visitor_prev_array_element(it) == -AML_EDOM);
-	assert(aml_mapper_visitor_parent(it) == -AML_EDOM);
 	assert(!aml_mapper_visitor_is_array(it));
 	assert(aml_mapper_visitor_first_field(it) == AML_SUCCESS);
 
@@ -115,6 +114,21 @@ void test_mapper_visitor()
 	aml_mapper_visitor_destroy(it);
 }
 
+void test_mapper_visitor_size()
+{
+	size_t size;
+	const size_t real_size =
+	        sizeof(struct C) +
+	        c->n * (sizeof(struct B) + sizeof(struct A) + sizeof(struct A));
+	struct aml_mapper_visitor *it;
+
+	aml_mapper_visitor_create(&it, (void *)c, &struct_C_mapper,
+	                          aml_dma_linux, aml_dma_linux_memcpy_op);
+	assert(aml_mapper_size(it, &size) == AML_SUCCESS);
+	assert(size == real_size);
+	aml_mapper_visitor_destroy(it);
+}
+
 int main(int argc, char **argv)
 {
 	// Init
@@ -123,6 +137,7 @@ int main(int argc, char **argv)
 
 	// Tests
 	test_mapper_visitor();
+	test_mapper_visitor_size();
 
 	// Cleanup
 	teardown();
