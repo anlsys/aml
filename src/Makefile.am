@@ -46,7 +46,8 @@ HIGHER_SOURCES = \
 		allocator/buddy.c \
 		allocator/sized.c \
 		higher/mapper.c \
-		higher/mapper-visitor.c
+		higher/mapper-visitor.c \
+		higher/mapper-creator.c
 
 LIB_SOURCES = \
 	      $(AREA_SOURCES) \

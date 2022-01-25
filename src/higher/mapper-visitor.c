@@ -46,7 +46,7 @@ int aml_mapper_visitor_create(struct aml_mapper_visitor **out,
 		return -AML_ENOMEM;
 	}
 	head->device_ptr = ptr;
-	head->element = NULL;
+	head->host_copy = NULL;
 	head->mapper = mapper;
 	head->field_num = 0;
 	head->array_size = 1;
@@ -58,10 +58,10 @@ int aml_mapper_visitor_create(struct aml_mapper_visitor **out,
 	return AML_SUCCESS;
 }
 
-int aml_mapper_visitor_subtree(struct aml_mapper_visitor *it,
+int aml_mapper_visitor_subtree(const struct aml_mapper_visitor *it,
                                struct aml_mapper_visitor **subtree_visitor)
 {
-	// Cut the stack into the top element.
+	// Cut the stack into the top host_copy.
 	// Since there is no parent in the stack, the visit is limited to
 	// child fields.
 	return aml_mapper_visitor_create(subtree_visitor, it->stack->device_ptr,
@@ -120,7 +120,7 @@ static int aml_mapper_visitor_field(struct aml_mapper_visitor *it,
 
 	// The new device pointer can be read in the parent byte copy.
 	// And it is the pointer at the offset of the next field offset.
-	head->device_ptr = *(void **)PTR_OFF(parent->element, +,
+	head->device_ptr = *(void **)PTR_OFF(parent->host_copy, +,
 	                                     parent->mapper->offsets[num]);
 	// Update the other fields.
 	head->field_num = num;
@@ -130,7 +130,7 @@ static int aml_mapper_visitor_field(struct aml_mapper_visitor *it,
 	if (parent->mapper->num_elements != NULL &&
 	    parent->mapper->num_elements[num] != NULL)
 		head->array_size =
-		        parent->mapper->num_elements[num](parent->element);
+		        parent->mapper->num_elements[num](parent->host_copy);
 
 	return AML_SUCCESS;
 }
@@ -197,11 +197,11 @@ int aml_mapper_visitor_first_field(struct aml_mapper_visitor *it)
 			free(element);
 			return err;
 		}
-		if (head->element != NULL)
-			free(head->element);
-		head->element = element;
+		if (head->host_copy != NULL)
+			free(head->host_copy);
+		head->host_copy = element;
 	} else
-		head->element = head->device_ptr;
+		head->host_copy = head->device_ptr;
 
 	// Create the child state.
 	struct aml_mapper_visitor_state *next = malloc(sizeof *next);
@@ -211,9 +211,9 @@ int aml_mapper_visitor_first_field(struct aml_mapper_visitor *it)
 	// Device ptr is the pointer in current state host copy at the
 	// offset of the first field.
 	next->device_ptr =
-	        *(void **)PTR_OFF(head->element, +, head->mapper->offsets[0]);
+	        *(void **)PTR_OFF(head->host_copy, +, head->mapper->offsets[0]);
 	// Set next time this field is descended.
-	next->element = NULL;
+	next->host_copy = NULL;
 	// Initialization for stack primitives
 	next->next = NULL;
 	// Mapper of new visited field.
@@ -227,7 +227,8 @@ int aml_mapper_visitor_first_field(struct aml_mapper_visitor *it)
 	// Set array size if the state is an array.
 	if (head->mapper->num_elements != NULL &&
 	    head->mapper->num_elements[0] != NULL)
-		next->array_size = head->mapper->num_elements[0](head->element);
+		next->array_size =
+		        head->mapper->num_elements[0](head->host_copy);
 	// Push the new state at the top of the stack. This is the current
 	// state now.
 	STACK_PUSH(it->stack, next);
@@ -237,62 +238,14 @@ int aml_mapper_visitor_first_field(struct aml_mapper_visitor *it)
 
 int aml_mapper_visitor_parent(struct aml_mapper_visitor *it)
 {
-	struct aml_mapper_visitor_state *head = STACK_TOP(it->stack);
-	assert(head != NULL);
-	if (head->next == NULL)
-		return -AML_EDOM;
+	struct aml_mapper_visitor_state *head;
 	STACK_POP(it->stack, head);
-	if (head->element != NULL)
-		free(head->element);
+	if (head == NULL)
+		return -AML_EDOM;
+	if (head->host_copy != NULL && head->host_copy != head->device_ptr)
+		free(head->host_copy);
 	free(head);
 	return AML_SUCCESS;
-}
-
-// Forward visitor to descend next child field of current struct.
-int aml_mapper_visitor_next(struct aml_mapper_visitor *it)
-{
-	int err;
-	if (it == NULL)
-		return -AML_EINVAL;
-
-	// Descend first child we perform a depth first walk.
-	err = aml_mapper_visitor_first_field(it);
-	if (err == AML_SUCCESS)
-		return AML_SUCCESS;
-	if (err != -AML_EDOM)
-		return err;
-
-next_array_element:
-	// Optimization: If current element has no descendant field, we move to
-	// next sibling field instead. This avoids walking potentially large
-	// arrays with no descendants.
-	if (it->stack->mapper->n_fields == 0)
-		goto next_field;
-
-	// Explore next array element.
-	err = aml_mapper_visitor_next_array_element(it);
-	if (err == AML_SUCCESS)
-		return AML_SUCCESS;
-	if (err != -AML_EDOM)
-		return err;
-
-next_field:
-	// If there is no more array element to visit, we explore the next
-	// field.
-	err = aml_mapper_visitor_next_field(it);
-	if (err == AML_SUCCESS)
-		return AML_SUCCESS;
-	if (err != -AML_EDOM)
-		return err;
-
-	// If there is nothing to explore anymore, we go up but we don't
-	// descend children anymore as they are already visited.
-	err = aml_mapper_visitor_parent(it);
-	if (err == AML_SUCCESS)
-		return AML_SUCCESS;
-	if (err != -AML_EDOM)
-		return err;
-	goto next_array_element;
 }
 
 void *aml_mapper_visitor_ptr(struct aml_mapper_visitor *it)
@@ -313,4 +266,57 @@ int aml_mapper_visitor_is_array(struct aml_mapper_visitor *it)
 size_t aml_mapper_visitor_array_len(struct aml_mapper_visitor *it)
 {
 	return it->stack->array_size;
+}
+
+int aml_mapper_size(const struct aml_mapper_visitor *visitor, size_t *size)
+{
+	struct aml_mapper_visitor *v;
+	size_t tot = 0;
+	int err;
+
+	err = aml_mapper_visitor_subtree(visitor, &v);
+	if (err != AML_SUCCESS)
+		return err;
+
+add_size:
+	tot += aml_mapper_visitor_size(v);
+first_field:
+	err = aml_mapper_visitor_first_field(v);
+	if (err == AML_SUCCESS)
+		goto check_split;
+	if (err != -AML_EDOM)
+		goto error;
+next_array_element:
+	if (v->stack->mapper->n_fields == 0)
+		goto next_field;
+	err = aml_mapper_visitor_next_array_element(v);
+	if (err == AML_SUCCESS)
+		goto first_field;
+	if (err != -AML_EDOM)
+		goto error;
+next_field:
+	err = aml_mapper_visitor_next_field(v);
+	if (err == AML_SUCCESS)
+		goto check_split;
+	if (err != -AML_EDOM)
+		goto error;
+	err = aml_mapper_visitor_parent(v);
+	if (err == AML_SUCCESS)
+		goto next_array_element;
+	if (err != -AML_EDOM)
+		goto error;
+	goto success;
+check_split:
+	// Skip nodes that will be split in a different allocation.
+	if (v->stack->mapper->flags & AML_MAPPER_FLAG_SPLIT)
+		goto next_field;
+	else
+		goto add_size;
+success:
+	aml_mapper_visitor_destroy(v);
+	*size = tot;
+	return AML_SUCCESS;
+error:
+	aml_mapper_visitor_destroy(v);
+	return err;
 }

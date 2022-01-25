@@ -7,6 +7,7 @@ include_aml_higherdir=$(includedir)/aml/higher
 include_aml_higher_HEADERS = \
 			      aml/higher/mapper.h \
 			      aml/higher/mapper-visitor.h \
+			      aml/higher/mapper-creator.h \
 			      aml/higher/replicaset.h \
 			      aml/higher/allocator.h \
 			      aml/higher/allocator/area.h \

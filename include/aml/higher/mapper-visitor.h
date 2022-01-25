@@ -34,7 +34,7 @@ struct aml_mapper_visitor_state {
 	// This field is used to read fields pointers and the number of
 	// elements if the structure is actually an array of structures.
 	// This is only updated when parent descends its first child.
-	void *element;
+	void *host_copy;
 	// Mapper of the element currrently visited.
 	struct aml_mapper *mapper;
 	// The field index in parent structure described by parent mapper.
@@ -139,7 +139,7 @@ int aml_mapper_visitor_destroy(struct aml_mapper_visitor *it);
  * @return AML_SUCCESS on success.
  * @return -AML_ENOMEM if the new visitor could not be allocated.
  */
-int aml_mapper_visitor_subtree(struct aml_mapper_visitor *it,
+int aml_mapper_visitor_subtree(const struct aml_mapper_visitor *it,
                                struct aml_mapper_visitor **subtree_visitor);
 
 /**
@@ -271,6 +271,19 @@ int aml_mapper_visitor_is_array(struct aml_mapper_visitor *it);
  */
 size_t aml_mapper_visitor_array_len(struct aml_mapper_visitor *it);
 
+/**
+ * Compute the size of a structure based on a visitor.
+ * Visitor will skip nodes with mapper flag `AML_MAPPER_FLAG_SPLIT` set.
+ *
+ * @param[in] visitor: A visitor from where to compute size.
+ * @param[out] size: A pointer where to store size.
+ * @return AML_SUCCESS on success with size set.
+ * @return -AML_ENOMEM if allocation during the visit failed.
+ * @return -AML_EINVAL if NULL pointer node was found during the visit.
+ * @return Any error from the `visitor` dma engine.
+ */
+int aml_mapper_size(const struct aml_mapper_visitor *visitor, size_t *size);
+	
 /**
  * @}
  **/
