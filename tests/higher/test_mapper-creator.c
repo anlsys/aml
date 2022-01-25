@@ -67,9 +67,15 @@ int is_equal(struct C *other)
 	// Scalars have the same value
 	if (c->n != other->n)
 		return 0;
+	// Pointers have not been litterally copied.
+	assert(c->first != other->first);
+
 	// Arrays have the same number of elements.
 	// Otherwise there will be a memory error on valgrind check.
 	for (size_t i = 0; i < c->n; i++) {
+		// Pointers have not been litterally copied.
+		assert(c->first[i].first != other->first[i].first);
+		assert(c->first[i].second != other->first[i].second);
 		// Scalars have the same value
 		if (c->first[i].first->dummy != other->first[i].first->dummy)
 			return 0;
@@ -93,8 +99,7 @@ void test_mapper_creator()
 	// Initialize creator
 	assert(aml_mapper_creator_create(
 	               &creator, (void *)c, 0, &struct_C_mapper,
-	               &aml_area_linux, NULL, aml_dma_linux, aml_dma_linux,
-	               aml_dma_linux_memcpy_op,
+	               &aml_area_linux, NULL, NULL, aml_dma_linux, NULL,
 	               aml_dma_linux_memcpy_op) == AML_SUCCESS);
 
 	// Copy root.

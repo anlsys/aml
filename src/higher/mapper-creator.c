@@ -62,8 +62,11 @@ static inline void aml_mapper_creator_init_field(struct aml_mapper_creator *c,
 	    parent->mapper->num_elements[num] != NULL)
 		head->array_size =
 		        parent->mapper->num_elements[num](parent->host_copy);
-	head->device_ptr = *aml_mapper_creator_field_ptr(head, parent);
+
+	void **field_ptr = aml_mapper_creator_field_ptr(head, parent);
 	head->host_copy = PTR_OFF(c->host_memory, +, c->offset);
+	head->device_ptr = *field_ptr;
+	*field_ptr = PTR_OFF(c->device_memory, +, c->offset);
 }
 
 static int aml_mapper_creator_next_field(struct aml_mapper_creator *c)
