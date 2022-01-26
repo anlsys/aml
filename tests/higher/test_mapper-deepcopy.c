@@ -89,26 +89,26 @@ void test_mapper(struct aml_mapper *mapper,
                  aml_dma_operator memcpy_dst_host,
                  aml_dma_operator memcpy_host_dst)
 {
-	aml_deepcopy_data copy;
+	aml_deepcopy_data data;
+	void *copy;
 	struct aml_mapper_visitor *lhs_vis, *rhs_vis;
 
 	// Make copy.
-	assert(aml_mapper_deepcopy(&copy, (void *)c, mapper, area, area_opts,
-	                           NULL, dma_host_dst, NULL,
-	                           memcpy_host_dst) == AML_SUCCESS);
+	copy = aml_mapper_deepcopy(&data, (void *)c, mapper, area, area_opts,
+	                           NULL, dma_host_dst, NULL, memcpy_host_dst);
+	assert(copy != NULL);
 
 	// Compare.
 	assert(aml_mapper_visitor_create(&lhs_vis, (void *)c, mapper, NULL,
 	                                 NULL) == AML_SUCCESS);
-	assert(aml_mapper_visitor_create(&rhs_vis, aml_deepcopy_ptr(copy),
-	                                 mapper, dma_dst_host,
+	assert(aml_mapper_visitor_create(&rhs_vis, copy, mapper, dma_dst_host,
 	                                 memcpy_dst_host) == AML_SUCCESS);
 	assert(aml_mapper_visitor_match(lhs_vis, rhs_vis) == 1);
 
 	// Cleanup
 	aml_mapper_visitor_destroy(lhs_vis);
 	aml_mapper_visitor_destroy(rhs_vis);
-	assert(aml_mapper_deepfree(copy) == AML_SUCCESS);
+	assert(aml_mapper_deepfree(data) == AML_SUCCESS);
 }
 
 //- Main ----------------------------------------------------------------------

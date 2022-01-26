@@ -16,10 +16,8 @@ extern "C" {
 #endif
 
 /**
- * @defgroup aml_mapper_visitor "AML Struct Visitor"
- * @brief Structure visitor.
+ * @addtogroup aml_mapper
  *
- * Desc
  * @{
  **/
 
@@ -31,9 +29,10 @@ struct aml_mapper_visitor_state {
 	// Device pointer of the element currrently visited.
 	void *device_ptr;
 	// Byte copy of the element.
-	// This field is used to read fields pointers and the number of
+	// This field is used to read fields pointer and the number of
 	// elements if the structure is actually an array of structures.
-	// This is only updated when parent descends its first child.
+	// The copy from device_ptr only happens when a parent descends its
+	// first child.
 	void *host_copy;
 	// Mapper of the element currrently visited.
 	struct aml_mapper *mapper;
@@ -68,11 +67,8 @@ struct aml_mapper_visitor_state {
  * which is an array of contiguous elements.
  *
  * It is also possible to query the size in byte of the visited field with
- * `aml_mapper_visitor_size()`. This size does not account for the size of any
- * child fields but only for the top level field/structure being visited.
- * If the field being visited is actually an array field, then the size is
- * the size of the entire array in bytes no matter what element is being
- * visited.
+ * `aml_mapper_visitor_size()`. This size accounts for the top level structure
+ * size and all its descendants.
  *
  * Visiting can be done toward a parent structure
  * (`aml_mapper_visitor_parent()`), the first child field of the structure
@@ -99,12 +95,8 @@ struct aml_mapper_visitor {
  * If the structure pointer cannot be read from the host, it must be copied
  * piece by piece during the visit, from the memory where it lives to the host
  * memory with a `dma` engine and a `memcpy` operator. However, if the pointer
- * is readable from the host, it might be better to set these two arguments to
+ * is readable from the host, it is better to set these two arguments to
  * NULL to improve performance.
- *
- * This function stores the created visitor in `out` and return `AML_SUCCESS`.
- * It can only fail if allocation of visitor data fails. In the latter case,
- * the function returns `-AML_ENOMEM`.
  *
  * @param[out] out: A pointer where to store the newly allocated visitor.
  * @param[in] ptr: The pointer to the structure to visit.
@@ -146,7 +138,7 @@ int aml_mapper_visitor_subtree(const struct aml_mapper_visitor *it,
  * Go to next array element of this field.
  * After this function succeeds, the pointer returned by
  * `aml_mapper_visitor_ptr()` will point to the next array element of the
- * previously pointed element inside the field array.
+ * previously pointed element inside the array.
  *
  * @param[in, out] it: The visitor of the structure being visited.
  * @return AML_SUCCESS on success.
@@ -160,7 +152,7 @@ int aml_mapper_visitor_next_array_element(struct aml_mapper_visitor *it);
  * Go to previous array element of this field.
  * After this function succeeds, the pointer returned by
  * `aml_mapper_visitor_ptr()` will point to the previous array element of the
- * previously pointed element inside the field array.
+ * previously pointed element inside the array.
  *
  * @param[in, out] it: The visitor of the structure being visited.
  * @return AML_SUCCESS on success.
@@ -192,9 +184,9 @@ int aml_mapper_visitor_prev_field(struct aml_mapper_visitor *it);
  * Go to first field of the current structure.
  *
  * This function might be expensive if the data being visited requires a dma
- * engine to be read. Indeed, the currently visited element will need to be
- * copied on the host to be able to read fields pointers and compute the number
- * of elements of the fields if they are arrays.
+ * engine to be read. Indeed, the new visited element will need to read
+ * the parent element to obtain its own pointer value and compute the number
+ * of elements it holds if it is an array.
  *
  * @param[in, out] it: The visitor of the structure being visited.
  * @return AML_SUCCESS on success.
@@ -213,28 +205,6 @@ int aml_mapper_visitor_first_field(struct aml_mapper_visitor *it);
  * been visited.
  */
 int aml_mapper_visitor_parent(struct aml_mapper_visitor *it);
-
-/**
- * Depth first walk of a structure hierarchy.
- * If the structure has cycles that can be entered with the mapper description,
- * this function will loop while allocating more and more memory.
- *
- * 1. The walk tries first to descend the first field.
- *    If there is no more field to descend go to next step.
- * 2. If the current field is an array and its elements have no descendants
- *    we go to next step. We consider it pointless to walk all array elements.
- *    Otherwise, move visitor to the next array element. If there is no next
- *    array element, go to next step.
- * 3. Move visitor to next field. If there is no next field go to next step.
- * 4. Move visitor to parent and go to step 2.
- *
- * @param[in, out] it: The visitor of the structure being visited.
- * @return AML_SUCCESS on success.
- * @return -AML_EDOM if their is no next element to visit.
- * @return -AML_ENOMEM if the state of a new child field cannot be allocated.
- * @return -AML_EINVAL if the current element points to NULL.
- */
-int aml_mapper_visitor_next(struct aml_mapper_visitor *it);
 
 /**
  * Get a pointer to the currently visited element from the visited data
@@ -276,7 +246,7 @@ int aml_mapper_visitor_size(const struct aml_mapper_visitor *visitor,
                             size_t *size);
 
 /**
- * Check that the structure visited by to different visitor or equal
+ * Check that the structure visited by two different visitors or equal
  * bytewise except for indirections to child fields.
  *
  * @param[in] lhs: The visitor of the left hand side structure being

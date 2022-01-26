@@ -16,8 +16,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup aml_mapper_creator "AML Mapper Creator"
- * @brief Base facillity to copy hierarchical structures.
+ * @addtogroup aml_mapper
  *
  * @{
  **/
@@ -26,16 +25,20 @@ extern "C" {
  * The creator structure is a special structure visitor that copies the
  * structure it visits as it is visiting it.
  * It is meant to be used to implement the copy of complex
- * structures to a complex topology of memories.
+ * structures with members in different memories.
+ *
+ * Note that the source structure
+ * must have a tree shape. At the moment, the creator does not support
+ * self references and multiple pointers to the same element.
  *
  * The copy process can be summarized as copying the source structure
  * bit by bit on the host, overwriting fields pointers on host to point
  * to the device memory where the corresponding field will be copied, and
- * finally copying the big host buffer to the device. The resulting copy,
+ * finally copying the host buffer to the device. The resulting copy,
  * is packed in a contiguous buffer.
  *
  * In more details, the creator structure will perform a depth first visit
- * of the source tree-like structure in successive steps.
+ * of the source structure in successive steps.
  * For each step, the creator state matches either a field in a parent
  * structure or an element of an array field if the array field is an
  * array of structs with descendants.
@@ -45,14 +48,13 @@ extern "C" {
  * contain the whole structure to copy.
  * The field of the host copy of the parent structure is overwritten with
  * the pointer of the device memory where the current field will be copied
- * in one big copy at the very end.
+ * in a single copy to the destination pointer at the very end.
  *
  * Since the creator state refers to the structure that is about to be
  * copied, the user may perform one of these two actions:
- * - Copy the field on host in the current buffer containing all previously
- * visited fields and overwrite parent pointer to this field to point to
- * device memory where this field will be copied, and then move on to the
- * next field;
+ * - Copy the field on host and overwrite parent pointer to this field
+ * (on the host) to point to the device memory where this field will be copied,
+ * and then move on to the next field;
  * - "Branch out" by creating a new creator at the current point of visit
  * that will map the current field and its descendants in a different
  * host buffer and device mapped memory.
@@ -67,7 +69,7 @@ extern "C" {
  * @see `struct aml_mapper_visitor_state`
  */
 struct aml_mapper_creator {
-	// Information on current mapper, parent fields and relationship of
+	// Information on the current mapper, parent fields and relationship of
 	// ancestors with their parent.
 	// Note that the field device_ptr of stack, does not refer to a pointer
 	// in `device_memory` below but instead to a pointer of the structure
@@ -104,13 +106,14 @@ struct aml_mapper_creator {
  * structure.
  *
  * `dma_src_host` will be used to copy from the source structure
- * `src_ptr` to the host buffer, while `dma_host_dst` will be use to copy
- * the host buffer in the destination area buffer.
+ * `src_ptr` to the host buffer, while `dma_host_dst` will be used to copy
+ * the host buffer to the destination area buffer.
  *
- * After this call succeed, the created mapper creator, will be in a ready
+ * After this call succeeds, the created mapper creator, will be in a ready
  * state, ready to be iterated with `aml_mapper_creator_next()` to copy the
- * source structure bit by bit on host, and copied to the destination area
- * at the end of the iteration process with `aml_mapper_creator_finish()`.
+ * source structure bit by bit on host. The final structure, will be copied to
+ * the destination `area` buffer, after iteration is finished when calling
+ * `aml_mapper_creator_finish()`.
  *
  * @param[out] out: A pointer where to store the instanciated mapper
  * creator.
@@ -152,7 +155,8 @@ int aml_mapper_creator_create(struct aml_mapper_creator **out,
 /**
  * This function is called to conclude a copy performed with a mapper
  * creator. On success, this function will also take care of cleaning up the
- * resource creator.
+ * resource used by the creator, except of course the device pointer holding
+ * the copy.
  *
  * It will perform a copy of the host copy with embedded destination areas
  * pointers to the destination area.
@@ -162,10 +166,10 @@ int aml_mapper_creator_create(struct aml_mapper_creator **out,
  * is also returned and can be used with the area used to create the
  * destination structure to free the latter.
  *
- * This function should be called only after a call to
+ * This function may only be called after a call to
  * `aml_mapper_creator_next()` with the same mapper creator returned
  * `-AML_EDOM` meaning that everything has been copied from source
- * structure to the host.
+ * structure to the host and the creator is ready to finish the job.
  *
  * @param[in] c: A mapper creator that finished copying and packing source
  * structure on host. This happens when `aml_mapper_creator_next()` with the
@@ -188,7 +192,8 @@ int aml_mapper_creator_finish(struct aml_mapper_creator *c,
  * Destroy a mapper creator before the last iteration of the copy.
  * This will free the device pointer currently built. If any branch were made
  * from this creator, it is the user responsibility to handle the branches and
- * finished branches pointers destruction separately.
+ * finished branches pointers destruction separately. This function does not
+ * check its input is valid.
  * @return AML_SUCCESS
  */
 int aml_mapper_creator_abort(struct aml_mapper_creator *crtr);
@@ -206,23 +211,25 @@ int aml_mapper_creator_abort(struct aml_mapper_creator *crtr);
  *
  * If the current state of the creator holds a flag `AML_MAPPER_FLAG_SPLIT`,
  * then the function will do nothing and return `-AML_EINVAL`. This flags
- * means that the structure allocation must be broke at this point and there
- * won't be enough room in the creator buffers to fit current field.
- * In this case, the user should use `aml_mapper_creator_branch()`.
+ * means that the structure allocation must be split at this point. Moreover,
+ * there will not be enough room in the creator buffers to fit current field.
+ * In this case, the user has to use `aml_mapper_creator_branch()`. After
+ * `aml_mapper_creator_branch()` succeeds, the user can resume calling this
+ * function.
  *
  * @param[in, out] c: A mapper creator representing the current state of a
  * structure copy from a source pointer to the host.
  * @return AML_SUCCESS on success to process this step.
  * @return -AML_EINVAL if the current field has the flag
  * `AML_MAPPER_FLAG_SPLIT` set. In that case, the next call should be
- * `aml_mapper_creator_branch()`.
+ * `aml_mapper_creator_branch()` instead.
  * @return -AML_EDOM there is no next field to copy. In that case,
  * the next call should be `aml_mapper_creator_finish()`.
  * @return Any error from dma_src_host arising from copying source pointer
  * to host.
  *
- * @see `aml_mapper_creator_branch()`
- * @see `aml_mapper_creator_finish()`
+ * @see aml_mapper_creator_branch()
+ * @see aml_mapper_creator_finish()
  */
 int aml_mapper_creator_next(struct aml_mapper_creator *c);
 
@@ -250,19 +257,13 @@ int aml_mapper_creator_next(struct aml_mapper_creator *c);
  * @param[in] memcpy_host_dst: The memcpy operator for the dma engine.
  *
  * @return AML_SUCCESS on success.
- * @return -AML_EDOM if there is nothing left to copy in the current
- * creator after this call. In that case, the next call on current creator
+ * @return -AML_EDOM if there is nothing left to copy in the original
+ * creator after this call. In that case, the next call on orginial creator
  * should be `aml_mapper_creator_finish()`.
  * @return Any error from `aml_mapper_creator_create()` if the creation of
  * the new creator failed.
- * @return -AML_ENOMEM, even if the creation of the new creator succeeded,
- * when moving current creator to the next field afterward, if a child needs
- * to be descended but there is not enough memory to allocate the
- * corresponding state. This is very unlikely to happen because descending
- * a child field also means that the current creator had to go up just
- * before and therefore, freed memory for a state.
  *
- * @see `aml_mapper_creator_create()`
+ * @see aml_mapper_creator_create()
  */
 int aml_mapper_creator_branch(struct aml_mapper_creator **out,
                               struct aml_mapper_creator *c,

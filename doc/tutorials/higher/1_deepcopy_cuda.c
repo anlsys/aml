@@ -20,8 +20,9 @@
 
 int main(int argc, char **argv)
 {
-	struct C *c;
-	aml_deepcopy_data device_c, host_c;
+	struct C *c, *host_c;
+	void *device_c;
+	aml_deepcopy_data d0, d1;
 
 	assert(aml_init(&argc, &argv) == AML_SUCCESS);
 	if (!aml_support_backends(AML_BACKEND_CUDA))
@@ -30,24 +31,23 @@ int main(int argc, char **argv)
 	c = init_struct();
 
 	// Deepcopy to device.
-	assert(aml_mapper_deepcopy(&device_c, (void *)c, &struct_C_mapper,
-	                           &aml_area_cuda, NULL, NULL, &aml_dma_cuda,
-	                           NULL,
-	                           aml_dma_cuda_memcpy_op) == AML_SUCCESS);
+	device_c = aml_mapper_deepcopy(&d0, (void *)c, &struct_C_mapper,
+	                               &aml_area_cuda, NULL, NULL,
+	                               &aml_dma_cuda, NULL,
+	                               aml_dma_cuda_memcpy_op);
 
 	// Deepcopy from device to host
-	assert(aml_mapper_deepcopy(&host_c, aml_deepcopy_ptr(device_c),
-	                           &struct_C_mapper, &aml_area_linux, NULL,
-	                           &aml_dma_cuda, &aml_dma_cuda,
-	                           aml_dma_cuda_memcpy_op,
-	                           aml_dma_cuda_memcpy_op) == AML_SUCCESS);
+	host_c = aml_mapper_deepcopy(&d1, device_c, &struct_C_mapper,
+	                             &aml_area_linux, NULL, &aml_dma_cuda,
+	                             &aml_dma_cuda, aml_dma_cuda_memcpy_op,
+	                             aml_dma_cuda_memcpy_op);
 
 	// Check for equality.
-	assert(eq_struct(c, (struct C *)aml_deepcopy_ptr(host_c)));
+	assert(eq_struct(c, host_c));
 
 	// Cleanup
-	aml_mapper_deepfree(device_c);
-	aml_mapper_deepfree(host_c);
+	aml_mapper_deepfree(d0);
+	aml_mapper_deepfree(d1);
 	free(c);
 	aml_finalize();
 	return 0;

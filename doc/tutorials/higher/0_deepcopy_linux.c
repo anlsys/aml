@@ -117,20 +117,18 @@ int eq_struct(const struct C *c, const struct C *_c)
 #ifndef DEEP_COPY_CUDA // Disable in next tutorial
 int main(int argc, char **argv)
 {
-	struct C *c;
+	struct C *c, *_c;
 	aml_deepcopy_data data;
 
 	// Init
 	assert(aml_init(&argc, &argv) == AML_SUCCESS);
-
 	c = init_struct();
 
 	// deepcopy
-	assert(aml_mapper_deepcopy(&data, (void *)c, &struct_C_mapper,
-	                           &aml_area_linux, NULL, NULL, aml_dma_linux,
-	                           NULL,
-	                           aml_dma_linux_memcpy_op) == AML_SUCCESS);
-	assert(eq_struct(c, (struct C *)aml_deepcopy_ptr(data)));
+	_c = aml_mapper_deepcopy(&data, (void *)c, &struct_C_mapper,
+	                         &aml_area_linux, NULL, NULL, aml_dma_linux,
+	                         NULL, aml_dma_linux_memcpy_op);
+	assert(eq_struct(c, _c));
 
 	// Cleanup
 	aml_mapper_deepfree(data);

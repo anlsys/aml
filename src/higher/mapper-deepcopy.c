@@ -53,15 +53,15 @@ UT_icd creator_icd = {
         .dtor = aml_mapper_creator_destroy,
 };
 
-int aml_mapper_deepcopy(aml_deepcopy_data *out,
-                        void *src_ptr,
-                        struct aml_mapper *mapper,
-                        struct aml_area *area,
-                        struct aml_area_mmap_options *area_opts,
-                        struct aml_dma *dma_src_host,
-                        struct aml_dma *dma_host_dst,
-                        aml_dma_operator memcpy_src_host,
-                        aml_dma_operator memcpy_host_dst)
+void *aml_mapper_deepcopy(aml_deepcopy_data *out,
+                          void *src_ptr,
+                          struct aml_mapper *mapper,
+                          struct aml_area *area,
+                          struct aml_area_mmap_options *area_opts,
+                          struct aml_dma *dma_src_host,
+                          struct aml_dma *dma_host_dst,
+                          aml_dma_operator memcpy_src_host,
+                          aml_dma_operator memcpy_host_dst)
 {
 	int err;
 	UT_array *ptrs = NULL;
@@ -119,7 +119,7 @@ next_creator:
 success:
 	utarray_done(&crtrs);
 	*out = (aml_deepcopy_data)ptrs;
-	return AML_SUCCESS;
+	return ((struct mapped_ptr *)utarray_eltptr(ptrs, 0))->ptr;
 error:
 	if (crtr != NULL)
 		aml_mapper_creator_abort(crtr);
@@ -128,14 +128,8 @@ error:
 	if (ptrs != NULL)
 		utarray_free(ptrs);
 	utarray_done(&crtrs);
-	return err;
-}
-
-void *aml_deepcopy_ptr(aml_deepcopy_data data)
-{
-	UT_array *ptrs = (UT_array *)data;
-	struct mapped_ptr *ptr = utarray_eltptr(ptrs, 0);
-	return ptr->ptr;
+	aml_errno = err;
+	return NULL;
 }
 
 int aml_mapper_deepfree(aml_deepcopy_data data)
