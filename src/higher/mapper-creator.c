@@ -166,24 +166,27 @@ int aml_mapper_creator_branch(struct aml_mapper_creator **out,
 
 	// Get size to map.
 	size_t tot_size = 0;
-	for (size_t i = 0; i < c->stack->array_size; i++) {
-		struct aml_mapper_visitor *visitor;
-		size_t size;
-		void *src_ptr = PTR_OFF(c->stack->device_ptr, +,
-		                        i * c->stack->mapper->size);
-		err = aml_mapper_visitor_create(&visitor, src_ptr,
-		                                c->stack->mapper,
-		                                c->dma_src_host,
-		                                c->memcpy_src_host);
-		if (err != AML_SUCCESS)
-			return err;
-		err = aml_mapper_visitor_size(visitor, &size);
-		aml_mapper_visitor_destroy(visitor);
-		if (err != AML_SUCCESS)
-			return err;
-		tot_size += size;
+	if (c->stack->mapper->n_fields == 0)
+		tot_size = c->stack->mapper->size * c->stack->array_size;
+	else {
+		for (size_t i = 0; i < c->stack->array_size; i++) {
+			struct aml_mapper_visitor *visitor;
+			size_t size;
+			void *src_ptr = PTR_OFF(c->stack->device_ptr, +,
+			                        i * c->stack->mapper->size);
+			err = aml_mapper_visitor_create(&visitor, src_ptr,
+			                                c->stack->mapper,
+			                                c->dma_src_host,
+			                                c->memcpy_src_host);
+			if (err != AML_SUCCESS)
+				return err;
+			err = aml_mapper_visitor_size(visitor, &size);
+			aml_mapper_visitor_destroy(visitor);
+			if (err != AML_SUCCESS)
+				return err;
+			tot_size += size;
+		}
 	}
-
 	// Create a mapper creator for the field we just allocated.
 	err = aml_mapper_creator_create(out, c->stack->device_ptr, tot_size,
 	                                c->stack->mapper, area, area_opts,
