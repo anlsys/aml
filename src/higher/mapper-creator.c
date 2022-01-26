@@ -135,7 +135,7 @@ int aml_mapper_creator_branch(struct aml_mapper_creator **out,
 		struct aml_mapper_visitor *visitor;
 		size_t size;
 		void *src_ptr = PTR_OFF(c->stack->device_ptr, +,
-		                        c->stack->mapper->size);
+		                        i * c->stack->mapper->size);
 		err = aml_mapper_visitor_create(&visitor, src_ptr,
 		                                c->stack->mapper,
 		                                c->dma_src_host,
