@@ -12,7 +12,6 @@
 
 // Mapper includes
 #include "aml/higher/mapper.h"
-AML_MAPPER_DECL_DEFAULTS
 
 // Largest working mapper decl
 struct BigStruct {
