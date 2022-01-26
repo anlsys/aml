@@ -120,6 +120,37 @@ static int aml_mapper_creator_next_array_element(struct aml_mapper_creator *c)
 	return AML_SUCCESS;
 }
 
+int aml_mapper_creator_connect(struct aml_mapper_creator *c, void *ptr)
+{
+	int err;
+	if (c == NULL || ptr == NULL ||
+	    !(c->stack->mapper->flags & AML_MAPPER_FLAG_SPLIT))
+		return -AML_EINVAL;
+
+	// Set pointer in parent structure to point to this new memory area
+	*aml_mapper_creator_field_ptr(c->stack, c->stack->next) = ptr;
+
+	// Move current creator to next field.
+next_field:
+	err = aml_mapper_creator_next_field(c);
+	if (err != -AML_EDOM)
+		return err;
+	err = aml_mapper_creator_parent(c);
+	if (err != AML_SUCCESS)
+		return err;
+	if (c->stack->mapper->n_fields == 0)
+		goto next_field;
+	err = aml_mapper_creator_next_array_element(c);
+	if (err == -AML_EDOM)
+		goto next_field;
+	if (err != AML_SUCCESS)
+		return err;
+	err = aml_mapper_creator_first_field(c);
+	if (err != -AML_EDOM)
+		return err;
+	goto next_field;
+}
+
 int aml_mapper_creator_branch(struct aml_mapper_creator **out,
                               struct aml_mapper_creator *c,
                               struct aml_area *area,
@@ -128,6 +159,10 @@ int aml_mapper_creator_branch(struct aml_mapper_creator **out,
                               aml_dma_operator memcpy_host_dst)
 {
 	int err;
+	if (out == NULL || c == NULL || area == NULL || dma_host_dst == NULL ||
+	    memcpy_host_dst == NULL ||
+	    !(c->stack->mapper->flags & AML_MAPPER_FLAG_SPLIT))
+		return -AML_EINVAL;
 
 	// Get size to map.
 	size_t tot_size = 0;
@@ -159,29 +194,9 @@ int aml_mapper_creator_branch(struct aml_mapper_creator **out,
 	// Set correct array size.
 	(*out)->stack->array_size = c->stack->array_size;
 
-	// Set pointer in parent structure to point to this new memory area.
-	*aml_mapper_creator_field_ptr(c->stack, c->stack->next) =
-	        (*out)->device_memory;
-
-	// Move current creator to next field.
-next_field:
-	err = aml_mapper_creator_next_field(c);
-	if (err != -AML_EDOM)
-		return err;
-	err = aml_mapper_creator_parent(c);
-	if (err != AML_SUCCESS)
-		return err;
-	if (c->stack->mapper->n_fields == 0)
-		goto next_field;
-	err = aml_mapper_creator_next_array_element(c);
-	if (err == -AML_EDOM)
-		goto next_field;
-	if (err != AML_SUCCESS)
-		return err;
-	err = aml_mapper_creator_first_field(c);
-	if (err != -AML_EDOM)
-		return err;
-	goto next_field;
+	// Set pointer in parent structure to point to this new memory area, and
+	// Move to next field.
+	return aml_mapper_creator_connect(c, (*out)->device_memory);
 }
 
 int aml_mapper_creator_next(struct aml_mapper_creator *c)

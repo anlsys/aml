@@ -51,13 +51,16 @@ extern "C" {
  * in a single copy to the destination pointer at the very end.
  *
  * Since the creator state refers to the structure that is about to be
- * copied, the user may perform one of these two actions:
+ * copied, the user may perform one of these three actions:
  * - Copy the field on host and overwrite parent pointer to this field
  * (on the host) to point to the device memory where this field will be copied,
  * and then move on to the next field;
  * - "Branch out" by creating a new creator at the current point of visit
  * that will map the current field and its descendants in a different
  * host buffer and device mapped memory.
+ * - Connect a child field that is already to its parent instead of
+ * "branching out". The child field is assumed to be a valid instanciation of
+ * a structure described the mapper of the creator in its current state.
  *
  * Host buffer and device buffer are allocated to fit just enough data to
  * map the structure, which is the size computed by a visitor that does not
@@ -167,13 +170,13 @@ int aml_mapper_creator_create(struct aml_mapper_creator **out,
  * destination structure to free the latter.
  *
  * This function may only be called after a call to
- * `aml_mapper_creator_next()` with the same mapper creator returned
+ * `aml_mapper_creator_next()`, `aml_mapper_creator_connect()` or
+ * `aml_mapper_creator_branch()` with the same mapper creator returned
  * `-AML_EDOM` meaning that everything has been copied from source
  * structure to the host and the creator is ready to finish the job.
  *
  * @param[in] c: A mapper creator that finished copying and packing source
- * structure on host. This happens when `aml_mapper_creator_next()` with the
- * same mapper creator returns `-AML_EDOM`.
+ * structure on host.
  * @param[out] ptr: Where to store the pointer to the copy of the copied
  * structure.
  * @param[out] size: Where to store the size of the copied structure.
@@ -213,16 +216,17 @@ int aml_mapper_creator_abort(struct aml_mapper_creator *crtr);
  * then the function will do nothing and return `-AML_EINVAL`. This flags
  * means that the structure allocation must be split at this point. Moreover,
  * there will not be enough room in the creator buffers to fit current field.
- * In this case, the user has to use `aml_mapper_creator_branch()`. After
- * `aml_mapper_creator_branch()` succeeds, the user can resume calling this
- * function.
+ * In this case, the user has to use either `aml_mapper_creator_branch()` to
+ * deepcopy the corresponding field or `aml_mapper_creator_connect()` to connect
+ * an existing copy of the field. After one of these functions succeeds,
+ * the user can resume calling this function.
  *
  * @param[in, out] c: A mapper creator representing the current state of a
  * structure copy from a source pointer to the host.
  * @return AML_SUCCESS on success to process this step.
  * @return -AML_EINVAL if the current field has the flag
  * `AML_MAPPER_FLAG_SPLIT` set. In that case, the next call should be
- * `aml_mapper_creator_branch()` instead.
+ * `aml_mapper_creator_branch()` or `aml_mapper_creator_connect()` instead.
  * @return -AML_EDOM there is no next field to copy. In that case,
  * the next call should be `aml_mapper_creator_finish()`.
  * @return Any error from dma_src_host arising from copying source pointer
@@ -232,6 +236,28 @@ int aml_mapper_creator_abort(struct aml_mapper_creator *crtr);
  * @see aml_mapper_creator_finish()
  */
 int aml_mapper_creator_next(struct aml_mapper_creator *c);
+
+/**
+ * Connect an already instanciated structure to the structure being constructed.
+ *
+ * This function shall be called after `aml_mapper_creator_next()` returns
+ * `-AML_EINVAL` with the same creator.
+ * The structure to connect must match the mapper associated with the current
+ * state of the creator. Moreover, this function expects that the mapper
+ * of the creator current state has the flag `AML_MAPPER_FLAG_SPLIT` set.
+ *
+ * @param[in, out] c: A creator in a "split" state.
+ * @param[in] ptr: The pointer to a constructed structure accurately described
+ * by the mapper of the current state of the creator.
+ * @return AML_SUCCESS on success, with the creator state advanced to the next
+ * element to copy.
+ * @return -AML_EDOM if there is nothing left to copy with the creator.
+ * @return -AML_EINVAL if the creator is NULL, of if it does not have the flag
+ * `AML_MAPPER_FLAG_SPLIT` set, or if `ptr` is NULL.
+ * @return -AML_ENOMEM if there was not enough memory to move the creator state
+ * to the next field to copy.
+ */
+int aml_mapper_creator_connect(struct aml_mapper_creator *c, void *ptr);
 
 /**
  * Create a new mapper creator starting from the current creator state and
