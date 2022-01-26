@@ -17,7 +17,7 @@
 #define utarray_oom()                                                          \
 	do {                                                                   \
 		err = -AML_ENOMEM;                                             \
-		goto ut_error;                                                 \
+		goto error;                                                    \
 	} while (0)
 #include "internal/utarray.h"
 
@@ -42,7 +42,7 @@ UT_icd mapped_ptr_icd = {
 
 static void aml_mapper_creator_destroy(void *elt)
 {
-	struct aml_mapper_creator *c = (struct aml_mapper_creator *)elt;
+	struct aml_mapper_creator *c = *(struct aml_mapper_creator **)elt;
 	(void)aml_mapper_creator_abort(c);
 }
 
@@ -80,7 +80,7 @@ int aml_mapper_deepcopy(aml_deepcopy_data *out,
 	                                area_opts, dma_src_host, dma_host_dst,
 	                                memcpy_src_host, memcpy_host_dst);
 	if (err != AML_SUCCESS)
-		goto ut_error;
+		goto error;
 
 iterate_creator:
 	err = aml_mapper_creator_next(crtr);
@@ -90,13 +90,13 @@ iterate_creator:
 		goto branch;
 	if (err == -AML_EDOM)
 		goto next_creator;
-	goto ut_error;
+	goto error;
 branch:
 	// Create branch.
 	err = aml_mapper_creator_branch(&next, crtr, area, area_opts,
 	                                dma_host_dst, memcpy_host_dst);
 	if (err != AML_SUCCESS)
-		goto ut_error;
+		goto error;
 	// Push new creator to be in the stack of pending creators.
 	utarray_push_back(&crtrs, &next);
 	next = NULL; // Avoids double destruction on error.
@@ -104,7 +104,7 @@ branch:
 next_creator:
 	err = aml_mapper_creator_finish(crtr, &ptr.ptr, &ptr.size);
 	if (err != AML_SUCCESS)
-		goto ut_error;
+		goto error;
 	crtr = utarray_back(&crtrs);
 	utarray_pop_back(&crtrs);
 	utarray_push_back(ptrs, &ptr);
@@ -115,7 +115,7 @@ success:
 	utarray_done(&crtrs);
 	*out = (aml_deepcopy_data)ptrs;
 	return AML_SUCCESS;
-ut_error:
+error:
 	if (crtr != NULL)
 		aml_mapper_creator_abort(crtr);
 	if (next != NULL)
