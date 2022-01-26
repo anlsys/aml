@@ -38,18 +38,6 @@ extern "C" {
  */
 #define AML_MAPPER_FLAG_SPLIT 0x1
 
-/**
- * The default mapper behaviour is to allocate a new piece of memory for the
- * top level structure of a mapped structure hierarchy.
- * When this flag is set, the `dst` pointer to map is assumed to be already
- * allocated ON HOST, and only its field are to be allocated. This flag can
- * only be used on the top level structure/mapper and connected descendant
- * holding the same flag. If this flag is set in any mapper of a mapper
- * hierarchy that is not connected to a mapper with the same flag, up to the
- * root, then it is silently ignored.
- */
-#define AML_MAPPER_FLAG_SHALLOW 0x2
-
 typedef size_t (*num_element_fn)(void *);
 
 struct aml_mapper {
