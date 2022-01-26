@@ -66,7 +66,7 @@ int aml_mapper_deepcopy(aml_deepcopy_data *out,
 	int err;
 	UT_array *ptrs = NULL;
 	UT_array crtrs;
-	struct aml_mapper_creator *crtr = NULL, *next = NULL;
+	struct aml_mapper_creator *crtr = NULL, **crtr_ptr, *next = NULL;
 	struct mapped_ptr ptr = {.ptr = NULL, .size = 0, .area = area};
 
 	// Allocate array of creators spawned in branches.
@@ -95,21 +95,26 @@ branch:
 	// Create branch.
 	err = aml_mapper_creator_branch(&next, crtr, area, area_opts,
 	                                dma_host_dst, memcpy_host_dst);
-	if (err != AML_SUCCESS)
+	if (err != AML_SUCCESS && err != -AML_EDOM)
 		goto error;
 	// Push new creator to be in the stack of pending creators.
 	utarray_push_back(&crtrs, &next);
 	next = NULL; // Avoids double destruction on error.
-	goto iterate_creator;
+	if (err == AML_SUCCESS)
+		goto iterate_creator;
+	if (err == -AML_EDOM)
+		goto next_creator;
 next_creator:
 	err = aml_mapper_creator_finish(crtr, &ptr.ptr, &ptr.size);
 	if (err != AML_SUCCESS)
 		goto error;
-	crtr = utarray_back(&crtrs);
-	utarray_pop_back(&crtrs);
+	crtr = NULL; // Avoids double destruction on error.
 	utarray_push_back(ptrs, &ptr);
-	if (crtr == NULL)
+	crtr_ptr = utarray_back(&crtrs);
+	if (crtr_ptr == NULL)
 		goto success;
+	crtrs.i--; // Pop back without calling destructor.
+	crtr = *crtr_ptr;
 	goto iterate_creator;
 success:
 	utarray_done(&crtrs);

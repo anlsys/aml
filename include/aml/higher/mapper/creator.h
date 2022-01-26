@@ -174,6 +174,9 @@ int aml_mapper_creator_create(struct aml_mapper_creator **out,
  * structure.
  * @param[out] size: Where to store the size of the copied structure.
  * @return AML_SUCCESS on success.
+ * @return -AML_EINVAL if the user is attempting to finish a creator without
+ * copying everything there is to copy. If this is intended, use
+ * `aml_mapper_creator_abort()` instead.
  * @return Any error from the dma engine used to copy from host to
  * destination area.
  */

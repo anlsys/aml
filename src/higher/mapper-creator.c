@@ -317,6 +317,8 @@ int aml_mapper_creator_finish(struct aml_mapper_creator *c,
                               size_t *size)
 {
 	int err;
+	if (c->stack != NULL)
+		return -AML_EINVAL;
 	err = aml_dma_copy_custom(c->dma_host_dst, c->device_memory,
 	                          c->host_memory, c->memcpy_host_dst,
 	                          (void *)c->offset);
