@@ -143,8 +143,8 @@ void test_mapper_creator()
 	assert(is_equal(root));
 	aml_mapper_visitor_create(&lhs, (void *)c, &struct_C_mapper,
 	                          aml_dma_linux, aml_dma_linux_memcpy_op);
-	aml_mapper_visitor_create(&rhs, (void *)root, &struct_C_mapper,
-	                          NULL, NULL);
+	aml_mapper_visitor_create(&rhs, (void *)root, &struct_C_mapper, NULL,
+	                          NULL);
 	assert(aml_mapper_visitor_match(lhs, rhs) == 1);
 	// Try to change original structure to break the match.
 	c->first[0].first->dummy = 32456;

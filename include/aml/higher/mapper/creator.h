@@ -116,6 +116,11 @@ struct aml_mapper_creator {
  * creator.
  * @param[in] src_ptr: A pointer to the structure to copy. This structure
  * will not be modified in the copy process.
+ * @param[in] size: A size large enough to fit the first chunk of the
+ * structure to copy. If no mapper has the flag `AML_MAPPER_FLAG_SPLIT` set,
+ * this is the total size of the structure. `size` can be set to 0 if this not
+ * known at the time of the call. If `size` is 0, then the source structure will
+ * be visited to obtain this size.
  * @param[in] mapper: The description of the structure pointed by `src_ptr`.
  * @param[in] area: The area used to allocate the space where the source
  * structure will be copied.
@@ -135,7 +140,7 @@ struct aml_mapper_creator {
  */
 int aml_mapper_creator_create(struct aml_mapper_creator **out,
                               void *src_ptr,
-															size_t size,
+                              size_t size,
                               struct aml_mapper *mapper,
                               struct aml_area *area,
                               struct aml_area_mmap_options *area_opts,
@@ -175,6 +180,15 @@ int aml_mapper_creator_create(struct aml_mapper_creator **out,
 int aml_mapper_creator_finish(struct aml_mapper_creator *c,
                               void **ptr,
                               size_t *size);
+
+/**
+ * Destroy a mapper creator before the last iteration of the copy.
+ * This will free the device pointer currently built. If any branch were made
+ * from this creator, it is the user responsibility to handle the branches and
+ * finished branches pointers destruction separately.
+ * @return AML_SUCCESS
+ */
+int aml_mapper_creator_abort(struct aml_mapper_creator *crtr);
 
 /**
  * Perform the next step of the copy from source structure to host buffer.

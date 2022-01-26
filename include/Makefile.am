@@ -15,7 +15,8 @@ include_aml_higher_HEADERS = \
 include_aml_mapperdir=$(includedir)/aml/mapper
 include_aml_mapper_HEADERS = \
 			      aml/higher/mapper/visitor.h \
-			      aml/higher/mapper/creator.h
+			      aml/higher/mapper/creator.h \
+			      aml/higher/mapper/deepcopy.h
 
 
 include_aml_replicasetdir=$(includedir)/aml/higher/replicaset

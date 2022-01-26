@@ -303,6 +303,15 @@ err_with_device_ptr:
 	return err;
 }
 
+int aml_mapper_creator_abort(struct aml_mapper_creator *c)
+{
+	while (aml_mapper_creator_parent(c) == AML_SUCCESS)
+		;
+	free(c->host_memory);
+	free(c);
+	return AML_SUCCESS;
+}
+
 int aml_mapper_creator_finish(struct aml_mapper_creator *c,
                               void **ptr,
                               size_t *size)
@@ -317,9 +326,5 @@ int aml_mapper_creator_finish(struct aml_mapper_creator *c,
 		*ptr = c->device_memory;
 	if (size != NULL)
 		*size = c->offset;
-	while (aml_mapper_creator_parent(c) == AML_SUCCESS)
-		;
-	free(c->host_memory);
-	free(c);
-	return AML_SUCCESS;
+	return aml_mapper_creator_abort(c);
 }
