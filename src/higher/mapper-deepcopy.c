@@ -150,6 +150,8 @@ int aml_mapper_deepfree(aml_deepcopy_data data)
 		err = aml_area_munmap(ptr->area, ptr->ptr, ptr->size);
 		if (err != AML_SUCCESS)
 			return err;
-		utarray_pop_back(ptrs);
+		// Pop back without calling destructor.
+		// This avoids to call munmap twice on error.
+		ptrs->i--;
 	}
 }
