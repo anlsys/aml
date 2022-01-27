@@ -38,6 +38,18 @@ extern "C" {
  */
 #define AML_MAPPER_FLAG_SPLIT 0x1
 
+/**
+ * Set this flag to mark a structure and its descendants to be copied on host.
+ * Until a structure with mapper having the flag `AML_MAPPER_FLAG_SPLIT` set is
+ * met, elements of the structure and its descendants will be copied on the
+ * host with a single `malloc()`. This flag embeds the flag
+ * `AML_MAPPER_FLAG_SPLIT`.
+ * This flag makes it convenient to copy a top level structure on host with
+ * some of its fields on a device, such that the application logic using one
+ * structure in a function signature stays the same.
+ */
+#define AML_MAPPER_FLAG_HOST 0x3
+
 typedef size_t (*num_element_fn)(void *);
 
 struct aml_mapper {

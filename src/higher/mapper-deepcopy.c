@@ -30,7 +30,10 @@ struct mapped_ptr {
 static void mapped_ptr_destroy(void *ptr)
 {
 	struct mapped_ptr *p = (struct mapped_ptr *)ptr;
-	(void)aml_area_munmap(p->area, p->ptr, p->size);
+	if (p->area != NULL)
+		(void)aml_area_munmap(p->area, p->ptr, p->size);
+	else
+		free(p->ptr);
 }
 
 UT_icd mapped_ptr_icd = {

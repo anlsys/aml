@@ -41,7 +41,12 @@ struct C {
 	struct B *first;
 };
 
-aml_mapper_decl(struct_C_mapper, 0, struct C, first, n, &struct_B_mapper);
+aml_mapper_decl(struct_C_mapper,
+                AML_MAPPER_FLAG_HOST,
+                struct C,
+                first,
+                n,
+                &struct_B_mapper);
 
 struct C *c;
 
@@ -98,10 +103,9 @@ void test_mapper_creator()
 	struct aml_mapper_visitor *lhs, *rhs;
 
 	// Initialize creator
-	assert(aml_mapper_creator_create(
-	               &creator, (void *)c, 0, &struct_C_mapper,
-	               &aml_area_linux, NULL, NULL, aml_dma_linux, NULL,
-	               aml_dma_linux_memcpy_op) == AML_SUCCESS);
+	assert(aml_mapper_creator_create(&creator, (void *)c, 0,
+	                                 &struct_C_mapper, NULL, NULL, NULL,
+	                                 NULL, NULL, NULL) == AML_SUCCESS);
 
 	// Copy root.
 	assert(aml_mapper_creator_next(creator) == AML_SUCCESS);
@@ -159,7 +163,7 @@ void test_mapper_creator()
 	// Cleanup
 	aml_mapper_visitor_destroy(lhs);
 	aml_mapper_visitor_destroy(rhs);
-	aml_area_munmap(&aml_area_linux, root, sizeof_root);
+	free(root);
 	aml_area_munmap(&aml_area_linux, split, sizeof_split);
 }
 

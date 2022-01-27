@@ -254,8 +254,18 @@ int aml_mapper_creator_create(struct aml_mapper_creator **out,
                               aml_dma_operator memcpy_src_host,
                               aml_dma_operator memcpy_host_dst)
 {
-	if (out == NULL || src_ptr == NULL || mapper == NULL || area == NULL ||
-	    dma_host_dst == NULL || memcpy_host_dst == NULL)
+	if (out == NULL || src_ptr == NULL || mapper == NULL)
+		return -AML_EINVAL;
+	if (dma_src_host != NULL && memcpy_src_host == NULL)
+		return -AML_EINVAL;
+
+	// If flag host is set we don't build the device copy, only the host
+	// copy.
+	const int create_host = mapper->flags &
+	                        (AML_MAPPER_FLAG_HOST & ~AML_MAPPER_FLAG_SPLIT);
+	// If we build a device copy, these arguments must be set.
+	if (!create_host &&
+	    (area == NULL || dma_host_dst == NULL || memcpy_host_dst == NULL))
 		return -AML_EINVAL;
 
 	int err;
@@ -273,15 +283,10 @@ int aml_mapper_creator_create(struct aml_mapper_creator **out,
 			return err;
 	}
 
-	// Allocate buffer in device to contain the total size to map.
-	void *dst_ptr = aml_area_mmap(area, size, area_opts);
-	if (dst_ptr == NULL)
-		return aml_errno;
-
 	// Allocate buffer on host to contain the total size to map.
 	void *host_memory = malloc(size);
 	if (host_memory == NULL)
-		goto err_with_device_ptr;
+		return -AML_ENOMEM;
 
 	// Initialize mapper creator with enough host memory to copy source
 	// structure.
@@ -289,17 +294,32 @@ int aml_mapper_creator_create(struct aml_mapper_creator **out,
 	struct aml_mapper_creator *c = malloc(sizeof(*c));
 	if (c == NULL)
 		goto err_with_host_memory;
-	c->device_memory = dst_ptr;
+
+	c->size = size;
 	c->host_memory = host_memory;
 	c->offset = 0;
 	c->dma_src_host = dma_src_host;
-	c->dma_host_dst = dma_host_dst;
 	c->memcpy_src_host = memcpy_src_host;
-	c->memcpy_host_dst = memcpy_host_dst;
+	if (create_host) {
+		c->device_area = NULL;
+		c->dma_host_dst = NULL;
+		c->memcpy_host_dst = NULL;
+		c->device_memory = host_memory;
+	} else {
+		c->device_area = area;
+		c->dma_host_dst = dma_host_dst;
+		c->memcpy_host_dst = memcpy_host_dst;
+		// Allocate buffer in device to contain the total size to map.
+		c->device_memory = aml_area_mmap(area, size, area_opts);
+		if (c->device_memory == NULL) {
+			err = aml_errno;
+			goto err_with_creator;
+		}
+	}
 
 	struct aml_mapper_visitor_state *head = malloc(sizeof(*head));
 	if (head == NULL)
-		goto err_with_creator;
+		goto err_with_device_ptr;
 	// This the original pointer to copy, not the target device pointer.
 	head->device_ptr = src_ptr;
 	head->host_copy = c->host_memory;
@@ -312,12 +332,13 @@ int aml_mapper_creator_create(struct aml_mapper_creator **out,
 	*out = c;
 	return AML_SUCCESS;
 
+err_with_device_ptr:
+	if (!create_host)
+		aml_area_munmap(area, c->device_memory, size);
 err_with_creator:
 	free(c);
 err_with_host_memory:
 	free(host_memory);
-err_with_device_ptr:
-	aml_area_munmap(area, dst_ptr, size);
 	return err;
 }
 
@@ -325,6 +346,8 @@ int aml_mapper_creator_abort(struct aml_mapper_creator *c)
 {
 	while (aml_mapper_creator_parent(c) == AML_SUCCESS)
 		;
+	if (c->device_area != NULL)
+		aml_area_munmap(c->device_area, c->device_memory, c->size);
 	free(c->host_memory);
 	free(c);
 	return AML_SUCCESS;
@@ -337,14 +360,21 @@ int aml_mapper_creator_finish(struct aml_mapper_creator *c,
 	int err;
 	if (c->stack != NULL)
 		return -AML_EINVAL;
-	err = aml_dma_copy_custom(c->dma_host_dst, c->device_memory,
-	                          c->host_memory, c->memcpy_host_dst,
-	                          (void *)c->offset);
-	if (err != AML_SUCCESS)
-		return err;
+	if (c->host_memory != c->device_memory) {
+		err = aml_dma_copy_custom(c->dma_host_dst, c->device_memory,
+		                          c->host_memory, c->memcpy_host_dst,
+		                          (void *)c->offset);
+		if (err != AML_SUCCESS)
+			return err;
+	}
 	if (ptr != NULL)
 		*ptr = c->device_memory;
 	if (size != NULL)
 		*size = c->offset;
-	return aml_mapper_creator_abort(c);
+	while (aml_mapper_creator_parent(c) == AML_SUCCESS)
+		;
+	if (c->host_memory != c->device_memory)
+		free(c->host_memory);
+	free(c);
+	return AML_SUCCESS;
 }

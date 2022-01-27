@@ -84,9 +84,14 @@ struct aml_mapper_creator {
 	// to map. At the end of the construction, the buffer is copied to
 	// the device memory.
 	void *host_memory;
+	// device_memory and host_memory size in bytes.
+	size_t size;
 	// Offset in `host_memory` and `device_memory` buffers pointing to the
 	// beginning of free space.
 	size_t offset;
+	// Area where device_memory is allocated.
+	// NULL if device_memory is the same as hsot memory.
+	struct aml_area *device_area;
 	// Dma engine to copy from the source structure pointer to host.
 	// If the source struture is on host, this pointer can be NULL.
 	struct aml_dma *dma_src_host;
@@ -123,20 +128,28 @@ struct aml_mapper_creator {
  * @param[in] src_ptr: A pointer to the structure to copy. This structure
  * will not be modified in the copy process.
  * @param[in] size: A size large enough to fit the first chunk of the
- * structure to copy. If no mapper has the flag `AML_MAPPER_FLAG_SPLIT` set,
- * this is the total size of the structure. `size` can be set to 0 if this not
- * known at the time of the call. If `size` is 0, then the source structure will
- * be visited to obtain this size.
+ * structure to copy. If no mapper in the hierarchy has the flag
+ * `AML_MAPPER_FLAG_SPLIT` set, this is the total size of the structure.
+ * `size` can be set to 0 if this not known at the time of the call.
+ * If `size` is 0, then the source structure will be visited to obtain this
+ * size.
  * @param[in] mapper: The description of the structure pointed by `src_ptr`.
  * @param[in] area: The area used to allocate the space where the source
- * structure will be copied.
+ * structure will be copied. `area` can be NULL if mapper flag
+ * `AML_MAPPER_FLAG_HOST` is set, meaning that no allocation but the host copy
+ * is performed.
  * @param[in] area_opts: Options to configure area behavior.
  * @param[in] dma_src_host: A copy engine to copy from the source pointer to
- * the host executing this call.
+ * the host executing this call. `dma_src_host` can be NULL if the source
+ * pointer is already on host.
  * @param[in] dma_host_dst: A copy engine to copy from the host executing
- * this call to a destination area buffer.
+ * this call to a destination area buffer. `dma_host_dst` can be `NULL` if
+ * mapper flag `AML_MAPPER_FLAG_HOST` is set, meaning that the target copy is
+ * the internal host copy.
  * @param[in] memcpy_src_host: The memcpy operator of `dma_src_host`.
+ * It can be NULL if `dma_src_host` is `NULL`.
  * @param[in] memcpy_host_dst: The memcpy operator of `dma_host_dst`.
+ * It can be NULL if `dma_host_dst` is `NULL`.
  * @return AML_SUCCESS on success.
  * @return -AML_ENOMEM if there was not enough memory to allocate host
  * buffer or to perform necessary operations.
