@@ -209,8 +209,8 @@ int main(void)
 	int num_devices;
 	unsigned int flags;
 	int has_device_map;
-	int has_unified_mem = 0;
-	int has_register_ptr = 0;
+	int has_unified_mem;
+	int has_register_ptr;
 	int current_device;
 
 	if (!aml_support_backends(AML_BACKEND_HIP))
