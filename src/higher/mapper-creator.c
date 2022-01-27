@@ -48,13 +48,21 @@ aml_mapper_creator_field_ptr(struct aml_mapper_visitor_state *field,
 	                        parent->mapper->offsets[field->field_num]);
 }
 
-static inline void aml_mapper_creator_init_field(struct aml_mapper_creator *c,
-                                                 const size_t num)
+static inline int aml_mapper_creator_init_field(struct aml_mapper_creator *c,
+                                                const size_t num)
 {
 	struct aml_mapper_visitor_state *head = STACK_TOP(c->stack);
 	struct aml_mapper_visitor_state *parent = head->next;
 
 	head->mapper = parent->mapper->fields[num];
+
+	// If the new field is out of bounds of the allocated memory,
+	// and the field is not meant to be split, then there is a logic
+	// error in this file code.
+	assert(c->offset < c->size ||
+	       (c->offset == c->size &&
+	        (head->mapper->flags & AML_MAPPER_FLAG_SPLIT)));
+
 	head->field_num = num;
 	head->array_num = 0;
 	head->array_size = 1;
@@ -67,6 +75,8 @@ static inline void aml_mapper_creator_init_field(struct aml_mapper_creator *c,
 	head->host_copy = PTR_OFF(c->host_memory, +, c->offset);
 	head->device_ptr = *field_ptr;
 	*field_ptr = PTR_OFF(c->device_memory, +, c->offset);
+
+	return AML_SUCCESS;
 }
 
 static int aml_mapper_creator_next_field(struct aml_mapper_creator *c)
@@ -80,8 +90,7 @@ static int aml_mapper_creator_next_field(struct aml_mapper_creator *c)
 	size_t num = head->field_num + 1;
 	if (num >= parent->mapper->n_fields)
 		return -AML_EDOM;
-	aml_mapper_creator_init_field(c, num);
-	return AML_SUCCESS;
+	return aml_mapper_creator_init_field(c, num);
 }
 
 static int aml_mapper_creator_first_field(struct aml_mapper_creator *c)
@@ -95,8 +104,7 @@ static int aml_mapper_creator_first_field(struct aml_mapper_creator *c)
 	if (state == NULL)
 		return -AML_ENOMEM;
 	STACK_PUSH(c->stack, state);
-	aml_mapper_creator_init_field(c, 0);
-	return AML_SUCCESS;
+	return aml_mapper_creator_init_field(c, 0);
 }
 
 static int aml_mapper_creator_parent(struct aml_mapper_creator *c)
