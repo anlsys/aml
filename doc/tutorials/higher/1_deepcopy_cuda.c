@@ -22,7 +22,7 @@ int main(int argc, char **argv)
 {
 	struct C *c, *host_c;
 	void *device_c;
-	aml_deepcopy_data d0, d1;
+	aml_mapped_ptrs d0, d1;
 
 	assert(aml_init(&argc, &argv) == AML_SUCCESS);
 	if (!aml_support_backends(AML_BACKEND_CUDA))

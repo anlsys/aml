@@ -30,7 +30,15 @@ extern "C" {
  * The first element of this array it the pointer to the root of the
  * data structure, i.e the deepcopied structure.
  */
-typedef void *aml_deepcopy_data;
+typedef void *aml_mapped_ptrs;
+
+struct aml_mapped_ptr {
+	void *ptr;
+	size_t size;
+	struct aml_area *area;
+};
+
+void aml_mapped_ptr_destroy(void *ptr);
 
 /**
  * Perform a deepcopy of a structure described with a `mapper` into an `area` of
@@ -74,7 +82,7 @@ typedef void *aml_deepcopy_data;
  * + Any error code created by area when to allocating data.
  * + Any error code from a failing dma engine copy.
  */
-void *aml_mapper_deepcopy(aml_deepcopy_data *out,
+void *aml_mapper_deepcopy(aml_mapped_ptrs *out,
                           void *ptr,
                           struct aml_mapper *mapper,
                           struct aml_area *area,
@@ -94,7 +102,7 @@ void *aml_mapper_deepcopy(aml_deepcopy_data *out,
  * In this case, the last pointer in `data` structure will be the problematic
  * one.
  */
-int aml_mapper_deepfree(aml_deepcopy_data data);
+int aml_mapper_deepfree(aml_mapped_ptrs data);
 
 /**
  * @}

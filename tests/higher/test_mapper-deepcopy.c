@@ -89,7 +89,7 @@ void test_mapper(struct aml_mapper *mapper,
                  aml_dma_operator memcpy_dst_host,
                  aml_dma_operator memcpy_host_dst)
 {
-	aml_deepcopy_data data;
+	aml_mapped_ptrs data;
 	void *copy;
 	struct aml_mapper_visitor *lhs_vis, *rhs_vis;
 

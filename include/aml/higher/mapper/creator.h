@@ -90,7 +90,7 @@ struct aml_mapper_creator {
 	// beginning of free space.
 	size_t offset;
 	// Area where device_memory is allocated.
-	// NULL if device_memory is the same as hsot memory.
+	// NULL if device_memory is the same as host memory.
 	struct aml_area *device_area;
 	// Dma engine to copy from the source structure pointer to host.
 	// If the source struture is on host, this pointer can be NULL.

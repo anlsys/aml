@@ -21,26 +21,20 @@
 	} while (0)
 #include "internal/utarray.h"
 
-struct mapped_ptr {
-	void *ptr;
-	size_t size;
-	struct aml_area *area;
-};
-
-static void mapped_ptr_destroy(void *ptr)
+void aml_mapped_ptr_destroy(void *ptr)
 {
-	struct mapped_ptr *p = (struct mapped_ptr *)ptr;
+	struct aml_mapped_ptr *p = (struct aml_mapped_ptr *)ptr;
 	if (p->area != NULL)
 		(void)aml_area_munmap(p->area, p->ptr, p->size);
 	else
 		free(p->ptr);
 }
 
-UT_icd mapped_ptr_icd = {
-        .sz = sizeof(struct mapped_ptr),
+static UT_icd aml_mapped_ptr_icd = {
+        .sz = sizeof(struct aml_mapped_ptr),
         .init = NULL,
         .copy = NULL,
-        .dtor = mapped_ptr_destroy,
+        .dtor = aml_mapped_ptr_destroy,
 };
 
 static void aml_mapper_creator_destroy(void *elt)
@@ -49,14 +43,14 @@ static void aml_mapper_creator_destroy(void *elt)
 	(void)aml_mapper_creator_abort(c);
 }
 
-UT_icd creator_icd = {
+static UT_icd creator_icd = {
         .sz = sizeof(struct aml_mapper_creator *),
         .init = NULL,
         .copy = NULL,
         .dtor = aml_mapper_creator_destroy,
 };
 
-void *aml_mapper_deepcopy(aml_deepcopy_data *out,
+void *aml_mapper_deepcopy(aml_mapped_ptrs *out,
                           void *src_ptr,
                           struct aml_mapper *mapper,
                           struct aml_area *area,
@@ -69,14 +63,15 @@ void *aml_mapper_deepcopy(aml_deepcopy_data *out,
 	int err;
 	UT_array *ptrs = NULL;
 	UT_array crtrs;
-	struct aml_mapper_creator *crtr = NULL, **crtr_ptr, *next = NULL;
-	struct mapped_ptr ptr = {.ptr = NULL, .size = 0, .area = area};
+	struct aml_mapper_creator **crtr_ptr, *next = NULL;
+	struct aml_mapped_ptr ptr = {.ptr = NULL, .size = 0, .area = area};
+	struct aml_mapper_creator *crtr = NULL;
 
 	// Allocate array of creators spawned in branches.
 	utarray_init(&crtrs, &creator_icd);
 
 	// Allocate and initialize pointer array.
-	utarray_new(ptrs, &mapped_ptr_icd);
+	utarray_new(ptrs, &aml_mapped_ptr_icd);
 
 	// Allocate and initialize first constructor.
 	err = aml_mapper_creator_create(&crtr, src_ptr, 0, mapper, area,
@@ -105,6 +100,8 @@ branch:
 	next = NULL; // Avoids double destruction on error.
 	if (err == AML_SUCCESS)
 		goto iterate_creator;
+	if (err == -AML_EINVAL)
+		goto branch;
 	if (err == -AML_EDOM)
 		goto next_creator;
 next_creator:
@@ -121,8 +118,8 @@ next_creator:
 	goto iterate_creator;
 success:
 	utarray_done(&crtrs);
-	*out = (aml_deepcopy_data)ptrs;
-	return ((struct mapped_ptr *)utarray_eltptr(ptrs, 0))->ptr;
+	*out = (aml_mapped_ptrs)ptrs;
+	return ((struct aml_mapped_ptr *)utarray_eltptr(ptrs, 0))->ptr;
 error:
 	if (crtr != NULL)
 		aml_mapper_creator_abort(crtr);
@@ -135,10 +132,10 @@ error:
 	return NULL;
 }
 
-int aml_mapper_deepfree(aml_deepcopy_data data)
+int aml_mapper_deepfree(aml_mapped_ptrs data)
 {
 	UT_array *ptrs = (UT_array *)data;
-	struct mapped_ptr *ptr;
+	struct aml_mapped_ptr *ptr;
 	int err;
 
 	if (ptrs == NULL)

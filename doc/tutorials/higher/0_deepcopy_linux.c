@@ -118,7 +118,7 @@ int eq_struct(const struct C *c, const struct C *_c)
 int main(int argc, char **argv)
 {
 	struct C *c, *_c;
-	aml_deepcopy_data data;
+	aml_mapped_ptrs data;
 
 	// Init
 	assert(aml_init(&argc, &argv) == AML_SUCCESS);
