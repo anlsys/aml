@@ -48,7 +48,8 @@ HIGHER_SOURCES = \
 		higher/mapper.c \
 		higher/mapper-visitor.c \
 		higher/mapper-creator.c \
-		higher/mapper-deepcopy.c
+		higher/mapper-deepcopy.c \
+		higher/mapper-replicaset.c
 
 LIB_SOURCES = \
 	      $(AREA_SOURCES) \

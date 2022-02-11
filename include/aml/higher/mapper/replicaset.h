@@ -21,9 +21,11 @@ extern "C" {
  * @{
  **/
 
-#define AML_MAPPER_REPLICASET_GLOBAL (AML_MAPPER_FLAG_SPLIT & (1 << 31))
-#define AML_MAPPER_REPLICASET_SHARED (AML_MAPPER_FLAG_SPLIT & (1 << 30))
-#define AML_MAPPER_REPLICASET_LOCAL (AML_MAPPER_FLAG_SPLIT & (1 << 29))
+#include "aml/higher/mapper.h"
+	
+#define AML_MAPPER_REPLICASET_GLOBAL (AML_MAPPER_FLAG_SPLIT | 0x80000000)
+#define AML_MAPPER_REPLICASET_SHARED (AML_MAPPER_FLAG_SPLIT | 0x40000000)
+#define AML_MAPPER_REPLICASET_LOCAL (AML_MAPPER_FLAG_SPLIT | 0x20000000)
 
 struct aml_shared_replica_config {
 	// The number of replicas sharing this build configuration.
@@ -45,14 +47,14 @@ struct aml_shared_replica_config {
 	sem_t ptr_ready;
 };
 
-int aml_replica_build_init(struct aml_shared_replica_config *out,
+void aml_replica_build_init(struct aml_shared_replica_config *out,
                            unsigned num_sharing,
                            struct aml_area *area,
                            struct aml_area_mmap_options *opts,
                            struct aml_dma *dma_host_dst,
                            aml_dma_operator memcpy_host_dst);
 
-int aml_replica_build_fini(struct aml_shared_replica_config *out);
+void aml_replica_build_fini(struct aml_shared_replica_config *out);
 
 int aml_mapper_replica_build_start(pthread_t *thread_handle,
                                    struct aml_mapper_visitor *visitor,
