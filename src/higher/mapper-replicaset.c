@@ -6,8 +6,8 @@
 #include "aml/higher/mapper.h"
 #include "aml/higher/mapper/creator.h"
 #include "aml/higher/mapper/deepcopy.h"
-#include "aml/higher/mapper/replicaset.h"
 #include "aml/higher/mapper/visitor.h"
+#include "aml/higher/mapper/replicaset.h"
 
 #include "internal/utarray.h"
 
@@ -138,8 +138,8 @@ branch:
 
 		if (err == AML_SUCCESS || err == -AML_EDOM)
 			build->ptr = next->device_memory;
-		pthread_mutex_unlock(&build->lock);
 		pthread_barrier_wait(&build->barrier);
+		pthread_mutex_unlock(&build->lock);
 		if (err != AML_SUCCESS && err != -AML_EDOM)
 			goto error;
 
