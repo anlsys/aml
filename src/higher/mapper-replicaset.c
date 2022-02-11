@@ -6,8 +6,8 @@
 #include "aml/higher/mapper.h"
 #include "aml/higher/mapper/creator.h"
 #include "aml/higher/mapper/deepcopy.h"
-#include "aml/higher/mapper/visitor.h"
 #include "aml/higher/mapper/replicaset.h"
+#include "aml/higher/mapper/visitor.h"
 
 #include "internal/utarray.h"
 
@@ -53,15 +53,15 @@ void aml_replica_build_init(struct aml_shared_replica_config *out,
 	out->dma_host_dst = dma_host_dst;
 	out->memcpy_host_dst = memcpy_host_dst;
 	out->ptr = NULL;
-	out->num_shared = num_sharing;
-	sem_init(&out->ptr_ready, 0, num_sharing);
-	sem_post(&out->ptr_ready);
+	pthread_mutex_init(&out->lock, NULL);
+	pthread_barrier_init(&out->barrier, NULL, num_sharing);
 }
 
 void aml_replica_build_fini(struct aml_shared_replica_config *out)
 {
 	assert(out != NULL);
-	sem_destroy(&out->ptr_ready);
+	pthread_barrier_destroy(&out->barrier);
+	pthread_mutex_destroy(&out->lock);
 }
 
 struct aml_replica_build_thread_args {
@@ -71,12 +71,11 @@ struct aml_replica_build_thread_args {
 	struct aml_shared_replica_config *local;
 	struct aml_shared_replica_config *shared;
 	struct aml_shared_replica_config *global;
-	pthread_mutex_t initialization_lock;
 };
 
 static void *aml_mapper_replica_build_thread_fn(void *thread_args)
 {
-	int err;
+	int err, flags;
 	UT_array ptrs, crtrs;
 	struct aml_mapper_creator **crtr_ptr, *next = NULL;
 	struct aml_mapped_ptr ptr = {.ptr = NULL, .size = 0, .area = NULL};
@@ -94,7 +93,7 @@ static void *aml_mapper_replica_build_thread_fn(void *thread_args)
 	// From this point we don't access args anylonger.
 	// However, pointers contained in args must remain valid for the
 	// lifetime of this thread.
-	pthread_mutex_unlock(&args->initialization_lock);
+	pthread_mutex_unlock(&local->lock);
 
 	// Allocate array of creators spawned in branches.
 	utarray_init(&crtrs, &creator_icd);
@@ -118,18 +117,19 @@ branch:
 	// Set the build configuration to what the mapper says.
 	// If the flag AML_MAPPER_FLAG_SPLIT is met but no other replicaset
 	// flags is set, the build configuration remains the same.
-	if (crtr->stack->mapper->flags & AML_MAPPER_REPLICASET_LOCAL)
+	flags = crtr->stack->mapper->flags & 0xe0000000;
+	if (flags & AML_MAPPER_REPLICASET_LOCAL)
 		build = local;
-	else if (crtr->stack->mapper->flags & AML_MAPPER_REPLICASET_SHARED)
+	else if (flags & AML_MAPPER_REPLICASET_SHARED)
 		build = shared;
-	else if (crtr->stack->mapper->flags & AML_MAPPER_REPLICASET_GLOBAL)
+	else if (flags & AML_MAPPER_REPLICASET_GLOBAL)
 		build = global;
 
 	// Make a branch.
 	// If the thread gets the lock, it is responsible for allocation.
 	// The other threads wait for allocation to finish and connect the
 	// pointer allocated by the former thread to their own replica.
-	if (sem_trywait(&build->ptr_ready) == 0) {
+	if (pthread_mutex_trylock(&build->lock) == 0) {
 		build->ptr = NULL;
 		err = aml_mapper_creator_branch(&next, crtr, build->area,
 		                                build->area_opts,
@@ -138,15 +138,16 @@ branch:
 
 		if (err == AML_SUCCESS || err == -AML_EDOM)
 			build->ptr = next->device_memory;
-		for (size_t i = 0; i < build->num_shared; i++)
-			sem_post(&build->ptr_ready);
+		pthread_mutex_unlock(&build->lock);
+		pthread_barrier_wait(&build->barrier);
 		if (err != AML_SUCCESS && err != -AML_EDOM)
-			goto error_with_barrier;
+			goto error;
 
 		// Push new creator to be in the stack of pending creators.
 		utarray_push_back(&crtrs, &next);
 	} else {
-		sem_wait(&build->ptr_ready);
+		pthread_barrier_wait(&build->barrier);
+		fprintf(stderr, "Shallow copy.\n");
 		if (build->ptr == NULL) {
 			err = -AML_FAILURE;
 			goto error;
@@ -184,13 +185,8 @@ success:;
 	utarray_concat((UT_array *)replicaset_pointers, &ptrs);
 	pthread_mutex_unlock(replicaset_mutex);
 	utarray_done(&ptrs);
-	aml_replica_build_fini(local);
-	aml_replica_build_fini(shared);
-	aml_replica_build_fini(global);
 	return out;
 
-error_with_barrier:
-	sem_trywait(&build->ptr_ready);
 error:
 	if (crtr != NULL)
 		aml_mapper_creator_abort(crtr);
@@ -239,9 +235,8 @@ int aml_mapper_replica_build_start(pthread_t *thread_handle,
 	        .local = local,
 	        .shared = shared,
 	        .global = global,
-					.initialization_lock = PTHREAD_MUTEX_INITIALIZER,
 	};
-	pthread_mutex_lock(&args.initialization_lock);
+	pthread_mutex_lock(&local->lock);
 
 	// Start the thread responsible to make this replica.
 	// It is important that all threads responsible for all replicas
@@ -263,8 +258,8 @@ int aml_mapper_replica_build_start(pthread_t *thread_handle,
 	}
 
 	// Wait thread initialization before args (on stack) is destroyed.
-	pthread_mutex_lock(&args.initialization_lock);
-	pthread_mutex_unlock(&args.initialization_lock);
+	pthread_mutex_lock(&local->lock);
+	pthread_mutex_unlock(&local->lock);
 	*thread_handle = thread;
 	return AML_SUCCESS;
 }

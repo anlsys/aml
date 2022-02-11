@@ -28,8 +28,6 @@ extern "C" {
 #define AML_MAPPER_REPLICASET_LOCAL (AML_MAPPER_FLAG_SPLIT | 0x20000000)
 
 struct aml_shared_replica_config {
-	// The number of replicas sharing this build configuration.
-	size_t num_shared;
 	// The area used to allocate new pointers.
 	struct aml_area *area;
 	// area options.
@@ -41,10 +39,9 @@ struct aml_shared_replica_config {
 	// The shared pointer allocated with area. This pointer
 	// is updated for each allocation during the build, thus
 	// requiring replicas to be built in a bulk synchronous fashion.
-	void *ptr;
-	// A lock telling whether ptr is updated and readable once per
-	// shared replica.
-	sem_t ptr_ready;
+	void *ptr;	
+	pthread_mutex_t lock;
+	pthread_barrier_t barrier;
 };
 
 void aml_replica_build_init(struct aml_shared_replica_config *out,
