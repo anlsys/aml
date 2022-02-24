@@ -29,6 +29,7 @@ extern "C" {
 #include <numa.h>
 #include <numaif.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
