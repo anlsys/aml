@@ -9,13 +9,16 @@
  ******************************************************************************/
 
 #include "config.h"
-#include "aml.h"
-#include "aml/area/linux.h"
+
+#include <assert.h>
 #include <inttypes.h>
-#include <sys/mman.h>
 #include <numa.h>
 #include <numaif.h>
-#include <assert.h>
+#include <sys/mman.h>
+
+#include "aml.h"
+
+#include "aml/area/linux.h"
 
 #define AML_AREA_LINUX_MBIND_FLAGS MPOL_MF_MOVE
 
@@ -34,10 +37,9 @@ static inline int aml_area_linux_policy(const enum aml_area_linux_policy p)
 	return MPOL_DEFAULT;
 }
 
-int
-aml_area_linux_mbind(struct aml_area_linux_data    *bind,
-		     void                          *ptr,
-		     size_t                         size)
+int aml_area_linux_mbind(struct aml_area_linux_data *bind,
+                         void *ptr,
+                         size_t size)
 {
 	struct bitmask *nodeset;
 
@@ -47,22 +49,18 @@ aml_area_linux_mbind(struct aml_area_linux_data    *bind,
 	if (nodeset == NULL)
 		nodeset = numa_all_nodes_ptr;
 
-	long err = mbind(ptr,
-			 size,
-			 aml_area_linux_policy(bind->policy),
-			 nodeset->maskp,
-			 nodeset->size,
-			 AML_AREA_LINUX_MBIND_FLAGS);
+	long err = mbind(ptr, size, aml_area_linux_policy(bind->policy),
+	                 nodeset->maskp, nodeset->size,
+	                 AML_AREA_LINUX_MBIND_FLAGS);
 
 	if (err == 0)
 		return AML_SUCCESS;
 	return -AML_FAILURE;
 }
 
-int
-aml_area_linux_check_binding(struct aml_area_linux_data *area_data,
-			     void                       *ptr,
-			     size_t                      size)
+int aml_area_linux_check_binding(struct aml_area_linux_data *area_data,
+                                 void *ptr,
+                                 size_t size)
 {
 	int err, mode, i;
 	struct bitmask *nodeset;
@@ -73,11 +71,8 @@ aml_area_linux_check_binding(struct aml_area_linux_data *area_data,
 	if (nodeset == NULL)
 		return -AML_ENOMEM;
 
-	err = get_mempolicy(&mode,
-			    nodeset->maskp,
-			    nodeset->size,
-			    ptr,
-			    AML_AREA_LINUX_MBIND_FLAGS);
+	err = get_mempolicy(&mode, nodeset->maskp, nodeset->size, ptr,
+	                    AML_AREA_LINUX_MBIND_FLAGS);
 
 	if (err < 0) {
 		err = -AML_EINVAL;
@@ -94,42 +89,34 @@ aml_area_linux_check_binding(struct aml_area_linux_data *area_data,
 		if (mode == AML_AREA_LINUX_POLICY_BIND &&
 		    ptr_set != bitmask_set)
 			goto binding_failed;
-		if (mode == AML_AREA_LINUX_POLICY_INTERLEAVE &&
-		    ptr_set && !bitmask_set)
+		if (mode == AML_AREA_LINUX_POLICY_INTERLEAVE && ptr_set &&
+		    !bitmask_set)
 			goto binding_failed;
 	}
 
 	goto out;
- binding_failed:
+binding_failed:
 	err = 0;
- out:
+out:
 	numa_free_nodemask(nodeset);
 	return err;
 }
 
-void *aml_area_linux_mmap(const struct aml_area_data   *area_data,
-			  size_t                        size,
-			  struct aml_area_mmap_options *opts)
+void *aml_area_linux_mmap(const struct aml_area_data *area_data,
+                          size_t size,
+                          struct aml_area_mmap_options *opts)
 {
-	(void) area_data;
+	(void)area_data;
 	void *out;
 	struct aml_area_linux_mmap_options *options;
 
-	options = (struct aml_area_linux_mmap_options *) opts;
+	options = (struct aml_area_linux_mmap_options *)opts;
 	if (options == NULL) {
-		out = mmap(NULL,
-			   size,
-			   PROT_READ|PROT_WRITE,
-			   MAP_PRIVATE | MAP_ANONYMOUS,
-			   0,
-			   0);
+		out = mmap(NULL, size, PROT_READ | PROT_WRITE,
+		           MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 	} else {
-		out = mmap(options->ptr,
-			   size,
-			   options->mode,
-			   options->flags,
-			   options->fd,
-			   options->offset);
+		out = mmap(options->ptr, size, options->mode, options->flags,
+		           options->fd, options->offset);
 	}
 
 	if (out == MAP_FAILED) {
@@ -141,7 +128,8 @@ void *aml_area_linux_mmap(const struct aml_area_data   *area_data,
 }
 
 int aml_area_linux_munmap(const struct aml_area_data *area_data,
-		void *ptr, const size_t size)
+                          void *ptr,
+                          const size_t size)
 {
 	(void)area_data;
 	int err = munmap(ptr, size);
@@ -151,10 +139,9 @@ int aml_area_linux_munmap(const struct aml_area_data *area_data,
 	return AML_SUCCESS;
 }
 
-
-void *aml_area_linux_mmap_mbind(const struct aml_area_data  *area_data,
-				size_t                       size,
-				struct aml_area_mmap_options *opts)
+void *aml_area_linux_mmap_mbind(const struct aml_area_data *area_data,
+                                size_t size,
+                                struct aml_area_mmap_options *opts)
 {
 	void *out = aml_area_linux_mmap(area_data, size, opts);
 
@@ -162,7 +149,7 @@ void *aml_area_linux_mmap_mbind(const struct aml_area_data  *area_data,
 		return NULL;
 
 	struct aml_area_linux_data *data =
-		(struct aml_area_linux_data *) area_data;
+	        (struct aml_area_linux_data *)area_data;
 
 	if (data->nodeset != NULL ||
 	    data->policy != AML_AREA_LINUX_POLICY_DEFAULT) {
@@ -179,16 +166,16 @@ void *aml_area_linux_mmap_mbind(const struct aml_area_data  *area_data,
 }
 
 int aml_area_linux_fprintf(const struct aml_area_data *data,
-			   FILE *stream, const char *prefix)
+                           FILE *stream,
+                           const char *prefix)
 {
 	const struct aml_area_linux_data *d;
 
-	static const char * const policies[] = {
-		[AML_AREA_LINUX_POLICY_DEFAULT] = "default",
-		[AML_AREA_LINUX_POLICY_BIND] = "bind",
-		[AML_AREA_LINUX_POLICY_PREFERRED] = "preferred",
-		[AML_AREA_LINUX_POLICY_INTERLEAVE] = "interleave"
-	};
+	static const char *const policies[] = {
+	        [AML_AREA_LINUX_POLICY_DEFAULT] = "default",
+	        [AML_AREA_LINUX_POLICY_BIND] = "bind",
+	        [AML_AREA_LINUX_POLICY_PREFERRED] = "preferred",
+	        [AML_AREA_LINUX_POLICY_INTERLEAVE] = "interleave"};
 
 	fprintf(stream, "%s: area-linux: %p\n", prefix, (void *)data);
 	if (data == NULL)
@@ -200,7 +187,7 @@ int aml_area_linux_fprintf(const struct aml_area_data *data,
 		fprintf(stream, "%s: bitmask: 0x0\n", prefix);
 	else {
 		fprintf(stream, "%s: bitmask: size: %zu", prefix,
-			d->nodeset->size);
+		        d->nodeset->size);
 		fprintf(stream, "%s: bitmask: maskp: ", prefix);
 		for (size_t i = 0; i < d->nodeset->size; i++)
 			fprintf(stream, "%8lx", d->nodeset->maskp[i]);
@@ -215,8 +202,8 @@ int aml_area_linux_fprintf(const struct aml_area_data *data,
  ******************************************************************************/
 
 int aml_area_linux_create(struct aml_area **area,
-			  const struct aml_bitmap *nodemask,
-			  const enum aml_area_linux_policy policy)
+                          const struct aml_bitmap *nodemask,
+                          const enum aml_area_linux_policy policy)
 {
 	struct aml_area *ret = NULL;
 	struct aml_area_linux_data *data;
@@ -227,14 +214,12 @@ int aml_area_linux_create(struct aml_area **area,
 
 	*area = NULL;
 
-	ret = AML_INNER_MALLOC(struct aml_area,
-				      struct aml_area_linux_data);
+	ret = AML_INNER_MALLOC(struct aml_area, struct aml_area_linux_data);
 	if (ret == NULL)
 		return -AML_ENOMEM;
 
-	ret->data = AML_INNER_MALLOC_GET_FIELD(ret, 2,
-					       struct aml_area,
-					       struct aml_area_linux_data);
+	ret->data = AML_INNER_MALLOC_GET_FIELD(ret, 2, struct aml_area,
+	                                       struct aml_area_linux_data);
 	ret->ops = &aml_area_linux_ops;
 	data = (struct aml_area_linux_data *)ret->data;
 
@@ -242,33 +227,23 @@ int aml_area_linux_create(struct aml_area **area,
 	data->policy = policy;
 
 	/* check/set nodemask */
-	data->nodeset = numa_get_mems_allowed();
-	if (data->nodeset == NULL) {
-		err = -AML_ENOMEM;
-		goto err_f_ret;
-	}
+	data->nodeset = NULL;
 
 	/* check if the nodemask is compatible with the nodeset */
 	if (nodemask != NULL) {
-		for (int i = 0; i < AML_BITMAP_MAX; i++) {
-			int ours, theirs;
-
-			ours = aml_bitmap_isset(nodemask, i);
-			theirs = numa_bitmask_isbitset(data->nodeset, i);
-
-			if (ours && !theirs) {
-				err = -AML_EDOM;
-				goto err_f_node;
-			}
+		int n = numa_num_possible_nodes();
+		if (n < 0)
+			return -AML_ENOTSUP;
+		data->nodeset = numa_bitmask_alloc((unsigned int)n);
+		if (data->nodeset == NULL) {
+			err = -AML_ENOMEM;
+			goto err_f_ret;
 		}
-		aml_bitmap_copy_to_ulong(nodemask,
-					 data->nodeset->maskp,
-					 data->nodeset->size);
+		aml_bitmap_copy_to_ulong(nodemask, data->nodeset->maskp,
+		                         data->nodeset->size);
 	}
 	*area = ret;
 	return AML_SUCCESS;
-err_f_node:
-	numa_free_nodemask(data->nodeset);
 err_f_ret:
 	free(ret);
 	return err;
@@ -287,29 +262,27 @@ void aml_area_linux_destroy(struct aml_area **area)
 
 	/* with our creators it should not happen */
 	assert(a->data != NULL);
-	data = (struct aml_area_linux_data *) a->data;
+	data = (struct aml_area_linux_data *)a->data;
 	numa_free_nodemask(data->nodeset);
 	free(a);
 	*area = NULL;
 }
-
 
 /*******************************************************************************
  * Areas declaration
  ******************************************************************************/
 
 struct aml_area_linux_data aml_area_linux_data_default = {
-	.nodeset = NULL,
-	.policy = AML_AREA_LINUX_POLICY_DEFAULT,
+        .nodeset = NULL,
+        .policy = AML_AREA_LINUX_POLICY_DEFAULT,
 };
 
 struct aml_area_ops aml_area_linux_ops = {
-	.mmap = aml_area_linux_mmap_mbind,
-	.munmap = aml_area_linux_munmap,
-	.fprintf = aml_area_linux_fprintf,
+        .mmap = aml_area_linux_mmap_mbind,
+        .munmap = aml_area_linux_munmap,
+        .fprintf = aml_area_linux_fprintf,
 };
 
 struct aml_area aml_area_linux = {
-	.ops = &aml_area_linux_ops,
-	.data = (struct aml_area_data *)(&aml_area_linux_data_default)
-};
+        .ops = &aml_area_linux_ops,
+        .data = (struct aml_area_data *)(&aml_area_linux_data_default)};
