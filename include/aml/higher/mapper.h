@@ -19,39 +19,36 @@ extern "C" {
  * @defgroup aml_mapper "AML Struct Mapper"
  * @brief Hierarchical description of structs.
  *
- * Mapper is construct aimed at holding the description of data structures.
+ * Mapper a description of a data structure.
  * A mapper should be able to be instanciated once per `struct` declaration
  * and accurately describe any dynamic instance of the same structure.
- * Mapper can then be used to map/allocate a structure in different memory
- * regions, and copy in between mappings with the associated `dma`.
+ * Mapper can then be used to deep-copy complex structures in different memory
+ * regions.
  * @{
  **/
 
 /**
- * The default mapper behaviour is to walk to complete src struct and mappers
- * to compute the total required size and allocate everything in a single packed
- * chunk of memory.
- * If this flag is set then the struct associated with this mapper and children
- * mappers (with flag AML_MAPPER_FLAG_SPLIT unset) is allocated in a separate
- * chunk.
- * There are several use cases for this feature:
- * 1. Breaking down a big allocation in smaller pieces when the allocator
- * does not find one large space to allocate to.
- * 2. Aligning fields with the alignement offered by the allocator.
+ * When walking a user structure, the expected behavior is to walk the entire
+ * structure. When this flag is set, the walk should stop when encountering this
+ * mapper and take the appropriate action for the structure described and its
+ * offsprings. For instance when performing a deep copy, the copy of this
+ * structure may be done in a different buffer compared to the parent structure,
+ * or when computing the total size of a parent structure, the size of this
+ * structure could be omitted.
  */
 #define AML_MAPPER_FLAG_SPLIT 0x1
 
 /**
- * The default mapper behaviour is to allocate a new piece of memory for the
- * top level structure of a mapped structure hierarchy.
- * When this flag is set, the `dst` pointer to map is assumed to be already
- * allocated ON HOST, and only its field are to be allocated. This flag can
- * only be used on the top level structure/mapper and connected descendant
- * holding the same flag. If this flag is set in any mapper of a mapper
- * hierarchy that is not connected to a mapper with the same flag, up to the
- * root, then it is silently ignored.
+ * Set this flag to mark a structure and its descendants to be copied on host.
+ * Until a structure with mapper having the flag `AML_MAPPER_FLAG_SPLIT` set is
+ * met, elements of the structure and its descendants will be copied on the
+ * host with a single `malloc()`. This flag embeds the flag
+ * `AML_MAPPER_FLAG_SPLIT`.
+ * This flag makes it convenient to copy a top level structure on host with
+ * some of its fields on a device, such that the application logic using one
+ * structure in a function signature stays the same.
  */
-#define AML_MAPPER_FLAG_SHALLOW 0x2
+#define AML_MAPPER_FLAG_HOST 0x3
 
 typedef size_t (*num_element_fn)(void *);
 
@@ -199,208 +196,76 @@ void aml_mapper_destroy(struct aml_mapper **mapper);
 	        __AML_MAPPER_INIT(flags, type, 0, NULL, NULL, NULL)
 
 //-----------------------------------------------------------------------------
-// Mmap mapped struct.
-//-----------------------------------------------------------------------------
-
-/**
- * Perform a deep allocation from host struct to a new struct.
- * The nested structures mapped in this allocation will have their fields
- * pointing to dynamically allocated child structures.
- *
- * There is no implicit synchronization between
- * resulting mapping and source pointer. This is a one time explicit allocation
- * (and possibly copy).
- *
- * This feature requires that the
- * pointer yielded by area can be safely offseted (not dereferenced) from host
- * as long as the result pointer is within the bounds of allocation. If the
- * resulting pointer do not support this property, then using this function is
- * undefined.
- *
- * @param mapper[in]: The mapper describing the struct pointed by `src`.
- * @param dst[in,out]: A pointer (void**) that will be set to the newly
- * allocated and mapped structure.
- * If `mapper` has flag `AML_MAPPER_FLAG_SHALLOW` set
- * then dst is a pointer to a memory area on host with at least
- * `mapper->size * num` bytes of space available. If `mapper` has child fields
- * to map, and the mappers to these fields have flag.
- * @param src[in]: A host pointer on which to perform a deep copy.
- * @param area[in]: The area where to allocate copy.
- * `area` must yield a pointer on which pointer arithmetic within bounds gives
- * a valid pointer.
- * @param num[in]: The number of contiguous elements represented by `mapper`
- * stored in `src`. For mapping of a single struct, `num` is one. If `src` is an
- * array of `num` structs, then this function will also map an array of `num`
- * structs in `dst`.
- * @param area[in]: The area used to allocate memory in order to store the
- * mapped (array of) structure(s).
- * @see aml_area
- * @param area_opts[in]: Options to provide with area when allocating space.
- * @param dma[in]: A dma engine able to perform movement from host to
- * target `area`.
- * @see aml_dma
- * @param dma_op[in]: A copy operator that performs copy of continuous and
- * contiguous bytes to be used with the `dma` engine.
- * @param dma_op_arg[in]: Optional arguments to pass to the `dma_op` operator on
- * each copy operation.
- * @return AML_SUCCESS on success.
- * @return If any of `area` or `dma` engines return an error, then the function
- * gracefully fails and returns the same error code. In the mean time, `dst`
- * pointer will be left untouched.
- */
-int aml_mapper_mmap(struct aml_mapper *mapper,
-                    void *dst,
-                    void *src,
-                    size_t num,
-                    struct aml_area *area,
-                    struct aml_area_mmap_options *area_opts,
-                    struct aml_dma *dma,
-                    aml_dma_operator dma_op,
-                    void *dma_op_arg);
-
-/**
- * Perform a backward deepcopy from a structure to another host structure.
- * @param[in] mapper: The description of the structures to copy.
- * @param[in] dst: A host pointer to a structure accurately described by mapper.
- * @param[in] src: A pointer to a structure accurately described by mapper.
- * `src` pointer must be safely offsetsable from host as long as the result
- * pointer is within the bounds of allocation. If the pointer does not support
- * this property, then using this function is undefined.
- * @param num[in]: The number of contiguous elements represented by `mapper`
- * stored in `src`. For copying a single struct, `num` is one. If `src` is an
- * array of `num` structs, then this function will also copy an array of `num`
- * structs in `dst`.
- * @param dma[in]: A dma engine able to perform movement from area of `src` to
- * area of `dst`.
- * @see aml_dma
- * @param dma_op[in]: A copy operator that performs copy of continuous and
- * contiguous bytes to be used with the `dma` engine.
- * @param dma_op_arg[in]: Optional arguments to pass to the `dma_op` operator on
- * each copy operation.
- * @return AML_SUCCESS on success.
- * @return If any of `area` or `dma` engines return an error, then the function
- * fails with eventually some pieces of `src` copied into `dst` and returns the
- * same error code.
- */
-int aml_mapper_copy(struct aml_mapper *mapper,
-                    void *dst,
-                    void *src,
-                    size_t num,
-                    struct aml_dma *dma,
-                    aml_dma_operator dma_op,
-                    void *dma_op_arg);
-
-/**
- * Unmap the structure pointed by `ptr`.
- * @param[in] mapper: The description of the mapped structure.
- * @param[in] ptr: The mapped pointer.
- * `ptr` must have been allocated with the same `mapper` and `area`.
- * @param[in] num: The number of contiguous elements stored in `ptr`, described
- * by `mapper`. This value is usually 1.
- * @param[in] src: The original pointer used to map `ptr`. This is required
- * in order to compute array fields length without performing extra DMAs and
- * rebuilding locally the equivalent of `src`.
- * @param area[in]: The area used to allocate memory in order to store the
- * mapped (array of) structure(s).
- * @see aml_area
- * @param area_opts[in]: Options to provide with area when allocating space.
- * @param dma[in]: A dma engine able to perform movement from device target
- * `area` to host.
- * @see aml_dma
- * @param dma_op[in]: A copy operator that performs copy of continuous and
- * contiguous bytes to be used with the `dma` engine.
- * @param dma_op_arg[in]: Optional arguments to pass to the `dma_op` operator on
- * each copy operation.
- * @return The total size that was unmapped on success.
- * @return An AML error code from `dma` engine on error. If this
- * function fails, the `ptr` to unmap might leak memory.
- */
-ssize_t aml_mapper_munmap(struct aml_mapper *mapper,
-                          void *ptr,
-                          size_t num,
-                          void *src,
-                          struct aml_area *area,
-                          struct aml_dma *dma,
-                          aml_dma_operator dma_op,
-                          void *dma_op_arg);
-
-//-----------------------------------------------------------------------------
 // Default Mappers
 //-----------------------------------------------------------------------------
 
 /** Default mapper for elements of type char */
-aml_final_mapper_decl(aml_char_mapper, 0, char);
+extern struct aml_mapper aml_char_mapper;
 /** Default mapper for elements of type short */
-aml_final_mapper_decl(aml_short_mapper, 0, short);
+extern struct aml_mapper aml_short_mapper;
 /** Default mapper for elements of type int */
-aml_final_mapper_decl(aml_int_mapper, 0, int);
+extern struct aml_mapper aml_int_mapper;
 /** Default mapper for elements of type long */
-aml_final_mapper_decl(aml_long_mapper, 0, long);
+extern struct aml_mapper aml_long_mapper;
 /** Default mapper for elements of type long long */
-aml_final_mapper_decl(aml_long_long_mapper, 0, long long);
+extern struct aml_mapper aml_long_long_mapper;
 /** Default mapper for elements of type unsigned char */
-aml_final_mapper_decl(aml_uchar_mapper, 0, unsigned char);
+extern struct aml_mapper aml_uchar_mapper;
 /** Default mapper for elements of type unsigned int */
-aml_final_mapper_decl(aml_uint_mapper, 0, unsigned int);
+extern struct aml_mapper aml_uint_mapper;
 /** Default mapper for elements of type unsigned long */
-aml_final_mapper_decl(aml_ulong_mapper, 0, unsigned long);
+extern struct aml_mapper aml_ulong_mapper;
 /** Default mapper for elements of type unsigned long long */
-aml_final_mapper_decl(aml_ulong_long_mapper, 0, unsigned long long);
+extern struct aml_mapper aml_ulong_long_mapper;
 /** Default mapper for elements of type float */
-aml_final_mapper_decl(aml_float_mapper, 0, float);
+extern struct aml_mapper aml_float_mapper;
 /** Default mapper for elements of type double */
-aml_final_mapper_decl(aml_double_mapper, 0, double);
+extern struct aml_mapper aml_double_mapper;
 /** Default mapper for elements of type long double */
-aml_final_mapper_decl(aml_long_double_mapper, 0, long double);
+extern struct aml_mapper aml_long_double_mapper;
 /** Default mapper for pointer elements */
-aml_final_mapper_decl(aml_ptr_mapper, 0, void *);
-
-/** Default mapper in a seperate allocation for elements of type char */
-aml_final_mapper_decl(aml_char_split_mapper, AML_MAPPER_FLAG_SPLIT, char);
-/** Default mapper in a seperate allocation for elements of type short */
-aml_final_mapper_decl(aml_short_split_mapper, AML_MAPPER_FLAG_SPLIT, short);
-/** Default mapper in a seperate allocation for elements of type int */
-aml_final_mapper_decl(aml_int_split_mapper, AML_MAPPER_FLAG_SPLIT, int);
-/** Default mapper in a seperate allocation for elements of type long */
-aml_final_mapper_decl(aml_long_split_mapper, AML_MAPPER_FLAG_SPLIT, long);
-/** Default mapper in a seperate allocation for elements of type long long */
-aml_final_mapper_decl(aml_long_long_split_mapper,
-                      AML_MAPPER_FLAG_SPLIT,
-                      long long);
-/** Default mapper in a seperate allocation for elements of type unsigned char
+extern struct aml_mapper aml_ptr_mapper;
+/** Default mapper in a seperate allocation for elements of type char
  */
-aml_final_mapper_decl(aml_uchar_split_mapper,
-                      AML_MAPPER_FLAG_SPLIT,
-                      unsigned char);
-/** Default mapper in a seperate allocation for elements of type unsigned short
+extern struct aml_mapper aml_char_split_mapper;
+/** Default mapper in a seperate allocation for elements of type short
  */
-aml_final_mapper_decl(aml_ushort_split_mapper,
-                      AML_MAPPER_FLAG_SPLIT,
-                      unsigned short);
-/** Default mapper in a seperate allocation for elements of type unsigned int */
-aml_final_mapper_decl(aml_uint_split_mapper,
-                      AML_MAPPER_FLAG_SPLIT,
-                      unsigned int);
-/** Default mapper in a seperate allocation for elements of type unsigned long
+extern struct aml_mapper aml_short_split_mapper;
+/** Default mapper in a seperate allocation for elements of type int
  */
-aml_final_mapper_decl(aml_ulong_split_mapper,
-                      AML_MAPPER_FLAG_SPLIT,
-                      unsigned long);
-/** Default mapper in a seperate allocation for elements of type unsigned long
+extern struct aml_mapper aml_int_split_mapper;
+/** Default mapper in a seperate allocation for elements of type long
+ */
+extern struct aml_mapper aml_long_split_mapper;
+/** Default mapper in a seperate allocation for elements of type long
  * long */
-aml_final_mapper_decl(aml_ulong_long_split_mapper,
-                      AML_MAPPER_FLAG_SPLIT,
-                      unsigned long long);
-/** Default mapper in a seperate allocation for elements of type float */
-aml_final_mapper_decl(aml_float_split_mapper, AML_MAPPER_FLAG_SPLIT, float);
-/** Default mapper in a seperate allocation for elements of type double */
-aml_final_mapper_decl(aml_double_split_mapper, AML_MAPPER_FLAG_SPLIT, double);
-/** Default mapper in a seperate allocation for elements of type long double */
-aml_final_mapper_decl(aml_long_double_split_mapper,
-                      AML_MAPPER_FLAG_SPLIT,
-                      long double);
+extern struct aml_mapper aml_long_long_split_mapper;
+/** Default mapper in a seperate allocation for elements of type
+ * unsigned char */
+extern struct aml_mapper aml_uchar_split_mapper;
+/** Default mapper in a seperate allocation for elements of type
+ * unsigned short */
+extern struct aml_mapper aml_ushort_split_mapper;
+/** Default mapper in a seperate allocation for elements of type
+ * unsigned int */
+extern struct aml_mapper aml_uint_split_mapper;
+/** Default mapper in a seperate allocation for elements of type
+ * unsigned long */
+extern struct aml_mapper aml_ulong_split_mapper;
+/** Default mapper in a seperate allocation for elements of type
+ * unsigned long long */
+extern struct aml_mapper aml_ulong_long_split_mapper;
+/** Default mapper in a seperate allocation for elements of type float
+ */
+extern struct aml_mapper aml_float_split_mapper;
+/** Default mapper in a seperate allocation for elements of type
+ * double */
+extern struct aml_mapper aml_double_split_mapper;
+/** Default mapper in a seperate allocation for elements of type long
+ * double */
+extern struct aml_mapper aml_long_double_split_mapper;
 /** Default mapper in a seperate allocation for pointer elements */
-aml_final_mapper_decl(aml_ptr_split_mapper, AML_MAPPER_FLAG_SPLIT, void *);
+extern struct aml_mapper aml_ptr_split_mapper;
 
 /**
  * @}
