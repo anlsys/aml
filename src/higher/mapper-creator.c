@@ -269,8 +269,7 @@ int aml_mapper_creator_create(struct aml_mapper_creator **out,
 	const int create_host = mapper->flags &
 	                        (AML_MAPPER_FLAG_HOST & ~AML_MAPPER_FLAG_SPLIT);
 	// If we build a device copy, these arguments must be set.
-	if (!create_host &&
-	    (area == NULL || dma_host_dst == NULL))
+	if (!create_host && (area == NULL || dma_host_dst == NULL))
 		return -AML_EINVAL;
 
 	int err;
