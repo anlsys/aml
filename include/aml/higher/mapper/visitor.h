@@ -18,6 +18,9 @@ extern "C" {
 /**
  * @addtogroup aml_mapper
  *
+ * AML mapper visitor defines the structures and method to walk a a structure
+ * described by a mapper.
+ *
  * @{
  **/
 
@@ -66,8 +69,9 @@ struct aml_mapper_visitor_state {
  * visiting fields, or an array of elements when visiting elements of a field
  * which is an array of contiguous elements.
  *
- * It is also possible to query the size in byte of the visited field with
- * `aml_mapper_visitor_size()`. This size accounts for the top level structure
+ * It is also possible to query the size in bytes of the visited field with
+ * `aml_mapper_visitor_size()`. Unlike the mapper size field that only accounts
+ * for the top level structure, this size accounts for the top level structure
  * size and all its descendants.
  *
  * Visiting can be done toward a parent structure
@@ -96,7 +100,7 @@ struct aml_mapper_visitor {
  * piece by piece during the visit, from the memory where it lives to the host
  * memory with a `dma` engine and a `memcpy` operator. However, if the pointer
  * is readable from the host, it is better to set these two arguments to
- * NULL to improve performance.
+ * NULL to avoid unnecessary copies.
  *
  * @param[out] out: A pointer where to store the newly allocated visitor.
  * @param[in] ptr: The pointer to the structure to visit.
@@ -124,7 +128,7 @@ int aml_mapper_visitor_destroy(struct aml_mapper_visitor *it);
 
 /**
  * Make a visitor from current visited state and limit it to visit only
- * descendents of the current field.
+ * descendants of the current field.
  *
  * @param[in] it: The visitor to copy.
  * @param[out] subtree_visitor: A pointer where to store the new visitor.
@@ -186,7 +190,9 @@ int aml_mapper_visitor_prev_field(struct aml_mapper_visitor *it);
  * This function might be expensive if the data being visited requires a dma
  * engine to be read. Indeed, the new visited element will need to read
  * the parent element to obtain its own pointer value and compute the number
- * of elements it holds if it is an array.
+ * of elements it holds if it is an array. Reading the parent structure may mean
+ * transferring data from device to host if the structure being visited does not
+ * live on the host.
  *
  * @param[in, out] it: The visitor of the structure being visited.
  * @return AML_SUCCESS on success.
@@ -247,7 +253,7 @@ int aml_mapper_visitor_size(const struct aml_mapper_visitor *visitor,
 
 /**
  * Check that the structure visited by two different visitors or equal
- * bytewise except for indirections to child fields.
+ * byte-wise except for the value of pointers to child fields.
  *
  * @param[in] lhs: The visitor of the left hand side structure being
  * compared.

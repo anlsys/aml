@@ -26,18 +26,20 @@ extern "C" {
  * allocated pointers.
  *
  * This struct is implemented as a UT_array where elements are
- * mapped pointers, with their size and the area which mapped them.
- * The first element of this array it the pointer to the root of the
- * data structure, i.e the deepcopied structure.
+ * mapped pointers (`struct aml_mapped_ptr`), with their size and the area
+ * which mapped them. The first element of this array is the pointer to the
+ * root of the data structure, i.e the deepcopied structure.
  */
 typedef void *aml_mapped_ptrs;
 
+/** Metadata of a piece of allocated structure used to free the latter. */
 struct aml_mapped_ptr {
 	void *ptr;
 	size_t size;
 	struct aml_area *area;
 };
 
+/** Cleanup pointer referred by a `struct aml_mapped_ptr`. */
 void aml_mapped_ptr_destroy(void *ptr);
 
 /**
@@ -46,8 +48,10 @@ void aml_mapped_ptr_destroy(void *ptr);
  *
  * The structure to copy may be on host or on any device.
  * Regardless of whether the structure is on host or not, the structure will be
- * copied on host first and then to the `area` of choice. Therefore, this
- * function call may use as much memory as the structure to copy itself.
+ * copied on host first and then to the `area` of choice. If the whole structure
+ * is to be copied on host (with `AML_MAPPER_FLAG_HOST` set), then the last step
+ * is not performed. As a result, this function call may use as much memory as
+ * the structure to copy itself.
  *
  * Note that the structure to copy must have a tree topology, i.e no field
  * should reference a parent node in the structure, or reference the same

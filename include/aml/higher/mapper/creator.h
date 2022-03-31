@@ -31,8 +31,8 @@ extern "C" {
  * must have a tree shape. At the moment, the creator does not support
  * self references and multiple pointers to the same element.
  *
- * The copy process can be summarized as copying the source structure
- * bit by bit on the host, overwriting fields pointers on host to point
+ * The copy process can be summarized as a byte copy of the source structure
+ * to the host, then overwriting fields pointers on host to point
  * to the device memory where the corresponding field will be copied, and
  * finally copying the host buffer to the device. The resulting copy,
  * is packed in a contiguous buffer.
@@ -58,12 +58,12 @@ extern "C" {
  * - "Branch out" by creating a new creator at the current point of visit
  * that will map the current field and its descendants in a different
  * host buffer and device mapped memory.
- * - Connect a child field that is already to its parent instead of
+ * - Connect a child field that is already instanciated to its parent instead of
  * "branching out". The child field is assumed to be a valid instanciation of
- * a structure described the mapper of the creator in its current state.
+ * a structure described by the mapper of the creator in its current state.
  *
  * Host buffer and device buffer are allocated to fit just enough data to
- * map the structure, which is the size computed by a visitor that does not
+ * map the structure. It fits the size computed by a visitor that does not
  * account for fields with a mapper that indicates to split the allocation.
  * Therefore, when encountering such a flag in the constructor, the user
  * can only take the "branch-out" option.
@@ -87,7 +87,8 @@ struct aml_mapper_creator {
 	// device_memory and host_memory size in bytes.
 	size_t size;
 	// Offset in `host_memory` and `device_memory` buffers pointing to the
-	// beginning of free space.
+	// beginning of free space. This incremented along the visit process as
+	// bits and pieces are copied into host_memory.
 	size_t offset;
 	// Area where device_memory is allocated.
 	// NULL if device_memory is the same as host memory.
@@ -106,8 +107,7 @@ struct aml_mapper_creator {
 };
 
 /**
- * Allocate and instanciate a mapper creator to deep-copy a
- * tree-like structure.
+ * Allocate and instanciate a mapper creator to deep-copy a tree-like structure.
  *
  * Allocation will allocate two buffers, one in host memory and one in
  * target `area`. Buffers will contain a packed copy of the entire
@@ -119,9 +119,9 @@ struct aml_mapper_creator {
  *
  * After this call succeeds, the created mapper creator, will be in a ready
  * state, ready to be iterated with `aml_mapper_creator_next()` to copy the
- * source structure bit by bit on host. The final structure, will be copied to
- * the destination `area` buffer, after iteration is finished when calling
- * `aml_mapper_creator_finish()`.
+ * source structure element by element on host. The final structure, will be
+ * copied to the destination `area` buffer, after iteration is finished
+ * when calling `aml_mapper_creator_finish()`.
  *
  * @param[out] out: A pointer where to store the instanciated mapper
  * creator.
@@ -228,11 +228,11 @@ int aml_mapper_creator_abort(struct aml_mapper_creator *crtr);
  * If the current state of the creator holds a flag `AML_MAPPER_FLAG_SPLIT`,
  * then the function will do nothing and return `-AML_EINVAL`. This flags
  * means that the structure allocation must be split at this point. Moreover,
- * there will not be enough room in the creator buffers to fit current field.
+ * there would not be enough room in the creator buffers to fit current field.
  * In this case, the user has to use either `aml_mapper_creator_branch()` to
  * deepcopy the corresponding field or `aml_mapper_creator_connect()` to connect
  * an existing copy of the field. After one of these functions succeeds,
- * the user can resume calling this function.
+ * the user can resume calling this function with the same parameters.
  *
  * @param[in, out] c: A mapper creator representing the current state of a
  * structure copy from a source pointer to the host.
@@ -281,7 +281,7 @@ int aml_mapper_creator_connect(struct aml_mapper_creator *c, void *ptr);
  * independently and in a thread safe manner from the initial creator.
  *
  * This function should be called after `aml_mapper_creator_next()` returned
- * `-AML_EINVAL` on the current mapper creator. After this function succeed,
+ * `-AML_EINVAL` on the current mapper creator. After this function succeeds,
  * the user can resume calling `aml_mapper_creator_next()` on the initial
  * creator to continue mapping parent structure. The whole structure, will
  * be entirely mapped only when both the current creator and the new

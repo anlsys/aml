@@ -20,33 +20,35 @@ extern "C" {
  * @brief Hierarchical description of structs.
  *
  * Mapper a description of a data structure.
- * A mapper should be able to be instanciated once per `struct` declaration
- * and accurately describe any dynamic instance of the same structure.
- * Mapper can then be used to deep-copy complex structures in different memory
- * regions.
+ *
+ * A mapper contains the metadata to perform a complete walk or deep copy of a
+ * data structure with field indirections and array fields.
+ * In a mapper, a structure is described as contiguous set of bytes of some
+ * size.
+ * A mapper also contains metadata about some structure fields.
+ * Fields are identified and located by their offset in the parent structure.
+ * Fields identified in a mapper are only pointer fields that
+ * represent data that cannot be copied with a simple `memcpy()` of the parent
+ * structure. Pointer fields can either be a single element or an array of
+ * elements. Therefore, the mapper structure also stores for each field a method
+ * to obtain the number of elements stored in a field.
  * @{
  **/
 
 /**
- * When walking a user structure, the expected behavior is to walk the entire
- * structure. When this flag is set, the walk should stop when encountering this
- * mapper and take the appropriate action for the structure described and its
- * offsprings. For instance when performing a deep copy, the copy of this
- * structure may be done in a different buffer compared to the parent structure,
- * or when computing the total size of a parent structure, the size of this
- * structure could be omitted.
+ * This flag denotes that the structure described should be treated
+ * as an entity from different memory mapped region.
+ * When walking a structure, this flags helps to compute the size of subsets
+ * of a structure and allocate them in a different areas.
  */
 #define AML_MAPPER_FLAG_SPLIT 0x1
 
 /**
- * Set this flag to mark a structure and its descendants to be copied on host.
- * Until a structure with mapper having the flag `AML_MAPPER_FLAG_SPLIT` set is
- * met, elements of the structure and its descendants will be copied on the
- * host with a single `malloc()`. This flag embeds the flag
- * `AML_MAPPER_FLAG_SPLIT`.
- * This flag makes it convenient to copy a top level structure on host with
- * some of its fields on a device, such that the application logic using one
- * structure in a function signature stays the same.
+ * Set this flag is compound with the flag `AML_MAPPER_FLAG_SPLIT` and
+ * denotes that a structure should be treated as an entity mapped on host with
+ * `malloc()`.
+ * This is typically used to deepcopy a structure that has its top level mapped
+ * on host while some fields are mapped in a different device memory.
  */
 #define AML_MAPPER_FLAG_HOST 0x3
 
@@ -55,12 +57,12 @@ typedef size_t (*num_element_fn)(void *);
 struct aml_mapper {
 	// OR combination of AML_MAPPER_FLAG_*
 	uint64_t flags;
-	// The struct size.
+	// The top level struct size (`sizeof()`).
 	size_t size;
-	// The number of pointer fields in the struct
-	// that are to be crossed.
+	// The number of pointer fields in the struct that this mapper
+	// describes.
 	size_t n_fields;
-	// The offset of each field in struct.
+	// The offset of each field in the top level struct.
 	size_t *offsets;
 	// An array of function pointers. Each function takes as input a pointer
 	// to a struct represented by this mapper and returns the number of
@@ -77,20 +79,13 @@ struct aml_mapper {
 //-----------------------------------------------------------------------------
 
 /**
- * Struct mapper constructor.
- * User of this function must be careful as it may result in undefined
- *  behaviour:
- * If the mapper structure `out` is not a tree, e.g it has mapper fields of the
- * same type as it self and mappers are pointing at each others, then the
- * behaviour of this function is undefined.
- * This function does not implement cycles detection and
- * will loop on cycles, dereferencing data out of memory bounds and eventually
- * loop allocating all memory if a cycle is met.
+ * Dynamic constructor for a struct mapper constructor.
+ *
+ * In most cases, a mapper can be instanciated statically with the macros:
+ * `aml_mapper_decl()` and `aml_final_mapper_decl()`.
+ *
  * @param[out] out: A pointer to where mapper should be allocated.
- * @param[in] flags: A ORed set of `AML_MAPPER_FLAG_*` to customize mapper
- * behaviour.
- * @see `AML_MAPPER_FLAG_SPLIT`
- * @see `AML_MAPPER_FLAG_SHALLOW`
+ * @param[in] flags: A ORed set of `AML_MAPPER_FLAG_*`.
  * @param[in] num_fields: The number of fields that are pointers
  * to cross in order to map the complete structure.
  * @param[in] fields_offset: The offset of each field in the structure.
@@ -120,26 +115,26 @@ int aml_mapper_create(struct aml_mapper **out,
 void aml_mapper_destroy(struct aml_mapper **mapper);
 
 /**
- * Declare a static mapper for a structure type with custom flags.
+ * Declare a static mapper for a structure type.
  * @param[in] name: The result mapper variable name.
- * @param[in] flags: A or combination of flags: `AML_MAPPER_FLAG_*`.
- * @param[in] type: The type of structure to map.
+ * @param[in] flags: A ORed combination of flags: `AML_MAPPER_FLAG_*`.
+ * @param[in] type: The type of the structure to map.
  * @param[in] __VA_ARGS__: Must contain a multiple of 2 or 3 arguments.
  * If empty, then the structure is considered plain, it will be mapped by
  * mapper but none of its field will be descended when mapping.
- * If a multiple of 2, must be a list of (field, field_mapper) where
- *   - field: The name of a field to map in `type` struct;
- *   - field_mapper: A pointer to a `struct aml_mapper` that maps
+ * If a multiple of 2, it must be a list of (`field`, `field_mapper`) where
+ *   - `field` is the name of a field to map in `type` struct,
+ *   - `field_mapper`: A pointer to a `struct aml_mapper` that maps
  * this field type.
- * If a multiple of 2, must be a list of (field, num_elements, field_mapper)
- * where
- *   - field: The name of a field to map in `type` struct;
- *   - num_elements: The name of the struct field that counts the number
+ * If a multiple of 3, it must be a list of
+ * (`field`, `num_elements`, `field_mapper`) where
+ *   - `field` is the name of a field to map in `type` struct,
+ *   - `num_elements` is the name of the struct field that contains the number
  * of struct `field` contiguous elements pointed by struct field `field`.
- * !! The type of the field that counts the number of elements must be a
+ * The type of the field that counts the number of elements must be a
  * `size_t`. If it is a different size or different type, the behaviour of
  * using the resulting mapper is undefined.
- *   - field_mapper: A pointer to a `struct aml_mapper` that maps
+ *   - `field_mapper` is a pointer to a `struct aml_mapper` that maps
  * this field type.
  **/
 #define aml_mapper_decl(name, flags, type, ...)                                \
@@ -148,47 +143,9 @@ void aml_mapper_destroy(struct aml_mapper **mapper);
 
 /**
  * Declare a static mapper for a structure type that does not need
- * to be descended in the copy. The content of the structure is copied
- * on map.
+ * to be descended in the copy.
  * @param[in] name: The result mapper variable name.
- * @param[in] type: The type of structure to map.
- **/
-#define aml_final_mapper_decl(name, flags, type)                               \
-	struct aml_mapper name =                                               \
-	        __AML_MAPPER_INIT(flags, type, 0, NULL, NULL, NULL)
-
-/**
- * Declare a static mapper for a structure type with custom flags.
- * @param[in] name: The result mapper variable name.
- * @param[in] flags: A or combination of flags `AML_MAPPER_FLAG_*`.
- * @param[in] type: The type of the structure to map.
- * @param[in] __VA_ARGS__: Must contain a multiple of 2 or 3 arguments.
- * It must not be empty. See `aml_final_mapper_decl()` for empty `__VA_ARGS__`
- * . If `__VA_ARGS__` contains a multiple of 2 arguments, then it must be a
- * list with the pattern: `field, field_mapper` where:
- *   - field: The name of a field to map in `type` struct.
- *   - field_mapper: A pointer to a `struct aml_mapper` that maps
- * this field type.
- * If `__VA_ARGS__` contains a multiple of 3 arguments, then it must be a list
- * with the pattern: `field, num_elements, field_mapper` where:
- *   - field: The name of a field to map in `type` struct.
- *   - num_elements: The name of the `size_t` field in the structure that
- * gives the number contiguous elements the pointer `field` holds.
- * /!\ The type of the field that counts the number of elements must be a
- * `size_t`. If it is a different size or different type, the behaviour of
- * using the resulting mapper is undefined.
- *   - field_mapper: A pointer to a `struct aml_mapper` that maps
- * this field type.
- **/
-#define aml_mapper_decl(name, flags, type, ...)                                \
-	CONCATENATE(__AML_MAPPER_DECL_, __AML_MAPPER_DECL_SELECT(__VA_ARGS__)) \
-	(name, flags, type, __VA_ARGS__)
-
-/**
- * Declare a static mapper for a structure type that does not need
- * to descend child fields when mapping it in a different memory region.
- * The content of the structure is copied on map.
- * @param[in] name: The result mapper variable name.
+ * @param[in] flags: A ORed combination of flags: `AML_MAPPER_FLAG_*`.
  * @param[in] type: The type of structure to map.
  **/
 #define aml_final_mapper_decl(name, flags, type)                               \
