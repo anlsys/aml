@@ -12,6 +12,12 @@ include_aml_higher_HEADERS = \
 			      aml/higher/allocator/buddy.h \
 			      aml/higher/allocator/sized.h
 
+include_aml_mapperdir=$(includedir)/aml/mapper
+include_aml_mapper_HEADERS = \
+			      aml/higher/mapper/visitor.h \
+			      aml/higher/mapper/creator.h \
+			      aml/higher/mapper/deepcopy.h
+
 include_aml_replicasetdir=$(includedir)/aml/higher/replicaset
 include_aml_replicaset_HEADERS = 
 
@@ -77,4 +83,5 @@ noinst_include_internaldir = $(includedir)/internal
 noinst_include_internal_HEADERS = \
 				  internal/utarray.h \
 				  internal/uthash.h \
-				  internal/utlist.h
+				  internal/utlist.h \
+				  internal/utstack.h
