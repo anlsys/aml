@@ -53,8 +53,6 @@ extern "C" {
  * @{
  */
 
-#include "aml/higher/mapper.h"
-
 /**
  * Mapper flag specifying that the structure and its descendants are to be
  * shared globally, i.e only one copy will be made and it will be shared
