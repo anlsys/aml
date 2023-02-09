@@ -180,7 +180,7 @@ int aml_backend_ze_init(void)
 
 	// Default dma engine creation
 	err = aml_dma_ze_create(&aml_dma_ze_default,
-	                        aml_ze_default_data->device[0]);
+	                        aml_ze_default_data->device[0], 0);
 	if (err != ZE_RESULT_SUCCESS)
 		goto error_with_ze_area_host;
 

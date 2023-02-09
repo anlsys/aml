@@ -16,7 +16,8 @@
 
 #define ZE(ze_call) aml_errno_from_ze_result(ze_call)
 
-int aml_dma_ze_create(struct aml_dma **dma, ze_device_handle_t device)
+int aml_dma_ze_create(struct aml_dma **dma, ze_device_handle_t device, int
+		      ordinal)
 {
 	int err = AML_SUCCESS;
 	struct aml_dma *out = NULL;
@@ -46,7 +47,7 @@ int aml_dma_ze_create(struct aml_dma **dma, ze_device_handle_t device)
 	ze_command_queue_desc_t queue_desc = {
 	        .stype = ZE_STRUCTURE_TYPE_COMMAND_QUEUE_DESC,
 	        .pNext = NULL,
-	        .ordinal = 0,
+	        .ordinal = ordinal,
 	        .index = 0,
 	        .flags = ZE_COMMAND_QUEUE_FLAG_EXPLICIT_ONLY,
 	        .mode = ZE_COMMAND_QUEUE_MODE_ASYNCHRONOUS,
