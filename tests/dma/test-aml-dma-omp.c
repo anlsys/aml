@@ -93,9 +93,8 @@ int main(int argc, char *argv[])
 	
 	aml_init(&argc, &argv);
 
-	int omp_device = omp_get_default_device();
-	double *host = omp_target_alloc_host(N * sizeof(double), omp_device);
-	double *device = omp_target_alloc(N * sizeof(double), omp_device);
+	double *host = aml_area_mmap(aml_area_ze_host, N * sizeof(double), NULL);
+	double *device = aml_area_mmap(aml_area_ze_device, N * sizeof(double), NULL);
 
 	fprintf("Default ZE DMA\n");
 	fprintf("OMP: H2D: 1C-wait\n");
@@ -117,8 +116,8 @@ int main(int argc, char *argv[])
 		do_copy_chunks(aml_dma_ze_default, host, device, bytes, i, repeats);
 	}
 
-	double *host2 = omp_target_alloc_host(N * sizeof(double), omp_device);
-	double *device2 = omp_target_alloc(N * sizeof(double), omp_device);
+	double *host2= aml_area_mmap(aml_area_ze_host, N * sizeof(double), NULL);
+	double *device2= aml_area_mmap(aml_area_ze_device, N * sizeof(double), NULL);
 
 	fprintf("Default ZE DMA\n");
 	fprintf("OMP: 2Way: 1C-barrier\n");

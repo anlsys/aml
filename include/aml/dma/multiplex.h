@@ -45,7 +45,7 @@ extern "C" {
  * with `aml_dma_multiplex_destroy()`.
  */
 int aml_dma_multiplex_create(struct aml_dma **dma, const size_t num,
-		const struct aml_dma *dmas, const size_t *weights);
+		const struct aml_dma **dmas, const size_t *weights);
 
 /**
  * Delete a multiplex dma created with `aml_dma_multiplex_create()`.
@@ -60,8 +60,12 @@ int aml_dma_multiplex_destroy(struct aml_dma **dma);
 // Internals API
 //------------------------------------------------------------------------------
 
-/** The dma data is simply a task scheduler. */
+/** The dma data is an array of dmas and weitghts, plus info on which
+ * dma to use next */
 struct aml_dma_multiplex_data {
+	size_t count;
+	size_t index;
+	size_t round; 
 	struct aml_dma **dmas;
 	size_t *weights;
 };
@@ -81,9 +85,24 @@ extern struct aml_dma_ops aml_dma_multiplex_ops;
  */
 #define AML_DMA_MULTIPLEX_REQUEST_FLAGS_DONE 0x2
 
-/** The dma request implementation */
+/** The dma request implementation: number of underlying requests,
+ * and their dmas
+ */
 struct aml_dma_multiplex_request {
-	struct aml_dma_request *req;
+	size_t count;
+	struct aml_dma_request **reqs;
+	struct aml_dma **dmas;
+};
+
+/**
+ * User-level structure for operator arguments.
+ * Will use the operator and the arg depending on the dma used.
+ *
+ * Arrays must be the same size as the dma array during create.
+ */
+struct aml_dma_multiplex_request_args {
+	aml_dma_operator *ops;
+	void **op_args;
 };
 
 /**
@@ -124,57 +143,31 @@ int aml_dma_multiplex_barrier(struct aml_dma_data *dma);
 int aml_dma_multiplex_request_destroy(struct aml_dma_data *dma,
                                   struct aml_dma_request **req);
 
+struct aml_dma_multiplex_copy_args {
+	struct aml_dma_multiplex_data *m_data;
+	struct aml_dma_multiplex_request **m_req;
+	struct aml_dma_multiplex_request_args *args;
+};
+
 /**
  * multiplex DMA operator implementation:
  * Use only with `aml_dma_multiplex_request_create()` or higher level
  * `aml_dma_async_copy_custom()`.
  * This copy operator is compatible only with:
- * - This dma multiplex implementation,
- * - Dense source and destination layouts of one dimension.
- * Make a flat copy of contiguous bytes in between two layout raw pointers.
- * The size of the byte stream is computed as the product of dimensions and
- * element size.
+ * - This dma multiplex implementation.
+ *
+ * Send a single request to a dma, using the operator and arg defined for that
+ * dma in the request_args parameter.
  *
  * @param[out] dst: The destination dense layout.
  * @param[in] src: The source dense layout.
- * @param[in] arg: Unused.
+ * @param[in] arg: pointer to struct aml_dma_multiplex_request_args.
  *
  * @see aml_layout_dense
  */
-int aml_dma_multiplex_copy_1D(struct aml_layout *dst,
-                          const struct aml_layout *src,
-                          void *arg);
-
-/**
- * multiplex DMA operator implementation:
- * Use only with `aml_dma_multiplex_request_create()` or higher level
- * `aml_dma_async_copy_custom()`.
- * Make a flat copy of contiguous bytes between two raw pointers.
- * This dma operator casts input layout pointers into `void*` and
- * assumes these are contiguous set of bytes to copy from `src` to `dst`
- * in the multiplex `memcpy()` fashion.
- * @param[out] dst: The destination (`void*`) of the copy casted into a
- * `struct aml_layout *`.
- * @param[in] src: The source (`void*`) of the copy casted into a
- * `struct aml_layout *`.
- * @param[in] arg: The size (`size_t`) of the copy casted into a `void*`.
- * @return AML_SUCCESS
- */
-int aml_dma_multiplex_memcpy_op(struct aml_layout *dst,
-                            const struct aml_layout *src,
-                            void *arg);
-
-/**
- * multiplex DMA operator implementation:
- * Generic helper to copy from one layout to another.
- * @param[out] dst: The destination layout.
- * @param[in] src: The source layout.
- * @param[in] arg: Ignored.
- * @return AML_SUCCESS
- */
-int aml_dma_multiplex_copy_generic(struct aml_layout *dst,
-                               const struct aml_layout *src,
-                               void *arg);
+int aml_dma_multiplex_copy_single(struct aml_layout *dst,
+		const struct aml_layout *src,
+		void *arg);
 
 /**
  * @}
@@ -184,4 +177,4 @@ int aml_dma_multiplex_copy_generic(struct aml_layout *dst,
 }
 #endif
 
-#endif // AML_DMA_multiplex_H
+#endif // AML_DMA_MULTIPLEX_H

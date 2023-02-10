@@ -19,40 +19,99 @@ int aml_dma_multiplex_request_create(struct aml_dma_data *data,
                                  aml_dma_operator op,
                                  void *op_arg)
 {
+	int err;
+	struct aml_dma_multiplex_request *m_req = NULL;
+	struct aml_dma_multiplex_data *m_data =
+		(struct aml_dma_multiplex_data *)data;
+
+	if (op == NULL)
+		op = aml_dma_multiplex_copy_single;
+
+	/* the request is a bit different than usual for a dma, since its the
+	 * operators that actually enqueue new requests.
+	 *
+	 * We end up not allocating the request here, just letting the operator
+	 * know about the argument.
+	 *
+	 * Note that we still need to indicate whether the user wants a request
+	 * or not.
+	 */
+	struct aml_dma_multiplex_copy_args mc_args = {
+		.m_data = m_data,
+		.m_req = req? &m_req: NULL,
+		.args = op_arg,
+	};
+	err = op(dest, src, &mc_args);
+	if (req)
+		*req = m_req;
+	return err;
 }
 
 int aml_dma_multiplex_request_wait(struct aml_dma_data *dma,
                                struct aml_dma_request **req)
 {
-	struct aml_dma_multiplex_request *r = *(struct aml_dma_multiplex_request **)req;
+	struct aml_dma_multiplex_request *m_req = 
+		(struct aml_dma_multiplex_request *)(*req);
+	(void)dma;
 
-	free(r);
+	/* just loop over the dmas and wait for all of them. Technically there
+	 * are cases where we should care about the order in which we do these
+	 * waits (if some depend on the CPU to do the work), but we choose not
+	 * to bother.
+	 *
+	 * Can be fixed by the user with careful ordering at dma_create time.
+	 */
+	int err = AML_SUCCESS;
+	for (size_t i = 0; i < m_req->count; i++)
+		err = err || aml_dma_wait(m_req->dmas[i], &(m_req->reqs[i]));
+	
+	free(m_req);
 	*req = NULL;
-	return out;
+	return err;
 }
 
 int aml_dma_multiplex_barrier(struct aml_dma_data *dma)
 {
-	return AML_SUCCESS;
+	struct aml_dma_multiplex_data *m_data = 
+		(struct aml_dma_multiplex_data *)dma;
+
+	/* just loop over the dmas and barrier for all of them.
+	 *
+	 * There's a problem with this, as we might wait on requests that where
+	 * not initiated by us (someone sent a request directly in one of the
+	 * inner dmas).
+	 *
+	 * We'll ignore that problem for now.
+	 */
+	int err = AML_SUCCESS;
+	for (size_t i = 0; i < m_data->count; i++)
+		err = err || aml_dma_barrier(m_data->dmas[i]);
+
+	return err;
 }
 
 int aml_dma_multiplex_request_destroy(struct aml_dma_data *dma,
                                   struct aml_dma_request **req)
 {
 	(void)dma;
-	free(*req);
-	*req = NULL;
+	if (req != NULL && *req != NULL) {
+		struct aml_dma_multiplex_request *m_req =
+			(struct aml_dma_multiplex_request *)(*req);
+		for (size_t i = 0; i < m_req->count; i++)
+			aml_dma_cancel(m_req->dmas[i], &m_req->reqs[i]);
+		free(m_req);
+		*req = NULL;
+	}
 	return AML_SUCCESS;
 }
 
 int aml_dma_multiplex_create(struct aml_dma **dma, const size_t num,
-		const struct aml_dma *dmas, const size_t *weigths)
+		const struct aml_dma **dmas, const size_t *weights)
 {
-	int err = AML_SUCCESS;
 	struct aml_dma *out = NULL;
 	struct aml_dma_multiplex_data *data;
 
-	if (dma == NULL)
+	if (dma == NULL || num == 0)
 		return -AML_EINVAL;
 	out = AML_INNER_MALLOC_EXTRA(num, struct aml_dma *,
 			num * sizeof(size_t),
@@ -63,9 +122,10 @@ int aml_dma_multiplex_create(struct aml_dma **dma, const size_t num,
 
 	data = AML_INNER_MALLOC_GET_FIELD(out, 2, struct aml_dma,
 			struct aml_dma_multiplex_data);
-	out->data = data;
+	out->data = (struct aml_dma_data *)data;
 	out->ops = &aml_dma_multiplex_ops;
 
+	data->count = num;
 	data->dmas = AML_INNER_MALLOC_GET_ARRAY(out, struct aml_dma *,
 			struct aml_dma, struct aml_dma_multiplex_data);
 	data->weights = AML_INNER_MALLOC_GET_EXTRA(out, num, struct aml_dma *,
@@ -87,41 +147,43 @@ int aml_dma_multiplex_destroy(struct aml_dma **dma)
 	return AML_SUCCESS;
 }
 
-int aml_dma_multiplex_copy_1D(struct aml_layout *dst,
+int aml_dma_multiplex_copy_single(struct aml_layout *dst,
                           const struct aml_layout *src,
                           void *arg)
 {
 	int err;
+	struct aml_dma_multiplex_copy_args *args =
+		(struct aml_dma_multiplex_copy_args *) arg;
 
-	(void)arg;
-	const void *src_ptr = aml_layout_rawptr(src);
-	void *dst_ptr = aml_layout_rawptr(dst);
-	size_t n = 0;
-	size_t size = 0;
+	struct aml_dma_multiplex_data *m_data = args->m_data;
+	size_t dma_idx = m_data->index;
+	struct aml_dma *dma = m_data->dmas[dma_idx];
+	aml_dma_operator op = args->args->ops[dma_idx];
+	void *op_arg = args->args->op_args[dma_idx];
 
-	err = aml_layout_dims(src, &n);
-	if (err != AML_SUCCESS)
-		return err;
-	size = aml_layout_element_size(src) * n;
-
-	return AML_SUCCESS;
-}
-
-int aml_dma_multiplex_memcpy_op(struct aml_layout *dst,
-                            const struct aml_layout *src,
-                            void *arg)
-{
-	return AML_SUCCESS;
-}
-
-int aml_dma_multiplex_copy_chunks(struct aml_layout *dst,
-                               const struct aml_layout *src,
-                               void *arg)
-{
-	size_t d;
-	size_t elem_size;
-	(void)arg;
-
+	struct aml_dma_request **inner_req = NULL;
+	if (args->m_req != NULL) {
+		struct aml_dma_multiplex_request *req =
+			AML_INNER_MALLOC_ARRAY(2, void *, struct aml_dma_multiplex_request);
+		req->count = 1;
+		req->reqs = AML_INNER_MALLOC_GET_ARRAY(req, void *, struct
+				aml_dma_multiplex_request);
+		req->dmas = req->reqs + 1;
+		req->dmas[0] = dma;
+		*args->m_req = req;
+		inner_req = &(req->reqs[0]);
+	}
+	err = aml_dma_async_copy_custom(dma, inner_req, dst,
+			(struct aml_layout *)src, op, op_arg);
+	if (err != AML_SUCCESS) {
+		if (args->m_req != NULL)
+			free(*args->m_req);
+	}
+	m_data->round++;
+	if (m_data->round > m_data->weights[dma_idx]) {
+		m_data->index = (dma_idx + 1) % m_data->count;
+		m_data->round = 0;
+	}
 	return AML_SUCCESS;
 }
 
