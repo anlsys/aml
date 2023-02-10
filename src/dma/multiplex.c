@@ -13,16 +13,16 @@
 #include "aml/dma/multiplex.h"
 
 int aml_dma_multiplex_request_create(struct aml_dma_data *data,
-                                 struct aml_dma_request **req,
-                                 struct aml_layout *dest,
-                                 struct aml_layout *src,
-                                 aml_dma_operator op,
-                                 void *op_arg)
+                                     struct aml_dma_request **req,
+                                     struct aml_layout *dest,
+                                     struct aml_layout *src,
+                                     aml_dma_operator op,
+                                     void *op_arg)
 {
 	int err;
 	struct aml_dma_multiplex_request *m_req = NULL;
 	struct aml_dma_multiplex_data *m_data =
-		(struct aml_dma_multiplex_data *)data;
+	        (struct aml_dma_multiplex_data *)data;
 
 	if (op == NULL)
 		op = aml_dma_multiplex_copy_single;
@@ -37,21 +37,21 @@ int aml_dma_multiplex_request_create(struct aml_dma_data *data,
 	 * or not.
 	 */
 	struct aml_dma_multiplex_copy_args mc_args = {
-		.m_data = m_data,
-		.m_req = req? &m_req: NULL,
-		.args = op_arg,
+	        .m_data = m_data,
+	        .m_req = req ? &m_req : NULL,
+	        .args = op_arg,
 	};
 	err = op(dest, src, &mc_args);
 	if (req)
-		*req = m_req;
+		*req = (struct aml_dma_request *)m_req;
 	return err;
 }
 
 int aml_dma_multiplex_request_wait(struct aml_dma_data *dma,
-                               struct aml_dma_request **req)
+                                   struct aml_dma_request **req)
 {
-	struct aml_dma_multiplex_request *m_req = 
-		(struct aml_dma_multiplex_request *)(*req);
+	struct aml_dma_multiplex_request *m_req =
+	        (struct aml_dma_multiplex_request *)(*req);
 	(void)dma;
 
 	/* just loop over the dmas and wait for all of them. Technically there
@@ -64,7 +64,7 @@ int aml_dma_multiplex_request_wait(struct aml_dma_data *dma,
 	int err = AML_SUCCESS;
 	for (size_t i = 0; i < m_req->count; i++)
 		err = err || aml_dma_wait(m_req->dmas[i], &(m_req->reqs[i]));
-	
+
 	free(m_req);
 	*req = NULL;
 	return err;
@@ -72,8 +72,8 @@ int aml_dma_multiplex_request_wait(struct aml_dma_data *dma,
 
 int aml_dma_multiplex_barrier(struct aml_dma_data *dma)
 {
-	struct aml_dma_multiplex_data *m_data = 
-		(struct aml_dma_multiplex_data *)dma;
+	struct aml_dma_multiplex_data *m_data =
+	        (struct aml_dma_multiplex_data *)dma;
 
 	/* just loop over the dmas and barrier for all of them.
 	 *
@@ -91,12 +91,12 @@ int aml_dma_multiplex_barrier(struct aml_dma_data *dma)
 }
 
 int aml_dma_multiplex_request_destroy(struct aml_dma_data *dma,
-                                  struct aml_dma_request **req)
+                                      struct aml_dma_request **req)
 {
 	(void)dma;
 	if (req != NULL && *req != NULL) {
 		struct aml_dma_multiplex_request *m_req =
-			(struct aml_dma_multiplex_request *)(*req);
+		        (struct aml_dma_multiplex_request *)(*req);
 		for (size_t i = 0; i < m_req->count; i++)
 			aml_dma_cancel(m_req->dmas[i], &m_req->reqs[i]);
 		free(m_req);
@@ -105,8 +105,10 @@ int aml_dma_multiplex_request_destroy(struct aml_dma_data *dma,
 	return AML_SUCCESS;
 }
 
-int aml_dma_multiplex_create(struct aml_dma **dma, const size_t num,
-		const struct aml_dma **dmas, const size_t *weights)
+int aml_dma_multiplex_create(struct aml_dma **dma,
+                             const size_t num,
+                             const struct aml_dma **dmas,
+                             const size_t *weights)
 {
 	struct aml_dma *out = NULL;
 	struct aml_dma_multiplex_data *data;
@@ -114,22 +116,23 @@ int aml_dma_multiplex_create(struct aml_dma **dma, const size_t num,
 	if (dma == NULL || num == 0)
 		return -AML_EINVAL;
 	out = AML_INNER_MALLOC_EXTRA(num, struct aml_dma *,
-			num * sizeof(size_t),
-			struct aml_dma,
-			struct aml_dma_multiplex_data);
+	                             num * sizeof(size_t), struct aml_dma,
+	                             struct aml_dma_multiplex_data);
 	if (out == NULL)
 		return -AML_ENOMEM;
 
 	data = AML_INNER_MALLOC_GET_FIELD(out, 2, struct aml_dma,
-			struct aml_dma_multiplex_data);
+	                                  struct aml_dma_multiplex_data);
 	out->data = (struct aml_dma_data *)data;
 	out->ops = &aml_dma_multiplex_ops;
 
 	data->count = num;
 	data->dmas = AML_INNER_MALLOC_GET_ARRAY(out, struct aml_dma *,
-			struct aml_dma, struct aml_dma_multiplex_data);
-	data->weights = AML_INNER_MALLOC_GET_EXTRA(out, num, struct aml_dma *,
-			struct aml_dma, struct aml_dma_multiplex_data);
+	                                        struct aml_dma,
+	                                        struct aml_dma_multiplex_data);
+	data->weights = AML_INNER_MALLOC_GET_EXTRA(
+	        out, num, struct aml_dma *, struct aml_dma,
+	        struct aml_dma_multiplex_data);
 
 	memcpy(data->dmas, dmas, num * sizeof(struct aml_dma *));
 	memcpy(data->weights, weights, num * sizeof(size_t));
@@ -148,12 +151,12 @@ int aml_dma_multiplex_destroy(struct aml_dma **dma)
 }
 
 int aml_dma_multiplex_copy_single(struct aml_layout *dst,
-                          const struct aml_layout *src,
-                          void *arg)
+                                  const struct aml_layout *src,
+                                  void *arg)
 {
 	int err;
 	struct aml_dma_multiplex_copy_args *args =
-		(struct aml_dma_multiplex_copy_args *) arg;
+	        (struct aml_dma_multiplex_copy_args *)arg;
 
 	struct aml_dma_multiplex_data *m_data = args->m_data;
 	size_t dma_idx = m_data->index;
@@ -163,18 +166,18 @@ int aml_dma_multiplex_copy_single(struct aml_layout *dst,
 
 	struct aml_dma_request **inner_req = NULL;
 	if (args->m_req != NULL) {
-		struct aml_dma_multiplex_request *req =
-			AML_INNER_MALLOC_ARRAY(2, void *, struct aml_dma_multiplex_request);
+		struct aml_dma_multiplex_request *req = AML_INNER_MALLOC_ARRAY(
+		        2, void *, struct aml_dma_multiplex_request);
 		req->count = 1;
-		req->reqs = AML_INNER_MALLOC_GET_ARRAY(req, void *, struct
-				aml_dma_multiplex_request);
-		req->dmas = req->reqs + 1;
+		req->reqs = AML_INNER_MALLOC_GET_ARRAY(
+		        req, void *, struct aml_dma_multiplex_request);
+		req->dmas = (struct aml_dma **)req->reqs + 1;
 		req->dmas[0] = dma;
 		*args->m_req = req;
 		inner_req = &(req->reqs[0]);
 	}
 	err = aml_dma_async_copy_custom(dma, inner_req, dst,
-			(struct aml_layout *)src, op, op_arg);
+	                                (struct aml_layout *)src, op, op_arg);
 	if (err != AML_SUCCESS) {
 		if (args->m_req != NULL)
 			free(*args->m_req);

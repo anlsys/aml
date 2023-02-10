@@ -44,8 +44,10 @@ extern "C" {
  * @return AML_SUCCESS on success. On success, the created dma must be destroyed
  * with `aml_dma_multiplex_destroy()`.
  */
-int aml_dma_multiplex_create(struct aml_dma **dma, const size_t num,
-		const struct aml_dma **dmas, const size_t *weights);
+int aml_dma_multiplex_create(struct aml_dma **dma,
+                             const size_t num,
+                             const struct aml_dma **dmas,
+                             const size_t *weights);
 
 /**
  * Delete a multiplex dma created with `aml_dma_multiplex_create()`.
@@ -65,14 +67,13 @@ int aml_dma_multiplex_destroy(struct aml_dma **dma);
 struct aml_dma_multiplex_data {
 	size_t count;
 	size_t index;
-	size_t round; 
+	size_t round;
 	struct aml_dma **dmas;
 	size_t *weights;
 };
 
 /** The methods table of multiplex dma. */
 extern struct aml_dma_ops aml_dma_multiplex_ops;
-
 
 /**
  * Request Flag of requests created but not returned to user that need
@@ -110,11 +111,11 @@ struct aml_dma_multiplex_request_args {
  * Creates a pointer `struct aml_dma_multiplex_request` stored in `req`.
  */
 int aml_dma_multiplex_request_create(struct aml_dma_data *data,
-                                 struct aml_dma_request **req,
-                                 struct aml_layout *dest,
-                                 struct aml_layout *src,
-                                 aml_dma_operator op,
-                                 void *op_arg);
+                                     struct aml_dma_request **req,
+                                     struct aml_layout *dest,
+                                     struct aml_layout *src,
+                                     aml_dma_operator op,
+                                     void *op_arg);
 
 /**
  * The multiplex dma `wait_request()` operator implementation.
@@ -123,7 +124,7 @@ int aml_dma_multiplex_request_create(struct aml_dma_data *data,
  * @param[in] req: A pointer to a `struct aml_dma_multiplex_request`.
  */
 int aml_dma_multiplex_request_wait(struct aml_dma_data *dma,
-                               struct aml_dma_request **req);
+                                   struct aml_dma_request **req);
 
 /**
  * The multiplex dma `barrier()` operator implementation.
@@ -141,7 +142,7 @@ int aml_dma_multiplex_barrier(struct aml_dma_data *dma);
  * The pointer is set to NULL.
  */
 int aml_dma_multiplex_request_destroy(struct aml_dma_data *dma,
-                                  struct aml_dma_request **req);
+                                      struct aml_dma_request **req);
 
 struct aml_dma_multiplex_copy_args {
 	struct aml_dma_multiplex_data *m_data;
@@ -166,8 +167,8 @@ struct aml_dma_multiplex_copy_args {
  * @see aml_layout_dense
  */
 int aml_dma_multiplex_copy_single(struct aml_layout *dst,
-		const struct aml_layout *src,
-		void *arg);
+                                  const struct aml_layout *src,
+                                  void *arg);
 
 /**
  * @}
