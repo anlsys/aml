@@ -70,11 +70,11 @@ is_interleaved(void *data, const size_t size, const size_t page_size)
 		if (num_nodes != 0 && next >= num_nodes)
 			return 0;
 		// cycling on different number of nodes
-		if (num_nodes != 0 && next == 0 && num_nodes != node)
+		if (num_nodes != 0 && next == 0 && num_nodes != node + 1)
 			return 0;
 		// set num_nodes
 		if (num_nodes == 0 && next == 0)
-			num_nodes = node;
+			num_nodes = node + 1;
 		node = next;
 	}
 
@@ -122,7 +122,7 @@ custom_mmap(const struct aml_area_data *data,
 			return NULL;
 		}
 		area->nid = area->nid << 1;
-		if (area->nid >= (1UL << area->nmax))
+		if (area->nid > (1UL << area->nmax))
 			area->nid = 1;
 	}
 
@@ -159,7 +159,7 @@ custom_area_create()
 	    ret, 3, struct aml_area, struct aml_area_ops, struct area_data);
 	data		= (struct area_data *)ret->data;
 	data->nid       = 1;
-	data->nmax      = numa_max_node() == 0 ? 1 : numa_max_node();
+	data->nmax      = numa_max_node();
 	data->page_size = 2 * sysconf(_SC_PAGESIZE); // 2 pages allocation
 
 	return ret;
