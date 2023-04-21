@@ -161,7 +161,7 @@ if test "x$with_ze" = "xyes" &&
    # Setup user flags for configure detection.
    saved_LIBS=$LIBS
    saved_CFLAGS=$CFLAGS
-   LIBS="$ZE_LDFLAGS $LIBS"
+   LIBS="$ZE_LIBS $LIBS"
    CFLAGS="$ZE_CFLAGS $CFLAGS"
    # Check header and libs
    AC_CHECK_HEADER([level_zero/ze_api.h], [have_ze_header=1], [have_ze_header=0])
@@ -183,7 +183,7 @@ if test "x$with_ze" = "xyes" &&
    if test "$have_ze_header" = "1" &&
       test "$have_libze" = "1" &&
       test "$have_ze_version" = "yes"; then
-         ZE_LDFLAGS="$ZE_LDFLAGS $ac_cv_search_zeInit"
+         ZE_LIBS="$ZE_LIBS $ac_cv_search_zeInit"
       	 have_ze=1
    fi
    HAVE_ZE=$have_ze
@@ -191,7 +191,7 @@ fi
 
 # We export flags with what has been detected or not.
 AC_SUBST(ZE_CFLAGS)
-AC_SUBST(ZE_LDFLAGS)
+AC_SUBST(ZE_LIBS)
 AC_SUBST([HAVE_ZE],[$have_ze])
 AC_DEFINE_UNQUOTED([HAVE_ZE], [$have_ze], "ze library with ABI > 2.0 is installed.")
 AM_CONDITIONAL([HAVE_ZE], [test "$have_ze" = "1"])
@@ -347,9 +347,13 @@ if test "$with_hip" = "no"; then
    AC_MSG_NOTICE([Will not check for hip.])
 else
    # Set new flags and save old flags
-   test -z "$HIP_PATH" && HIP_PATH=/opt/rocm/hip # set a default value.
-   HIP_LIBS="-L$ROCM_PATH/lib"
-   HIP_CFLAGS="-D$HIP_PLATFORM -I$ROCM_PATH/include"
+   if test -z "$HIP_PATH"; then
+      test -z "$ROCM_PATH" && ROCM_PATH=/opt/rocm # set a default value.
+      # Apparently $ROCM_PATH/hip is obsolete?
+      HIP_PATH=$ROCM_PATH
+   fi
+   HIP_LIBS="-L$HIP_PATH/lib"
+   HIP_CFLAGS="-D$HIP_PLATFORM -I$HIP_PATH/include"
    saved_LIBS=$LIBS
    saved_CFLAGS=$CFLAGS
    LIBS="$LIBS $HIP_LIBS"
