@@ -63,7 +63,6 @@ LIB_SOURCES = \
 
 lib_LTLIBRARIES = libaml.la
 
-libaml_la_LDFLAGS=
 libaml_la_SOURCES=$(LIB_SOURCES)
 
 #############################################
