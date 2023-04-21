@@ -67,7 +67,7 @@ AC_SUBST([PACKAGE_VERSION_REVISION],[VERSION_REVISION])
 # support for testing with valgrind
 ###################################
 
-AX_VALGRIND_DFLT([helgrind], [off])
+AX_VALGRIND_DFLT([helgrind], [on])
 AX_VALGRIND_DFLT([drd], [off])
 AX_VALGRIND_DFLT([sgcheck], [off])
 AX_VALGRIND_CHECK
