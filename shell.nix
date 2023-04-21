@@ -1,11 +1,9 @@
 # development shell, includes aml dependencies and dev-related helpers
 { pkgs ? import ./. { } }:
 with pkgs;
-mkShell {
+mkShell.override { stdenv = pkgs.stdenv; } {
   inputsFrom = [ aml ];
-
   nativeBuildInputs = [ autoreconfHook pkgconfig ];
-
   buildInputs = [
     # deps for docs
     graphviz
@@ -22,5 +20,5 @@ mkShell {
   ];
 
   CFLAGS =
-    "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter -Wno-builtin-declaration-mismatch";
+    "-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-but-set-parameter -Wno-builtin-declaration-mismatch -Wno-maybe-uninitialized";
 }

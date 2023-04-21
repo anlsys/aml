@@ -145,10 +145,14 @@ void create_topology()
 	                                     &hops) == 0);
 
 	// Add matrix to topology
-	assert(hwloc_distances_add(aml_topology, hops->nbobjs, hops->objs,
-	                           hops->values, hops->kind,
-	                           HWLOC_DISTANCES_ADD_FLAG_GROUP_INACCURATE) ==
-	       0);
+	hwloc_distances_add_handle_t handle;
+	handle = hwloc_distances_add_create(aml_topology, NULL, hops->kind, 0);
+	assert(handle);
+	assert(hwloc_distances_add_values(aml_topology, handle, hops->nbobjs,
+	                                  hops->objs, hops->values, 0) == 0);
+	assert(hwloc_distances_add_commit(
+	               aml_topology, handle,
+	               HWLOC_DISTANCES_ADD_FLAG_GROUP_INACCURATE) == 0);
 
 	// Save topology as a xml file
 	assert(hwloc_topology_export_xml(aml_topology, xml_topology_path, 0) !=
