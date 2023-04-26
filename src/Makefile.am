@@ -1,10 +1,6 @@
 SUFFIXES=.c .cu
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS) $(OPENMP_CFLAGS)
-# We need to prefix each option from OPENMP_CFLAGS with a libtool-specific
-# -XCClinker flag to prevent libtool from filtering the option out when
-#  invoking the linking stage.  This is necessary for the
-#  "-fopenmp -fiopenmp -fopenmp-targets=spir64" flags used with Intel ZE.
-AM_LDFLAGS = $(PTHREAD_LIBS) `if test -n '$(OPENMP_CFLAGS)'; then echo -n '-XCClinker '; echo $(OPENMP_CFLAGS) | sed 's/[ ][ ]*\([^ ]\)/ -XCClinker \1/g'; fi`
+AM_LDFLAGS = $(PTHREAD_LIBS) $(OPENMP_LIBS)
 noinst_LTLIBRARIES=
 
 #############################################

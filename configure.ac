@@ -129,6 +129,18 @@ else
    HAVE_OPENMP="1"
 fi
 
+# protext OPENMP_CFLAGS from libtool: libtool filters linker flags it doesn't
+# know about, which can easily happen with these ones
+if test -n "$OPENMP_CFLAGS"; then
+    OPENMP_LIBS=" $OPENMP_CFLAGS"
+    # m4 quoting rules make the sed regexp a nightmare
+    # use quadrigraph to write this rule: s/[ ][ ]*\([^ ]\)/ -XCClinker \1/g
+    OPENMP_LIBS="`AS_ECHO_N("$OPENMP_LIBS") | sed 's/@<:@ @:>@@<:@ @:>@*\(@<:@^ @:>@\)/ -XCClinker \1/g'`"
+else
+    OPENMP_LIBS=""
+fi
+AC_SUBST(OPENMP_LIBS)
+
 # NUMA support
 ##############
 
@@ -436,6 +448,7 @@ OPENMP:
 
 Active:  $HAVE_OPENMP
 CFLAGS:  $OPENMP_CFLAGS
+LDFLAGS: $OPENMP_LIBS
 
 HWLOC:
 ======
