@@ -78,6 +78,7 @@ struct aml_replica_build_thread_args {
 	aml_mapped_ptrs *replicaset_pointers;
 	pthread_mutex_t *replicaset_mutex;
 	pthread_mutex_t initialization_lock;
+	pthread_cond_t initialization_cond;
 	struct aml_mapper_creator *crtr;
 	struct aml_shared_replica_config *local;
 	struct aml_shared_replica_config *shared;
@@ -107,6 +108,12 @@ static void *aml_mapper_replica_build_thread_fn(void *thread_args)
 	// stack will not be used anylonger.
 	// However, pointers contained in args must remain valid for the
 	// lifetime of this thread.
+	pthread_mutex_lock(
+	        &((struct aml_replica_build_thread_args *)thread_args)
+	                 ->initialization_lock);
+	pthread_cond_signal(
+	        &((struct aml_replica_build_thread_args *)thread_args)
+	                 ->initialization_cond);
 	pthread_mutex_unlock(
 	        &((struct aml_replica_build_thread_args *)thread_args)
 	                 ->initialization_lock);
@@ -203,15 +210,18 @@ branch_consumer:
 	sem_wait(&build->produced);
 
 	// On success, connect shared pointer to its parent struct.
-	if (build->ptr != NULL)
+	if (build->ptr != NULL) {
 		err = aml_mapper_creator_connect(args.crtr, build->ptr);
+
+		// Signal we consumed the shared pointer.
+		sem_post(&build->consumed);
+
+		// Success from the producer
+		goto check_err;
+	}
 
 	// Signal we consumed the shared pointer.
 	sem_post(&build->consumed);
-
-	// Success from the producer
-	if (build->ptr != NULL)
-		goto check_err;
 
 	// Failure from the producer.
 	err = -AML_FAILURE;
@@ -300,6 +310,7 @@ int aml_mapper_replica_build_start(pthread_t *thread_handle,
 	        .replicaset_pointers = replicaset_pointers,
 	        .replicaset_mutex = replicaset_mutex,
 	        .initialization_lock = PTHREAD_MUTEX_INITIALIZER,
+	        .initialization_cond = PTHREAD_COND_INITIALIZER,
 	        .crtr = crtr,
 	        .local = local,
 	        .shared = shared,
@@ -327,9 +338,11 @@ int aml_mapper_replica_build_start(pthread_t *thread_handle,
 	}
 
 	// Wait thread initialization before args (on stack) is destroyed.
-	pthread_mutex_lock(&args.initialization_lock);
+	pthread_cond_wait(&args.initialization_cond, &args.initialization_lock);
 	pthread_mutex_unlock(&args.initialization_lock);
-	pthread_mutex_destroy(&args.initialization_lock);
+	// FIXME helgrind complains if this is uncommented -- not sure why?!
+	//pthread_mutex_destroy(&args.initialization_lock);
+	pthread_cond_destroy(&args.initialization_cond);
 	*thread_handle = thread;
 	return AML_SUCCESS;
 }
