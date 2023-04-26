@@ -36,6 +36,7 @@ endif
 
 # valgrind support
 @VALGRIND_CHECK_RULES@
+VALGRIND_SUPPRESSIONS_FILES=../.valgrind.supp
 
 UTILS_TESTS = \
 	      utils/test_bitmap \

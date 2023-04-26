@@ -31,6 +31,7 @@ endif
 
 # valgrind support
 @VALGRIND_CHECK_RULES@
+VALGRIND_SUPPRESSIONS_FILES=../.valgrind.supp
 
 noinst_LIBRARIES = libkernel.a
 
