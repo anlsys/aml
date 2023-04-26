@@ -19,7 +19,9 @@ void aml_dma_linux_exec_request(struct aml_task_in *input,
 	struct aml_dma_linux_task_in *in =
 	        (struct aml_dma_linux_task_in *)input;
 	*(int *)output = in->op(in->dst, in->src, in->op_arg);
+	pthread_mutex_lock(&in->req->flags_lock);
 	in->req->flags = in->req->flags | AML_DMA_LINUX_REQUEST_FLAGS_DONE;
+	pthread_mutex_unlock(&in->req->flags_lock);
 }
 
 int aml_dma_linux_request_create(struct aml_dma_data *data,
@@ -57,6 +59,11 @@ int aml_dma_linux_request_create(struct aml_dma_data *data,
 		r->flags = 0;
 	} else
 		r->flags = AML_DMA_LINUX_REQUEST_FLAGS_OWNED;
+	if (pthread_mutex_init(&r->flags_lock, NULL)) {
+		perror("pthread_mutex_init");
+		free(r);
+		return -AML_FAILURE;
+	}
 
 	return aml_sched_submit_task(sched, &r->task);
 }
@@ -66,13 +73,18 @@ int aml_dma_linux_request_wait(struct aml_dma_data *dma,
 {
 	struct aml_sched *sched = (struct aml_sched *)dma;
 	struct aml_dma_linux_request *r = *(struct aml_dma_linux_request **)req;
+	int flags;
 
-	if (!(r->flags & AML_DMA_LINUX_REQUEST_FLAGS_DONE)) {
+	pthread_mutex_lock(&r->flags_lock);
+	flags = r->flags;
+	pthread_mutex_unlock(&r->flags_lock);
+	if (!(flags & AML_DMA_LINUX_REQUEST_FLAGS_DONE)) {
 		int err = aml_sched_wait_task(sched, &r->task);
 		if (err != AML_SUCCESS)
 			return err;
 	}
 	int out = r->task_out;
+	pthread_mutex_destroy(&r->flags_lock);
 	free(r);
 	*req = NULL;
 	return out;
@@ -83,13 +95,18 @@ int aml_dma_linux_barrier(struct aml_dma_data *dma)
 	struct aml_sched *sched = (struct aml_sched *)dma;
 	struct aml_task *t = aml_sched_wait_any(sched);
 	struct aml_dma_linux_task_in *input;
-	int out;
+	int out, flags;
 
 	while (t != NULL) {
 		input = (struct aml_dma_linux_task_in *)t->in;
 		out = input->req->task_out;
-		if (input->req->flags & AML_DMA_LINUX_REQUEST_FLAGS_OWNED)
+		pthread_mutex_lock(&input->req->flags_lock);
+		flags = input->req->flags;
+		pthread_mutex_unlock(&input->req->flags_lock);
+		if (flags & AML_DMA_LINUX_REQUEST_FLAGS_OWNED) {
+			pthread_mutex_destroy(&input->req->flags_lock);
 			free(input->req);
+		}
 		if (out != AML_SUCCESS)
 			return out;
 		t = aml_sched_wait_any(sched);
