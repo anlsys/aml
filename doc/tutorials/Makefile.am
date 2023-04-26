@@ -33,6 +33,7 @@ endif
 
 # valgrind support
 @VALGRIND_CHECK_RULES@
+VALGRIND_SUPPRESSIONS_FILES=../../.valgrind.supp
 
 HELLO_TESTS = \
 	      hello_world/0_hello
