@@ -341,7 +341,7 @@ int aml_mapper_replica_build_start(pthread_t *thread_handle,
 	pthread_cond_wait(&args.initialization_cond, &args.initialization_lock);
 	pthread_mutex_unlock(&args.initialization_lock);
 	// FIXME helgrind complains if this is uncommented -- not sure why?!
-	//pthread_mutex_destroy(&args.initialization_lock);
+	// pthread_mutex_destroy(&args.initialization_lock);
 	pthread_cond_destroy(&args.initialization_cond);
 	*thread_handle = thread;
 	return AML_SUCCESS;
