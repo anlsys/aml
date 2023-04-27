@@ -234,7 +234,7 @@ struct aml_task *aml_queue_sched_wait_any_async(struct aml_sched_data *data)
 	struct aml_task *task = NULL;
 	struct aml_queue_sched *sched = (struct aml_queue_sched *)data;
 	int busy;
-	struct aml_task **busy_cmp[sched->nt];
+	struct aml_task *busy_cmp[sched->nt];
 	memset(busy_cmp, 0, sizeof(busy_cmp));
 
 	// Poll done_q until a task is here.
