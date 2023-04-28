@@ -17,6 +17,9 @@
 #if AML_HAVE_BACKEND_ZE == 1
 #include "aml/area/ze.h"
 #endif
+#if AML_HAVE_BACKEND_HIP == 1
+#include "aml/area/hip.h"
+#endif
 #include "../tests/allocator/dummy_area.h"
 
 #include "aml/higher/allocator.h"
@@ -30,7 +33,7 @@ void benchmark_sized_allocator(FILE *out,
 {
 	const size_t num_samples = 20;
 	struct aml_allocator *allocator;
-	const size_t alloc_size = 1UL << 24;
+	const size_t alloc_size = 1UL << 12;
 	char allocator_name[strlen(area_name) + strlen("sized_") + 1];
 
 	// Set allocator name
@@ -53,14 +56,6 @@ void benchmark_sized_allocator(FILE *out,
 		benchmark_consecutive_allocations_free(out, allocator_name,
 		                                       allocator);
 	aml_allocator_sized_destroy(&allocator);
-
-	// 3.
-	assert(aml_allocator_sized_create(&allocator, alloc_size, area, NULL) ==
-	       AML_SUCCESS);
-	for (size_t i = 0; i < num_samples; i++)
-		benchmark_random_allocations_free(out, allocator_name,
-		                                  allocator);
-	aml_allocator_sized_destroy(&allocator);
 }
 
 int main(int argc, char **argv)
@@ -81,10 +76,16 @@ int main(int argc, char **argv)
 		benchmark_sized_allocator(stdout, &aml_area_cuda, "cuda");
 #endif
 
-		// Benchmark ze area
+	// Benchmark ze area
 #if AML_HAVE_BACKEND_ZE == 1
 	if (aml_support_backends(AML_BACKEND_ZE))
 		benchmark_sized_allocator(stdout, aml_area_ze_device, "ze");
+#endif
+
+	// Benchmark hip area
+#if AML_HAVE_BACKEND_HIP == 1
+	if (aml_support_backends(AML_BACKEND_HIP))
+		benchmark_sized_allocator(stdout, &aml_area_hip, "hip");
 #endif
 
 	aml_finalize();
