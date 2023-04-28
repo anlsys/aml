@@ -18,8 +18,10 @@ void aml_dma_linux_exec_request(struct aml_task_in *input,
 {
 	struct aml_dma_linux_task_in *in =
 	        (struct aml_dma_linux_task_in *)input;
+	pthread_mutex_lock(&in->req->lock);
 	*(int *)output = in->op(in->dst, in->src, in->op_arg);
 	in->req->flags = in->req->flags | AML_DMA_LINUX_REQUEST_FLAGS_DONE;
+	pthread_mutex_unlock(&in->req->lock);
 }
 
 int aml_dma_linux_request_create(struct aml_dma_data *data,
@@ -57,6 +59,11 @@ int aml_dma_linux_request_create(struct aml_dma_data *data,
 		r->flags = 0;
 	} else
 		r->flags = AML_DMA_LINUX_REQUEST_FLAGS_OWNED;
+	if (pthread_mutex_init(&r->lock, NULL)) {
+		perror("pthread_mutex_init");
+		free(r);
+		return -AML_FAILURE;
+	}
 
 	return aml_sched_submit_task(sched, &r->task);
 }
@@ -67,12 +74,16 @@ int aml_dma_linux_request_wait(struct aml_dma_data *dma,
 	struct aml_sched *sched = (struct aml_sched *)dma;
 	struct aml_dma_linux_request *r = *(struct aml_dma_linux_request **)req;
 
-	if (!(r->flags & AML_DMA_LINUX_REQUEST_FLAGS_DONE)) {
-		int err = aml_sched_wait_task(sched, &r->task);
-		if (err != AML_SUCCESS)
-			return err;
-	}
+	int err = aml_sched_wait_task(sched, &r->task);
+	if (err != AML_SUCCESS)
+		return err;
+
+	pthread_mutex_lock(&r->lock);
+	assert(r->flags & AML_DMA_LINUX_REQUEST_FLAGS_DONE);
 	int out = r->task_out;
+	pthread_mutex_unlock(&r->lock);
+
+	pthread_mutex_destroy(&r->lock);
 	free(r);
 	*req = NULL;
 	return out;
@@ -83,13 +94,18 @@ int aml_dma_linux_barrier(struct aml_dma_data *dma)
 	struct aml_sched *sched = (struct aml_sched *)dma;
 	struct aml_task *t = aml_sched_wait_any(sched);
 	struct aml_dma_linux_task_in *input;
-	int out;
+	int out, flags;
 
 	while (t != NULL) {
 		input = (struct aml_dma_linux_task_in *)t->in;
+		pthread_mutex_lock(&input->req->lock);
 		out = input->req->task_out;
-		if (input->req->flags & AML_DMA_LINUX_REQUEST_FLAGS_OWNED)
+		flags = input->req->flags;
+		pthread_mutex_unlock(&input->req->lock);
+		if (flags & AML_DMA_LINUX_REQUEST_FLAGS_OWNED) {
+			pthread_mutex_destroy(&input->req->lock);
 			free(input->req);
+		}
 		if (out != AML_SUCCESS)
 			return out;
 		t = aml_sched_wait_any(sched);
@@ -100,8 +116,11 @@ int aml_dma_linux_barrier(struct aml_dma_data *dma)
 int aml_dma_linux_request_destroy(struct aml_dma_data *dma,
                                   struct aml_dma_request **req)
 {
+	struct aml_dma_linux_request *r = *(struct aml_dma_linux_request **)req;
+
 	(void)dma;
-	free(*req);
+	pthread_mutex_destroy(&r->lock);
+	free(r);
 	*req = NULL;
 	return AML_SUCCESS;
 }

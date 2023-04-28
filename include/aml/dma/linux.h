@@ -125,6 +125,8 @@ struct aml_dma_linux_request {
 	int task_out;
 	// Request flags
 	int flags;
+	// Request lock
+	pthread_mutex_t lock;
 };
 
 /**
