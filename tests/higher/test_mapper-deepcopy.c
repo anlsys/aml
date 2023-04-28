@@ -25,10 +25,16 @@
 #include "aml/dma/cuda.h"
 #endif
 
-// Mapper args (cuda)
+// Mapper args (hip)
 #if AML_HAVE_BACKEND_HIP
 #include "aml/area/hip.h"
 #include "aml/dma/hip.h"
+#endif
+
+// Mapper args (ze)
+#if AML_HAVE_BACKEND_ZE
+#include "aml/area/ze.h"
+#include "aml/dma/ze.h"
 #endif
 
 // Structures and mappers declaration. ----------------------------------------
@@ -136,6 +142,13 @@ int main(int argc, char **argv)
 		test_mapper(&struct_C_mapper, &aml_area_hip, NULL, &aml_dma_hip,
 		            &aml_dma_hip, aml_dma_hip_memcpy_op,
 		            aml_dma_hip_memcpy_op);
+	}
+#endif
+#if AML_HAVE_BACKEND_ZE
+	if (aml_support_backends(AML_BACKEND_ZE)) {
+		test_mapper(&struct_C_mapper, aml_area_ze_device, NULL, aml_dma_ze_default,
+		            aml_dma_ze_default, aml_dma_ze_memcpy_op,
+		            aml_dma_ze_memcpy_op);
 	}
 #endif
 	// Cleanup
