@@ -44,6 +44,7 @@ int aml_vector_create(struct aml_vector **vector, const size_t element_size)
 	*vector = a;
 	return AML_SUCCESS;
 utarray_error:
+	free(a);
 	return -AML_ENOMEM;
 }
 

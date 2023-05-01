@@ -76,13 +76,13 @@ int main(int argc, char **argv)
 		benchmark_sized_allocator(stdout, &aml_area_cuda, "cuda");
 #endif
 
-	// Benchmark ze area
+		// Benchmark ze area
 #if AML_HAVE_BACKEND_ZE == 1
 	if (aml_support_backends(AML_BACKEND_ZE))
 		benchmark_sized_allocator(stdout, aml_area_ze_device, "ze");
 #endif
 
-	// Benchmark hip area
+		// Benchmark hip area
 #if AML_HAVE_BACKEND_HIP == 1
 	if (aml_support_backends(AML_BACKEND_HIP))
 		benchmark_sized_allocator(stdout, &aml_area_hip, "hip");
