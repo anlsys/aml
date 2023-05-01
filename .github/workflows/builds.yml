@@ -94,6 +94,33 @@ jobs:
             tests/*.log
             benchmarks/*.log
             doc/tutorials/*.log
+  helgrind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          fetch-depth: 0
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y gcc make autoconf automake libtool pkgconf hwloc libhwloc-dev valgrind
+      - name: configure
+        run: |
+          ./autogen.sh
+          mkdir build
+          ./configure --prefix=`pwd`/build --without-rocm --enable-valgrind --disable-valgrind-memcheck --enable-valgrind-helgrind
+      - run: make
+      - run: make -C tests check-valgrind
+        env:
+          HWLOC_CPUID_PATH: ${{ github.workspace }}/cpuid
+          VALGRIND_SUPPRESSIONS_FILES: ${{ github.workspace }}/.valgrind.supp
+          OMP_NUM_THREADS: 1
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: valgrind
+          path: |
+            config.log
+            tests/*.log
   nix:
     runs-on: ubuntu-latest
     steps:
