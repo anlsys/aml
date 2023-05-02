@@ -178,16 +178,15 @@ int aml_dma_multiplex_copy_single(struct aml_layout *dst,
 	}
 	err = aml_dma_async_copy_custom(dma, inner_req, dst,
 	                                (struct aml_layout *)src, op, op_arg);
-	if (err != AML_SUCCESS) {
-		if (args->m_req != NULL)
-			free(*args->m_req);
-	}
+	if (err != AML_SUCCESS && args->m_req != NULL)
+		free(*args->m_req);
+
 	m_data->round++;
 	if (m_data->round > m_data->weights[dma_idx]) {
 		m_data->index = (dma_idx + 1) % m_data->count;
 		m_data->round = 0;
 	}
-	return AML_SUCCESS;
+	return err;
 }
 
 struct aml_dma_ops aml_dma_multiplex_ops = {
