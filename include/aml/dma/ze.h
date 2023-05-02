@@ -75,8 +75,10 @@ extern struct aml_dma *aml_dma_ze_default;
  * @return Another aml error code translated from a `ze_result_t` that can
  * result from a ze resource creation (context, command queue, event pool).
  **/
-int aml_dma_ze_create(struct aml_dma **dma, ze_device_handle_t device,
-		      int ordinal, int index);
+int aml_dma_ze_create(struct aml_dma **dma,
+                      ze_device_handle_t device,
+                      int ordinal,
+                      int index);
 
 /**
  * AML dma ze barrier operator.

@@ -16,8 +16,10 @@
 
 #define ZE(ze_call) aml_errno_from_ze_result(ze_call)
 
-int aml_dma_ze_create(struct aml_dma **dma, ze_device_handle_t device, int
-		      ordinal, int index)
+int aml_dma_ze_create(struct aml_dma **dma,
+                      ze_device_handle_t device,
+                      int ordinal,
+                      int index)
 {
 	int err = AML_SUCCESS;
 	struct aml_dma *out = NULL;
