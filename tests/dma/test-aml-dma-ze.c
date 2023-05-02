@@ -18,7 +18,7 @@ static double bw(size_t size, int64_t time)
 
 int do_copy_1wait(struct aml_dma *dma, void *dest, void *src, size_t size, int repeat)
 {
-	int64_t mintime = UINT64_MAX;
+	int64_t mintime = INT64_MAX;
 	struct timespec start, end;
 	for(int i = 0; i < repeat; i++) {
 		clock_gettime(CLOCK_MONOTONIC, &start);
@@ -32,13 +32,13 @@ int do_copy_1wait(struct aml_dma *dma, void *dest, void *src, size_t size, int r
 
 int do_copy_chunks(struct aml_dma *dma, void *dest, void *src, size_t size, size_t chunks, int repeat)
 {
-	int64_t mintime = UINT64_MAX;
+	int64_t mintime = INT64_MAX;
 	struct timespec start, end;
 	size_t cksz = size/chunks;
 	for(int i = 0; i < repeat; i++) {
 		clock_gettime(CLOCK_MONOTONIC, &start);
 		for(int j = 0; j < chunks; j++) {
-			aml_dma_async_copy_custom(dma, NULL, dest+(j*cks), src + (j*cks), aml_dma_ze_memcpy_op, cksz);
+			aml_dma_async_copy_custom(dma, NULL, dest+(j*cksz), src + (j*cksz), aml_dma_ze_memcpy_op, cksz);
 		}
 		aml_dma_barrier(dma);
 		clock_gettime(CLOCK_MONOTONIC, &end);
@@ -51,7 +51,7 @@ int do_copy_chunks(struct aml_dma *dma, void *dest, void *src, size_t size, size
 int do_copy_2barrier(struct aml_dma *dma, void *dest1, void *src1,
 		void *dest2, void *src2, size_t size, int repeat)
 {
-	int64_t mintime = UINT64_MAX;
+	int64_t mintime = INT64_MAX;
 	struct timespec start, end;
 	for(int i = 0; i < repeat; i++) {
 		clock_gettime(CLOCK_MONOTONIC, &start);
@@ -68,14 +68,14 @@ int do_copy_2barrier(struct aml_dma *dma, void *dest1, void *src1,
 int do_copy_2chunks(struct aml_dma *dma, void *dest1, void *src1,
 		void *dest2, void *src2, size_t size, size_t chunks, int repeat)
 {
-	int64_t mintime = UINT64_MAX;
+	int64_t mintime = INT64_MAX;
 	struct timespec start, end;
 	size_t cksz = size/chunks;
 	for(int i = 0; i < repeat; i++) {
 		clock_gettime(CLOCK_MONOTONIC, &start);
 		for(int j = 0; j < chunks; j++) {
-			aml_dma_async_copy_custom(dma, NULL, dest1+(j*cks), src1 + (j*cks), aml_dma_ze_memcpy_op, cksz);
-			aml_dma_async_copy_custom(dma, NULL, dest2+(j*cks), src2 + (j*cks), aml_dma_ze_memcpy_op, cksz);
+			aml_dma_async_copy_custom(dma, NULL, dest1+(j*cksz), src1 + (j*cksz), aml_dma_ze_memcpy_op, cksz);
+			aml_dma_async_copy_custom(dma, NULL, dest2+(j*cksz), src2 + (j*cksz), aml_dma_ze_memcpy_op, cksz);
 		}
 		aml_dma_barrier(dma);
 		clock_gettime(CLOCK_MONOTONIC, &end);
@@ -97,22 +97,22 @@ int main(int argc, char *argv[])
 	double *device = aml_area_mmap(aml_area_ze_device, N * sizeof(double), NULL);
 
 	fprintf("Default ZE DMA\n");
-	fprintf("OMP: H2D: 1C-wait\n");
+	fprintf("H2D: 1C-wait\n");
 	do_copy_1way(aml_dma_ze_default, device, host, bytes, repeats);
 	
 	for(size_t i = 1; i < 20; i++) {
 		fprintf("Default ZE DMA\n");
-		fprintf("OMP: H2D: Chunks: %zu\n", i);
+		fprintf("H2D: Chunks: %zu\n", i);
 		do_copy_chunks(aml_dma_ze_default, device, host, bytes, i, repeats);
 	}
 
 	fprintf("Default ZE DMA\n");
-	fprintf("OMP: D2H: 1C-wait\n");
+	fprintf("D2H: 1C-wait\n");
 	do_copy_1way(aml_dma_ze_default, host, device, bytes, repeats);
 	
 	for(size_t i = 1; i < 100; i++) {
 		fprintf("Default ZE DMA\n");
-		fprintf("OMP: H2D: Chunks: %zu\n", i);
+		fprintf("D2H: Chunks: %zu\n", i);
 		do_copy_chunks(aml_dma_ze_default, host, device, bytes, i, repeats);
 	}
 
@@ -120,15 +120,15 @@ int main(int argc, char *argv[])
 	double *device2= aml_area_mmap(aml_area_ze_device, N * sizeof(double), NULL);
 
 	fprintf("Default ZE DMA\n");
-	fprintf("OMP: 2Way: 1C-barrier\n");
+	fprintf("2Way: 1C-barrier\n");
 	do_copy_2barrier(aml_dma_ze_default, host, device, device2, host2, bytes, repeats);
 	
 	for(size_t i = 1; i < 100; i++) {
 		fprintf("Default ZE DMA\n");
-		fprintf("OMP: 2Way: Chunks: %zu\n", i);
+		fprintf("2Way: Chunks: %zu\n", i);
 		do_copy_2chunks(aml_dma_ze_default, host, device, device2, host2, bytes, i, repeats);
 	}
 	aml_finalize();
-	return 1;
+	return 0;
 }
 

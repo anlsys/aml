@@ -109,7 +109,7 @@ endif
 
 if HAVE_ZE
 AREA_TESTS += area/test_ze
-DMA_TESTS += dma/test_ze
+DMA_TESTS += dma/test_ze dma/test-aml-dma-ze
 endif
 
 if HAVE_HWLOC
