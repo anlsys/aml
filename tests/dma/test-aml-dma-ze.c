@@ -16,10 +16,12 @@
 #include <aml/area/ze.h>
 #include <aml/dma/ze.h>
 
-#define min(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a < _b ? _a : _b; })
+#define min(a, b)                                                              \
+	({                                                                     \
+		__typeof__(a) _a = (a);                                        \
+		__typeof__(b) _b = (b);                                        \
+		_a < _b ? _a : _b;                                             \
+	})
 
 static int64_t timediff(struct timespec end, struct timespec start)
 {
@@ -40,7 +42,8 @@ int do_copy_1way(
 	struct timespec start, end;
 	for (int i = 0; i < repeat; i++) {
 		clock_gettime(CLOCK_MONOTONIC, &start);
-		aml_dma_copy_custom(dma, dest, src, aml_dma_ze_memcpy_op, (void*)size);
+		aml_dma_copy_custom(dma, dest, src, aml_dma_ze_memcpy_op,
+		                    (void *)size);
 		clock_gettime(CLOCK_MONOTONIC, &end);
 		mintime = min(mintime, timediff(end, start));
 	}
@@ -63,7 +66,8 @@ int do_copy_chunks(struct aml_dma *dma,
 		for (int j = 0; j < chunks; j++) {
 			aml_dma_async_copy_custom(dma, NULL, dest + (j * cksz),
 			                          src + (j * cksz),
-			                          aml_dma_ze_memcpy_op, (void*)cksz);
+			                          aml_dma_ze_memcpy_op,
+			                          (void *)cksz);
 		}
 		aml_dma_barrier(dma);
 		clock_gettime(CLOCK_MONOTONIC, &end);
@@ -86,9 +90,9 @@ int do_copy_2barrier(struct aml_dma *dma,
 	for (int i = 0; i < repeat; i++) {
 		clock_gettime(CLOCK_MONOTONIC, &start);
 		aml_dma_async_copy_custom(dma, NULL, dest1, src1,
-		                          aml_dma_ze_memcpy_op, (void*)size);
+		                          aml_dma_ze_memcpy_op, (void *)size);
 		aml_dma_async_copy_custom(dma, NULL, dest2, src2,
-		                          aml_dma_ze_memcpy_op, (void*)size);
+		                          aml_dma_ze_memcpy_op, (void *)size);
 		aml_dma_barrier(dma);
 		clock_gettime(CLOCK_MONOTONIC, &end);
 		mintime = min(mintime, timediff(end, start));
@@ -114,10 +118,12 @@ int do_copy_2chunks(struct aml_dma *dma,
 		for (int j = 0; j < chunks; j++) {
 			aml_dma_async_copy_custom(dma, NULL, dest1 + (j * cksz),
 			                          src1 + (j * cksz),
-			                          aml_dma_ze_memcpy_op, (void*)cksz);
+			                          aml_dma_ze_memcpy_op,
+			                          (void *)cksz);
 			aml_dma_async_copy_custom(dma, NULL, dest2 + (j * cksz),
 			                          src2 + (j * cksz),
-			                          aml_dma_ze_memcpy_op, (void*)cksz);
+			                          aml_dma_ze_memcpy_op,
+			                          (void *)cksz);
 		}
 		aml_dma_barrier(dma);
 		clock_gettime(CLOCK_MONOTONIC, &end);
@@ -136,7 +142,6 @@ int main(int argc, char *argv[])
 	assert(aml_init(&argc, &argv) == AML_SUCCESS);
 	if (!aml_support_backends(AML_BACKEND_ZE))
 		return 77;
-
 
 	double *host =
 	        aml_area_mmap(aml_area_ze_host, N * sizeof(double), NULL);
