@@ -10,3 +10,36 @@
    ...
    obj:*/lib*/lib*.so.*
 }
+{
+   ignore_unlocks_in_cleanup_handler
+   Helgrind:UnlockUnlocked
+   fun:mutex_unlock_WRK
+   ...
+   fun:aml_queue_sched_thread_fn
+}
+{
+   ignore_destruction_of_falsely_waited_upon_condition_variable
+   Helgrind:Misc
+   fun:pthread_cond_destroy_WRK
+   ...
+   fun:aml_queue_sched_destroy
+}
+{
+   ignore_hip_semaphore_access_error
+   Helgrind:PthAPIerror
+   fun:sem_open
+   ...
+   obj:*libhsa-runtime64.so*
+}
+{
+   ignore_hip_races
+   Helgrind:Race
+   ...
+   obj:*libhsa-runtime64.so*
+}
+{
+   ignore_hip_races
+   Helgrind:Race
+   ...
+   obj:*libamdhip64.so*
+}
