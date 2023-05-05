@@ -41,6 +41,8 @@ extern "C" {
 /** Cuda DMA request. Only need a status flag is needed. **/
 struct aml_dma_cuda_request {
 	int status;
+	// Request lock
+	pthread_mutex_t lock;
 };
 
 /**
