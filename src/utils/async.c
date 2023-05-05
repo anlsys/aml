@@ -94,7 +94,6 @@ static void thread_fn_cleanup_handler(void *arg)
 
 static void *aml_queue_sched_thread_fn(void *arg)
 {
-	int err;
 	struct aml_task *task;
 	struct aml_queue_sched *sched = (struct aml_queue_sched *)arg;
 	int tid;
@@ -195,8 +194,7 @@ int aml_queue_sched_wait(struct aml_sched_data *data, struct aml_task *task)
 	pthread_mutex_lock(&(sched->doneq_lock));
 	err = aml_queue_find(sched->done_q, task, comp_tasks, &match);
 	if (err == AML_SUCCESS) {
-		assert(aml_queue_take(sched->done_q, match) ==
-		       AML_SUCCESS);
+		assert(aml_queue_take(sched->done_q, match) == AML_SUCCESS);
 		pthread_mutex_unlock(&(sched->doneq_lock));
 		return AML_SUCCESS;
 	}
@@ -209,8 +207,7 @@ int aml_queue_sched_wait(struct aml_sched_data *data, struct aml_task *task)
 	err = aml_queue_find(sched->work_q, task, comp_tasks, &match);
 	if (err == AML_SUCCESS) {
 		struct aml_task *t = *(struct aml_task **)match;
-		assert(aml_queue_take(sched->work_q, match) ==
-		       AML_SUCCESS);
+		assert(aml_queue_take(sched->work_q, match) == AML_SUCCESS);
 		pthread_mutex_unlock(&(sched->workq_lock));
 		t->fn(t->in, t->out);
 		return AML_SUCCESS;
