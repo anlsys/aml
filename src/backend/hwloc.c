@@ -99,7 +99,12 @@ int aml_hwloc_distance_lt(const void *a_ptr, const void *b_ptr)
 {
 	struct aml_hwloc_distance *a = (struct aml_hwloc_distance *)a_ptr;
 	struct aml_hwloc_distance *b = (struct aml_hwloc_distance *)b_ptr;
-	return a->distance < b->distance;
+	if (a->distance < b->distance)
+		return -1;
+	else if (a->distance > b->distance)
+		return 1;
+	else
+		return 0;
 }
 
 /**
