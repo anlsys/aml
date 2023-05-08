@@ -23,7 +23,9 @@ void aml_dma_hip_callback(hipStream_t stream, hipError_t status, void *userData)
 	struct aml_dma_hip_request *req;
 
 	req = (struct aml_dma_hip_request *)userData;
+	pthread_mutex_lock(&req->lock);
 	req->status = AML_DMA_HIP_REQUEST_STATUS_DONE;
+	pthread_mutex_unlock(&req->lock);
 }
 
 int aml_dma_hip_create(struct aml_dma **dma, const enum hipMemcpyKind kind)
@@ -105,6 +107,7 @@ int aml_dma_hip_request_create(struct aml_dma_data *data,
 		if (request == NULL)
 			return -AML_ENOMEM;
 		request->status = AML_DMA_HIP_REQUEST_STATUS_PENDING;
+		pthread_mutex_init(&request->lock, NULL);
 	}
 
 	// Submit request to hip device
@@ -114,6 +117,7 @@ int aml_dma_hip_request_create(struct aml_dma_data *data,
 	};
 	err = op(dest, src, (void *)(&args));
 	if (err != AML_SUCCESS) {
+		pthread_mutex_destroy(&request->lock);
 		free(request);
 		return err;
 	}
@@ -122,6 +126,7 @@ int aml_dma_hip_request_create(struct aml_dma_data *data,
 	if (req != NULL) {
 		if (hipStreamAddCallback(dma_data->stream, aml_dma_hip_callback,
 		                         request, 0) != hipSuccess) {
+			pthread_mutex_destroy(&request->lock);
 			free(request);
 			return -AML_FAILURE;
 		}
@@ -136,6 +141,7 @@ int aml_dma_hip_request_wait(struct aml_dma_data *data,
 {
 	struct aml_dma_hip_data *dma_data;
 	struct aml_dma_hip_request *dma_req;
+	int status;
 
 	if (req == NULL || *req == NULL)
 		return -AML_EINVAL;
@@ -144,7 +150,10 @@ int aml_dma_hip_request_wait(struct aml_dma_data *data,
 	dma_req = (struct aml_dma_hip_request *)(*req);
 
 	// If already done, do nothing
-	if (dma_req->status == AML_DMA_HIP_REQUEST_STATUS_DONE)
+	pthread_mutex_lock(&dma_req->lock);
+	status = dma_req->status;
+	pthread_mutex_unlock(&dma_req->lock);
+	if (status == AML_DMA_HIP_REQUEST_STATUS_DONE)
 		goto exit_success;
 
 	// Wait for the stream to finish and call its callback.
@@ -152,10 +161,14 @@ int aml_dma_hip_request_wait(struct aml_dma_data *data,
 
 	// If status is not updated, either callback failed or
 	// the provided dma did not create the provided request.
-	if (dma_req->status != AML_DMA_HIP_REQUEST_STATUS_DONE)
+	pthread_mutex_lock(&dma_req->lock);
+	status = dma_req->status;
+	pthread_mutex_unlock(&dma_req->lock);
+	if (status != AML_DMA_HIP_REQUEST_STATUS_DONE)
 		return -AML_EINVAL;
 
 exit_success:
+	pthread_mutex_destroy(&dma_req->lock);
 	free(dma_req);
 	*req = NULL;
 	return AML_SUCCESS;
@@ -177,6 +190,7 @@ int aml_dma_hip_request_destroy(struct aml_dma_data *data,
 {
 	struct aml_dma_hip_data *dma_data;
 	struct aml_dma_hip_request *dma_req;
+	int status;
 
 	if (req == NULL || *req == NULL)
 		return -AML_EINVAL;
@@ -186,15 +200,22 @@ int aml_dma_hip_request_destroy(struct aml_dma_data *data,
 
 	// If the request status is not done, wait for it to be done.
 	// This way, the stream callback will not update a deleted request.
-	if (dma_req->status != AML_DMA_HIP_REQUEST_STATUS_DONE)
+	pthread_mutex_lock(&dma_req->lock);
+	status = dma_req->status;
+	pthread_mutex_unlock(&dma_req->lock);
+	if (status != AML_DMA_HIP_REQUEST_STATUS_DONE)
 		hipStreamSynchronize(dma_data->stream);
 
 	// If status is not updated, either callback failed or
 	// the provided dma did not create the provided request.
-	if (dma_req->status != AML_DMA_HIP_REQUEST_STATUS_DONE)
+	pthread_mutex_lock(&dma_req->lock);
+	status = dma_req->status;
+	pthread_mutex_unlock(&dma_req->lock);
+	if (status != AML_DMA_HIP_REQUEST_STATUS_DONE)
 		return -AML_EINVAL;
 
 	// Cleanup
+	pthread_mutex_destroy(&dma_req->lock);
 	free(dma_req);
 	*req = NULL;
 	return AML_SUCCESS;

@@ -62,12 +62,16 @@ struct aml_task *aml_sched_wait_any(struct aml_sched *pool)
 struct aml_queue_sched {
 	/** task queue **/
 	struct aml_queue *work_q;
-	/** Queue lock on work_q to keep threads awake **/
+	/** Lock guarding `work_q` updates **/
 	pthread_mutex_t workq_lock;
+	/** Condition variable that idle threads wait on for requests **/
+	pthread_cond_t workq_cond;
 	/** work done queue **/
 	struct aml_queue *done_q;
 	/** Passive lock on done_q **/
 	pthread_mutex_t doneq_lock;
+	/** Condition variable that waiting threads wait on for results **/
+	pthread_cond_t doneq_cond;
 	/** Number of threads **/
 	size_t nt;
 	/** threads **/
@@ -80,9 +84,16 @@ struct aml_queue_sched {
 	int tid;
 };
 
+// Invoked when a thread running aml_queue_sched_thread_fn gets canceled
+// during pthread_cond_wait.
+static void thread_fn_cleanup_handler(void *arg)
+{
+	struct aml_queue_sched *sched = (struct aml_queue_sched *)arg;
+	pthread_mutex_unlock(&sched->workq_lock);
+}
+
 static void *aml_queue_sched_thread_fn(void *arg)
 {
-	int err;
 	struct aml_task *task;
 	struct aml_queue_sched *sched = (struct aml_queue_sched *)arg;
 	int tid;
@@ -93,51 +104,45 @@ static void *aml_queue_sched_thread_fn(void *arg)
 	pthread_mutex_unlock(&(sched->workq_lock));
 
 	// Forever until cancelled by a call to aml_queue_sched_destroy()
-loop:
-	pthread_testcancel();
+	for (;;) {
+		// Shouldn't really be needed (pthread_cond_wait is also a
+		// cancelation point) but it won't hurt...
+		pthread_testcancel();
 
-	// Poll for work:
-	err = pthread_mutex_trylock(&(sched->workq_lock));
-	if (err == EBUSY) {
-		sched_yield();
-		goto loop;
-	}
-	if (err != 0) {
-		perror("pthread_mutex_trylock");
-		goto loop;
-	}
+		pthread_mutex_lock(&(sched->workq_lock));
+		pthread_cleanup_push(&thread_fn_cleanup_handler, sched);
 
-	// Wait for work
-	if (aml_queue_len(sched->work_q) == 0) {
+		// Wait for work
+		while (aml_queue_len(sched->work_q) == 0)
+			pthread_cond_wait(&sched->workq_cond,
+			                  &sched->workq_lock);
+
+		task = aml_queue_pop(sched->work_q);
+		if (task != NULL) {
+			pthread_mutex_lock(&(sched->in_progress_lock));
+			sched->in_progress[tid] = task;
+			pthread_mutex_unlock(&(sched->in_progress_lock));
+		}
+
+		pthread_cleanup_pop(0);
 		pthread_mutex_unlock(&(sched->workq_lock));
-		sched_yield();
-		goto loop;
-	}
 
-	task = aml_queue_pop(sched->work_q);
-	if (task != NULL) {
+		// Run task
+		if (task == NULL)
+			continue;
+		task->fn(task->in, task->out);
+
+		// Push task to done q
+		pthread_mutex_lock(&(sched->doneq_lock));
 		pthread_mutex_lock(&(sched->in_progress_lock));
-		sched->in_progress[tid] = task;
+		aml_queue_push(sched->done_q, (void *)task);
+		// We need to wake up all the waiting threads because some
+		// of them could be waiting for a particular task.
+		pthread_cond_broadcast(&sched->doneq_cond);
+		pthread_mutex_unlock(&(sched->doneq_lock));
+		sched->in_progress[tid] = NULL;
 		pthread_mutex_unlock(&(sched->in_progress_lock));
 	}
-	pthread_mutex_unlock(&(sched->workq_lock));
-
-	// Run task
-	if (task == NULL)
-		goto loop;
-	task->fn(task->in, task->out);
-
-	// Push task to done q
-	pthread_mutex_lock(&(sched->doneq_lock));
-	pthread_mutex_lock(&(sched->in_progress_lock));
-	aml_queue_push(sched->done_q, (void *)task);
-	pthread_mutex_unlock(&(sched->doneq_lock));
-	sched->in_progress[tid] = NULL;
-	pthread_mutex_unlock(&(sched->in_progress_lock));
-
-	// loop until cancelation.
-	goto loop;
-	return NULL;
 }
 
 // Submit task.
@@ -148,6 +153,7 @@ int aml_queue_sched_submit(struct aml_sched_data *data, struct aml_task *task)
 
 	pthread_mutex_lock(&(sched->workq_lock));
 	err = aml_queue_push(sched->work_q, task);
+	pthread_cond_signal(&sched->workq_cond);
 	pthread_mutex_unlock(&(sched->workq_lock));
 	return err;
 }
@@ -163,31 +169,18 @@ int aml_queue_sched_wait_async(struct aml_sched_data *data,
 {
 	int err;
 	struct aml_queue_sched *sched = (struct aml_queue_sched *)data;
-	struct aml_queue *q = sched->done_q;
-	pthread_mutex_t *lock = &(sched->doneq_lock);
 	void **match;
 
-loop:
-	pthread_mutex_lock(lock);
-	while (aml_queue_len(q) == 0) {
-		pthread_mutex_unlock(lock);
-		sched_yield();
-		goto loop;
-	}
+	pthread_mutex_lock(&sched->doneq_lock);
+	while ((err = aml_queue_find(sched->done_q, task, comp_tasks,
+	                             &match)) == -AML_EDOM)
+		pthread_cond_wait(&sched->doneq_cond, &sched->doneq_lock);
 
-	err = aml_queue_find(q, task, comp_tasks, &match);
+	if (err == AML_SUCCESS)
+		assert(aml_queue_take(sched->done_q, match) == AML_SUCCESS);
 
-	if (err == AML_SUCCESS) {
-		assert(aml_queue_take(q, match) == AML_SUCCESS);
-		pthread_mutex_unlock(lock);
-		return AML_SUCCESS;
-	} else if (err == -AML_EDOM) {
-		pthread_mutex_unlock(lock);
-		goto loop;
-	} else {
-		pthread_mutex_unlock(lock);
-		return err;
-	}
+	pthread_mutex_unlock(&sched->doneq_lock);
+	return err;
 }
 
 // Wait for a specific task when the calling thread is responsible for progress.
@@ -197,8 +190,7 @@ int aml_queue_sched_wait(struct aml_sched_data *data, struct aml_task *task)
 	void **match;
 	struct aml_queue_sched *sched = (struct aml_queue_sched *)data;
 
-loop:
-	// Look into done_q for tasks and return success if found.
+	// Look into done_q for the task and return success if found.
 	pthread_mutex_lock(&(sched->doneq_lock));
 	err = aml_queue_find(sched->done_q, task, comp_tasks, &match);
 	if (err == AML_SUCCESS) {
@@ -221,13 +213,13 @@ loop:
 		return AML_SUCCESS;
 	}
 	pthread_mutex_unlock(&(sched->workq_lock));
-	if (err != -AML_EDOM)
-		return err;
 
-	goto loop;
+	// Not in either queue?  Given that we have no thread pool, this
+	// must be a bug.
+	return err;
 }
 
-// Wait for any task when their is a pool of threads is responsible for
+// Wait for any task when there is a pool of threads responsible for
 // progress.
 struct aml_task *aml_queue_sched_wait_any_async(struct aml_sched_data *data)
 {
@@ -237,15 +229,13 @@ struct aml_task *aml_queue_sched_wait_any_async(struct aml_sched_data *data)
 	struct aml_task *busy_cmp[sched->nt];
 	memset(busy_cmp, 0, sizeof(busy_cmp));
 
-	// Poll done_q until a task is here.
-	while (1) {
+	// Check done_q until a task is here.
+	pthread_mutex_lock(&(sched->doneq_lock));
+	for (;;) {
 		// Pull one task.
-		pthread_mutex_lock(&(sched->doneq_lock));
 		task = aml_queue_pop(sched->done_q);
-		if (task != NULL) {
-			pthread_mutex_unlock(&(sched->doneq_lock));
-			return task;
-		}
+		if (task != NULL)
+			break;
 
 		// Lock the entire scheduler state to see if there is work
 		// to wait for.
@@ -255,17 +245,18 @@ struct aml_task *aml_queue_sched_wait_any_async(struct aml_sched_data *data)
 		busy = aml_queue_len(sched->work_q) > 0 ||
 		       memcmp(busy_cmp, sched->in_progress, sizeof(busy_cmp));
 		pthread_mutex_unlock(&(sched->in_progress_lock));
-		pthread_mutex_unlock(&(sched->doneq_lock));
 		pthread_mutex_unlock(&(sched->workq_lock));
 
 		// If there is no more work, then return NULL
 		if (!busy)
-			return NULL;
+			break;
 
-		// There is work to wait for, yield and loop
-		sched_yield();
+		// There is work to be done, so wait for a task to be
+		// added to the done_q.
+		pthread_cond_wait(&sched->doneq_cond, &sched->doneq_lock);
 	}
 
+	pthread_mutex_unlock(&(sched->doneq_lock));
 	return task;
 }
 
@@ -284,9 +275,9 @@ struct aml_task *aml_queue_sched_wait_any(struct aml_sched_data *data)
 
 	pthread_mutex_lock(&(sched->workq_lock));
 	task = aml_queue_pop(sched->work_q);
+	pthread_mutex_unlock(&(sched->workq_lock));
 	if (task != NULL)
 		task->fn(task->in, task->out);
-	pthread_mutex_unlock(&(sched->workq_lock));
 	return task;
 }
 
@@ -371,15 +362,25 @@ struct aml_sched *aml_queue_sched_create(const size_t num_threads)
 		aml_errno = -AML_FAILURE;
 		goto failure_with_done_queue;
 	}
+	if (pthread_cond_init(&data->workq_cond, NULL) != 0) {
+		perror("pthread_cond_init");
+		aml_errno = -AML_FAILURE;
+		goto failure_with_workq_mutex;
+	}
 	if (pthread_mutex_init(&data->doneq_lock, NULL) != 0) {
 		perror("pthread_mutex_init");
 		aml_errno = -AML_FAILURE;
-		goto failure_with_mutex;
+		goto failure_with_workq_cond;
+	}
+	if (pthread_cond_init(&data->doneq_cond, NULL) != 0) {
+		perror("pthread_cond_init");
+		aml_errno = -AML_FAILURE;
+		goto failure_with_doneq_mutex;
 	}
 	if (pthread_mutex_init(&data->in_progress_lock, NULL) != 0) {
 		perror("pthread_mutex_init");
 		aml_errno = -AML_FAILURE;
-		goto failure_with_mutex;
+		goto failure_with_doneq_cond;
 	}
 
 	// Start threads (if any).
@@ -397,8 +398,14 @@ failure_with_threads:
 		pthread_cancel(data->threads[i]);
 		pthread_join(data->threads[i], NULL);
 	}
+	pthread_mutex_destroy(&data->in_progress_lock);
+failure_with_doneq_cond:
+	pthread_cond_destroy(&data->workq_cond);
+failure_with_doneq_mutex:
 	pthread_mutex_destroy(&data->doneq_lock);
-failure_with_mutex:
+failure_with_workq_cond:
+	pthread_cond_destroy(&data->workq_cond);
+failure_with_workq_mutex:
 	pthread_mutex_destroy(&data->workq_lock);
 failure_with_done_queue:
 	aml_queue_destroy(data->done_q);
@@ -422,7 +429,9 @@ void aml_queue_sched_destroy(struct aml_sched **sched)
 		pthread_cancel(data->threads[i]);
 	for (size_t i = 0; i < data->nt; i++)
 		pthread_join(data->threads[i], NULL);
+	pthread_cond_destroy(&data->workq_cond);
 	pthread_mutex_destroy(&data->workq_lock);
+	pthread_cond_destroy(&data->doneq_cond);
 	pthread_mutex_destroy(&data->doneq_lock);
 	pthread_mutex_destroy(&data->in_progress_lock);
 

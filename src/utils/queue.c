@@ -149,6 +149,9 @@ int aml_queue_find(struct aml_queue *q,
 	if (q == NULL || comp == NULL)
 		return -AML_EINVAL;
 
+	else if (q->len == 0)
+		return -AML_EDOM;
+
 	// Head is before tail.
 	else if (q->tail > q->head) {
 		for (i = q->head; i < q->tail; i++) {
@@ -169,7 +172,7 @@ int aml_queue_find(struct aml_queue *q,
 		}
 	}
 
-	// Not found or queue is empty.
+	// Not found.
 	return -AML_EDOM;
 
 success:
