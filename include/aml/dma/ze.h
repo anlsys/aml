@@ -69,13 +69,20 @@ extern struct aml_dma *aml_dma_ze_default;
  *
  * @param dma: A pointer to set with a new allocated dma.
  * @param device: The target device that will be used as a dma engine.
+ * @param ordinal: the ordinal for the command queue underlying the dma, use 1
+ * as default.
+ * @param index: the index for the command queue underlying the dma, use 0 as
+ * defaut.
  * @see struct aml_dma_ze_data.
  * @return -AML_ENOMEM if allocation failed.
  * @return AML_SUCCESS on success.
  * @return Another aml error code translated from a `ze_result_t` that can
  * result from a ze resource creation (context, command queue, event pool).
  **/
-int aml_dma_ze_create(struct aml_dma **dma, ze_device_handle_t device);
+int aml_dma_ze_create(struct aml_dma **dma,
+                      ze_device_handle_t device,
+                      int ordinal,
+                      int index);
 
 /**
  * AML dma ze barrier operator.

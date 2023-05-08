@@ -85,7 +85,8 @@ LAYOUT_TESTS = \
 TILING_TESTS = \
 	tiling/test_tiling
 
-DMA_TESTS = dma/test_linux
+DMA_TESTS = dma/test_linux \
+	    dma/test_multiplex
 
 HIGHER_TESTS = \
 	higher/test_mapper \
@@ -108,7 +109,7 @@ endif
 
 if HAVE_ZE
 AREA_TESTS += area/test_ze
-DMA_TESTS += dma/test_ze
+DMA_TESTS += dma/test_ze dma/test-aml-dma-ze
 endif
 
 if HAVE_HWLOC
