@@ -17,9 +17,9 @@
 hwloc_topology_t aml_topology;
 hwloc_const_bitmap_t allowed_nodeset;
 
-#define OBJ_DIST(dist, i, j, row_stride, col_stride)                           \
-	(dist)->values[((i)->logical_index + row_stride) * (dist)->nbobjs +    \
-	               col_stride + (j)->logical_index]
+#define OBJ_DIST(dist, i, j, row_offset, col_offset)                           \
+	(dist)->values[((i)->logical_index + row_offset) * (dist)->nbobjs +    \
+	               col_offset + (j)->logical_index]
 
 #define IND_DIST(dist, i, j) (dist)->values[(i) * (dist)->nbobjs + (j)]
 
@@ -351,7 +351,7 @@ static int aml_hwloc_distances_reshape(struct hwloc_distances_s *dist,
 				goto err_with_out;
 			OBJ_DIST(*out, obj0, obj1, 0, nt0) = d0;
 			OBJ_DIST(*out, obj1, obj0, nt0, 0) = d1;
-			obj1 = hwloc_get_next_obj_by_depth(aml_topology, depth0,
+			obj1 = hwloc_get_next_obj_by_depth(aml_topology, depth1,
 			                                   obj1);
 		}
 		obj0 = hwloc_get_next_obj_by_depth(aml_topology, depth0, obj0);
