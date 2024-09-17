@@ -194,17 +194,18 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
-      - run: env
       - run: apt-get update
       - run: apt-get install -y make autoconf automake libtool pkgconf libhwloc-dev
-      - name: configure
+      - name: build
         run: |
+          source /usr/share/lmod/6.6/init/bash
+          module load nvhpv
           ./autogen.sh
           mkdir build
           ./configure --prefix=`pwd`/build --with-cuda CUDA_HOME=$NVHPC_ROOT/cuda
-      - run: make CFLAGS=-std=c99
-      - run: make check
-      - run: make install
+          make CFLAGS=-std=c99
+          make check
+          make install
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
