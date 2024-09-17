@@ -191,8 +191,8 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
-      - run: sudo apt-get update
-      - run: sudo apt-get install -y make autoconf automake libtool pkgconf libhwloc-dev
+      - run: apt-get update
+      - run: apt-get install -y make autoconf automake libtool pkgconf libhwloc-dev
       - name: configure
         run: |
           module load nvhpc
