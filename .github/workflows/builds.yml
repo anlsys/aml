@@ -183,6 +183,8 @@ jobs:
             benchmarks/*.log
             doc/tutorials/*.log
   nvhpc:
+    env:
+      CFLAGS: "-std=c99"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -203,7 +205,7 @@ jobs:
           ./autogen.sh
           mkdir build
           ./configure --prefix=`pwd`/build --with-cuda CUDA_HOME=$NVHPC_ROOT/cuda
-          make CFLAGS=-std=c99
+          make
           make check
           make install
       - uses: actions/upload-artifact@v4
