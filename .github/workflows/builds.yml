@@ -199,7 +199,7 @@ jobs:
       - name: build
         run: |
           source /usr/share/lmod/6.6/init/bash
-          module load nvhpv
+          module load nvhpc
           ./autogen.sh
           mkdir build
           ./configure --prefix=`pwd`/build --with-cuda CUDA_HOME=$NVHPC_ROOT/cuda
