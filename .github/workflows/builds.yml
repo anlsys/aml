@@ -26,7 +26,7 @@ jobs:
       - run: make
       - run: make check
       - run: make install
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: generic
@@ -55,7 +55,7 @@ jobs:
         working-directory: out
       - run: make check
         working-directory: out
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: out-of-tree
@@ -85,7 +85,7 @@ jobs:
           HWLOC_CPUID_PATH: ${{ github.workspace }}/cpuid
           VALGRIND_SUPPRESSIONS_FILES: ${{ github.workspace }}/.valgrind.supp
           OMP_NUM_THREADS: 1
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: valgrind
@@ -114,7 +114,7 @@ jobs:
           HWLOC_CPUID_PATH: ${{ github.workspace }}/cpuid
           VALGRIND_SUPPRESSIONS_FILES: ${{ github.workspace }}/.valgrind.supp
           OMP_NUM_THREADS: 1
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: valgrind
@@ -147,7 +147,7 @@ jobs:
           mkdir build
           ./configure --prefix=`pwd`/build --without-rocm
       - run: make distcheck
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: distcheck
@@ -173,7 +173,7 @@ jobs:
       - run: make CFLAGS=-std=c99
       - run: make check
       - run: make install
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: rocm
@@ -184,7 +184,9 @@ jobs:
             doc/tutorials/*.log
   nvhpc:
     runs-on: ubuntu-latest
-    container: nvcr.io/nvidia/nvhpc:24.7-devel-cuda12.5-ubuntu22.04
+    container:
+      image: nvcr.io/nvidia/nvhpc:24.7-devel-cuda12.5-ubuntu22.04
+    steps:
       - uses: actions/checkout@v2
         with:
           submodules: true
@@ -200,7 +202,7 @@ jobs:
       - run: make CFLAGS=-std=c99
       - run: make check
       - run: make install
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: rocm
