@@ -184,6 +184,9 @@ jobs:
             doc/tutorials/*.log
   nvhpc:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     container:
       image: nvcr.io/nvidia/nvhpc:24.7-devel-cuda12.5-ubuntu22.04
     steps:
