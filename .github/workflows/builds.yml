@@ -182,3 +182,30 @@ jobs:
             tests/*.log
             benchmarks/*.log
             doc/tutorials/*.log
+  nvhpc:
+    runs-on: ubuntu-latest
+    container: nvcr.io/nvidia/nvhpc:24.7-devel-cuda12.5-ubuntu22.04
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          fetch-depth: 0
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y make autoconf automake libtool pkgconf libhwloc-dev
+      - name: configure
+        run: |
+          module load nvhpc
+          ./autogen.sh
+          mkdir build
+          ./configure --prefix=`pwd`/build --with-cuda CUDA_HOME=$NVHPC_ROOT/cuda
+      - run: make CFLAGS=-std=c99
+      - run: make check
+      - run: make install
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: rocm
+          path: |
+            config.log
+            tests/*.log
+            benchmarks/*.log
+            doc/tutorials/*.log
