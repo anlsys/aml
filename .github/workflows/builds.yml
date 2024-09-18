@@ -198,6 +198,8 @@ jobs:
           fetch-depth: 0
       - run: apt-get update
       - run: apt-get install -y make autoconf automake libtool pkgconf libhwloc-dev
+      - run: |
+          cat 0.8.0 > .tarball-version
       - name: build
         run: |
           source /usr/share/lmod/6.6/init/bash
