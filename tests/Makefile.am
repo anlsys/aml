@@ -112,10 +112,10 @@ AREA_TESTS += area/test_ze
 DMA_TESTS += dma/test_ze dma/test-aml-dma-ze
 endif
 
-#if HAVE_HWLOC
-#AREA_TESTS += area/test_hwloc
-#HIGHER_TESTS += replicaset/test_hwloc
-#endif
+if HAVE_HWLOC
+AREA_TESTS += area/test_hwloc
+HIGHER_TESTS += replicaset/test_hwloc
+endif
 
 if HAVE_HIP
 AREA_TESTS+=area/test_hip
