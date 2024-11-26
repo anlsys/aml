@@ -213,7 +213,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: rocm
+          name: nvhpc
           path: |
             config.log
             tests/*.log
