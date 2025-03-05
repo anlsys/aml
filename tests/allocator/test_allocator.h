@@ -170,3 +170,5 @@ int aml_alloc_workflow_run(const size_t max_size,
                            struct aml_time_stats *alloc_stats,
                            struct aml_time_stats *free_stats,
                            struct aml_alloc_workflow_output *out);
+
+int aml_alloc_workflow_chunk_run(struct aml_allocator *allocator);

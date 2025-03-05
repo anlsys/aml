@@ -40,6 +40,16 @@ struct aml_allocator {
 	struct aml_allocator_ops *ops;
 };
 
+/** Allocator internal's chunk information */
+struct aml_allocator_chunk {
+    /** memory allocator for the user (read-only) */
+    void * ptr;
+    /** size of the chunk, greater or equals to the size requested by the user (read-only) */
+    size_t size;
+    /** an opaque object that the user can attach to the chunk (read/write) */
+    void * user_data;
+};
+
 /**
  * Allocator methods.
  * The design pattern of aml allocator is design to meet simplicity and
@@ -104,6 +114,20 @@ struct aml_allocator_ops {
 	 * @return AML_SUCCESS on success or an appropriate aml error code.
 	 */
 	int (*free)(struct aml_allocator_data *data, void *ptr);
+
+
+    /**
+     *  Optional method.
+     *  @see aml_allocator_alloc_chunk()
+     */
+    struct aml_allocator_chunk * (*alloc_chunk)(struct aml_allocator_data *data, size_t size);
+
+    /**
+     *  Optional method.
+     *  @see aml_allocator_free_chunk()
+     */
+    int (*free_chunk)(struct aml_allocator_data *data, struct aml_allocator_chunk *chunk);
+
 };
 
 /**
@@ -118,13 +142,35 @@ struct aml_allocator_ops {
 void *aml_alloc(struct aml_allocator *allocator, size_t size);
 
 /**
- * Release memory associated with a pointer obtained with an
- * allocator.
+ * Release memory associated with a pointer obtained from a call to
+ * aml_alloc().
  *
  * @param[in, out] allocator: The allocator used to allocate pointer.
+ * @param[in, out] ptr: The pointer allocated with the same allocator.
  * @return AML_SUCCESS on success or an appropriate aml error code.
  */
 int aml_free(struct aml_allocator *allocator, void *ptr);
+
+/**
+ * Allocate memory with an allocator.
+ *
+ * @param[in, out] allocator: The allocator to use.
+ * @param[in] size: The minimum allocation size.
+ * @return NULL on error with aml_errno set to the appropriate error
+ * code.
+ * @return The chunk of memory allocated.
+ */
+struct aml_allocator_chunk *aml_allocator_alloc_chunk(struct aml_allocator *allocator, size_t size);
+
+/**
+ * Release memory associated with the chunk obtained from a call to
+ * aml_allocator_alloc_chunk().
+ *
+ * @param[in, out] allocator: The allocator used to allocate pointer.
+ * @param[in, out] ptr: The chunk allocated with the same allocator.
+ * @return AML_SUCCESS on success or an appropriate aml error code.
+ */
+int aml_allocator_free_chunk(struct aml_allocator *allocator, struct aml_allocator_chunk *chunk);
 
 /**
  * @}
