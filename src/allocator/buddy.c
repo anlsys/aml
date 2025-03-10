@@ -83,8 +83,6 @@ static size_t buddy_rank(size_t size)
 {
     assert(size >= MIN_SIZE);
 
-    int is_power2 = is_power_of_two(size);
-
     // retrieve index of the last bit set
     int i = 0;
     while ((size >> (MIN_BUDDY_RANK+i)) > 1)
@@ -229,7 +227,6 @@ err_with_ptr:
 
 int buddy_allocator_create(struct buddy_allocator **out)
 {
-	int err = AML_SUCCESS;
 	struct buddy_allocator *b;
 
 	// Allocate allocator
