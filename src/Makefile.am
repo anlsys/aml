@@ -90,11 +90,10 @@ endif
 # Cuda sources
 
 if HAVE_CUDA
-libcuda_la_SOURCES=area/cuda.c dma/cuda.c
-noinst_LTLIBRARIES+=libcuda.la
-libcuda_la_CPPFLAGS=$(AM_CPPFLAGS) $(CUDA_CFLAGS)
-libcuda_la_LDFLAGS=$(AM_LDFLAGS) $(CUDA_LIBS)
-libaml_la_LIBADD=libcuda.la
+AM_CPPFLAGS += $(CUDA_CFLAGS)
+AM_LDFLAGS += $(CUDA_LIBS)
+libaml_la_SOURCES+=area/cuda.c
+libaml_la_SOURCES+=dma/cuda.c
 endif
 
 #############################################

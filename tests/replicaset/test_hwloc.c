@@ -29,6 +29,10 @@ void test_case(const hwloc_obj_type_t initiator_type,
 
 int main(int argc, char **argv)
 {
+	/* impossible to do those check in a CI environment consistently */
+	if (!strcmp(getenv("CI"), "true"))
+		exit(77);
+
 	// Setup
 	aml_init(&argc, &argv);
 	src = malloc(size);
