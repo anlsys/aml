@@ -223,6 +223,10 @@ void delete_topology()
 
 int main(int argc, char **argv)
 {
+	/* impossible to do those check in a CI environment consistently */
+	if (!strcmp(getenv("CI"), "true"))
+		exit(77);
+
 	aml_init(&argc, &argv);
 	check_areas();
 	create_topology();

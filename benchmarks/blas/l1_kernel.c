@@ -56,15 +56,18 @@ double ddot(size_t n, double *a, double *b, double *c, double scalar)
 	(void)*c;
 	(void)scalar;
 	size_t i;
-	long double dot = 0.0;
+	/* should be a long double for overflow checks, but some compilers (nvc)
+	 * don't support reduce on long double in 2024.
+	 */
+	double dot = 0.0;
 
 #pragma omp parallel for reduction(+ : dot)
 	for (i = 0; i < n; i++) {
-		long double temp;
+		double temp;
 		temp = a[i] * b[i];
 		dot += temp;
 	}
-	return (double)dot;
+	return dot;
 }
 
 double dnrm2(size_t n, double *a, double *b, double *c, double scalar)

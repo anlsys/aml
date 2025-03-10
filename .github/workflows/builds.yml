@@ -26,7 +26,7 @@ jobs:
       - run: make
       - run: make check
       - run: make install
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: generic
@@ -55,7 +55,7 @@ jobs:
         working-directory: out
       - run: make check
         working-directory: out
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: out-of-tree
@@ -85,7 +85,7 @@ jobs:
           HWLOC_CPUID_PATH: ${{ github.workspace }}/cpuid
           VALGRIND_SUPPRESSIONS_FILES: ${{ github.workspace }}/.valgrind.supp
           OMP_NUM_THREADS: 1
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: valgrind
@@ -114,7 +114,7 @@ jobs:
           HWLOC_CPUID_PATH: ${{ github.workspace }}/cpuid
           VALGRIND_SUPPRESSIONS_FILES: ${{ github.workspace }}/.valgrind.supp
           OMP_NUM_THREADS: 1
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: valgrind
@@ -147,7 +147,7 @@ jobs:
           mkdir build
           ./configure --prefix=`pwd`/build --without-rocm
       - run: make distcheck
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: distcheck
@@ -173,10 +173,47 @@ jobs:
       - run: make CFLAGS=-std=c99
       - run: make check
       - run: make install
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: rocm
+          path: |
+            config.log
+            tests/*.log
+            benchmarks/*.log
+            doc/tutorials/*.log
+  nvhpc:
+    env:
+      CFLAGS: "-std=c99"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    container:
+      image: nvcr.io/nvidia/nvhpc:24.7-devel-cuda12.5-ubuntu22.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          fetch-depth: 0
+      - run: apt-get update
+      - run: apt-get install -y make autoconf automake libtool pkgconf libhwloc-dev
+      - run: |
+          echo "0.8.0" > .tarball-version
+      - name: build
+        run: |
+          source /usr/share/lmod/6.6/init/bash
+          module load nvhpc
+          ./autogen.sh
+          mkdir build
+          ./configure --prefix=`pwd`/build --with-cuda CUDA_HOME=$NVHPC_ROOT/cuda
+          make
+          make check
+          make install
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: nvhpc
           path: |
             config.log
             tests/*.log

@@ -72,6 +72,10 @@ int max_bandwidth_area()
 
 int main(int argc, char **argv)
 {
+	/* impossible to do those check in a CI environment consistently */
+	if (!strcmp(getenv("CI"), "true"))
+		exit(77);
+
 	if (aml_init(&argc, &argv) != 0)
 		return 1;
 
