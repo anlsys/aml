@@ -12,9 +12,9 @@ APIs
 Setup/Teardown API
 ~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: aml_init
+.. doxygengroup:: aml
+   :content-only:
 
-.. doxygenfunction:: aml_finalize
 
 Version API
 ~~~~~~~~~~~
