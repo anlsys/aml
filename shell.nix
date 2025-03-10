@@ -3,7 +3,7 @@
 with pkgs;
 mkShell.override { stdenv = pkgs.stdenv; } {
   inputsFrom = [ aml ];
-  nativeBuildInputs = [ autoreconfHook pkgconfig ];
+  nativeBuildInputs = [ autoreconfHook pkgconf ];
   buildInputs = [
     # deps for docs
     graphviz
