@@ -17,21 +17,6 @@ extern "C" {
 
 /**
  * @defgroup aml_area_cuda "AML Cuda Areas"
- * @brief Cuda Implementation of Areas.
- * @code
- * #include <aml/area/cuda.h>
- * @endcode
- *
- * Cuda implementation of AML areas.
- * This building block relies on Cuda implementation of
- * malloc/free to provide mmap/munmap on device memory.
- * Additional documentation of cuda runtime API can be found here:
- * @see https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY.html
- *
- * AML cuda areas may be created to allocate current or specific cuda devices.
- * Also allocations can be private to a single device or shared across devices.
- * Finally allocations can be backed by host memory allocation.
- *
  * @{
  **/
 

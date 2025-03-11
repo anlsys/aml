@@ -86,22 +86,6 @@ int aml_finalize(void);
 /**
  * @}
  * @defgroup aml_area "AML Area"
- * @brief Area High-Level API
- *
- * AML areas represent places where data can be stored.
- * In shared memory systems, locality is a major concern for performance.
- * Being able to query memory from specific places is of major interest
- * to achieve this goal. AML areas provide low-level mmap() / munmap() functions
- * to query memory from specific places materialized as areas. Available area
- * implementations dictate the way such places can be arranged and their
- * properties. It is important to note that the functions provided through the
- * Area API are low-level and are not optimized for performance as allocators
- * are.
- *
- * @image html area.png "Illustration of areas in a complex system." width=700cm
- *
- * @see aml_area_linux
- *
  * @{
  **/
 
@@ -225,56 +209,6 @@ int aml_area_fprintf(FILE *stream,
 /**
  * @}
  * @defgroup aml_layout "AML Layout"
- * @brief Low level description of data organization at the byte granularity.
- *
- * Layout describes how contiguous elements of a flat memory address space are
- * organized into a multidimensional array of elements of a fixed size.
- * The abstraction provide functions to build layouts, access elements,
- * reshape a layout, or subset a layout.
- *
- * Layouts are characterized by:
- * * A pointer to the data it describes
- * * A set of dimensions on which data spans.
- * * A stride in between elements of a dimension.
- * * A pitch indicating the space between contiguous elements of a dimension.
- *
- * For a definition of row and columns of matrices see :
- * https://en.wikipedia.org/wiki/Matrix_(mathematics)
- *
- * The figure below describes a 2D layout with a sub-layout
- * (obtained with aml_layout_slice()) operation. The sub-layout has a stride
- * of 1 element along the second dimension. The slice has an offset of 1 element
- * along the same dimension, and its pitch is the pitch of the original
- * layout. Calling aml_layout_deref() on this sublayout with appropriate
- * coordinates will return a pointer to elements noted (coor_x, coord_y).
- * @see aml_layout_slice()
- *
- * @image html layout.png "2D layout with a 2D slice." width=400cm
- *
- * Access to specific elements of a layout can be done with
- * the aml_layout_deref() function. Access to an element is always done
- * relatively to the dimensions' order set by the user at creation time.
- * However, internally, the library will always store dimensions in such a way
- * that elements along the first dimension
- * are contiguous in memory. This order is defined with the value
- * AML_LAYOUT_ORDER_COLUMN_MAJOR (AML_LAYOUT_ORDER_FORTRAN). See:
- * https://en.wikipedia.org/wiki/Row-_and_column-major_order
- * Additionally, AML provides access to elements without the overhead of user
- * order choice through function suffixed with "native".
- * @see aml_layout_deref()
- * @see aml_layout_deref_native()
- * @see aml_layout_dims_native()
- * @see aml_layout_slice_native()
- *
- * The layout abstraction also provides a function to reshape data
- * with a different set of dimensions. A reshaped layout will access
- * the same data but with different coordinates as depicted in the
- * figure below.
- * @see aml_layout_reshape()
- *
- * @image html reshape.png "2D layout turned into a 3D layout." width=700cm
- *
- * @see aml_layout_dense
  * @{
  **/
 
@@ -664,13 +598,6 @@ void aml_layout_destroy(struct aml_layout **layout);
 /**
  * @}
  * @defgroup aml_tiling "AML Tiling"
- * @brief Tiling Data Structure High-Level API
- *
- * Tiling is a representation of the decomposition of data structures. It
- * identifies ways a layout can be split into layouts of smaller size. As such,
- * the main function of a tiling is to provide an index into subcomponents of a
- * layout. Implementations focus on the ability to provide sublayouts of
- * different sizes at the corners, and linearization of the index range.
  * @{
  **/
 
