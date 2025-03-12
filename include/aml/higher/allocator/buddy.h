@@ -103,9 +103,9 @@ int buddy_allocator_alloc(struct buddy_allocator *b, void **out, size_t size);
 
 /** User buddy allocator structure. */
 struct aml_allocator_buddy {
-    /** The mapped memory regions stored in a utarray. */
-    void *pools;
-    /** The structure managing memory chunks. */
+	/** The mapped memory regions stored in a utarray. */
+	void *pools;
+	/** The structure managing memory chunks. */
 	struct buddy_allocator *allocator;
 	/** Allocator lock **/
 	pthread_mutex_t lock;

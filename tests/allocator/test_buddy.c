@@ -27,8 +27,8 @@ int main(int argc, char **argv)
 	assert(aml_allocator_buddy_create(&allocator, &aml_area_dummy, NULL) ==
 	       AML_SUCCESS);
 
-    // test chunk api
-    aml_alloc_workflow_chunk_run(allocator);
+	// test chunk api
+	aml_alloc_workflow_chunk_run(allocator);
 
 	// Alloc consecutive base size and free previous alloc.
 	// Total allocated size is greater than total pool size.

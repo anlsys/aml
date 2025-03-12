@@ -44,10 +44,10 @@
 #define MIN_SIZE (1 << MIN_BUDDY_RANK)
 
 struct buddy_chunk {
-    // aml abstract chunk inheritance
+	// aml abstract chunk inheritance
 	struct aml_allocator_chunk super;
-    // uthash handle
-    UT_hash_handle hh;
+	// uthash handle
+	UT_hash_handle hh;
 	// Utlist pointer to next chunk.
 	struct buddy_chunk *next;
 	// Utlist pointer to previous chunk.
@@ -63,10 +63,10 @@ struct buddy_chunk {
 // Return 2^n so that 2^{n-1} < size <= 2^n
 static inline size_t closest_greater_power_of_two(size_t size)
 {
-    size_t i = 0;
-    while ((1UL << i) < size)
-        ++i;
-    return (1UL << i);
+	size_t i = 0;
+	while ((1UL << i) < size)
+		++i;
+	return (1UL << i);
 }
 
 static int is_power_of_two(size_t size)
@@ -81,17 +81,17 @@ static int is_power_of_two(size_t size)
 // Rank increases when size decreases.
 static size_t buddy_rank(size_t size)
 {
-    assert(size >= MIN_SIZE);
+	assert(size >= MIN_SIZE);
 
-    // retrieve index of the last bit set
-    int i = 0;
-    while ((size >> (MIN_BUDDY_RANK+i)) > 1)
-        ++i;
+	// retrieve index of the last bit set
+	int i = 0;
+	while ((size >> (MIN_BUDDY_RANK + i)) > 1)
+		++i;
 
-    if (!is_power_of_two(size))
-        ++i;
+	if (!is_power_of_two(size))
+		++i;
 
-    return MAX_BUDDY_RANK - i - 1;
+	return MAX_BUDDY_RANK - i - 1;
 }
 
 static struct buddy_chunk *buddy_chunk_create(void *ptr,
@@ -140,7 +140,7 @@ UT_icd ranks_icd = {
 struct buddy_allocator {
 	// Array of lists. For each index the corresponding list contains blocks
 	// of size 2^(MAX_BUDDY_RANK-index).
-    struct buddy_chunk *ranks[MAX_BUDDY_RANK];
+	struct buddy_chunk *ranks[MAX_BUDDY_RANK];
 	// Hash table of allocation on flight.
 	struct buddy_chunk *allocations;
 };
@@ -175,26 +175,26 @@ static int aml_allocator_buddy_extend(struct aml_allocator_buddy *data,
 
 	size_t last_size = closest_greater_power_of_two(size);
 
-    // Grow by a size of two compared to previous mapping.
+	// Grow by a size of two compared to previous mapping.
 	if (utarray_len(pools) > 0) {
-		chunk = *(struct buddy_chunk **)utarray_eltptr(pools, utarray_len(pools) - 1);
-        assert(chunk);
+		chunk = *(struct buddy_chunk **)utarray_eltptr(
+		        pools, utarray_len(pools) - 1);
+		assert(chunk);
 		if (last_size < chunk->super.size * 2)
 			last_size = chunk->super.size * 2;
 	}
 
 	// Map memory. If it fails, divide size by two, until it is less
 	// than requested size.
-	while (1)
-    {
-        ptr = aml_area_mmap(data->area, last_size, data->opts);
-        if (ptr)
-            break ;
-        last_size = last_size >> 1;
-        if (last_size < size)
-		    return -AML_ENOMEM;
-    }
-    assert(ptr);
+	while (1) {
+		ptr = aml_area_mmap(data->area, last_size, data->opts);
+		if (ptr)
+			break;
+		last_size = last_size >> 1;
+		if (last_size < size)
+			return -AML_ENOMEM;
+	}
+	assert(ptr);
 
 	// Create and initialize memory pool.
 	chunk = buddy_chunk_create(ptr, last_size, NULL, NULL);
@@ -223,7 +223,6 @@ err_with_ptr:
 	aml_area_munmap(data->area, ptr, last_size);
 	return -AML_ENOMEM;
 }
-
 
 int buddy_allocator_create(struct buddy_allocator **out)
 {
@@ -277,7 +276,8 @@ static int buddy_allocator_merge_chunk(struct buddy_allocator *b,
 	next = chunk->next_buddy;
 	prev = chunk->prev_buddy;
 	// Merge from left
-	if (next != NULL && next->super.size == chunk->super.size && !next->is_allocated) {
+	if (next != NULL && next->super.size == chunk->super.size &&
+	    !next->is_allocated) {
 		left = chunk;
 		right = next;
 	}
@@ -292,8 +292,8 @@ static int buddy_allocator_merge_chunk(struct buddy_allocator *b,
 		return -AML_EINVAL;
 	}
 
-    assert(rank > 0);
-	struct buddy_chunk **head      = b->ranks + rank;
+	assert(rank > 0);
+	struct buddy_chunk **head = b->ranks + rank;
 	struct buddy_chunk **next_head = b->ranks + (rank - 1);
 
 	// Remove chunks from their list.
@@ -373,8 +373,8 @@ static int buddy_allocator_split_next(struct buddy_allocator *b, size_t rank)
 	struct buddy_chunk *left = *next_head;
 	size_t size = left->super.size / 2;
 	struct buddy_chunk *right =
-	        buddy_chunk_create((void *)((uintptr_t)left->super.ptr + size), size,
-	                           left->next_buddy, left);
+	        buddy_chunk_create((void *)((uintptr_t)left->super.ptr + size),
+	                           size, left->next_buddy, left);
 	if (right == NULL)
 		return -AML_ENOMEM;
 	DL_APPEND(*head, right);
@@ -390,7 +390,10 @@ static int buddy_allocator_split_next(struct buddy_allocator *b, size_t rank)
 	return AML_SUCCESS;
 }
 
-static int buddy_alloc_chunk_do(struct buddy_allocator *b, struct buddy_chunk **out, size_t size, int save_hash)
+static int buddy_alloc_chunk_do(struct buddy_allocator *b,
+                                struct buddy_chunk **out,
+                                size_t size,
+                                int save_hash)
 {
 	size_t rank = buddy_rank(size);
 	// If size is at least MIN_SIZE, it must fit somewhere in ranks array.
@@ -398,7 +401,7 @@ static int buddy_alloc_chunk_do(struct buddy_allocator *b, struct buddy_chunk **
 
 	int err = AML_SUCCESS;
 	struct buddy_chunk *chunk;
-    struct buddy_chunk **buddy = b->ranks + rank;
+	struct buddy_chunk **buddy = b->ranks + rank;
 
 	// If there is a chunk available in matching buddy, return it.
 	if (*buddy != NULL)
@@ -433,12 +436,11 @@ pop_buddy:
 	chunk = *buddy;
 	// Add the chunk to the hashtable of freed chunk.
 	err = AML_SUCCESS;
-    if (save_hash)
-    {
-	    HASH_ADD_PTR(b->allocations, super.ptr, chunk);
-	    if (err == -AML_ENOMEM)
-		    return -AML_ENOMEM;
-    }
+	if (save_hash) {
+		HASH_ADD_PTR(b->allocations, super.ptr, chunk);
+		if (err == -AML_ENOMEM)
+			return -AML_ENOMEM;
+	}
 	// Mark as allocated
 	chunk->is_allocated = 1;
 	// Remove chunk from the buddy list
@@ -448,41 +450,40 @@ pop_buddy:
 	return AML_SUCCESS;
 }
 
-struct aml_allocator_chunk *buddy_alloc_chunk(struct aml_allocator_data *data, size_t size, int save_hash)
+struct aml_allocator_chunk *
+buddy_alloc_chunk(struct aml_allocator_data *data, size_t size, int save_hash)
 {
-    struct aml_allocator_buddy *alloc = (struct aml_allocator_buddy *) data;
-    struct buddy_chunk *c;
+	struct aml_allocator_buddy *alloc = (struct aml_allocator_buddy *)data;
+	struct buddy_chunk *c;
 
-    // Make sure size is at least the minimum required size.
-    size = size < MIN_SIZE ? MIN_SIZE : size;
+	// Make sure size is at least the minimum required size.
+	size = size < MIN_SIZE ? MIN_SIZE : size;
 
 	pthread_mutex_lock(&alloc->lock);
-    {
-        // Try to pop a chunk from the low-level allocator.
-        int err = buddy_alloc_chunk_do(alloc->allocator, &c, size, save_hash);
-        if (err != AML_SUCCESS)
-        {
-            // Low-level allocator is out of memory.
-            // We map more memory and try again.
-            err = aml_allocator_buddy_extend(alloc, size);
-            if (err == AML_SUCCESS)
-            {
-                // Get a chunk from the new pool.
-                err = buddy_alloc_chunk_do(alloc->allocator, &c, size, save_hash);
-                // Pool extension worked, therefore, there must be enough memory
-                // to satisfy allocation.
-                assert(err == AML_SUCCESS);
-            }
-            else
-            {
-                aml_errno = err;
-                c = NULL;
-            }
-        }
-    }
+	{
+		// Try to pop a chunk from the low-level allocator.
+		int err = buddy_alloc_chunk_do(alloc->allocator, &c, size,
+		                               save_hash);
+		if (err != AML_SUCCESS) {
+			// Low-level allocator is out of memory.
+			// We map more memory and try again.
+			err = aml_allocator_buddy_extend(alloc, size);
+			if (err == AML_SUCCESS) {
+				// Get a chunk from the new pool.
+				err = buddy_alloc_chunk_do(alloc->allocator, &c,
+				                           size, save_hash);
+				// Pool extension worked, therefore, there must
+				// be enough memory to satisfy allocation.
+				assert(err == AML_SUCCESS);
+			} else {
+				aml_errno = err;
+				c = NULL;
+			}
+		}
+	}
 	pthread_mutex_unlock(&alloc->lock);
 
-    return (struct aml_allocator_chunk *) c;
+	return (struct aml_allocator_chunk *)c;
 }
 
 //------------------------------------------------------------------------------
@@ -573,7 +574,8 @@ int aml_allocator_buddy_destroy(struct aml_allocator **allocator)
 	size_t len;
 	while ((len = utarray_len(pools)) > 0) {
 		chunk = *(struct buddy_chunk **)utarray_eltptr(pools, len - 1);
-		err = aml_area_munmap(data->area, chunk->super.ptr, chunk->super.size);
+		err = aml_area_munmap(data->area, chunk->super.ptr,
+		                      chunk->super.size);
 		// If munmap() fails here, the allocator is in an inconsistent
 		// state. It can only be used to be destroyed.
 		if (err != AML_SUCCESS)
@@ -595,14 +597,15 @@ error:
 	return err;
 }
 
-struct aml_allocator_chunk *aml_allocator_buddy_alloc_chunk(struct aml_allocator_data *data, size_t size)
+struct aml_allocator_chunk *
+aml_allocator_buddy_alloc_chunk(struct aml_allocator_data *data, size_t size)
 {
-    return buddy_alloc_chunk(data, size, 0);
+	return buddy_alloc_chunk(data, size, 0);
 }
 
 void *aml_allocator_buddy_alloc(struct aml_allocator_data *data, size_t size)
 {
-    struct aml_allocator_chunk *c = buddy_alloc_chunk(data, size, 1);
+	struct aml_allocator_chunk *c = buddy_alloc_chunk(data, size, 1);
 	return c ? c->ptr : NULL;
 }
 
@@ -612,7 +615,7 @@ int buddy_free_chunk(struct buddy_allocator *b, struct buddy_chunk *c)
 	int err = buddy_allocator_merge_chunk(b, &c);
 	// If first merge fails, we have to insert chunk manually.
 	if (err != AML_SUCCESS) {
-        int rank = buddy_rank(c->super.size);
+		int rank = buddy_rank(c->super.size);
 		struct buddy_chunk **head = b->ranks + rank;
 		c->next = NULL;
 		c->prev = NULL;
@@ -628,16 +631,18 @@ int buddy_free_chunk(struct buddy_allocator *b, struct buddy_chunk *c)
 	return AML_SUCCESS;
 }
 
-int aml_allocator_buddy_free_chunk(struct aml_allocator_data *data, struct aml_allocator_chunk *c)
+int aml_allocator_buddy_free_chunk(struct aml_allocator_data *data,
+                                   struct aml_allocator_chunk *c)
 {
 	struct aml_allocator_buddy *alloc = (struct aml_allocator_buddy *)data;
 
 	int err;
 	pthread_mutex_lock(&alloc->lock);
-    {
-        err = buddy_free_chunk(alloc->allocator, (struct buddy_chunk *) c);
-    }
-    pthread_mutex_unlock(&alloc->lock);
+	{
+		err = buddy_free_chunk(alloc->allocator,
+		                       (struct buddy_chunk *)c);
+	}
+	pthread_mutex_unlock(&alloc->lock);
 	return err;
 }
 
@@ -647,23 +652,22 @@ int aml_allocator_buddy_free(struct aml_allocator_data *data, void *ptr)
 
 	int err;
 	pthread_mutex_lock(&alloc->lock);
-    {
-        struct buddy_allocator *b = alloc->allocator;
-        struct buddy_chunk *c;
+	{
+		struct buddy_allocator *b = alloc->allocator;
+		struct buddy_chunk *c;
 
-        // Lookup if the allocation is from this buddy.
-        HASH_FIND_PTR(b->allocations, &ptr, c);
-        if (c == NULL) // Not a previous allocation.
-            err = -AML_EINVAL;
-        else
-        {
-            // Remove from hashtable
-            HASH_DEL(b->allocations, c);
+		// Lookup if the allocation is from this buddy.
+		HASH_FIND_PTR(b->allocations, &ptr, c);
+		if (c == NULL) // Not a previous allocation.
+			err = -AML_EINVAL;
+		else {
+			// Remove from hashtable
+			HASH_DEL(b->allocations, c);
 
-            err = buddy_free_chunk(alloc->allocator, c);
-        }
-    }
-    pthread_mutex_unlock(&alloc->lock);
+			err = buddy_free_chunk(alloc->allocator, c);
+		}
+	}
+	pthread_mutex_unlock(&alloc->lock);
 	return err;
 }
 
@@ -671,5 +675,4 @@ struct aml_allocator_ops aml_allocator_buddy_ops = {
         .alloc = aml_allocator_buddy_alloc,
         .free = aml_allocator_buddy_free,
         .alloc_chunk = aml_allocator_buddy_alloc_chunk,
-        .free_chunk = aml_allocator_buddy_free_chunk
-};
+        .free_chunk = aml_allocator_buddy_free_chunk};
