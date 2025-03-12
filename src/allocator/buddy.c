@@ -227,21 +227,9 @@ err_with_ptr:
 
 int buddy_allocator_create(struct buddy_allocator **out)
 {
-	struct buddy_allocator *b;
-
-	// Allocate allocator
-	b = malloc(sizeof(*b));
-	if (b == NULL)
-		return -AML_ENOMEM;
-
-	// Hash table must be initialized to NULL.
-	b->allocations = NULL;
-
-	// Initialize buddy lists to NULL (empty lists).
-	memset(b->ranks, 0, sizeof(b->ranks));
-
-	*out = b;
-	return AML_SUCCESS;
+	// Allocate allocator and initialize all its field to 0
+	*out = calloc(1, sizeof(struct buddy_allocator));
+	return (*out == NULL) ? -AML_ENOMEM : AML_SUCCESS;
 }
 
 int buddy_allocator_destroy(struct buddy_allocator **buddy)

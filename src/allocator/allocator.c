@@ -9,47 +9,50 @@
  ******************************************************************************/
 
 #include "aml.h"
-
 #include "aml/higher/allocator.h"
 
-# define IMPL_PTR(NAME, ...)                                                    \
-    do {                                                                        \
-        if (allocator == NULL || allocator->data == NULL ||                     \
-                allocator->ops == NULL || allocator->ops->NAME == NULL) {       \
-            aml_errno = AML_EINVAL;                                             \
-            return NULL;                                                        \
-        }                                                                       \
-        return allocator->ops->NAME(__VA_ARGS__);                               \
-    } while (0)
-
-# define IMPL_INT(NAME,...)                                                     \
-    do {                                                                        \
-        if (allocator == NULL || allocator->data == NULL ||                     \
-                allocator->ops == NULL || allocator->ops->NAME == NULL)         \
-            return -AML_EINVAL;                                                 \
-        return allocator->ops->NAME(__VA_ARGS__);                               \
-    } while (0)
+# include <assert.h>
 
 void *aml_alloc(struct aml_allocator *allocator, size_t size)
 {
-    IMPL_PTR(alloc, allocator->data, size);
+    if (allocator == NULL || allocator->data == NULL || allocator->ops == NULL) {
+        aml_errno = AML_EINVAL;
+        return NULL;
+    }
+    assert(allocator->ops->alloc);
+    return allocator->ops->alloc(allocator->data, size);
 }
 
 struct aml_allocator_chunk *aml_allocator_alloc_chunk(struct aml_allocator *allocator, size_t size)
 {
-    IMPL_PTR(alloc_chunk, allocator->data, size);
+    if (allocator == NULL || allocator->data == NULL || allocator->ops == NULL) {
+        aml_errno = AML_EINVAL;
+        return NULL;
+    }
+    if (allocator->ops->alloc_chunk == NULL) {
+        aml_errno = AML_ENOTSUP;
+        return NULL;
+    }
+    return allocator->ops->alloc_chunk(allocator->data, size);
 }
 
 int aml_free(struct aml_allocator *allocator, void *ptr)
 {
     if (ptr == NULL)
         return AML_SUCCESS;
-    IMPL_INT(free, allocator->data, ptr);
+    if (allocator == NULL || allocator->data == NULL || allocator->ops == NULL)
+        return -AML_EINVAL;
+    assert(allocator->ops->free);
+    return allocator->ops->free(allocator->data, ptr);
 }
 
 int aml_allocator_free_chunk(struct aml_allocator *allocator, struct aml_allocator_chunk *chunk)
 {
     if (chunk == NULL)
         return AML_SUCCESS;
-    IMPL_INT(free_chunk, allocator->data, chunk);
+    if (allocator == NULL || allocator->data == NULL || allocator->ops == NULL)
+        return -AML_EINVAL;
+    if (allocator->ops->free_chunk == NULL)
+        return -AML_ENOTSUP;
+    return allocator->ops->free_chunk(allocator->data, chunk);
 }
