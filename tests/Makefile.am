@@ -60,6 +60,7 @@ liblayout_test_la_SOURCES = \
 liballocator_test_la_SOURCES = \
 	allocator/dummy_area.c \
 	allocator/test_allocator.c \
+	allocator/test_allocator_chunk.c \
 	../benchmarks/utils.c \
 	../benchmarks/utils.h
 
