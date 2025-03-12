@@ -227,7 +227,7 @@ err_with_ptr:
 int buddy_allocator_create(struct buddy_allocator **out)
 {
 	// Allocate allocator and initialize all its field to 0
-	*out = calloc(1, sizeof(struct buddy_allocator));
+	*out = AML_INNER_MALLOC(struct buddy_allocator);
 	return (*out == NULL) ? -AML_ENOMEM : AML_SUCCESS;
 }
 
