@@ -19,18 +19,6 @@ extern "C" {
 
 /**
  * @defgroup aml_area_opencl "AML OpenCL Areas"
- * @brief OpenCL Implementation of Areas.
- * @code
- * #include <aml/area/opencl.h>
- * @endcode
- *
- * OpenCL implementation of AML areas.
- * This building block relies on OpenCL implementation of
- * device memory allocation to provide mmap/munmap on device memory.
- * Additional documentation of OpenCL memory model can be found here:
- * @see
- *https://www.khronos.org/registry/OpenCL/specs/2.2/html/OpenCL_API.html#_memory_model
- *
  * @{
  **/
 

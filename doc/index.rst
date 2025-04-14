@@ -21,8 +21,8 @@ blocks*, used to develop explicit memory and data management policies. The goals
 of AML are:
 
 * **composability**: application developers and performance experts should be
-  able to pick and choose the building blocks to use depending on their specific
-  needs.
+  able to pick and choose which building blocks to use depending on their
+  specific needs.
 
 * **flexibility**: users should be able to customize, replace, or change the
   configuration of each building block as much as possible.
@@ -36,7 +36,7 @@ AML currently implements the following abstractions:
 * :doc:`Area <pages/areas>`, a set of addressable physical memories,
 * :doc:`Layout <pages/layout>`, a description of data structure organization,
 * :doc:`Tiling <pages/tilings>`, a description of data blocking (decomposition)
-* :doc:`DMA <pages/dmas>`, an engine to asynchronously move data structures between areas,
+* :doc:`DMA <pages/dmas>`, an engine to asynchronously move data structures between areas.
 
 Each of these abstractions has several implementations. For instance, areas
 may refer to the usual DRAM or its subset, to GPU memory, or to non-volatile memory.
@@ -76,7 +76,7 @@ Installation
 Workflow
 ~~~~~~~~
 
-Include the AML header:
+Include AML header:
 
 .. code-block:: c
   
@@ -93,7 +93,7 @@ Check the AML version:
       return 1;
   }
 
-Initialize and clean up the library:
+Initialize and cleanup AML:
 
 .. code-block:: c
   
@@ -106,8 +106,8 @@ Initialize and clean up the library:
 
 Link your program with *-laml*.
 
-Check the above building-blocks-specific pages for further examples and
-information on the library features.
+See the above pages on specific building blocks for further examples and
+information on library features.
 
 Support
 -------
