@@ -186,6 +186,7 @@ fi
 AC_DEFINE_UNQUOTED([HAVE_MPI], [$HAVE_MPI], [Define to 1 if MPI is available])
 AC_SUBST([MPI_CFLAGS])
 AC_SUBST([MPI_LIBS])
+AC_SUBST([HAVE_MPI])
 
 # Automake conditional
 AM_CONDITIONAL([HAVE_MPI], [test "$HAVE_MPI" -eq 1])

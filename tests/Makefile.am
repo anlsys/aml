@@ -124,6 +124,10 @@ AREA_TESTS += area/test_hwloc
 HIGHER_TESTS += replicaset/test_hwloc
 endif
 
+if HAVE_MPI
+AREA_TESTS += area/test_mpi
+endif
+
 if HAVE_HIP
 AREA_TESTS+=area/test_hip
 AREA_TESTS+=dma/test_hip

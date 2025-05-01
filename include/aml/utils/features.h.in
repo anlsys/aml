@@ -35,6 +35,8 @@
 #define AML_HAVE_BACKEND_ZE @HAVE_ZE@
 /** Whether aml had hip capabilities at compile time **/
 #define AML_HAVE_BACKEND_HIP @HAVE_HIP@
+/** Whether aml had mpi capabilities at compile time **/
+#define AML_HAVE_BACKEND_MPI @HAVE_MPI@
 
 /** Flag for checking runtime suport for libnuma **/
 #define AML_BACKEND_LIBNUMA (1UL<<1)
@@ -48,6 +50,8 @@
 #define AML_BACKEND_ZE (1UL<<5)
 /** Flag for checking runtime suport for hip **/
 #define AML_BACKEND_HIP (1UL<<6)
+/** Flag for checking runtime suport for mpi **/
+#define AML_BACKEND_MPI (1UL<<7)
 
 /**
  * Check if a set of backends can be used at runtime.
