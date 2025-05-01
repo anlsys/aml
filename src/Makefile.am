@@ -87,6 +87,17 @@ libaml_la_SOURCES+=backend/hwloc.c
 endif
 
 #############################################
+# MPI sources
+
+if HAVE_MPI
+AM_LDFLAGS += $(MPI_LIBS)
+AM_CPPFLAGS += $(MPI_CFLAGS)
+libaml_la_SOURCES+=area/mpi.c
+libaml_la_SOURCES+=dma/mpi.c
+libaml_la_SOURCES+=backend/mpi.c
+endif
+
+#############################################
 # Cuda sources
 
 if HAVE_CUDA

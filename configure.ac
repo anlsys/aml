@@ -153,6 +153,42 @@ AC_CHECK_LIB(numa, mbind,,[AC_MSG_ERROR([AML requires libnuma.])])
 
 AML_HAVE_DEFINE_WITH_MODULES(HWLOC, [hwloc >= 2.1],,)
 
+
+# MPI support
+#############
+
+HAVE_MPI=0
+MPI_CFLAGS=""
+MPI_LIBS=""
+
+if test "x$with_mpi" = "xyes"; then
+    AC_PATH_PROG([MPICC], [mpicc], [no])
+
+    if test "x$MPICC" = "xno"; then
+        AC_MSG_ERROR([MPI compiler (mpicc) not found but --with-mpi was requested])
+    fi
+
+    MPI_CC_SHOW=`$MPICC -show 2>/dev/null`
+
+    for arg in $MPI_CC_SHOW; do
+        case "$arg" in
+            -I*|-D*|-std=*|-f*) MPI_CFLAGS="$MPI_CFLAGS $arg" ;;
+            -L*|-l*|-Wl,*|-W*)  MPI_LIBS="$MPI_LIBS $arg" ;;
+            *) ;;  # Skip compiler name or unknown args
+        esac
+    done
+
+    HAVE_MPI=1
+    CC="$MPICC"
+fi
+
+# Preprocessor definition and Makefile vars
+AC_DEFINE_UNQUOTED([HAVE_MPI], [$HAVE_MPI], [Define to 1 if MPI is available])
+AC_SUBST([MPI_CFLAGS])
+AC_SUBST([MPI_LIBS])
+
+# Automake conditional
+AM_CONDITIONAL([HAVE_MPI], [test "$HAVE_MPI" -eq 1])
 # OpenCL support
 ###############
 
@@ -456,6 +492,13 @@ HWLOC:
 Active:  $HAVE_HWLOC
 CFLAGS:  $HWLOC_CFLAGS
 LDFLAGS: $HWLOC_LIBS
+
+MPI:
+======
+
+Active:  $HAVE_MPI
+CFLAGS:  $MPI_CFLAGS
+LDFLAGS: $MPI_LIBS
 
 CUDA:
 =====
