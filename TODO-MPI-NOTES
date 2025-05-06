@@ -1,0 +1,3 @@
+Area = parameter of a MPI_Win_Allocate (i.e. Communicator, ...)
+Allocate = return couple (baseaddr *, MPI_Win *)
+DMA = PUT/GET
