@@ -674,5 +674,6 @@ int aml_allocator_buddy_free(struct aml_allocator_data *data, void *ptr)
 struct aml_allocator_ops aml_allocator_buddy_ops = {
         .alloc = aml_allocator_buddy_alloc,
         .free = aml_allocator_buddy_free,
+        .give = NULL,
         .alloc_chunk = aml_allocator_buddy_alloc_chunk,
         .free_chunk = aml_allocator_buddy_free_chunk};

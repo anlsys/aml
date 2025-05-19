@@ -40,6 +40,19 @@ aml_allocator_alloc_chunk(struct aml_allocator *allocator, size_t size)
 	return allocator->ops->alloc_chunk(allocator->data, size);
 }
 
+int aml_allocator_give(struct aml_allocator *allocator,
+                       void * ptr, size_t size)
+{
+    if (ptr == NULL || size == 0)
+        return AML_SUCCESS;
+    if (allocator == NULL || allocator->data == NULL ||
+        allocator->ops == NULL)
+        return -AML_EINVAL;
+    if (allocator->ops->give == NULL)
+        return -AML_ENOTSUP;
+    return allocator->ops->give(allocator->data, ptr, size);
+}
+
 int aml_free(struct aml_allocator *allocator, void *ptr)
 {
 	if (ptr == NULL)

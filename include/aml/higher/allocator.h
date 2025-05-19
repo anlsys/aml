@@ -117,6 +117,13 @@ struct aml_allocator_ops {
 	 */
 	int (*free)(struct aml_allocator_data *data, void *ptr);
 
+    /**
+     * Optional method.
+     * @see aml_allocator_give()
+     */
+    int (*give)(struct aml_allocator_data *data,
+                void * ptr, size_t size);
+
 	/**
 	 *  Optional method.
 	 *  @see aml_allocator_alloc_chunk()
@@ -152,6 +159,15 @@ void *aml_alloc(struct aml_allocator *allocator, size_t size);
  * @return AML_SUCCESS on success or an appropriate aml error code.
  */
 int aml_free(struct aml_allocator *allocator, void *ptr);
+
+/**
+ *  Give a chunk of memory to the allocator, so it can use it to allocate future allocations
+ *  @param[in,out] allocator: The allocator which is given memory
+ *  @param[in] chunk: the chunk info that will be copied internally by the allocator\
+ *  @return AML_SUCCESS on success or an appropriate aml error code.
+ */
+int aml_allocator_give(struct aml_allocator *allocator,
+                       void * ptr, size_t size);
 
 /**
  * Allocate memory with an allocator.

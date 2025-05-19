@@ -170,6 +170,7 @@ int aml_allocator_sized_free(struct aml_allocator_data *data, void *ptr)
 struct aml_allocator_ops aml_allocator_sized = {
         .alloc = aml_allocator_sized_alloc,
         .free = aml_allocator_sized_free,
+        .give = NULL,
         .alloc_chunk = NULL,
         .free_chunk = NULL,
 };

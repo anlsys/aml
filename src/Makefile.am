@@ -45,6 +45,7 @@ HIGHER_SOURCES = \
 		allocator/allocator.c \
 		allocator/area.c \
 		allocator/buddy.c \
+		allocator/freelist.c \
 		allocator/sized.c \
 		higher/mapper.c \
 		higher/mapper-visitor.c \
