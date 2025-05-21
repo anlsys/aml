@@ -13,9 +13,7 @@
 #include "aml/higher/allocator.h"
 #include "aml/higher/allocator/freelist.h"
 
-# define DYNAMICALLY_REALLOC 1
-
-int aml_allocator_freelist_give(struct aml_allocator_data *data, void * ptr, size_t size)
+int aml_allocator_freelist_give(struct aml_allocator *allocator, void * ptr, size_t size)
 {
     struct aml_allocator_freelist_chunk * chunk = (struct aml_allocator_freelist_chunk *) malloc(sizeof(struct aml_allocator_freelist_chunk));
     if (chunk == NULL)
@@ -28,19 +26,19 @@ int aml_allocator_freelist_give(struct aml_allocator_data *data, void * ptr, siz
     chunk->prev = NULL;
     chunk->next = NULL;
 
-    struct aml_allocator_freelist * freelist = (struct aml_allocator_freelist *) data;
+    struct aml_allocator_freelist * freelist = (struct aml_allocator_freelist *) allocator;
     chunk->freelink = freelist->free_chunk_list;
     freelist->free_chunk_list = chunk;
 
     return AML_SUCCESS;
 }
 
-static inline struct aml_allocator_freelist_chunk * aml_allocator_freelist_alloc_chunk_bestfit(struct aml_allocator_data *data, size_t size)
+static inline struct aml_allocator_freelist_chunk * aml_allocator_freelist_alloc_chunk_bestfit(struct aml_allocator *allocator, size_t size)
 {
     assert((size % 8) == 0);
 
     /* best fit strategy */
-    struct aml_allocator_freelist * freelist = (struct aml_allocator_freelist *) data;
+    struct aml_allocator_freelist * freelist = (struct aml_allocator_freelist *) allocator;
     struct aml_allocator_freelist_chunk * curr = freelist->free_chunk_list;
 
     struct aml_allocator_freelist_chunk * prevfree = NULL;
@@ -102,44 +100,39 @@ static inline struct aml_allocator_freelist_chunk * aml_allocator_freelist_alloc
     return curr;
 }
 
-struct aml_allocator_chunk *aml_allocator_freelist_alloc_chunk(struct aml_allocator_data *data, size_t user_size)
+struct aml_allocator_chunk *aml_allocator_freelist_alloc_chunk(struct aml_allocator *allocator, size_t user_size)
 {
-    struct aml_allocator_freelist * freelist = (struct aml_allocator_freelist *) data;
-
-    /* align data */
+    /* align allocator */
     const size_t size = (user_size + 7UL) & ~7UL;
 
     struct aml_allocator_freelist_chunk *chunk;
-    pthread_mutex_lock(&freelist->lock);
+    pthread_mutex_lock(&allocator->lock);
     {
-        chunk = aml_allocator_freelist_alloc_chunk_bestfit(data, size);
-        # if DYNAMICALLY_REALLOC
+        chunk = aml_allocator_freelist_alloc_chunk_bestfit(allocator, size);
         if (chunk == NULL)
         {
-            # define MIN_ALLOC_SIZE (512*1024*1024)
-            const size_t mapsize = (size < MIN_ALLOC_SIZE) ? MIN_ALLOC_SIZE : size;
-            # undef MIN_ALLOC_SIZE
-            void * ptr = aml_area_mmap(freelist->area, mapsize, freelist->opts);
+            const size_t mapsize = (size < AML_ALLOCATOR_MMAP_SIZE) ? AML_ALLOCATOR_MMAP_SIZE : size;
+            void * ptr = aml_area_mmap(allocator->area, mapsize, allocator->opts);
+            // TODO : gotta track mmap chunks to munmap on destroy
             if (ptr)
             {
-                aml_allocator_freelist_give(data, ptr, size);
-                chunk = aml_allocator_freelist_alloc_chunk_bestfit(data, size);
+                aml_allocator_freelist_give(allocator, ptr, size);
+                chunk = aml_allocator_freelist_alloc_chunk_bestfit(allocator, size);
             }
         }
-        # endif
     }
-    pthread_mutex_unlock(&freelist->lock);
+    pthread_mutex_unlock(&allocator->lock);
 
     return (struct aml_allocator_chunk *) chunk;
 }
 
-int aml_allocator_freelist_free_chunk(struct aml_allocator_data *data, struct aml_allocator_chunk *user_chunk)
+int aml_allocator_freelist_free_chunk(struct aml_allocator *allocator, struct aml_allocator_chunk *user_chunk)
 {
-    struct aml_allocator_freelist * freelist = (struct aml_allocator_freelist *) data;
+    struct aml_allocator_freelist * freelist = (struct aml_allocator_freelist *) allocator;
     struct aml_allocator_freelist_chunk * chunk = (struct aml_allocator_freelist_chunk *) user_chunk;
 
     int delete_chunk = 0;
-    pthread_mutex_lock(&freelist->lock);
+    pthread_mutex_lock(&allocator->lock);
     {
         chunk->state = FREELIST_CHUNK_STATE_FREE;
 
@@ -210,7 +203,7 @@ int aml_allocator_freelist_free_chunk(struct aml_allocator_data *data, struct am
             freelist->free_chunk_list = chunk;
         }
     }
-    pthread_mutex_unlock(&freelist->lock);
+    pthread_mutex_unlock(&allocator->lock);
 
     if (delete_chunk)
         free(chunk);
@@ -220,13 +213,10 @@ int aml_allocator_freelist_free_chunk(struct aml_allocator_data *data, struct am
 
 int aml_allocator_freelist_destroy(struct aml_allocator **allocator)
 {
-    if (allocator == NULL || *allocator == NULL || (*allocator)->data == NULL)
-        return -AML_EINVAL;
-
-    // struct aml_allocator_freelist * alloc = (struct aml_allocator_freelist *) (*allocator)->data;
-    // TODO - free allocated cuda memory
-    free(*allocator);
-    return AML_SUCCESS;
+    AML_ALLOCATOR_DESTROY_BEGIN(allocator, struct aml_allocator_freelist, alloc)
+    {
+    }
+    AML_ALLOCATOR_DESTROY_END(allocator, struct aml_allocator_freelist, alloc);
 }
 
 int aml_allocator_freelist_create(struct aml_allocator **allocator,
@@ -241,28 +231,9 @@ int aml_allocator_freelist_create(struct aml_allocator **allocator,
         .free_chunk = aml_allocator_freelist_free_chunk
     };
 
-    if (allocator == NULL || area == NULL)
-        return -AML_EINVAL;
-
-    struct aml_allocator * alloc = (struct aml_allocator *) malloc(sizeof(struct aml_allocator) + sizeof(struct aml_allocator_freelist));
-    if (alloc == NULL)
-        return -AML_FAILURE;
-
-    struct aml_allocator_freelist * freelist = (struct aml_allocator_freelist *) (alloc + 1);
-    if (pthread_mutex_init(&freelist->lock, NULL))
+    AML_ALLOCATOR_CREATE_BEGIN(allocator, area, opts, &aml_allocator_freelist_ops, struct aml_allocator_freelist, alloc)
     {
-        free(alloc);
-        return -AML_FAILURE;
+        // nothing to do
     }
-
-    freelist->area = area;
-    freelist->opts = opts;
-    freelist->free_chunk_list = NULL;
-
-    alloc->data = (struct aml_allocator_data *) freelist;
-    alloc->ops  = &aml_allocator_freelist_ops;
-
-    (*allocator) = alloc;
-
-    return AML_SUCCESS;
+    AML_ALLOCATOR_CREATE_END(allocator, area, opts, &aml_allocator_freelist_ops, struct aml_allocator_freelist, alloc);
 }

@@ -41,14 +41,8 @@ struct  aml_allocator_freelist_chunk
 
 struct aml_allocator_freelist
 {
-	/** The area to map new regions */
-	struct aml_area *area;
-
-	/** The area options */
-	struct aml_area_mmap_options *opts;
-
-	/** Allocator lock **/
-	pthread_mutex_t lock;
+    /** c inheritance */
+    struct aml_allocator super;
 
     /* the free list */
     struct aml_allocator_freelist_chunk * free_chunk_list;

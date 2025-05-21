@@ -26,22 +26,8 @@ extern "C" {
  * @{
  **/
 
-/** Sized allocator metadata. */
-struct aml_allocator_sized {
-	/** The size of user allocations. */
-	size_t chunk_size;
-	/** The free mapped memory regions (internally a utlist) */
-	void *free_pools;
-	/** The free mapped memory regions (internally a uthash) */
-	void *occupied_pools;
-	/** The area to map new regions */
-	struct aml_area *area;
-	/** The area options */
-	struct aml_area_mmap_options *opts;
-};
-
 /** Sized allocator methods. */
-extern struct aml_allocator_ops aml_allocator_sized;
+extern struct aml_allocator_ops aml_allocator_sized_ops;
 
 /**
  * Sized allocator constructor.
@@ -89,7 +75,7 @@ int aml_allocator_sized_destroy(struct aml_allocator **allocator);
  * @return A pointer to the beginning of the allocation on success.
  * @return NULL on error with aml_errno set to the appropriate error.
  */
-void *aml_allocator_sized_alloc(struct aml_allocator_data *data, size_t size);
+void *aml_allocator_sized_alloc(struct aml_allocator *alloc, size_t size);
 
 /**
  * Sized allocator `free()` method.
@@ -102,7 +88,7 @@ void *aml_allocator_sized_alloc(struct aml_allocator_data *data, size_t size);
  * @return -AML_EINVAL if pointer is not a valid with this allocator and
  * pointer is not freed.
  */
-int aml_allocator_sized_free(struct aml_allocator_data *data, void *ptr);
+int aml_allocator_sized_free(struct aml_allocator *alloc, void *ptr);
 
 /**
  * @}

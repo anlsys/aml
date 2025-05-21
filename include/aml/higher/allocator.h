@@ -15,6 +15,9 @@
 extern "C" {
 #endif
 
+/* when the allocator is out of mapped memory, it mmaps chunks of this size */
+# define AML_ALLOCATOR_MMAP_SIZE (512*1024*1024)
+
 /**
  * @}
  * @defgroup aml_allocator "AML Allocator"
@@ -27,17 +30,19 @@ extern "C" {
  * @{
  **/
 
-/** User defined allocator metadata */
-struct aml_allocator_data;
 /** Allocator required methods. See structure definition */
 struct aml_allocator_ops;
 
 /** User level allocator structure. */
 struct aml_allocator {
-	/** metadata */
-	struct aml_allocator_data *data;
+    /** The area to map new regions */
+    struct aml_area *area;
+    /** The area options */
+    struct aml_area_mmap_options *opts;
 	/** methods */
 	struct aml_allocator_ops *ops;
+	/** Allocator lock **/
+	pthread_mutex_t lock;
 };
 
 /** Allocator internal's chunk information */
@@ -47,10 +52,55 @@ struct aml_allocator_chunk {
 	/** size of the chunk, greater or equals to the size requested by the
 	 * user (read-only) */
 	size_t size;
-	/** an opaque object that the user can attach to the chunk (read/write)
-	 */
+	/** an opaque object that the user can attach to the chunk (read/write)	 */
 	void *user_data;
 };
+
+# define AML_ALLOCATOR_CREATE_FAIL(ALLOCATOR_ADDR, AREA, OPTS, OPS, TYPE, NAME)     \
+    do {                                                                            \
+        free(NAME);                                                                 \
+        return -AML_FAILURE;                                                        \
+    } while (0)
+
+# define AML_ALLOCATOR_CREATE_BEGIN(ALLOCATOR_ADDR, AREA, OPTS, OPS, TYPE, NAME)    \
+    do {                                                                            \
+        if (ALLOCATOR_ADDR == NULL || AREA == NULL)                                 \
+            return -AML_EINVAL;                                                     \
+        TYPE * NAME = (TYPE *) calloc(1, sizeof(TYPE));                             \
+        if (NAME == NULL)                                                           \
+            return -AML_ENOMEM;                                                     \
+        if (pthread_mutex_init(&NAME->super.lock, NULL) != 0)                       \
+            AML_ALLOCATOR_CREATE_FAIL(ALLOCATOR_ADDR, AREA, OPTS, OPS, TYPE, NAME); \
+        NAME->super.area = AREA;                                                    \
+        NAME->super.opts = OPTS;                                                    \
+        NAME->super.ops = OPS;
+
+# define AML_ALLOCATOR_CREATE_END(ALLOCATOR_ADDR, AREA, OPTS, OPS, TYPE, NAME)      \
+        *ALLOCATOR_ADDR = &(NAME->super);                                           \
+        return AML_SUCCESS;                                                         \
+    } while (0)
+
+# define AML_ALLOCATOR_DESTROY_BEGIN(ALLOCATOR_ADDR, TYPE, NAME)                    \
+    do {                                                                            \
+        if (ALLOCATOR_ADDR == NULL || (*ALLOCATOR_ADDR) == NULL)                    \
+            return -AML_EINVAL;                                                     \
+        TYPE * NAME = (TYPE *) (*ALLOCATOR_ADDR);                                   \
+        pthread_mutex_lock(&NAME->super.lock);
+
+# define AML_ALLOCATOR_DESTROY_FAIL(ALLOCATOR_ADDR, TYPE, NAME)                     \
+    do {                                                                            \
+        pthread_mutex_unlock(&NAME->super.lock);                                    \
+        return -AML_FAILURE;                                                        \
+    } while (0)
+
+# define AML_ALLOCATOR_DESTROY_END(ALLOCATOR_ADDR, TYPE, NAME)                      \
+        pthread_mutex_unlock(&NAME->super.lock);                                    \
+        if (pthread_mutex_destroy(&NAME->super.lock) != 0)                          \
+            return -AML_FAILURE;                                                    \
+        free(*ALLOCATOR_ADDR);                                                      \
+        *ALLOCATOR_ADDR = NULL;                                                     \
+        return AML_SUCCESS;                                                         \
+    } while (0)
 
 /**
  * Allocator methods.
@@ -103,7 +153,7 @@ struct aml_allocator_ops {
 	 * code.
 	 * @return A pointer to the beginning of the allocation on success.
 	 */
-	void *(*alloc)(struct aml_allocator_data *data, size_t size);
+	void *(*alloc)(struct aml_allocator *alloc, size_t size);
 
 	/**
 	 * Required method.
@@ -115,27 +165,26 @@ struct aml_allocator_ops {
 	 * to free.
 	 * @return AML_SUCCESS on success or an appropriate aml error code.
 	 */
-	int (*free)(struct aml_allocator_data *data, void *ptr);
+	int (*free)(struct aml_allocator *alloc, void *ptr);
 
     /**
      * Optional method.
      * @see aml_allocator_give()
      */
-    int (*give)(struct aml_allocator_data *data,
-                void * ptr, size_t size);
+    int (*give)(struct aml_allocator *alloc, void * ptr, size_t size);
 
 	/**
 	 *  Optional method.
 	 *  @see aml_allocator_alloc_chunk()
 	 */
 	struct aml_allocator_chunk *(*alloc_chunk)(
-	        struct aml_allocator_data *data, size_t size);
+	        struct aml_allocator *alloc, size_t size);
 
 	/**
 	 *  Optional method.
 	 *  @see aml_allocator_free_chunk()
 	 */
-	int (*free_chunk)(struct aml_allocator_data *data,
+	int (*free_chunk)(struct aml_allocator *alloc,
 	                  struct aml_allocator_chunk *chunk);
 };
 
@@ -161,13 +210,13 @@ void *aml_alloc(struct aml_allocator *allocator, size_t size);
 int aml_free(struct aml_allocator *allocator, void *ptr);
 
 /**
- *  Give a chunk of memory to the allocator, so it can use it to allocate future allocations
+ *  Give a chunk of memory to the allocator, so it can use it to allocate future allocations.
+ *  The chunk will be unmap by the allocator.
  *  @param[in,out] allocator: The allocator which is given memory
  *  @param[in] chunk: the chunk info that will be copied internally by the allocator\
  *  @return AML_SUCCESS on success or an appropriate aml error code.
  */
-int aml_allocator_give(struct aml_allocator *allocator,
-                       void * ptr, size_t size);
+int aml_allocator_give(struct aml_allocator *allocator, void * ptr, size_t size);
 
 /**
  * Allocate memory with an allocator.

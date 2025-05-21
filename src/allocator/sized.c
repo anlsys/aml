@@ -25,24 +25,25 @@ struct aml_sized_chunk {
 	UT_hash_handle hh;
 };
 
-struct aml_allocator_sized_typed {
-	size_t chunk_size;
-	struct aml_sized_chunk *free_pools;
-	struct aml_sized_chunk *occupied_pools;
-	struct aml_area *area;
-	struct aml_area_mmap_options *opts;
+/** Sized allocator metadata. */
+struct aml_allocator_sized {
+    /** c inheritance */
+    struct aml_allocator super;
+    /** The size of user allocations. */
+    size_t chunk_size;
+    /** The free mapped memory regions (internally a utlist) */
+    struct aml_sized_chunk *free_pools;
+    /** The free mapped memory regions (internally a uthash) */
+    struct aml_sized_chunk *occupied_pools;
 };
 
 /** Add a new memory chunk to allocator. */
-static int aml_allocator_sized_extend(struct aml_allocator_sized *data,
-                                      size_t size)
+static int aml_allocator_sized_extend(struct aml_allocator_sized *alloc, size_t size)
 {
 	void *ptr;
-	struct aml_allocator_sized_typed *alloc =
-	        (struct aml_allocator_sized_typed *)data;
 	struct aml_sized_chunk *chunk = NULL;
 
-	ptr = aml_area_mmap(data->area, size, data->opts);
+	ptr = aml_area_mmap(alloc->super.area, size, alloc->super.opts);
 	if (ptr == NULL)
 		return aml_errno;
 
@@ -55,76 +56,10 @@ static int aml_allocator_sized_extend(struct aml_allocator_sized *data,
 	return AML_SUCCESS;
 }
 
-int aml_allocator_sized_create(struct aml_allocator **allocator,
-                               size_t size,
-                               struct aml_area *area,
-                               struct aml_area_mmap_options *opts)
-{
-	int err = -AML_ENOMEM;
-	struct aml_allocator *alloc;
-	struct aml_allocator_sized *data;
-
-	// Allocate high level structure and metadata.
-	alloc = AML_INNER_MALLOC(struct aml_allocator,
-	                         struct aml_allocator_sized);
-	if (alloc == NULL)
-		return -AML_ENOMEM;
-	alloc->data = AML_INNER_MALLOC_GET_FIELD(alloc, 2, struct aml_allocator,
-	                                         struct aml_allocator_sized);
-	data = (struct aml_allocator_sized *)alloc->data;
-	alloc->ops = &aml_allocator_sized;
-
-	// Fill metadata
-	data->chunk_size = size;
-	data->area = area;
-	data->opts = opts;
-
-	data->free_pools = NULL;
-	data->occupied_pools = NULL;
-
-	// Create first pool.
-	err = aml_allocator_sized_extend(data, size);
-	if (err != AML_SUCCESS)
-		return err;
-
-	*allocator = alloc;
-	return AML_SUCCESS;
-}
-
-int aml_allocator_sized_destroy(struct aml_allocator **allocator)
-{
-	if (allocator == NULL || *allocator == NULL ||
-	    (*allocator)->data == NULL)
-		return -AML_EINVAL;
-
-	struct aml_allocator_sized_typed *alloc =
-	        (struct aml_allocator_sized_typed *)(*allocator)->data;
-	struct aml_sized_chunk *cur, *tmp;
-
-	HASH_ITER(hh, alloc->occupied_pools, cur, tmp)
-	{
-		aml_area_munmap(alloc->area, cur->ptr, alloc->chunk_size);
-		HASH_DEL(alloc->occupied_pools, cur);
-		free(cur);
-	}
-
-	DL_FOREACH_SAFE(alloc->free_pools, cur, tmp)
-	{
-		aml_area_munmap(alloc->area, cur->ptr, alloc->chunk_size);
-		DL_DELETE(alloc->free_pools, cur);
-		free(cur);
-	}
-
-	free(*allocator);
-	*allocator = NULL;
-	return AML_SUCCESS;
-}
-
-void *aml_allocator_sized_alloc(struct aml_allocator_data *data, size_t size)
+void *aml_allocator_sized_alloc(struct aml_allocator *allocator, size_t size)
 {
 	int err;
-	struct aml_allocator_sized_typed *alloc =
-	        (struct aml_allocator_sized_typed *)data;
+	struct aml_allocator_sized *alloc = (struct aml_allocator_sized *) allocator;
 	struct aml_sized_chunk *ret = NULL;
 
 	// Check input
@@ -134,8 +69,7 @@ void *aml_allocator_sized_alloc(struct aml_allocator_data *data, size_t size)
 	}
 
 	if (alloc->free_pools == NULL) {
-		err = aml_allocator_sized_extend(
-		        (struct aml_allocator_sized *)alloc, size);
+		err = aml_allocator_sized_extend((struct aml_allocator_sized *)alloc, size);
 		if (err != AML_SUCCESS) {
 			aml_errno = err;
 			return NULL;
@@ -152,10 +86,9 @@ void *aml_allocator_sized_alloc(struct aml_allocator_data *data, size_t size)
 	return ret->ptr;
 }
 
-int aml_allocator_sized_free(struct aml_allocator_data *data, void *ptr)
+int aml_allocator_sized_free(struct aml_allocator *allocator, void *ptr)
 {
-	struct aml_allocator_sized_typed *alloc =
-	        (struct aml_allocator_sized_typed *)data;
+	struct aml_allocator_sized *alloc = (struct aml_allocator_sized *) allocator;
 	struct aml_sized_chunk *elt = NULL;
 
 	HASH_FIND_PTR(alloc->occupied_pools, &ptr, elt);
@@ -167,10 +100,47 @@ int aml_allocator_sized_free(struct aml_allocator_data *data, void *ptr)
 	return AML_SUCCESS;
 }
 
-struct aml_allocator_ops aml_allocator_sized = {
+struct aml_allocator_ops aml_allocator_sized_ops = {
         .alloc = aml_allocator_sized_alloc,
         .free = aml_allocator_sized_free,
         .give = NULL,
         .alloc_chunk = NULL,
         .free_chunk = NULL,
 };
+
+int aml_allocator_sized_create(struct aml_allocator **allocator,
+                               size_t size,
+                               struct aml_area *area,
+                               struct aml_area_mmap_options *opts)
+{
+    AML_ALLOCATOR_CREATE_BEGIN(allocator, area, opts, &aml_allocator_sized_ops, struct aml_allocator_sized, alloc)
+    {
+        int err = aml_allocator_sized_extend(alloc, size);
+        if (err != AML_SUCCESS)
+            AML_ALLOCATOR_CREATE_FAIL(allocator, area, opts, &aml_allocator_sized_ops, struct aml_allocator_sized, alloc);
+    }
+    AML_ALLOCATOR_CREATE_END(allocator, area, opts, &aml_allocator_sized_ops, struct aml_allocator_sized, alloc);
+}
+
+int aml_allocator_sized_destroy(struct aml_allocator **allocator)
+{
+    AML_ALLOCATOR_DESTROY_BEGIN(allocator, struct aml_allocator_sized, alloc)
+    {
+        struct aml_sized_chunk *cur, *tmp;
+
+        HASH_ITER(hh, alloc->occupied_pools, cur, tmp)
+        {
+            aml_area_munmap(alloc->super.area, cur->ptr, alloc->chunk_size);
+            HASH_DEL(alloc->occupied_pools, cur);
+            free(cur);
+        }
+
+        DL_FOREACH_SAFE(alloc->free_pools, cur, tmp)
+        {
+            aml_area_munmap(alloc->super.area, cur->ptr, alloc->chunk_size);
+            DL_DELETE(alloc->free_pools, cur);
+            free(cur);
+        }
+    }
+    AML_ALLOCATOR_DESTROY_END(allocator, struct aml_allocator_sized, alloc);
+}

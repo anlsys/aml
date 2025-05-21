@@ -16,20 +16,18 @@
 
 void *aml_alloc(struct aml_allocator *allocator, size_t size)
 {
-	if (allocator == NULL || allocator->data == NULL ||
-	    allocator->ops == NULL) {
+	if (allocator == NULL || allocator->ops == NULL) {
 		aml_errno = AML_EINVAL;
 		return NULL;
 	}
 	assert(allocator->ops->alloc);
-	return allocator->ops->alloc(allocator->data, size);
+	return allocator->ops->alloc(allocator, size);
 }
 
 struct aml_allocator_chunk *
 aml_allocator_alloc_chunk(struct aml_allocator *allocator, size_t size)
 {
-	if (allocator == NULL || allocator->data == NULL ||
-	    allocator->ops == NULL) {
+	if (allocator == NULL || allocator->ops == NULL) {
 		aml_errno = AML_EINVAL;
 		return NULL;
 	}
@@ -37,7 +35,7 @@ aml_allocator_alloc_chunk(struct aml_allocator *allocator, size_t size)
 		aml_errno = AML_ENOTSUP;
 		return NULL;
 	}
-	return allocator->ops->alloc_chunk(allocator->data, size);
+	return allocator->ops->alloc_chunk(allocator, size);
 }
 
 int aml_allocator_give(struct aml_allocator *allocator,
@@ -45,23 +43,21 @@ int aml_allocator_give(struct aml_allocator *allocator,
 {
     if (ptr == NULL || size == 0)
         return AML_SUCCESS;
-    if (allocator == NULL || allocator->data == NULL ||
-        allocator->ops == NULL)
+    if (allocator == NULL || allocator->ops == NULL)
         return -AML_EINVAL;
     if (allocator->ops->give == NULL)
         return -AML_ENOTSUP;
-    return allocator->ops->give(allocator->data, ptr, size);
+    return allocator->ops->give(allocator, ptr, size);
 }
 
 int aml_free(struct aml_allocator *allocator, void *ptr)
 {
 	if (ptr == NULL)
 		return AML_SUCCESS;
-	if (allocator == NULL || allocator->data == NULL ||
-	    allocator->ops == NULL)
+	if (allocator == NULL || allocator->ops == NULL)
 		return -AML_EINVAL;
 	assert(allocator->ops->free);
-	return allocator->ops->free(allocator->data, ptr);
+	return allocator->ops->free(allocator, ptr);
 }
 
 int aml_allocator_free_chunk(struct aml_allocator *allocator,
@@ -69,10 +65,9 @@ int aml_allocator_free_chunk(struct aml_allocator *allocator,
 {
 	if (chunk == NULL)
 		return AML_SUCCESS;
-	if (allocator == NULL || allocator->data == NULL ||
-	    allocator->ops == NULL)
+	if (allocator == NULL || allocator->ops == NULL)
 		return -AML_EINVAL;
 	if (allocator->ops->free_chunk == NULL)
 		return -AML_ENOTSUP;
-	return allocator->ops->free_chunk(allocator->data, chunk);
+	return allocator->ops->free_chunk(allocator, chunk);
 }

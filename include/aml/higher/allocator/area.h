@@ -27,16 +27,25 @@ extern "C" {
  * @{
  **/
 
+#include "internal/uthash.h"
+
+struct aml_allocator_area_chunk {
+    void *ptr;
+    size_t size;
+    UT_hash_handle hh;
+};
+
 /**
  * Area allocator data.
  * Area is not owned by the allocator, therefore, it has
  * to live longer than the allocator.
  */
-struct aml_allocator_area_data {
-	struct aml_area *area;
-	struct aml_area_mmap_options *opts;
+struct aml_allocator_area {
+    /** c inheritance */
+    struct aml_allocator super;
+
 	pthread_mutex_t lock;
-	void *chunks;
+    struct aml_allocator_area_chunk *chunks;
 };
 
 /** Area allocator operation table. */
@@ -58,13 +67,13 @@ int aml_allocator_area_destroy(struct aml_allocator **allocator);
  * `alloc()` method of the allocator.
  * Passes `NULL` to `aml_area_mmap()` options argument.
  */
-void *aml_allocator_area_alloc(struct aml_allocator_data *data, size_t size);
+void *aml_allocator_area_alloc(struct aml_allocator *alloc, size_t size);
 
 /**
  * `free()` method of the allocator.
  * Passes `0` to `area_munmap()` size argument.
  */
-int aml_allocator_area_free(struct aml_allocator_data *data, void *ptr);
+int aml_allocator_area_free(struct aml_allocator *alloc, void *ptr);
 
 /**
  * @}
