@@ -323,6 +323,12 @@ int aml_area_hwloc_preferred_create(struct aml_area **area,
                                     hwloc_obj_t initiator,
                                     enum hwloc_distances_kind_e kind)
 {
+	// Check input
+	if (area == NULL)
+		return -AML_EINVAL;
+	if (initiator == NULL)
+		return -AML_EINVAL;
+
 	// The number of nodes in this system.
 	const unsigned num_nodes =
 	        hwloc_get_nbobjs_by_type(aml_topology, HWLOC_OBJ_NUMANODE);
@@ -339,12 +345,6 @@ int aml_area_hwloc_preferred_create(struct aml_area **area,
 	struct aml_hwloc_distance distances[num_nodes];
 	// distances from/to initiator, to/from target.
 	hwloc_uint64_t itot = 0, ttoi = 0;
-
-	// Check input
-	if (area == NULL)
-		return -AML_EINVAL;
-	if (initiator == NULL)
-		return -AML_EINVAL;
 
 	// Allocate structures
 	aml_area_hwloc_preferred_alloc(&ar);
