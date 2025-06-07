@@ -319,10 +319,33 @@ int aml_area_hwloc_preferred_munmap(const struct aml_area_data *data,
 	return AML_SUCCESS;
 }
 
+/**
+ *  SPR memories bandwidth is not exposed or accessible by hwloc, therefore it
+ *  fails when checking distances.  This ugly fix consists in getting latency
+ *  distances instead, and swapping ddr/hbm from their hard-codded index
+ */
+# define INTEL_SPR_UGLY_FIX 1
+
 int aml_area_hwloc_preferred_create(struct aml_area **area,
                                     hwloc_obj_t initiator,
                                     enum hwloc_distances_kind_e kind)
 {
+	// Check input
+	if (area == NULL)
+		return -AML_EINVAL;
+	if (initiator == NULL)
+		return -AML_EINVAL;
+
+    # if INTEL_SPR_UGLY_FIX
+    int using_bandwidth_distance = (kind & HWLOC_DISTANCES_KIND_VALUE_BANDWIDTH);
+    if (using_bandwidth_distance)
+    {
+        assert(!(kind & HWLOC_DISTANCES_KIND_VALUE_LATENCY));
+        kind = (kind & ~HWLOC_DISTANCES_KIND_VALUE_BANDWIDTH) | HWLOC_DISTANCES_KIND_VALUE_LATENCY;
+        using_bandwidth_distance = 1;
+    }
+    # endif /* INTEL_SPR_UGLY_FIX */
+
 	// The number of nodes in this system.
 	const unsigned num_nodes =
 	        hwloc_get_nbobjs_by_type(aml_topology, HWLOC_OBJ_NUMANODE);
@@ -340,13 +363,7 @@ int aml_area_hwloc_preferred_create(struct aml_area **area,
 	// distances from/to initiator, to/from target.
 	hwloc_uint64_t itot = 0, ttoi = 0;
 
-	// Check input
-	if (area == NULL)
-		return -AML_EINVAL;
-	if (initiator == NULL)
-		return -AML_EINVAL;
-
-	// Allocate structures
+    // Allocate structures
 	aml_area_hwloc_preferred_alloc(&ar);
 	if (ar == NULL)
 		return -AML_ENOMEM;
@@ -384,6 +401,20 @@ int aml_area_hwloc_preferred_create(struct aml_area **area,
 		        aml_topology, HWLOC_OBJ_NUMANODE, distances[i].index);
 		data->numanodes[i] = node;
 	}
+
+    # if INTEL_SPR_UGLY_FIX
+    if (using_bandwidth_distance)
+    {
+        hwloc_obj_t o0 = data->numanodes[0];    // my    ddr
+        hwloc_obj_t o1 = data->numanodes[1];    // my    hbm
+        hwloc_obj_t o2 = data->numanodes[2];    // other ddr
+        hwloc_obj_t o3 = data->numanodes[3];    // other hbm
+        data->numanodes[0] = o1;
+        data->numanodes[1] = o0;
+        data->numanodes[2] = o3;
+        data->numanodes[3] = o2;
+    }
+    # endif /* INTEL_SPR_UGLY_FIX */
 
 	// Cleanup
 	free(dist);
