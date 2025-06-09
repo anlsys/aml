@@ -21,10 +21,6 @@
 	(HWLOC_MEMBIND_PROCESS | HWLOC_MEMBIND_NOCPUBIND |                     \
 	 HWLOC_MEMBIND_BYNODESET | HWLOC_MEMBIND_STRICT)
 
-#define OBJ_DIST(dist, i, j, row_stride, col_stride)                           \
-	(dist)->values[((i)->logical_index + row_stride) * (dist)->nbobjs +    \
-	               col_stride + (j)->logical_index]
-
 #define IND_DIST(dist, i, j) (dist)->values[(i) * (dist)->nbobjs + (j)]
 
 /**************************************************************************/
@@ -323,8 +319,9 @@ int aml_area_hwloc_preferred_munmap(const struct aml_area_data *data,
  *  SPR memories bandwidth is not exposed or accessible by hwloc, therefore it
  *  fails when checking distances.  This ugly fix consists in getting latency
  *  distances instead, and swapping ddr/hbm from their hard-codded index
+ *  TODO: maybe use this until the hwloc patch gets in
  */
-# define INTEL_SPR_UGLY_FIX 1
+# define INTEL_SPR_UGLY_FIX 0
 
 int aml_area_hwloc_preferred_create(struct aml_area **area,
                                     hwloc_obj_t initiator,
@@ -360,8 +357,8 @@ int aml_area_hwloc_preferred_create(struct aml_area **area,
 	struct hwloc_distances_s *dist;
 	// array of distances to sort
 	struct aml_hwloc_distance distances[num_nodes];
-	// distances from/to initiator, to/from target.
-	hwloc_uint64_t itot = 0, ttoi = 0;
+	// distances from initiator to target.
+	hwloc_uint64_t itot = 0;
 
     // Allocate structures
 	aml_area_hwloc_preferred_alloc(&ar);
@@ -370,37 +367,31 @@ int aml_area_hwloc_preferred_create(struct aml_area **area,
 	data = (struct aml_area_hwloc_preferred_data *)ar->data;
 
 	// Collect distances
-	if (aml_hwloc_get_NUMA_distance(initiator->type, kind, &dist) !=
-	    AML_SUCCESS)
+	if (aml_hwloc_get_NUMA_distance(kind, &dist) != AML_SUCCESS)
 		return -AML_ENOMEM;
 
-	// For each numanode compute distance to initiator
-	for (unsigned i = 0; i < num_nodes; i++) {
-		hwloc_obj_t target = hwloc_get_obj_by_type(
-		        aml_topology, HWLOC_OBJ_NUMANODE, i);
-		if (initiator->type == HWLOC_OBJ_NUMANODE) {
-			itot = OBJ_DIST(dist, initiator, target, 0, 0);
-			ttoi = OBJ_DIST(dist, target, initiator, 0, 0);
-		} else {
-			itot = OBJ_DIST(dist, initiator, target, 0,
-			                num_initiator);
-			ttoi = OBJ_DIST(dist, target, initiator, num_initiator,
-			                0);
-		}
+    // Convert initiator to its closest NUMA node
+    hwloc_obj_t initiator_numa = NULL;
+    while ((initiator_numa = hwloc_get_next_obj_by_type(aml_topology, HWLOC_OBJ_NUMANODE, initiator_numa)) != NULL)
+        if (hwloc_bitmap_intersects(initiator->cpuset, initiator_numa->cpuset))
+            break ;
+    assert(initiator_numa && initiator_numa->type == HWLOC_OBJ_NUMANODE);
+    assert(dist->nbobjs == num_nodes);
 
-		// Store average distance (back and forth)
-		distances[i].distance = (itot + ttoi) / 2;
-		distances[i].index = i;
+	// For each numanode compute distance to initiator
+    for (unsigned i = 0; i < num_nodes; ++i)
+    {
+        # define OBJ_DIST(X, Y) dist->values[(X)->os_index * dist->nbobjs + (Y)->os_index]
+		distances[i].distance = OBJ_DIST(initiator_numa, dist->objs[i]);
+		distances[i].index    = i;
 	}
 
 	// Sort distances
 	qsort(distances, num_nodes, sizeof(*distances), aml_hwloc_distance_lt);
+
 	// Store sorted nodes in area data.
-	for (unsigned i = 0; i < num_nodes; i++) {
-		hwloc_obj_t node = hwloc_get_obj_by_type(
-		        aml_topology, HWLOC_OBJ_NUMANODE, distances[i].index);
-		data->numanodes[i] = node;
-	}
+	for (unsigned i = 0; i < num_nodes; ++i)
+		data->numanodes[i] = dist->objs[distances[i].index];
 
     # if INTEL_SPR_UGLY_FIX
     if (using_bandwidth_distance)

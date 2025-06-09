@@ -95,26 +95,20 @@ int aml_hwloc_distance_hop_matrix(const hwloc_obj_type_t ta,
                                   const hwloc_obj_type_t tb,
                                   struct hwloc_distances_s **s);
 /**
- * Get a distance matrix between an initiator type and NUMANODEs.
+ * Get a distance matrix between NUMANODEs.
  * This function can fail only if the process is out of memory.
  * If no distance matrix exists, one is created with hops as distance.
- * If no matrix with initiator type or NUMANODE type is found, any
- * available matrix is used. The obtained matrix is reshaped to fit
- * (initiator numa) x (initiator numa) matrix.
+ * The obtained matrix fits (n numa) x (n numa)
  *
- * @param type[in]: The initiator type to compute the distance
- * initiator <-> NUMANode.
  * @param kind[in]: The kind distance to store in the matrix.
- * If this distance kind between NUMA nodes and initiator type was not
- * available, then hop distance is used instead.
+ * If this distance kind between NUMA nodes available, then hop distance is used instead.
  * @param s[out]: A pointer to the space where to allocate the matrix.
  * The pointer value is updated to point to the distance matrix.
  * @return AML_SUCCESS on success.
  * @return -AML_ENOMEM if there was not enough memory available to satisfy
  * this call.
  **/
-int aml_hwloc_get_NUMA_distance(const hwloc_obj_type_t type,
-                                enum hwloc_distances_kind_e kind,
+int aml_hwloc_get_NUMA_distance(enum hwloc_distances_kind_e kind,
                                 struct hwloc_distances_s **out);
 
 /**

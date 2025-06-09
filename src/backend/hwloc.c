@@ -304,8 +304,8 @@ static int aml_hwloc_distances_reshape(struct hwloc_distances_s *dist,
 		return -AML_EINVAL;
 
 	unsigned nt0, nt1;
-	const unsigned depth0 = hwloc_get_type_depth(aml_topology, t0);
-	const unsigned depth1 = hwloc_get_type_depth(aml_topology, t1);
+	const int depth0 = hwloc_get_type_depth(aml_topology, t0);
+	const int depth1 = hwloc_get_type_depth(aml_topology, t1);
 	hwloc_obj_t obj0 = NULL, obj1 = NULL;
 	hwloc_uint64_t d0, d1;
 
@@ -381,8 +381,7 @@ err_with_out:
 	return -AML_FAILURE;
 }
 
-int aml_hwloc_get_NUMA_distance(const hwloc_obj_type_t type,
-                                enum hwloc_distances_kind_e kind,
+int aml_hwloc_get_NUMA_distance(enum hwloc_distances_kind_e kind,
                                 struct hwloc_distances_s **out)
 {
 	int err = AML_SUCCESS;
@@ -391,52 +390,41 @@ int aml_hwloc_get_NUMA_distance(const hwloc_obj_type_t type,
 	// hwloc distance matrix
 	struct hwloc_distances_s *handle[nr], *dist = NULL;
 
-	// Collect distances. If fail, fallback on hop distances.
+	// Collect distances that matches 'kind'. If fail, fallback on hop distances.
 	if (hwloc_distances_get(aml_topology, &nr, handle, kind, 0) != 0 ||
 	    nr == 0) {
-		if (aml_hwloc_distance_hop_matrix(type, HWLOC_OBJ_NUMANODE,
-		                                  out) == -1)
+		if (aml_hwloc_distance_hop_matrix(HWLOC_OBJ_NUMANODE, HWLOC_OBJ_NUMANODE, out) == -1)
 			return -1;
 		return 0;
 	}
 
+    // For each distances returned by hwloc, find the one with least depth
 	for (i = 0; i < nr; i++) {
-		// We pick any distance
-		if (dist == NULL)
-			dist = handle[i];
 
-		// If we found a matrix with same type as initiator type
-		// then we pick this one.
-		else if (handle[i]->objs[0]->type == type) {
-			dist = handle[i];
-			break;
-		}
+		// If we find one that is a NUMANODE distance
+        if (handle[i]->objs[0]->type == HWLOC_OBJ_NUMANODE)
+            if (dist == NULL || dist->objs[0]->depth < handle[i]->objs[0]->depth)
+                dist = handle[i];
+    }
 
-		// If we find one that is a NUMANODE distance, we chose this one
-		// over a default choice.
-		else if (handle[i]->objs[0]->type == HWLOC_OBJ_NUMANODE)
-			dist = handle[i];
-
-		// If we find a distance that is finer grain than default,
-		// then we chose this one.
-		else if (dist->objs[0]->type != HWLOC_OBJ_NUMANODE &&
-		         dist->objs[0]->depth < handle[i]->objs[0]->depth)
-			dist = handle[i];
-	}
-
-	// If we were not able to find any matrix, we craft one.
+	// If we were not able to find any distances, we craft one.
 	if (dist == NULL) {
-		if (aml_hwloc_distance_hop_matrix(type, HWLOC_OBJ_NUMANODE,
-		                                  out) != AML_SUCCESS)
+		if (aml_hwloc_distance_hop_matrix(HWLOC_OBJ_NUMANODE, HWLOC_OBJ_NUMANODE, out) != AML_SUCCESS)
 			err = -AML_ENOMEM;
 		goto out;
 	}
 
-	// We reshape whatever matrix we got to be a distance to NUMANODEs
-	// matrix.
-	if (aml_hwloc_distances_reshape(dist, out, type, HWLOC_OBJ_NUMANODE) !=
-	    AML_SUCCESS)
-		err = -AML_ENOMEM;
+    // Else, copy the elected NUMA distances
+    const int n = dist->nbobjs;
+	*out = AML_INNER_MALLOC_EXTRA(n, hwloc_obj_t, n * n * sizeof(*((*out)->values)), struct hwloc_distances_s);
+	if (*out == NULL)
+		return -AML_ENOMEM;
+	(*out)->objs   = AML_INNER_MALLOC_GET_ARRAY(*out, hwloc_obj_t, struct hwloc_distances_s);
+	(*out)->values = AML_INNER_MALLOC_GET_EXTRA(*out, n, hwloc_obj_t, struct hwloc_distances_s);
+	(*out)->nbobjs = n;
+	for (unsigned i = 0; i < n; ++i)
+		(*out)->objs[i] = dist->objs[i];
+    memcpy((*out)->values, dist->values, n * n * sizeof(*dist->values));
 
 out:
 	for (i = 0; i < nr; i++)
