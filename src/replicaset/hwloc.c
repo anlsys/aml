@@ -12,138 +12,137 @@
 
 #include "aml.h"
 
-#include "aml/area/hwloc.h"
 #include "aml/higher/replicaset.h"
 #include "aml/higher/replicaset/hwloc.h"
 #include "aml/utils/backend/hwloc.h"
 
-int aml_replicaset_hwloc_alloc(struct aml_replicaset **out,
-                               const hwloc_obj_type_t initiator_type)
+int aml_replicaset_hwloc_alloc(struct aml_replicaset **out)
 {
-	struct aml_replicaset *replicaset = NULL;
-	struct aml_replicaset_hwloc_data *data = NULL;
-
-	// Check initiator type.
-	const unsigned int n_initiator =
-	        hwloc_get_nbobjs_by_type(aml_topology, initiator_type);
-	hwloc_obj_t initiator =
-	        hwloc_get_obj_by_type(aml_topology, initiator_type, 0);
-	if (n_initiator == 0)
-		return -AML_EDOM;
-	if (initiator == NULL || initiator->cpuset == NULL ||
-	    hwloc_bitmap_weight(initiator->cpuset) <= 0)
-		return -AML_EINVAL;
-
+	// Allocation + zero
 	const unsigned int n_numa =
 	        hwloc_get_nbobjs_by_type(aml_topology, HWLOC_OBJ_NUMANODE);
-
-	// Allocation
-	replicaset = AML_INNER_MALLOC_ARRAY(n_numa + n_initiator, void *,
-	                                    struct aml_replicaset,
-	                                    struct aml_replicaset_hwloc_data);
-	if (replicaset == NULL)
+	const size_t size = sizeof(struct aml_replicaset) +
+	                    sizeof(struct aml_replicaset_hwloc_data) +
+	                    n_numa * sizeof(void *) +
+	                    n_numa * sizeof(aml_replicaset_hwloc_memattr_t);
+	unsigned char *mem = (unsigned char *)calloc(1, size);
+	if (mem == NULL)
 		return -AML_ENOMEM;
+
+	struct aml_replicaset *replicaset = (struct aml_replicaset *)(mem + 0);
+	struct aml_replicaset_hwloc_data *data =
+	        (struct aml_replicaset_hwloc_data
+	                 *)(mem + sizeof(struct aml_replicaset));
 
 	// Set ops
 	replicaset->ops = &aml_replicaset_hwloc_ops;
 
-	// Set data
-	replicaset->data =
-	        (struct aml_replicaset_data *)AML_INNER_MALLOC_GET_FIELD(
-	                replicaset, 2, struct aml_replicaset,
-	                struct aml_replicaset_hwloc_data);
-	data = (struct aml_replicaset_hwloc_data *)replicaset->data;
-
 	// Set replica pointers array
-	replicaset->replica = (void **)AML_INNER_MALLOC_GET_ARRAY(
-	        replicaset, void *, struct aml_replicaset,
-	        struct aml_replicaset_hwloc_data);
-	for (unsigned i = 0; i < n_numa; i++)
-		replicaset->replica[i] = NULL;
+	replicaset->replica =
+	        (void **)(mem + sizeof(struct aml_replicaset) +
+	                  sizeof(struct aml_replicaset_hwloc_data));
 
-	// Set initiator pointers array
-	data->ptr = replicaset->replica + n_numa;
+	// Set data
+	replicaset->data = (struct aml_replicaset_data *)data;
+	data->numas = (aml_replicaset_hwloc_memattr_t
+	                       *)(mem + sizeof(struct aml_replicaset) +
+	                          sizeof(struct aml_replicaset_hwloc_data) +
+	                          n_numa * sizeof(void *));
 
-	// Set number of initiators
-	data->num_ptr = n_initiator;
-
-	// Set number of replicas to 0. Initialization will set
-	// it to the correct value.
-	replicaset->n = 0;
-
+	// save
 	*out = replicaset;
+
 	return AML_SUCCESS;
+}
+
+static int aml_memattr_cmp(const aml_replicaset_hwloc_memattr_t *x,
+                           const aml_replicaset_hwloc_memattr_t *y)
+{
+	return (x->attr < y->attr ? 1 : x->attr > y->attr ? -1 : 0);
 }
 
 int aml_replicaset_hwloc_create(struct aml_replicaset **out,
                                 const size_t size,
-                                const hwloc_obj_type_t initiator_type,
-                                const enum hwloc_distances_kind_e kind)
+                                const enum aml_replicaset_attr_kind_e kind)
 {
-	int err = -AML_FAILURE;
-	struct aml_replicaset *replicaset = NULL;
-	struct aml_replicaset_hwloc_data *data = NULL;
-	struct aml_area *area = NULL;
-	struct aml_area_hwloc_preferred_data *area_data = NULL;
-	const unsigned int n_numa =
-	        hwloc_get_nbobjs_by_type(aml_topology, HWLOC_OBJ_NUMANODE);
-	hwloc_obj_t targets[n_numa];
+	assert(kind == AML_REPLICASET_ATTR_LATENCY ||
+	       kind == AML_REPLICASET_ATTR_BANDWIDTH);
 
-	err = aml_replicaset_hwloc_alloc(&replicaset, initiator_type);
+	if (out == NULL)
+		return -AML_FAILURE;
+
+	// Allocate replicaset
+	int err = aml_replicaset_hwloc_alloc(out);
 	if (err != AML_SUCCESS)
 		return err;
-	replicaset->size = size;
-	data = (struct aml_replicaset_hwloc_data *)replicaset->data;
+	(*out)->size = size;
+	struct aml_replicaset_hwloc_data *data =
+	        (struct aml_replicaset_hwloc_data *)(*out)->data;
 
-	// For each initiator allocate replica on preferred area
-	for (hwloc_obj_t initiator =
-	             hwloc_get_obj_by_type(aml_topology, initiator_type, 0);
-	     initiator != NULL; initiator = initiator->next_cousin) {
+	// (1) create memattr lists in the form: [(numa node x0, cpuset c0, attr
+	// a0), ...]
+	const unsigned int n_numa =
+	        hwloc_get_nbobjs_by_type(aml_topology, HWLOC_OBJ_NUMANODE);
+	for (unsigned int i = 0; i < n_numa; ++i) {
+		// get the numa node
+		hwloc_obj_t numa = hwloc_get_obj_by_type(aml_topology,
+		                                         HWLOC_OBJ_NUMANODE, i);
 
-		// Get preferred area.
-		err = aml_area_hwloc_preferred_create(&area, initiator, kind);
-		if (err != AML_SUCCESS)
-			goto err_with_replicaset;
-		area_data = (struct aml_area_hwloc_preferred_data *)area->data;
-
-		// Search if preferred numa node is already a target
-		for (unsigned i = 0; i < replicaset->n; i++) {
-			if (targets[i] == area_data->numanodes[0]) {
-				data->ptr[initiator->logical_index] =
-				        replicaset->replica[i];
-				goto next;
-			}
+		// get the attributie
+		hwloc_uint64_t value;
+		hwloc_memattr_id_t attr_id;
+		const char *attr_name = (kind == AML_REPLICASET_ATTR_LATENCY) ?
+		                                "Latency" :
+		                                "Bandwidth";
+		if (hwloc_memattr_get_by_name(aml_topology, attr_name,
+		                              &attr_id) == 0) {
+			struct hwloc_location initiator = {
+			        .type = HWLOC_LOCATION_TYPE_CPUSET,
+			        .location.cpuset = numa->cpuset};
+			unsigned long flags = 0;
+			if (hwloc_memattr_get_value(aml_topology, attr_id, numa,
+			                            &initiator, flags, &value))
+				value = 0;
+		} else {
+			value = 0;
 		}
 
-		// Preferred numa node is not a target yet.
-		void *ptr = aml_area_mmap(area, size, NULL);
-		if (ptr == NULL) {
-			err = -AML_ENOMEM;
-			goto err_with_replicas;
-		}
-
-		replicaset->replica[replicaset->n] = ptr;
-		data->ptr[initiator->logical_index] = ptr;
-		targets[replicaset->n] = area_data->numanodes[0];
-		replicaset->n++;
-
-	next:
-		// Area cleanup
-		aml_area_hwloc_preferred_destroy(&area);
+		data->numas[i].obj = numa;
+		data->numas[i].attr = value;
 	}
 
-	// Success
-	*out = replicaset;
+	// (2) sort the list by attr
+	qsort(data->numas, n_numa, sizeof(aml_replicaset_hwloc_memattr_t),
+	      (int (*)(const void *, const void *))aml_memattr_cmp);
+
+	// (3) iterate through it to find a union of numa node that covers all
+	// cpus (4) replicate memory on each numa node
+	hwloc_const_cpuset_t full_cpuset =
+	        hwloc_topology_get_topology_cpuset(aml_topology);
+	hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
+	for (unsigned int i = 0; i < n_numa; ++i) {
+		hwloc_bitmap_or(cpuset, cpuset, data->numas[i].obj->cpuset);
+		(*out)->n += 1;
+		(*out)->replica[i] = hwloc_alloc_membind(
+		        aml_topology,
+		        size, // size_t size
+		        data->numas[i].obj->nodeset, // hwloc_nodeset_t
+		        HWLOC_MEMBIND_BIND, // force binding strictly to the
+		                            // node
+		        HWLOC_MEMBIND_STRICT |
+		                HWLOC_MEMBIND_BYNODESET // fail if can't bind
+		                                        // exactly
+		);
+		assert((*out)->replica[i]);
+
+		// if all cpus are represented in one replica, stop here
+		if (hwloc_bitmap_isincluded(full_cpuset, cpuset)) {
+			break;
+		}
+	}
+	hwloc_bitmap_free(cpuset);
+
 	return AML_SUCCESS;
-
-	// Failure
-err_with_replicas:
-	for (unsigned i = 0; i < replicaset->n; i++)
-		munmap(replicaset->replica[i], size);
-
-err_with_replicaset:
-	free(replicaset);
-	return err;
 }
 
 void aml_replicaset_hwloc_destroy(struct aml_replicaset **replicaset)
@@ -181,45 +180,40 @@ int aml_replicaset_hwloc_sync(struct aml_replicaset *replicaset,
 	return AML_SUCCESS;
 }
 
+// a tls for the cpuset, to avoid reallocating on every
+// `aml_replicaset_hwloc_local_replica` calls
+_Thread_local hwloc_bitmap_t aml_tls_cpuset = NULL;
+
 void *aml_replicaset_hwloc_local_replica(struct aml_replicaset *replicaset)
 {
-	int err;
-	hwloc_obj_t initiator;
-	struct aml_replicaset_hwloc_data *data = NULL;
-
-	data = (struct aml_replicaset_hwloc_data *)replicaset->data;
-
-	// Get object where this function is called.
-	err = aml_hwloc_local_initiator(&initiator);
-	if (err != AML_SUCCESS)
+	// Sanitary checks
+	if (replicaset == NULL || replicaset->data == NULL)
 		return NULL;
 
-	// If initiator is a child of the replica location, then select a
-	// parent, at same depth as replica.
-	while (initiator != NULL &&
-	       hwloc_get_nbobjs_by_depth(aml_topology, initiator->depth) >
-	               data->num_ptr)
-		initiator = initiator->parent;
-	if (initiator == NULL)
-		return NULL;
+	struct aml_replicaset_hwloc_data *data =
+	        (struct aml_replicaset_hwloc_data *)replicaset->data;
 
-	// If initiator is bound to a parent of several replica, then
-	// chose a child replica with a modulo on thread id.
-	if (hwloc_get_nbobjs_by_depth(aml_topology, initiator->depth) <
-	    data->num_ptr) {
-		int depth = hwloc_get_type_depth(aml_topology, data->type);
-		unsigned n = hwloc_get_nbobjs_inside_cpuset_by_depth(
-		        aml_topology, initiator->cpuset, depth);
-		if (n == 0)
+	// Allocate and retrieve the cpuset if not allocated already
+	// If the cpuset changes for the current thread, then the replicate
+	// won't... but the overhead of `hwloc_get_cpubind` is non-neglectable
+	if (aml_tls_cpuset == NULL) {
+		aml_tls_cpuset = hwloc_bitmap_alloc();
+
+		// Get the cpuset of the current thread
+		if (hwloc_get_cpubind(aml_topology, aml_tls_cpuset,
+		                      HWLOC_CPUBIND_THREAD))
 			return NULL;
-		hwloc_obj_t target = hwloc_get_next_obj_inside_cpuset_by_depth(
-		        aml_topology, initiator->cpuset, depth, NULL);
-		if (target == NULL)
-			return NULL;
-		initiator = target;
 	}
 
-	return data->ptr[initiator->logical_index];
+	// Go through the list of replicate
+	for (unsigned int i = 0; i < replicaset->n; ++i) {
+		// Return the first replicate that matches the current cpuset
+		if (hwloc_bitmap_intersects(data->numas[i].obj->cpuset,
+		                            aml_tls_cpuset))
+			return replicaset->replica[i];
+	}
+
+	return NULL;
 }
 
 struct aml_replicaset_ops aml_replicaset_hwloc_ops = {
