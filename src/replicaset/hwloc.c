@@ -58,6 +58,12 @@ int aml_replicaset_hwloc_alloc(struct aml_replicaset **out)
 static int aml_memattr_cmp(const aml_replicaset_hwloc_memattr_t *x,
                            const aml_replicaset_hwloc_memattr_t *y)
 {
+	return (x->attr < y->attr ? -1 : x->attr > y->attr ? 1 : 0);
+}
+
+static int aml_memattr_cmp_inv(const aml_replicaset_hwloc_memattr_t *x,
+                           const aml_replicaset_hwloc_memattr_t *y)
+{
 	return (x->attr < y->attr ? 1 : x->attr > y->attr ? -1 : 0);
 }
 
@@ -112,8 +118,8 @@ int aml_replicaset_hwloc_create(struct aml_replicaset **out,
 	}
 
 	// (2) sort the list by attr
-	qsort(data->numas, n_numa, sizeof(aml_replicaset_hwloc_memattr_t),
-	      (int (*)(const void *, const void *))aml_memattr_cmp);
+    int (*cmpf)(const void *, const void *) = (int (*)(const void *, const void *)) (kind == AML_REPLICASET_ATTR_LATENCY ? aml_memattr_cmp : aml_memattr_cmp_inv);
+	qsort(data->numas, n_numa, sizeof(aml_replicaset_hwloc_memattr_t), cmpf);
 
 	// (3) iterate through it to find a union of numa node that covers all
 	// cpus (4) replicate memory on each numa node
