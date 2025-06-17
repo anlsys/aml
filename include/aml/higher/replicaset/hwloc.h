@@ -34,22 +34,18 @@ extern "C" {
  * @{
  **/
 
+typedef struct aml_replicaset_hwloc_memattr_t {
+	hwloc_obj_t obj; // a numa object
+	hwloc_uint64_t attr; // attr value
+} aml_replicaset_hwloc_memattr_t;
+
 /**
  * Inner data implementation of replicaset for hwloc backend.
  */
 struct aml_replicaset_hwloc_data {
-	/** The type of object used as initiator. */
-	hwloc_obj_type_t type;
-	/** Number of initiators */
-	unsigned num_ptr;
-	/**
-	 * Array of pointers to replicas.
-	 * Contains one pointer per initiator of the topology.
-	 * Pointers are ordered by initiator logical index.
-	 * Multiple initiators may have the same pointer, e.g
-	 * two neighbor cores pointing to data on closest NUMA node.
-	 */
-	void **ptr;
+
+	/** the numa node of each replica */
+	aml_replicaset_hwloc_memattr_t *numas;
 };
 
 /** Public methods struct for aml_replicaset_hwloc */
@@ -74,8 +70,7 @@ extern struct aml_replicaset_ops aml_replicaset_hwloc_ops;
  **/
 int aml_replicaset_hwloc_create(struct aml_replicaset **out,
                                 const size_t size,
-                                const hwloc_obj_type_t initiator_type,
-                                const enum hwloc_distances_kind_e kind);
+                                const enum aml_replicaset_attr_kind_e kind);
 
 /**
  * Destroy hwloc replicaset data.
