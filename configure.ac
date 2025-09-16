@@ -46,7 +46,6 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects 1.12])
 AC_LANG([C])
 AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC
-AC_PROG_CC_C99
 AM_PROG_CC_C_O
 AC_PROG_CPP
 AC_TYPE_SIZE_T
@@ -140,6 +139,16 @@ else
     OPENMP_LIBS=""
 fi
 AC_SUBST(OPENMP_LIBS)
+
+# MPI support
+#############
+
+AX_MPI(have_mpi=1,have_mpi=0)
+TESTCC="$MPICC"
+AC_SUBST(TESTCC)
+AC_SUBST([HAVE_MPI],[$have_mpi])
+AC_DEFINE_UNQUOTED([HAVE_MPI], [$have_mpi], [Whether aml supports MPI.])
+AM_CONDITIONAL([HAVE_MPI], [test "$have_mpi" == "1"])
 
 # NUMA support
 ##############
@@ -449,6 +458,13 @@ OPENMP:
 Active:  $HAVE_OPENMP
 CFLAGS:  $OPENMP_CFLAGS
 LDFLAGS: $OPENMP_LIBS
+
+MPI:
+======
+
+Active:  $HAVE_MPI
+TESTCC: $TESTCC
+LDFLAGS: $MPILIBS
 
 HWLOC:
 ======

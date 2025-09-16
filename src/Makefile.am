@@ -115,3 +115,12 @@ libaml_la_SOURCES+=area/ze.c
 libaml_la_SOURCES+=dma/ze.c
 libaml_la_SOURCES+=backend/ze.c
 endif
+
+#############################################
+# MPI sources
+
+if HAVE_MPI
+AM_LDFLAGS += $(MPILIBS)
+libaml_la_SOURCES+=area/mpi.c
+endif
+
