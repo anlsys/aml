@@ -9,7 +9,9 @@
  ******************************************************************************/
 
 #include <mpi.h>
+
 #include "aml.h"
+
 #include "aml/area/mpi.h"
 
 #include "internal/uthash.h"
@@ -25,7 +27,8 @@ struct aml_area_mpi_window {
 };
 
 void *aml_area_mpi_mmap(const struct aml_area_data *area_data,
-			 size_t size, struct aml_area_mmap_options *options)
+                        size_t size,
+                        struct aml_area_mmap_options *options)
 {
 	int err;
 	struct aml_area_mpi_data *data;
@@ -66,7 +69,8 @@ void *aml_area_mpi_mmap(const struct aml_area_data *area_data,
 }
 
 int aml_area_mpi_munmap(const struct aml_area_data *area_data,
-			 void *ptr, const size_t size)
+                        void *ptr,
+                        const size_t size)
 {
 	(void)size;
 	struct aml_area_mpi_data *data;
@@ -90,13 +94,12 @@ int aml_area_mpi_create(struct aml_area **area)
 	struct aml_area *ret;
 	struct aml_area_mpi_data *data;
 
-	ret = AML_INNER_MALLOC(struct aml_area,
-				      struct aml_area_mpi_data);
+	ret = AML_INNER_MALLOC(struct aml_area, struct aml_area_mpi_data);
 	if (ret == NULL)
 		return -AML_ENOMEM;
 
 	data = AML_INNER_MALLOC_GET_FIELD(ret, 2, struct aml_area,
-					  struct aml_area_mpi_data);
+	                                  struct aml_area_mpi_data);
 
 	ret->ops = &aml_area_mpi_ops;
 	ret->data = (struct aml_area_data *)data;
@@ -119,15 +122,14 @@ void aml_area_mpi_destroy(struct aml_area **area)
  ******************************************************************************/
 
 struct aml_area_mpi_data aml_area_mpi_data_default = {
-	.windows = NULL,
+        .windows = NULL,
 };
 
 struct aml_area_ops aml_area_mpi_ops = {
-	.mmap = aml_area_mpi_mmap,
-	.munmap = aml_area_mpi_munmap,
+        .mmap = aml_area_mpi_mmap,
+        .munmap = aml_area_mpi_munmap,
 };
 
 struct aml_area aml_area_mpi = {
-	.ops = &aml_area_mpi_ops,
-	.data = (struct aml_area_data *)(&aml_area_mpi_data_default)
-};
+        .ops = &aml_area_mpi_ops,
+        .data = (struct aml_area_data *)(&aml_area_mpi_data_default)};

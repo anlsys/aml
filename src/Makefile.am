@@ -121,6 +121,7 @@ endif
 # MPI sources
 
 if HAVE_MPI
-SUBDIRS += mpi
+# have to make sure current gets compiled before mpi
+SUBDIRS += . mpi
 endif
 
