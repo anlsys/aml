@@ -1,6 +1,6 @@
 AM_COLOR_TESTS = yes
 AM_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS) $(OPENMP_CFLAGS)
-AM_LDFLAGS = ../../src/mpi/libaml-mpi.la $(top_builddir)/excit/src/libexcit.la $(PTHREAD_LIBS) $(OPENMP_LIBS) $(MPILIBS)
+AM_LDFLAGS = ../../src/libaml.la ../../src/mpi/libaml-mpi.la $(top_builddir)/excit/src/libexcit.la $(PTHREAD_LIBS) $(OPENMP_LIBS) $(MPILIBS)
 CC=$(MPICC)
 
 test_area_mpi_SOURCES=test_area.c
