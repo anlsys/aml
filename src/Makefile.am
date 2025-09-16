@@ -2,6 +2,7 @@ SUFFIXES=.c .cu
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS) $(OPENMP_CFLAGS)
 AM_LDFLAGS = $(PTHREAD_LIBS) $(OPENMP_LIBS)
 noinst_LTLIBRARIES=
+SUBDIRS =
 
 #############################################
 # valgrind support
@@ -120,7 +121,6 @@ endif
 # MPI sources
 
 if HAVE_MPI
-AM_LDFLAGS += $(MPILIBS)
-libaml_la_SOURCES+=area/mpi.c
+SUBDIRS += mpi
 endif
 

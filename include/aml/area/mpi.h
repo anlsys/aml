@@ -51,7 +51,6 @@ struct aml_area_mpi_mmap_options {
 	 * Unit displacement (in bytes)
 	 **/
 	int disp;
-	
 };
 
 /**
@@ -90,7 +89,6 @@ struct aml_area_mpi_data {
  **/
 int aml_area_mpi_create(struct aml_area **area);
 
-
 /**
  * \brief MPI area destruction.
  *
@@ -113,10 +111,9 @@ void aml_area_mpi_destroy(struct aml_area **area);
  * @return a valid memory pointer, or NULL on failure.
  * On failure, "errno" should be checked for further information.
  **/
-void*
-aml_area_mpi_mmap(const struct aml_area_data  *area_data,
-		    size_t                       size,
-		    struct aml_area_mmap_options *opts);
+void *aml_area_mpi_mmap(const struct aml_area_data *area_data,
+                        size_t size,
+                        struct aml_area_mmap_options *opts);
 
 /**
  * \brief munmap hook for AML area.
@@ -128,10 +125,9 @@ aml_area_mpi_mmap(const struct aml_area_data  *area_data,
  * @return AML_SUCCESS on success, else AML_FAILURE.
  * On failure, "errno" should be checked for further information.
  **/
-int
-aml_area_mpi_munmap(const struct aml_area_data *area_data,
-		      void *ptr,
-		      const size_t size);
+int aml_area_mpi_munmap(const struct aml_area_data *area_data,
+                        void *ptr,
+                        const size_t size);
 
 /**
  * @}
@@ -140,4 +136,4 @@ aml_area_mpi_munmap(const struct aml_area_data *area_data,
 #ifdef __cplusplus
 }
 #endif
-#endif //AML_AREA_MPI_H
+#endif // AML_AREA_MPI_H

@@ -426,8 +426,10 @@ AC_CONFIG_HEADERS([include/internal/config.h])
 
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
+		 src/mpi/Makefile
 		 include/Makefile
 		 tests/Makefile
+		 tests/mpi/Makefile
 		 doc/tutorials/Makefile
 		 doc/Makefile
 		 doc/tutorials/hello_world/Makefile

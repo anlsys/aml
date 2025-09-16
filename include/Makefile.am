@@ -81,6 +81,10 @@ include_aml_dma_HEADERS += aml/dma/ze.h
 include_aml_backend_HEADERS += aml/utils/backend/ze.h
 endif
 
+if HAVE_MPI
+include_aml_area_HEADERS += aml/area/mpi.h
+endif
+
 noinst_include_internaldir = $(includedir)/internal
 noinst_include_internal_HEADERS = \
 				  internal/utarray.h \

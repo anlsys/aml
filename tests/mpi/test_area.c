@@ -8,10 +8,13 @@
  * SPDX-License-Identifier: BSD-3-Clause
  ******************************************************************************/
 
-#include "aml.h"
 #include "config.h"
-#include "aml/area/mpi.h"
+
 #include <assert.h>
+
+#include "aml.h"
+
+#include "aml/area/mpi.h"
 
 void test_map(const struct aml_area *area)
 {
@@ -21,9 +24,9 @@ void test_map(const struct aml_area *area)
 
 	void *ptr;
 	size_t s;
-	const size_t sizes[4] = {1, 32, 4096, 1<<20};
+	const size_t sizes[4] = {1, 32, 4096, 1 << 20};
 
-	for (s = 0; s < sizeof(sizes)/sizeof(*sizes); s++) {
+	for (s = 0; s < sizeof(sizes) / sizeof(*sizes); s++) {
 		aml_errno = AML_SUCCESS;
 		ptr = aml_area_mmap(area, sizes[s], NULL);
 		assert(aml_errno == AML_SUCCESS);

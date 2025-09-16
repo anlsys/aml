@@ -3,7 +3,7 @@ AM_COLOR_TESTS = yes
 
 AM_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS) $(OPENMP_CFLAGS)
 AM_LDFLAGS = ../src/libaml.la $(top_builddir)/excit/src/libexcit.la $(PTHREAD_LIBS) $(OPENMP_LIBS)
-CC=$(TESTCC)
+SUBDIRS =
 
 if HAVE_CUDA
 LIBS += $(CUDA_LIBS)
@@ -123,10 +123,6 @@ AREA_TESTS+=area/test_hip
 AREA_TESTS+=dma/test_hip
 endif
 
-if HAVE_MPI
-AREA_TESTS+=area/test_mpi
-endif
-
 # unit tests
 UNIT_TESTS = $(UTILS_TESTS) \
 	     $(TILING_TESTS) \
@@ -149,6 +145,10 @@ test_dma_cuda_SOURCES=dma/test_cuda.c
 test_dma_cuda_CPPFLAGS= $(AM_CFLAGS) $(CUDA_CFLAGS)
 test_dma_cuda_LDFLAGS=$(AM_LDFLAGS) $(CUDA_LIBS)
 TST_PROGS+=test_dma_cuda test_area_cuda
+endif
+
+if HAVE_MPI
+SUBDIRS += mpi
 endif
 
 
