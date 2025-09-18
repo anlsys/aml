@@ -122,6 +122,9 @@ endif
 
 if HAVE_MPI
 # have to make sure current gets compiled before mpi
-SUBDIRS += . mpi
+AM_LDFLAGS += $(MPI_LIBS)
+AM_CPPFLAGS += $(MPI_CFLAGS)
+libaml_la_SOURCES+=area/mpi.c
+libaml_la_SOURCES+=backend/mpi.c
 endif
 

@@ -35,6 +35,16 @@ AM_LDFLAGS += $(HIP_LIBS)
 AM_CFLAGS += $(HIP_CFLAGS)
 endif
 
+if HAVE_MPI
+LIBS += $(MPI_LIBS)
+AM_LDFLAGS += $(MPI_LIBS)
+AM_CFLAGS += $(MPI_CFLAGS)
+endif
+
+# if the env doesn't include CI vars, default to no
+CI ?=no
+TESTS_ENVIRONMENT=$(TEST_ENVIRONMENT) CI=$(CI)
+
 # valgrind support
 @VALGRIND_CHECK_RULES@
 VALGRIND_SUPPRESSIONS_FILES=../.valgrind.supp
@@ -104,6 +114,10 @@ AREA_TESTS+=area/test_cuda
 AREA_TESTS+=dma/test_cuda
 endif
 
+if HAVE_MPI
+AREA_TESTS += area/test_mpi
+endif
+
 if HAVE_OPENCL
 AREA_TESTS += area/test_opencl
 endif
@@ -146,11 +160,6 @@ test_dma_cuda_CPPFLAGS= $(AM_CFLAGS) $(CUDA_CFLAGS)
 test_dma_cuda_LDFLAGS=$(AM_LDFLAGS) $(CUDA_LIBS)
 TST_PROGS+=test_dma_cuda test_area_cuda
 endif
-
-if HAVE_MPI
-SUBDIRS += mpi
-endif
-
 
 check_PROGRAMS = $(TST_PROGS)
 check_LTLIBRARIES = \

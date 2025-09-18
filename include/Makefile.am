@@ -71,6 +71,11 @@ include_aml_area_HEADERS += aml/area/hip.h
 include_aml_dma_HEADERS += aml/dma/hip.h
 endif
 
+if HAVE_MPI
+include_aml_area_HEADERS += aml/area/mpi.h
+include_aml_backend_HEADERS += aml/utils/backend/mpi.h
+endif
+
 if HAVE_OPENCL
 include_aml_area_HEADERS += aml/area/opencl.h
 endif

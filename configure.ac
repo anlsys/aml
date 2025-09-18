@@ -143,9 +143,50 @@ AC_SUBST(OPENMP_LIBS)
 # MPI support
 #############
 
-AX_MPI(have_mpi=1,have_mpi=0)
-TESTCC="$MPICC"
-AC_SUBST(TESTCC)
+AC_ARG_WITH([mpi],
+	[AS_HELP_STRING([--with-mpi],
+		[support mpi inside the library (default is check)])],
+	[
+	if test "x$withval" = "xno"; then
+		want_mpi="no"
+	else
+		want_mpi="yes"
+	fi
+	],
+	[
+		want_mpi="check"
+	])
+
+MPI_CFLAGS=""
+MPI_LIBS=""
+if test "x$want_mpi" != "xno"; then
+	AC_MSG_NOTICE([starting checks for MPI])
+	AC_CHECK_PROGS(MPICC, mpicc hcc mpxlc_r mpxlc mpcc cmpicc, no)
+
+	if test "x$MPICC" = "xno"; then
+		AC_MSG_NOTICE([No MPI compiler found])
+		if test "x$want_mpi" = "xyes"; then
+        		AC_MSG_ERROR([MPI compiler (mpicc) not found but --with-mpi was requested])
+		fi
+		
+		have_mpi=0
+	else
+		MPI_CC_SHOW=`$MPICC -show 2>/dev/null`
+		for arg in $MPI_CC_SHOW; do
+			case "$arg" in
+				-I*|-D*|-std=*|-f*) MPI_CFLAGS="$MPI_CFLAGS $arg" ;;
+				-L*|-l*|-Wl,*|-W*)  MPI_LIBS="$MPI_LIBS $arg" ;;
+				*) ;;  # Skip compiler name or unknown args
+			esac
+		done
+		have_mpi=1
+		CC="$MPICC"
+	fi
+fi
+
+AC_SUBST([MPI_CFLAGS])
+AC_SUBST([MPI_LIBS])
+AC_SUBST([MPICC])
 AC_SUBST([HAVE_MPI],[$have_mpi])
 AC_DEFINE_UNQUOTED([HAVE_MPI], [$have_mpi], [Whether aml supports MPI.])
 AM_CONDITIONAL([HAVE_MPI], [test "$have_mpi" == "1"])
@@ -465,8 +506,9 @@ MPI:
 ======
 
 Active:  $HAVE_MPI
-TESTCC: $TESTCC
-LDFLAGS: $MPILIBS
+MPICC:   $MPICC
+CFLAGS:  $MPI_CFLAGS
+LDFLAGS: $MPI_LIBS
 
 HWLOC:
 ======
