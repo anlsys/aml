@@ -18,6 +18,9 @@
 #if HAVE_HWLOC == 1
 #include "aml/utils/backend/hwloc.h"
 #endif
+#if HAVE_MPI == 1
+#include "aml/utils/backend/mpi.h"
+#endif
 #if HAVE_ZE == 1
 #include "aml/utils/backend/ze.h"
 #endif
@@ -42,10 +45,16 @@ int aml_init(int *argc, char **argv[])
 	if (err != AML_SUCCESS)
 		return err;
 
+#if HAVE_MPI == 1
+	err = aml_backend_mpi_init();
+	if (err != AML_SUCCESS)
+		goto err_with_linux;
+#endif
+
 #if HAVE_ZE == 1
 	err = aml_backend_ze_init();
 	if (err != AML_SUCCESS)
-		goto error;
+		goto err_with_mpi;
 #endif
 
 #if HAVE_HWLOC == 1
@@ -56,12 +65,23 @@ int aml_init(int *argc, char **argv[])
 
 	return AML_SUCCESS;
 
+// bit of ugly code here: labels can't be unused so we need to only define them
+// if their caller is defined, but we only need to do something if the feature
+// before them exists.
 #if HAVE_HWLOC == 1
-err_with_ze:;
+err_with_ze:
 #endif
 #if HAVE_ZE == 1
 	aml_backend_ze_finalize();
-error:
+#endif
+#if HAVE_ZE == 1
+err_with_mpi:
+#endif
+#if HAVE_MPI == 1
+	aml_backend_mpi_finalize();
+#endif
+#if HAVE_MPI == 1
+err_with_linux:
 #endif
 	aml_backend_linux_finalize();
 	return err;
@@ -76,6 +96,10 @@ int aml_finalize(void)
 
 #if HAVE_ZE == 1
 	aml_backend_ze_finalize();
+#endif
+
+#if HAVE_MPI == 1
+	aml_backend_mpi_finalize();
 #endif
 	return 0;
 }

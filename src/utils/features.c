@@ -22,6 +22,9 @@
 #include <hwloc.h>
 extern hwloc_topology_t aml_topology;
 #endif
+#if HAVE_MPI == 1
+#include <mpi.h>
+#endif
 #if HAVE_ZE == 1
 #include <level_zero/ze_api.h>
 #endif
@@ -116,6 +119,20 @@ static int aml_support_hwloc(void)
 #endif
 }
 
+static int aml_support_mpi(void)
+{
+#if HAVE_MPI == 0
+	return 0;
+#else
+	int initialized;
+	MPI_Initialized(&initialized);
+	if (initialized)
+		return 1;
+	else
+		return 0;
+#endif
+}
+
 int aml_support_backends(const unsigned long backends)
 {
 	// Cuda check: compilation support and runtime support must be present.
@@ -126,6 +143,11 @@ int aml_support_backends(const unsigned long backends)
 	// hip check: compilation support and runtime support must be present.
 	if ((backends & AML_BACKEND_HIP) &&
 	    !(AML_HAVE_BACKEND_HIP && aml_support_hip()))
+		return 0;
+
+	// mpi check: compilation support and runtime support must be present.
+	if ((backends & AML_BACKEND_MPI) &&
+	    !(AML_HAVE_BACKEND_MPI && aml_support_mpi()))
 		return 0;
 
 	// OpenCL check: compilation support and runtime support must be
