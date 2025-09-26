@@ -202,7 +202,7 @@ jobs:
           echo "0.8.0" > .tarball-version
       - name: build
         run: |
-          source /usr/share/lmod/6.6/init/bash
+          source /usr/share/lmod/lmod/init/bash
           module load nvhpc
           ./autogen.sh
           mkdir build
