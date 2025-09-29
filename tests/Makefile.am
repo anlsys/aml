@@ -3,6 +3,7 @@ AM_COLOR_TESTS = yes
 
 AM_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_srcdir)/excit/src $(PTHREAD_CFLAGS) $(OPENMP_CFLAGS)
 AM_LDFLAGS = ../src/libaml.la $(top_builddir)/excit/src/libexcit.la $(PTHREAD_LIBS) $(OPENMP_LIBS)
+SUBDIRS =
 
 if HAVE_CUDA
 LIBS += $(CUDA_LIBS)
@@ -33,6 +34,16 @@ LIBS += $(HIP_LIBS)
 AM_LDFLAGS += $(HIP_LIBS)
 AM_CFLAGS += $(HIP_CFLAGS)
 endif
+
+if HAVE_MPI
+LIBS += $(MPI_LIBS)
+AM_LDFLAGS += $(MPI_LIBS)
+AM_CFLAGS += $(MPI_CFLAGS)
+endif
+
+# if the env doesn't include CI vars, default to no
+CI ?=no
+TESTS_ENVIRONMENT=$(TEST_ENVIRONMENT) CI=$(CI)
 
 # valgrind support
 @VALGRIND_CHECK_RULES@
@@ -104,6 +115,10 @@ AREA_TESTS+=area/test_cuda
 AREA_TESTS+=dma/test_cuda
 endif
 
+if HAVE_MPI
+AREA_TESTS += area/test_mpi
+endif
+
 if HAVE_OPENCL
 AREA_TESTS += area/test_opencl
 endif
@@ -135,6 +150,7 @@ UNIT_TESTS = $(UTILS_TESTS) \
 # all tests
 TST_PROGS = $(UNIT_TESTS)
 
+#TODO: odd, figure out if it's actually required
 if HAVE_CUDA
 test_area_cuda_SOURCES=area/test_cuda.c
 test_area_cuda_CPPFLAGS= $(AM_CFLAGS) $(CUDA_CFLAGS)

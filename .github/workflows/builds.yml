@@ -130,7 +130,7 @@ jobs:
           fetch-depth: 0
       - uses: cachix/install-nix-action@v13
         with:
-          nix_path: nixpkgs=channel:nixos-20.09
+          nix_path: nixpkgs=channel:nixos-24.05
       - run: nix-build -A aml
   distcheck:
     runs-on: ubuntu-latest
@@ -190,7 +190,7 @@ jobs:
       run:
         shell: bash
     container:
-      image: nvcr.io/nvidia/nvhpc:24.7-devel-cuda12.5-ubuntu22.04
+      image: nvcr.io/nvidia/nvhpc:24.7-devel-cuda12.5-ubuntu24.04
     steps:
       - uses: actions/checkout@v2
         with:
@@ -202,11 +202,11 @@ jobs:
           echo "0.8.0" > .tarball-version
       - name: build
         run: |
-          source /usr/share/lmod/6.6/init/bash
+          source /usr/share/lmod/lmod/init/bash
           module load nvhpc
           ./autogen.sh
           mkdir build
-          ./configure --prefix=`pwd`/build --with-cuda CUDA_HOME=$NVHPC_ROOT/cuda
+          ./configure --prefix=`pwd`/build --without-hwloc --with-cuda CUDA_HOME=$NVHPC_ROOT/cuda
           make
           make check
           make install

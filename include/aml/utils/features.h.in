@@ -35,19 +35,23 @@
 #define AML_HAVE_BACKEND_ZE @HAVE_ZE@
 /** Whether aml had hip capabilities at compile time **/
 #define AML_HAVE_BACKEND_HIP @HAVE_HIP@
+/** Whether aml had mpi capabilities at compile time **/
+#define AML_HAVE_BACKEND_MPI @HAVE_MPI@
 
-/** Flag for checking runtime suport for libnuma **/
+/** Flag for checking runtime support for libnuma **/
 #define AML_BACKEND_LIBNUMA (1UL<<1)
-/** Flag for checking runtime suport for cuda **/
+/** Flag for checking runtime support for cuda **/
 #define AML_BACKEND_CUDA (1UL<<2)
-/** Flag for checking runtime suport for hwloc **/
+/** Flag for checking runtime support for hwloc **/
 #define AML_BACKEND_HWLOC (1UL<<3)
-/** Flag for checking runtime suport for opencl **/
+/** Flag for checking runtime support for opencl **/
 #define AML_BACKEND_OPENCL (1UL<<4)
-/** Flag for checking runtime suport for level zero **/
+/** Flag for checking runtime support for level zero **/
 #define AML_BACKEND_ZE (1UL<<5)
-/** Flag for checking runtime suport for hip **/
+/** Flag for checking runtime support for hip **/
 #define AML_BACKEND_HIP (1UL<<6)
+/** Flag for checking runtime support for mpi **/
+#define AML_BACKEND_MPI (1UL<<7)
 
 /**
  * Check if a set of backends can be used at runtime.

@@ -46,7 +46,6 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects 1.12])
 AC_LANG([C])
 AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC
-AC_PROG_CC_C99
 AM_PROG_CC_C_O
 AC_PROG_CPP
 AC_TYPE_SIZE_T
@@ -140,6 +139,57 @@ else
     OPENMP_LIBS=""
 fi
 AC_SUBST(OPENMP_LIBS)
+
+# MPI support
+#############
+
+AC_ARG_WITH([mpi],
+	[AS_HELP_STRING([--with-mpi],
+		[support mpi inside the library (default is check)])],
+	[
+	if test "x$withval" = "xno"; then
+		want_mpi="no"
+	else
+		want_mpi="yes"
+	fi
+	],
+	[
+		want_mpi="check"
+	])
+
+MPI_CFLAGS=""
+MPI_LIBS=""
+if test "x$want_mpi" != "xno"; then
+	AC_MSG_NOTICE([starting checks for MPI])
+	AC_CHECK_PROGS(MPICC, mpicc hcc mpxlc_r mpxlc mpcc cmpicc, no)
+
+	if test "x$MPICC" = "xno"; then
+		AC_MSG_NOTICE([No MPI compiler found])
+		if test "x$want_mpi" = "xyes"; then
+        		AC_MSG_ERROR([MPI compiler (mpicc) not found but --with-mpi was requested])
+		fi
+		
+		have_mpi=0
+	else
+		MPI_CC_SHOW=`$MPICC -show 2>/dev/null`
+		for arg in $MPI_CC_SHOW; do
+			case "$arg" in
+				-I*|-D*|-std=*|-f*) MPI_CFLAGS="$MPI_CFLAGS $arg" ;;
+				-L*|-l*|-Wl,*|-W*)  MPI_LIBS="$MPI_LIBS $arg" ;;
+				*) ;;  # Skip compiler name or unknown args
+			esac
+		done
+		have_mpi=1
+		CC="$MPICC"
+	fi
+fi
+
+AC_SUBST([MPI_CFLAGS])
+AC_SUBST([MPI_LIBS])
+AC_SUBST([MPICC])
+AC_SUBST([HAVE_MPI],[$have_mpi])
+AC_DEFINE_UNQUOTED([HAVE_MPI], [$have_mpi], [Whether aml supports MPI.])
+AM_CONDITIONAL([HAVE_MPI], [test "$have_mpi" == "1"])
 
 # NUMA support
 ##############
@@ -449,6 +499,14 @@ OPENMP:
 Active:  $HAVE_OPENMP
 CFLAGS:  $OPENMP_CFLAGS
 LDFLAGS: $OPENMP_LIBS
+
+MPI:
+======
+
+Active:  $HAVE_MPI
+MPICC:   $MPICC
+CFLAGS:  $MPI_CFLAGS
+LDFLAGS: $MPI_LIBS
 
 HWLOC:
 ======
