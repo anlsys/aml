@@ -32,6 +32,14 @@ struct aml_replicaset_data;
 struct aml_replicaset_ops;
 
 /**
+ * Distance kind
+ */
+enum aml_replicaset_attr_kind_e {
+	AML_REPLICASET_ATTR_LATENCY,
+	AML_REPLICASET_ATTR_BANDWIDTH
+};
+
+/**
  * High level replicaset structure.
  * See specific implementations for instanciation.
  */
