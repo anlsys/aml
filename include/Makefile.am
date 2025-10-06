@@ -10,6 +10,7 @@ include_aml_higher_HEADERS = \
 			      aml/higher/allocator.h \
 			      aml/higher/allocator/area.h \
 			      aml/higher/allocator/buddy.h \
+			      aml/higher/allocator/freelist.h \
 			      aml/higher/allocator/sized.h
 
 include_aml_mapperdir=$(includedir)/aml/mapper
