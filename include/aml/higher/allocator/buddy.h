@@ -107,12 +107,6 @@ struct aml_allocator_buddy {
 	void *pools;
 	/** The structure managing memory chunks. */
 	struct buddy_allocator *allocator;
-	/** Allocator lock **/
-	pthread_mutex_t lock;
-	/** The area to map new regions */
-	struct aml_area *area;
-	/** The area options */
-	struct aml_area_mmap_options *opts;
 };
 
 /** Buddy allocator methods. */

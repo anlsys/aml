@@ -38,7 +38,60 @@ struct aml_allocator {
 	struct aml_allocator_data *data;
 	/** methods */
 	struct aml_allocator_ops *ops;
+    /** The area to map new regions */
+    struct aml_area *area;
+    /** The area options */
+    struct aml_area_mmap_options *opts;
+    /** Allocator lock **/
+    pthread_mutex_t lock;
 };
+
+# define AML_ALLOCATOR_CREATE_FAIL(ALLOCATOR_ADDR, AREA, OPTS, OPS, TYPE, NAME)     \
+    do {                                                                            \
+        free(NAME);                                                                 \
+        return -AML_FAILURE;                                                        \
+    } while (0)
+
+# define AML_ALLOCATOR_CREATE_BEGIN(ALLOCATOR_ADDR, AREA, OPTS, OPS, TYPE, NAME)    \
+    do {                                                                            \
+        if (ALLOCATOR_ADDR == NULL || AREA == NULL)                                 \
+            return -AML_EINVAL;                                                     \
+        TYPE * NAME = (TYPE *) calloc(1, sizeof(TYPE));                             \
+        if (NAME == NULL)                                                           \
+            return -AML_ENOMEM;                                                     \
+        if (pthread_mutex_init(&NAME->super.lock, NULL) != 0)                       \
+            AML_ALLOCATOR_CREATE_FAIL(ALLOCATOR_ADDR, AREA, OPTS, OPS, TYPE, NAME); \
+        NAME->super.area = AREA;                                                    \
+        NAME->super.opts = OPTS;                                                    \
+        NAME->super.ops = OPS;
+
+# define AML_ALLOCATOR_CREATE_END(ALLOCATOR_ADDR, AREA, OPTS, OPS, TYPE, NAME)      \
+        *ALLOCATOR_ADDR = &(NAME->super);                                           \
+        return AML_SUCCESS;                                                         \
+    } while (0)
+
+# define AML_ALLOCATOR_DESTROY_BEGIN(ALLOCATOR_ADDR, TYPE, NAME)                    \
+    do {                                                                            \
+        if (ALLOCATOR_ADDR == NULL || (*ALLOCATOR_ADDR) == NULL)                    \
+            return -AML_EINVAL;                                                     \
+        TYPE * NAME = (TYPE *) (*ALLOCATOR_ADDR);                                   \
+        pthread_mutex_lock(&NAME->super.lock);
+
+# define AML_ALLOCATOR_DESTROY_FAIL(ALLOCATOR_ADDR, TYPE, NAME)                     \
+    do {                                                                            \
+        pthread_mutex_unlock(&NAME->super.lock);                                    \
+        return -AML_FAILURE;                                                        \
+    } while (0)
+
+# define AML_ALLOCATOR_DESTROY_END(ALLOCATOR_ADDR, TYPE, NAME)                      \
+        pthread_mutex_unlock(&NAME->super.lock);                                    \
+        if (pthread_mutex_destroy(&NAME->super.lock) != 0)                          \
+            return -AML_FAILURE;                                                    \
+        free(*ALLOCATOR_ADDR);                                                      \
+        *ALLOCATOR_ADDR = NULL;                                                     \
+        return AML_SUCCESS;                                                         \
+    } while (0)
+
 
 /** Allocator internal's chunk information */
 struct aml_allocator_chunk {
@@ -47,9 +100,9 @@ struct aml_allocator_chunk {
 	/** size of the chunk, greater or equals to the size requested by the
 	 * user (read-only) */
 	size_t size;
-	/** an opaque object that the user can attach to the chunk (read/write)
-	 */
-	void *user_data;
+    /** an opaque object that the user can attach to the chunk (read/write)
+    */
+    void *user_data;
 };
 
 /**
